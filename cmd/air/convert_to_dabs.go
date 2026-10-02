@@ -122,6 +122,9 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	if cfg.UsagePolicyName != nil {
 		return nil, nil, errors.New("usage_policy_name is not yet supported by convert-to-dabs")
 	}
+	if len(cfg.Containers) > 0 {
+		return nil, nil, errors.New("containers are not yet supported by convert-to-dabs; run this config with 'databricks air run'")
+	}
 	if snap := codeSnapshot(cfg); snap != nil {
 		// remote_volume points the code archive at a specific UC Volume. The bundle's
 		// artifact location is set bundle-wide via workspace.artifact_path, not

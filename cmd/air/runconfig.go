@@ -43,13 +43,18 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 // workspace checks performed by the backend.
 var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
 
+var containerNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
+
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
 type runConfig struct {
 	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes"`
 	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes"`
-	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, or a custom Docker image, for the run's runtime."`
-	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Max 1000 lines; move longer logic into a script under code_source." required:"yes"`
+	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, runtime version, or a Unity Catalog image for a single-command run."`
+	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source."`
+	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command."`
 	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets."`
 	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key."`
 	CodeSource     *codeSourceConfig  `yaml:"code_source" help:"Local code to upload and make available to the run."`
@@ -90,13 +95,24 @@ func (c *runConfig) validate() error {
 		}
 	}
 
-	// command is optional in the type system but required in practice, matching
-	// the Python validate_script_fields model validator.
-	if c.Command == nil {
-		return errors.New("command is required")
+	if c.Command == nil && len(c.Containers) == 0 {
+		return errors.New("command is required when containers is not set")
 	}
-	if err := validateCommand(*c.Command); err != nil {
-		return err
+	if c.Command != nil && len(c.Containers) > 0 {
+		return errors.New("command and containers are mutually exclusive; set only one")
+	}
+	if c.Command != nil {
+		if err := validateCommand(*c.Command); err != nil {
+			return err
+		}
+	}
+	if len(c.Containers) > 0 {
+		if c.Environment != nil && c.Environment.UnityCatalogImage != "" {
+			return errors.New("environment.unity_catalog_image cannot be used with containers; set unity_catalog_image on every container")
+		}
+		if err := c.validateContainers(); err != nil {
+			return err
+		}
 	}
 
 	if err := validateSecretRefs(c.Secrets); err != nil {
@@ -204,6 +220,86 @@ func (c *runConfig) validate() error {
 		}
 	}
 
+	return nil
+}
+
+// containerConfig is one rank-partitioned ContainerSpec. command is uploaded
+// as command.sh and submitted as command_path; environment_variables are
+// staged beside it because PuPr workspaces cannot consume the DEVELOPMENT API
+// field yet.
+type containerConfig struct {
+	Name                 string                               `yaml:"name" help:"Unique container name: at most 16 letters, digits, or underscores, not starting with a digit." required:"yes"`
+	Command              *string                              `yaml:"command" help:"Shell command run on every rank assigned to this container." required:"yes"`
+	Ranks                []int                                `yaml:"ranks" help:"Zero-based node ranks assigned to this container." required:"yes"`
+	UnityCatalogImage    string                               `yaml:"unity_catalog_image" help:"Unity Catalog image as <catalog>.<schema>.<image>:<tag>." required:"yes"`
+	EnvironmentVariables *containerEnvironmentVariablesConfig `yaml:"environment_variables" help:"Environment variables scoped to this container."`
+}
+
+type containerEnvironmentVariablesConfig struct {
+	Variables map[string]string `yaml:"variables" help:"Inline environment variables. Secret values use {{secrets/<scope>/<key>}}."`
+	Files     []string          `yaml:"files" help:"Environment files. Not yet supported for containers by the CLI sidecar path."`
+}
+
+func (c *runConfig) validateContainers() error {
+	g, err := parseGPUType(c.Compute.AcceleratorType)
+	if err != nil {
+		return err
+	}
+	perNode, err := gpusPerNode(g)
+	if err != nil {
+		return err
+	}
+	nodeCount := c.Compute.NumAccelerators / perNode
+	owners := make([]string, nodeCount)
+	names := map[string]struct{}{}
+
+	for i := range c.Containers {
+		container := &c.Containers[i]
+		prefix := fmt.Sprintf("containers[%d]", i)
+		if !containerNameRe.MatchString(container.Name) || len(container.Name) > 16 {
+			return fmt.Errorf("%s.name must be at most 16 letters, digits, or underscores and must not start with a digit, got %q", prefix, container.Name)
+		}
+		if _, exists := names[container.Name]; exists {
+			return fmt.Errorf("%s.name %q is duplicated; container names must be unique", prefix, container.Name)
+		}
+		names[container.Name] = struct{}{}
+		if container.Command == nil {
+			return fmt.Errorf("%s.command is required", prefix)
+		}
+		if err := validateCommand(*container.Command); err != nil {
+			return fmt.Errorf("%s.command: %w", prefix, err)
+		}
+		if len(container.Ranks) == 0 {
+			return fmt.Errorf("%s.ranks must contain at least one rank", prefix)
+		}
+		if !unityCatalogImageRe.MatchString(container.UnityCatalogImage) {
+			return fmt.Errorf("%s.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", prefix, container.UnityCatalogImage)
+		}
+		if container.EnvironmentVariables != nil {
+			if len(container.EnvironmentVariables.Files) > 0 {
+				return fmt.Errorf("%s.environment_variables.files is not supported while container environment variables use workspace sidecars; use environment_variables.variables", prefix)
+			}
+			for name, value := range container.EnvironmentVariables.Variables {
+				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe.MatchString(value) {
+					return fmt.Errorf("%s.environment_variables.variables.%s has an invalid secret reference %q; expected {{secrets/<scope>/<key>}}", prefix, name, value)
+				}
+			}
+		}
+		for _, rank := range container.Ranks {
+			if rank < 0 || rank >= nodeCount {
+				return fmt.Errorf("%s.ranks contains %d, but valid ranks for this compute are 0 through %d", prefix, rank, nodeCount-1)
+			}
+			if owners[rank] != "" {
+				return fmt.Errorf("rank %d is assigned to both containers %q and %q", rank, owners[rank], container.Name)
+			}
+			owners[rank] = container.Name
+		}
+	}
+	for rank, owner := range owners {
+		if owner == "" {
+			return fmt.Errorf("rank %d is not assigned to a container; containers.ranks must partition ranks 0 through %d exactly once", rank, nodeCount-1)
+		}
+	}
 	return nil
 }
 
