@@ -4,4 +4,4 @@ RecordRequests = false
 Cloud = false
 
 # cascade_on_destroy is direct-only; assert the terraform engine rejects it.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+Env.DATABRICKS_BUNDLE_ENGINE = "terraform"

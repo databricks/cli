@@ -2,4 +2,4 @@ Cloud = false
 
 Ignore = [".databricks"]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+Env.DATABRICKS_BUNDLE_ENGINE = "terraform"

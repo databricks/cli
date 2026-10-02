@@ -13,7 +13,7 @@ has_manage_run() {
 }
 
 title "After first deploy"
-trace has_manage_run > out.after_first_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace has_manage_run > out.after_first_deploy.txt
 # This is flaky on direct, because there are (at least) two ways to complete deployment:
 # sequence 1:
 #  job is deployed

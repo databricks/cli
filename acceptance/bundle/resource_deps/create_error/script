@@ -1,6 +1,6 @@
 echo "*" > .gitignore
 trace $CLI bundle plan 2>&1
-musterr $CLI bundle deploy -q &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt  # -q: independent job races the failure
+musterr $CLI bundle deploy -q &> out.deploy.txt  # -q: independent job races the failure
 trace print_requests.py --nostamp --sort //jobs
 
 trace $CLI bundle summary
@@ -12,10 +12,10 @@ title "Plan should still contain foo and bar"
 trace $CLI bundle plan
 
 rm "$OUT_REQUESTS"
-musterr $CLI bundle deploy -q &> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
+musterr $CLI bundle deploy -q &> out.deploy2.txt
 title "Expecting no difference in the output between first and second deploy"
-diff.py out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
-rm out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
+diff.py out.deploy.txt out.deploy2.txt
+rm out.deploy2.txt
 trace print_requests.py --nostamp //jobs
 
 trace $CLI bundle destroy --auto-approve
