@@ -1,10 +1,8 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Warning: unknown field: autotermination_minutes
-  at task[0].new_cluster
-  in databricks.yml:14:13
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
-Created jobs.job
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Exit code: 1
