@@ -176,16 +176,6 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	return makeJobRunRemote(run), nil
 }
 
-// RemapState extracts the fields used for diffing: the RunNow request and the
-// outcome the run reached. Lifecycle has no remote counterpart.
-func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
-	return &JobRunState{
-		RunNow:      remote.RunNow,
-		ResultState: remote.ResultState,
-		Lifecycle:   nil,
-	}
-}
-
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
 	// Mint a token so an SDK retry of a lost response returns the same run. Set it
 	// on a copy: recording it in state would drift from the empty config and recreate.

@@ -63,16 +63,6 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 	}
 }
 
-func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
-	return &SnapshotState{
-		RelativePath: remote.RelativePath,
-		FullPath:     remote.FullPath,
-		BundleID:     "",
-		ACL:          nil,
-		ZipPath:      "",
-	}
-}
-
 func (s *ResourceSnapshot) DoRead(ctx context.Context, id string) (*SnapshotRemote, error) {
 	info, err := s.uploader.Get(ctx, id)
 	if err != nil {

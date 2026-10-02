@@ -81,14 +81,6 @@ func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState 
 	}
 }
 
-func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
-	return &PipelineState{
-		CreatePipeline: remote.CreatePipeline,
-		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
-		CascadeOnDestroy: nil,
-	}
-}
-
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
 	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
 	if err != nil {
