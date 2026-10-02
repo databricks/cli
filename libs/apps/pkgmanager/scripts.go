@@ -115,14 +115,21 @@ func envCommandStart(script string, pos int) int {
 // Boolean options must not consume positional script arguments.
 func scriptManagerOptionEnd(script string, pos int) int {
 	start, end := scriptToken(script, pos)
-	word := strings.Trim(script[start:end], "\"'")
+	word := scriptWordValue(script[start:end])
 	if !strings.HasPrefix(word, "-") || word == "--" {
 		return pos
 	}
+	valueStart, valueEnd := scriptToken(script, end)
+	if valueStart == valueEnd || isScriptSeparator(script[valueStart]) || script[valueStart] == '#' {
+		return end
+	}
 	switch word {
 	case "--loglevel", "--script-shell", "--prefix", "--dir", "-C", "--workspace", "-w", "--filter", "-F":
-		valueStart, valueEnd := scriptToken(script, end)
-		if valueStart != valueEnd && !isScriptSeparator(script[valueStart]) && script[valueStart] != '#' {
+		return valueEnd
+	case "--if-present", "--no-if-present":
+		// Logging shortcuts such as --silent and -s do not take boolean values.
+		switch scriptWordValue(script[valueStart:valueEnd]) {
+		case "true", "false":
 			return valueEnd
 		}
 	}
@@ -140,8 +147,7 @@ func npmScriptArguments(script string, pos int) (options, args string, end int) 
 			return managerOptions.String(), scriptArgs.String(), pos
 		}
 		if !argumentsOnly {
-			switch script[start:end] {
-			case "--", `'--'`, `"--"`:
+			if scriptWordValue(script[start:end]) == "--" {
 				argumentsOnly = true
 				pos = end
 				continue
@@ -155,6 +161,36 @@ func npmScriptArguments(script string, pos int) (options, args string, end int) 
 		scriptArgs.WriteString(script[pos:end])
 		pos = end
 	}
+}
+
+// scriptWordValue removes shell quoting for classification without expanding variables.
+// The rewriter emits the original source text, preserving literal quotes and escapes.
+// https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html#tag_19_02
+func scriptWordValue(word string) string {
+	var value strings.Builder
+	var quote byte
+	for pos := 0; pos < len(word); pos++ {
+		c := word[pos]
+		switch {
+		case c == '\\' && quote != '\'':
+			// Within double quotes, backslashes only escape these shell metacharacters.
+			if pos+1 < len(word) && (quote == 0 || strings.ContainsRune("$`\"\\\n", rune(word[pos+1]))) {
+				pos++
+				if word[pos] != '\n' {
+					value.WriteByte(word[pos])
+				}
+			} else {
+				value.WriteByte(c)
+			}
+		case quote != 0 && c == quote:
+			quote = 0
+		case quote == 0 && (c == '\'' || c == '"'):
+			quote = c
+		default:
+			value.WriteByte(c)
+		}
+	}
+	return value.String()
 }
 
 // isScriptAssignment recognizes shell NAME=value prefixes, including quoted values.
