@@ -1,5 +1,9 @@
 #!/bin/bash
 
+go build -o "fake-bin/npm$(go env GOEXE)" ./npm/main.go
+export PATH="$PWD/fake-bin:$PATH"
+export CLI_TEST_NPM_VERSION=unavailable
+
 # Test default package manager (pnpm)
 trace $CLI apps init --name test-app-pnpm --skip-install
 
@@ -36,6 +40,31 @@ test -f npm-only-template/package-lock.json
 title "Npm-only custom template accepts the suggested manager"
 trace $CLI apps init --name compatible-app --template npm-only-template --package-manager npm --skip-install
 diff.py npm-only-template/package-lock.json compatible-app/package-lock.json
+jq '.packageManager' compatible-app/package.json
+
+title "Npm records the installed version in a plain template"
+trace CLI_TEST_NPM_VERSION=11.4.1 $CLI apps init --name installed-app --template npm-only-template --package-manager npm
+jq -r '.packageManager' installed-app/package.json > final-pin
+diff.py installed-app/node_modules/installed-pin final-pin
+cat final-pin
+
+title "Npm records the installed version in a Go template"
+trace CLI_TEST_NPM_VERSION=10.8.3 $CLI apps init --name rendered-app --template install-template --package-manager npm
+jq -r '.packageManager' rendered-app/package.json > final-pin
+diff.py rendered-app/node_modules/installed-pin final-pin
+cat final-pin
+
+title "Npm version detection failure stops before creating the project"
+musterr trace $CLI apps init --name failed-app --template npm-only-template --package-manager npm
+test ! -e failed-app
+
+title "Npm invalid version stops before creating the project"
+musterr trace CLI_TEST_NPM_VERSION=invalid $CLI apps init --name invalid-app --template npm-only-template --package-manager npm
+test ! -e invalid-app
+
+title "Npm empty version stops before creating the project"
+musterr trace CLI_TEST_NPM_VERSION= $CLI apps init --name empty-app --template npm-only-template --package-manager npm
+test ! -e empty-app
 
 # Use a local repository to exercise default-template version resolution without network access.
 cp template/databricks.yml databricks.yml
@@ -59,3 +88,8 @@ title "Missing version falls back to the embedded template and its package manag
 trace DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false $CLI apps init --name fallback-app --skip-install
 cat fallback-app/app.yaml
 jq '.scripts.build, .packageManager' fallback-app/package.json
+
+title "Version downgrade resolves the installed npm pin"
+trace CLI_TEST_NPM_VERSION=11.4.1 $CLI apps init --name installed-older-app --version 0.81.0
+jq '.packageManager' installed-older-app/package.json
+cat installed-older-app/node_modules/installed-pin

@@ -1,10 +1,12 @@
 package pkgmanager
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -12,15 +14,9 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Pinned package manager versions written to package.json's "packageManager" field.
-// These versions are the authoritative minimum versions required by the template.
-// NOTE: pins are "coupled to the version threshold" — Phase 5 will add that threshold constant nearby; keep them co-located.
 const (
+	// pnpmPin is the version required by the AppKit template.
 	pnpmPin = "pnpm@11.0.8"
-
-	// npmPin is the pinned npm version written to package.json's "packageManager".
-	// TODO(VERIFY): confirm the canonical npm pin with the AppKit template owners; placeholder for now.
-	npmPin = "npm@10.9.2"
 
 	// pnpmDualPMThreshold is the first AppKit template version that supports dual package manager
 	// (pnpm and npm). Template versions below this threshold only support npm.
@@ -34,7 +30,7 @@ type Manager struct {
 	InstallArgs         []string // exec args after the binary name (e.g., ["ci", "--no-audit", ...])
 	LockfileNames       []string // In precedence order; npm prefers npm-shrinkwrap.json over package-lock.json.
 	WorkspaceConfigName string   // pnpm-workspace.yaml for pnpm, unused for npm
-	Pin                 string   // pinned version written to package.json's "packageManager", format "name@version"
+	Pin                 string   // "name@version"; npm is empty until ResolvePin is called for an install.
 }
 
 // managers is the internal registry of supported package managers.
@@ -53,7 +49,6 @@ var managers = map[string]Manager{
 		InstallArgs:         []string{"ci", "--no-audit", "--no-fund", "--prefer-offline"},
 		LockfileNames:       []string{"npm-shrinkwrap.json", "package-lock.json"},
 		WorkspaceConfigName: "",
-		Pin:                 npmPin,
 	},
 }
 
@@ -79,6 +74,37 @@ func Resolve(name string) (Manager, error) {
 // Default returns the default package manager (pnpm).
 func Default() Manager {
 	return managers["pnpm"]
+}
+
+// ResolvePin records the installed npm version for Node.js templates.
+// Call only when installing; scaffolding with --skip-install must not require npm.
+func (m Manager) ResolvePin(ctx context.Context, templateDir string) (Manager, error) {
+	if m.Name != "npm" {
+		return m, nil
+	}
+	for _, name := range []string{"package.json", "package.json.tmpl"} {
+		if _, err := os.Stat(filepath.Join(templateDir, name)); errors.Is(err, fs.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return m, fmt.Errorf("check %s: %w", name, err)
+		}
+
+		cmd := exec.CommandContext(ctx, m.Name, "--version")
+		// Ignore inherited template/project pins when selecting the installed npm.
+		// https://github.com/nodejs/corepack#environment-variables
+		cmd.Env = append(os.Environ(), "COREPACK_ENABLE_PROJECT_SPEC=0")
+		output, err := cmd.Output()
+		if err != nil {
+			return m, fmt.Errorf("detect npm version; ensure npm is installed and working, or use --skip-install: %w", err)
+		}
+		version := strings.TrimSpace(string(output))
+		if !semver.IsValid("v" + version) {
+			return m, fmt.Errorf("npm --version returned invalid version %q; ensure npm is working, or use --skip-install", version)
+		}
+		m.Pin = "npm@" + version
+		return m, nil
+	}
+	return m, nil
 }
 
 // EffectiveManager applies version-based constraints to determine the actual package manager to use.
@@ -213,13 +239,17 @@ func (m Manager) Prune(dir string) error {
 }
 
 // Rewrite mutates a decoded package.json (map[string]any) with package-manager-specific
-// transformations: sets "packageManager" to the pinned version and normalizes scripts.
+// transformations: updates "packageManager" and normalizes scripts. Without a resolved
+// pin, it preserves the template's pin only if it belongs to the selected manager.
 // Script invocations, including those in command chains, use explicit "run" form.
 // Native package-manager operations and non-string script values are preserved.
 // Rewrite modifies the map in place and returns it for convenience.
 func Rewrite(pkg map[string]any, m Manager) map[string]any {
-	// Set packageManager to the pinned version from the capability map.
-	pkg["packageManager"] = m.Pin
+	if m.Pin != "" {
+		pkg["packageManager"] = m.Pin
+	} else if pin, _ := pkg["packageManager"].(string); !strings.HasPrefix(pin, m.Name+"@") {
+		delete(pkg, "packageManager")
+	}
 
 	// Normalize script invocations without changing native package-manager operations.
 	scripts, ok := pkg["scripts"].(map[string]any)
