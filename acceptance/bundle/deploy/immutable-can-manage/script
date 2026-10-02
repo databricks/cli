@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy with a CAN_MANAGE permission entry"
+trace $CLI bundle deploy
+
+title "Check can_manage_principals sent to the snapshot create API"
+# The testserver stores parsed form fields per snapshot and exposes them via a query endpoint.
+# The snapshot resource ID is its relative_path; read it from the post-deploy plan where the
+# remote_state is populated and errors/warnings go to a log file to keep the output clean.
+$CLI bundle plan -o json > plan.json 2> LOG.plan
+RELATIVE_PATH=$(jq -r \
+    '.plan["resources.internal_immutable_snapshots.immutable"].remote_state.relative_path' \
+    plan.json)
+trace $CLI api get "/api/2.0/snapshots/info?relative_path=$RELATIVE_PATH" | \
+    jq '{can_manage_principals: .can_manage_principals}'

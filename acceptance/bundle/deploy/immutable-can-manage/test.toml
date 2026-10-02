@@ -1,0 +1,21 @@
+Cloud = false # Temporary disable cloud tests until the API is fully available
+
+# immutable_folder only works with the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+    "plan.json",
+    "LOG.*",
+]
+
+# The test passes an absolute workspace path to "workspace mkdirs" and also queries
+# /api/2.0/snapshots/info. On Windows MSYS2 rewrites leading-slash arguments to Windows
+# paths before the CLI sees them, so disable that conversion.
+Env.MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+# Replace snapshot hash with SNAPSHOT_HASH
+Old = "[0-9a-f]{64}"
+New = "[SNAPSHOT_HASH]"

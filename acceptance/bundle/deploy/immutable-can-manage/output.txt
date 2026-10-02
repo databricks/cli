@@ -1,13 +1,5 @@
 
-=== Deploy without permissions
->>> [CLI] bundle deploy
-Created internal_immutable_snapshots.immutable
-Created jobs.my_job
-Files: 0 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py
-
-=== Add permissions and redeploy
+=== Deploy with a CAN_MANAGE permission entry
 >>> [CLI] bundle deploy
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
@@ -19,17 +11,26 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:22:3
+  in databricks.yml:8:3
 
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
 Created jobs.my_job.permissions
-Recreated internal_immutable_snapshots.immutable
-Updated jobs.my_job
 Files: 0 uploaded, 0 deleted
-Resources: 2 created, 1 changed, 1 deleted, 0 unchanged
-Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Verify snapshot path changed after permissions change
-OK: snapshot path changed as expected
+=== Check can_manage_principals sent to the snapshot create API
+>>> [CLI] api get /api/2.0/snapshots/info?relative_path=[SNAPSHOT_HASH]/[SNAPSHOT_HASH]
+{
+  "can_manage_principals": [
+    {
+      "user_name": "[USERNAME]"
+    },
+    {
+      "user_name": "external-manager@databricks.com"
+    }
+  ]
+}
 
 >>> [CLI] bundle destroy --auto-approve
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
@@ -42,11 +43,11 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:22:3
+  in databricks.yml:8:3
 
 The following resources will be deleted:
   delete resources.jobs.my_job
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-can-manage-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted

@@ -11,9 +11,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -88,6 +90,58 @@ func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	diags := m.Apply(testContext(t), b)
 
 	assert.True(t, diags.HasError() == false && len(diags) == 0, "expected no diagnostics")
+}
+
+// canManageBundle returns a bundle deployed by deployer@example.test with the given permissions.
+func canManageBundle(permissions []resources.Permission) *bundle.Bundle {
+	return &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "deployer@example.test"},
+				},
+			},
+			Permissions: permissions,
+		},
+	}
+}
+
+func TestBuildCanManage(t *testing.T) {
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_MANAGE", UserName: "manager@example.test"},
+		{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+		{Level: "CAN_MANAGE", GroupName: "admins"},
+		{Level: "CAN_MANAGE", ServicePrincipalName: "sp-1"},
+	})
+
+	// The deploying identity, then only the CAN_MANAGE principals.
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+		{UserName: "manager@example.test"},
+		{GroupName: "admins"},
+		{ServicePrincipalName: "sp-1"},
+	}, BuildCanManage(b))
+}
+
+func TestBuildCanManageWithoutManagers(t *testing.T) {
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+	})
+
+	// The API rejects an empty list, so the deploying identity is always there.
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+	}, BuildCanManage(b))
+}
+
+func TestBuildCanManageSkipsDuplicateDeployer(t *testing.T) {
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_MANAGE", UserName: "deployer@example.test"},
+	})
+
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+	}, BuildCanManage(b))
 }
 
 func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {

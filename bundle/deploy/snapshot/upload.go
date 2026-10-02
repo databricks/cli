@@ -4,14 +4,20 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/snapshot"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -69,6 +75,13 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return nil
 	}
 
+	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
+	// modified outside the bundle fails before building a zip.
+	generation, err := resolveGeneration(ctx, b, uploader, remoteRoot)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
@@ -91,8 +104,10 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
+		CanManage:  BuildCanManage(b),
 		RemoteRoot: remoteRoot,
 		ZipPath:    filepath.ToSlash(zipPath),
+		Generation: generation,
 	}
 
 	var diags diag.Diagnostics
@@ -133,4 +148,97 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 		})
 	}
 	return acl
+}
+
+// BuildCanManage constructs can_manage_principals for the snapshot upload: the principals that
+// may break the glass on the snapshot. Those are the deploying identity plus everyone granted
+// CAN_MANAGE in the top-level permissions section. The deploying identity is always included
+// because the API rejects an empty list, and it is the one principal always available. The
+// recommended permissions section names it with CAN_MANAGE as well, so skip it in the loop
+// rather than sending it twice.
+func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
+	currentUser := b.Config.Workspace.CurrentUser.User
+	var canManage []snapshot.ManagePrincipal
+	if iamutil.IsServicePrincipal(currentUser) {
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			ServicePrincipalName: currentUser.UserName,
+		})
+	} else {
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			UserName: currentUser.UserName,
+		})
+	}
+	for _, p := range b.Config.Permissions {
+		if p.Level != "CAN_MANAGE" {
+			continue
+		}
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			UserName:             p.UserName,
+			GroupName:            p.GroupName,
+			ServicePrincipalName: p.ServicePrincipalName,
+		})
+	}
+	return canManage
+}
+
+// resolveGeneration asks the backend whether the snapshot deployed last time was modified
+// outside of the bundle, and returns the generation the new snapshot should use:
+//   - the previous generation while the snapshot is untouched, so a path reached by an earlier
+//     recovery keeps being reused;
+//   - the previous generation + 1 when it was modified and --force was given, which moves the
+//     deployment to a fresh path;
+//   - an error when it was modified and --force was not given.
+//
+// The check has to happen here rather than in the resource's DoRead: the generation decides
+// the snapshot's path, and resources referencing ${...full_path} resolve it from the desired
+// state computed before any resource is read (see LookupReferencePreDeploy). Erroring unless
+// --force also has no equivalent in the resource layer. CheckDashboardsModifiedRemotely is the
+// same shape: read state, ask the API, refuse unless forced.
+//
+// On the first deploy (no snapshot in state) the generation is 0.
+func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (int, error) {
+	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
+	// exercise PlanUpload in isolation (unit tests) may not. No open state means no previous
+	// snapshot to check, which is the first-deploy case.
+	if !b.DeploymentBundle.StateDB.IsOpen() {
+		return 0, nil
+	}
+
+	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
+	if !ok || len(entry.State) == 0 {
+		return 0, nil
+	}
+
+	// Decode into the state type the engine persists, so the field names cannot drift apart.
+	var prev dresources.SnapshotState
+	if err := json.Unmarshal(entry.State, &prev); err != nil {
+		return 0, fmt.Errorf("reading previous snapshot state: %w", err)
+	}
+	if prev.RelativePath == "" {
+		return 0, nil
+	}
+
+	// Compose the content path from relative_path rather than reading full_path: relative_path
+	// already encodes the previous generation and means the same thing in every CLI version,
+	// while full_path from a CLI that predates the content subfolder points one level too high.
+	contentPath := path.Join(remoteRoot, prev.RelativePath, snapshot.ContentSubdir)
+
+	status, err := uploader.InspectSnapshot(ctx, contentPath)
+	// Nothing to protect when no snapshot is there: the deployment predates the content
+	// subfolder, or the snapshot was deleted out of band, or an earlier deploy never created it.
+	// Failing here would also be a dead end, since this runs before the --force check and so
+	// could not be forced past.
+	if errors.Is(err, apierr.ErrNotFound) {
+		return prev.Generation, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !status.Dirty {
+		return prev.Generation, nil
+	}
+	if !b.Config.Bundle.Force {
+		return 0, fmt.Errorf("the immutable snapshot of the last deployment was modified outside of the bundle (break glass):\n  %s\nTo deploy a new snapshot and point resources at it, use --force", contentPath)
+	}
+	return prev.Generation + 1, nil
 }

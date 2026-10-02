@@ -1,0 +1,21 @@
+Cloud = false # Temporary disable cloud tests until the API is fully available
+
+# immutable_folder only works with the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+# This test passes the snapshot's absolute workspace path to "workspace mkdirs" to modify it out
+# of band. On Windows the script runs under MSYS2, which rewrites such leading-slash arguments to
+# Windows paths (e.g. C:/Program Files/Git/Workspace/...) before the CLI sees them, so the write
+# would land outside the snapshot and leave it looking untouched.
+# Setting this environment variable disables that conversion.
+Env.MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+# Replace snapshot hash with SNAPSHOT_HASH
+Old = "[0-9a-f]{64}"
+New = "[SNAPSHOT_HASH]"
