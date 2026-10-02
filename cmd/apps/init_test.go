@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1456,4 +1457,29 @@ func TestSetFirstAppNameNoResources(t *testing.T) {
 	bundleName := yamlMapLookup(yamlMapLookup(doc.Content[0], "bundle"), "name")
 	require.NotNil(t, bundleName)
 	assert.Equal(t, "myapp", bundleName.Value)
+}
+
+func TestHasResourceValue(t *testing.T) {
+	r := manifest.Resource{ResourceKey: "sql-warehouse"}
+	assert.False(t, hasResourceValue(r, nil))
+	assert.False(t, hasResourceValue(r, map[string]string{"sql-warehouse-2.id": "wh"}))
+	assert.True(t, hasResourceValue(r, map[string]string{"sql-warehouse.id": "wh"}))
+}
+
+func TestPromptForMissingResourcesSkipsProvidedValues(t *testing.T) {
+	// Every resource already has a value (e.g. from --set), so nothing is prompted;
+	// a prompt would fail here because tests have no terminal.
+	resources := []manifest.Resource{
+		{Type: "sql_warehouse", ResourceKey: "sql-warehouse"},
+		{Type: "postgres", ResourceKey: "postgres"},
+	}
+	values := map[string]string{
+		"sql-warehouse.id":  "wh",
+		"postgres.branch":   "projects/p/branches/b",
+		"postgres.database": "db",
+	}
+	want := maps.Clone(values)
+
+	require.NoError(t, promptForMissingResources(t.Context(), resources, values))
+	assert.Equal(t, want, values)
 }
