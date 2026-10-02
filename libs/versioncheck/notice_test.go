@@ -75,32 +75,32 @@ func TestGatherConditions(t *testing.T) {
 
 	t.Run("all clear for an interactive release build", func(t *testing.T) {
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		assert.True(t, shouldNotify(gatherConditions(interactiveContext(t), regularCmd(t))))
 	})
 
 	t.Run("CI env", func(t *testing.T) {
 		t.Setenv(ciEnv, "true")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).ci)
 	})
 
 	t.Run("opt-out env", func(t *testing.T) {
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "true")
+		t.Setenv(disableEnv, "true")
 		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).optedOut)
 	})
 
 	t.Run("cache disabled", func(t *testing.T) {
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		t.Setenv(cacheEnabledEnv, "false")
 		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).cacheDisabled)
 	})
 
 	t.Run("json output", func(t *testing.T) {
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		c := regularCmd(t)
 		require.NoError(t, c.Flags().Set("output", "json"))
 		assert.True(t, gatherConditions(interactiveContext(t), c).jsonOutput)
@@ -108,7 +108,7 @@ func TestGatherConditions(t *testing.T) {
 
 	t.Run("non-interactive", func(t *testing.T) {
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
 		ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 		assert.True(t, gatherConditions(ctx, regularCmd(t)).nonInteractive)
@@ -118,7 +118,7 @@ func TestGatherConditions(t *testing.T) {
 		// Help invocations skip PersistentPreRunE (no cmdio) and tests execute
 		// commands without root.Execute (no dbr detection); neither may panic.
 		t.Setenv(ciEnv, "false")
-		t.Setenv(DisableEnv, "false")
+		t.Setenv(disableEnv, "false")
 		c := gatherConditions(t.Context(), regularCmd(t))
 		assert.True(t, c.nonInteractive)
 		assert.False(t, c.onRuntime)

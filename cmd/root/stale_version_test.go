@@ -6,8 +6,6 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +14,6 @@ func TestStaleVersionWarning(t *testing.T) {
 	stale := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
 	header := "Warning: this version of the Databricks CLI was built on 2026-01-15 and is more than 6 months old. " +
 		"We strongly recommend updating to the latest version.\n"
-	footer := "To silence this warning, set DATABRICKS_CLI_DISABLE_UPDATE_CHECK=1.\n"
 
 	tests := []struct {
 		name      string
@@ -31,12 +28,12 @@ func TestStaleVersionWarning(t *testing.T) {
 			name:      "stale with detected install method",
 			buildTime: stale,
 			command:   "brew upgrade databricks",
-			want:      header + "To upgrade, run: brew upgrade databricks\n" + footer,
+			want:      header + "To upgrade, run: brew upgrade databricks\n",
 		},
 		{
 			name:      "stale with unknown install method",
 			buildTime: stale,
-			want:      header + "See " + installDocsURL + " to upgrade.\n" + footer,
+			want:      header + "See " + installDocsURL + " to upgrade.\n",
 		},
 	}
 	for _, tc := range tests {
@@ -54,22 +51,16 @@ func TestSkipStaleVersionWarning(t *testing.T) {
 		name    string
 		info    build.Info
 		runtime dbr.Environment
-		env     string
 		want    bool
 	}{
 		{name: "release build", info: release, runtime: notDBR},
 		{name: "dev build", info: build.Info{Version: "1.19.0-dev+abc"}, runtime: notDBR, want: true},
 		{name: "snapshot build", info: build.Info{Version: "1.18.0", IsSnapshot: true}, runtime: notDBR, want: true},
-		{name: "silenced by env var", info: release, runtime: notDBR, env: "1", want: true},
-		{name: "env var set to false", info: release, runtime: notDBR, env: "false"},
 		{name: "on DBR", info: release, runtime: dbr.Environment{IsDbr: true, Version: "15.4"}, want: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := dbr.MockRuntime(t.Context(), tc.runtime)
-			if tc.env != "" {
-				ctx = env.Set(ctx, versioncheck.DisableEnv, tc.env)
-			}
 			assert.Equal(t, tc.want, skipStaleVersionWarning(ctx, tc.info))
 		})
 	}

@@ -35,8 +35,8 @@ const (
 	latestFingerprint   = "latest-release"
 	notifiedFingerprint = "notified"
 
-	// DisableEnv is an explicit opt-out for the passive notice and the stale-version warning.
-	DisableEnv = "DATABRICKS_CLI_DISABLE_UPDATE_CHECK"
+	// disableEnv is an explicit opt-out for the passive notice.
+	disableEnv = "DATABRICKS_CLI_DISABLE_UPDATE_CHECK"
 
 	// cacheEnabledEnv mirrors libs/cache's env knob. We read it directly to
 	// skip the check entirely when caching is turned off: with the cache in
@@ -242,7 +242,7 @@ func notifyEnabled(ctx context.Context, cmd *cobra.Command) bool {
 }
 
 func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions {
-	optedOut, _ := env.GetBool(ctx, DisableEnv)
+	optedOut, _ := env.GetBool(ctx, disableEnv)
 	ci, _ := env.GetBool(ctx, ciEnv)
 	cacheDisabled := false
 	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {

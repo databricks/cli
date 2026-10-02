@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/versioncheck"
 )
 
@@ -27,18 +26,13 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	msg := fmt.Sprintf("Warning: this version of the Databricks CLI was built on %s and is more than 6 months old. "+
 		"We strongly recommend updating to the latest version.\n", buildTime.UTC().Format(time.DateOnly))
 	if upgradeCommand != "" {
-		msg += "To upgrade, run: " + upgradeCommand + "\n"
-	} else {
-		msg += "See " + installDocsURL + " to upgrade.\n"
+		return msg + "To upgrade, run: " + upgradeCommand + "\n"
 	}
-	return msg + "To silence this warning, set " + versioncheck.DisableEnv + "=1.\n"
+	return msg + "See " + installDocsURL + " to upgrade.\n"
 }
 
 func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
 	if info.IsDevelopment() {
-		return true
-	}
-	if disabled, _ := env.GetBool(ctx, versioncheck.DisableEnv); disabled {
 		return true
 	}
 	// DBR installs the latest CLI by default, so skip the warning there.
