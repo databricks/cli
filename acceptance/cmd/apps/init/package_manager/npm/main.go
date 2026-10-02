@@ -32,7 +32,7 @@ func run() error {
 		}
 		fmt.Println(version)
 		return nil
-	case slices.Equal(os.Args[1:], []string{"ci", "--no-audit", "--no-fund", "--prefer-offline"}):
+	case slices.Equal(os.Args[1:], []string{"ci", "--include=dev", "--no-audit", "--no-fund", "--prefer-offline"}):
 		data, err := os.ReadFile("package.json")
 		if err != nil {
 			return err

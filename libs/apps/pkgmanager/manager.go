@@ -46,7 +46,7 @@ var managers = map[string]Manager{
 	"npm": {
 		Name:                "npm",
 		InstallCommand:      "npm ci",
-		InstallArgs:         []string{"ci", "--no-audit", "--no-fund", "--prefer-offline"},
+		InstallArgs:         []string{"ci", "--include=dev", "--no-audit", "--no-fund", "--prefer-offline"},
 		LockfileNames:       []string{"npm-shrinkwrap.json", "package-lock.json"},
 		WorkspaceConfigName: "",
 	},
