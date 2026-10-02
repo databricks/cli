@@ -4,11 +4,18 @@ bundle:
 sync:
   paths: []
 
-# pg_version is spec:immutable, so BOTH engines recreate the project on a bump - an
-# apples-to-apples recreate of the referent, with no engine disagreement on the field.
-# project_id is unchanged, so the project's name (projects/{project_id}) is stable across
-# the recreate. The catalog's branch is built from that stable name, so the catalog's
-# config value does not actually change.
+# When a resource is recreated, the direct deploy engine cannot resolve a reference to its
+# output fields at plan time (a recreate does not preserve the id), so the reference stays the
+# literal "${...}" placeholder. A dependent that uses it then diffs its saved value against the
+# placeholder and plans a phantom change -- even when the referenced value is actually
+# unchanged. The dependent's action depends on the field: an immutable/id field -> recreate, a
+# mutable field -> update. This test covers the immutable case (a spurious RECREATE).
+#
+# pg_version is spec:immutable, so BOTH engines recreate the project on a bump -- an
+# apples-to-apples recreate with no engine disagreement on the field. project_id is unchanged,
+# so the project name (projects/{project_id}) is stable, and my_catalog.branch -- built from
+# ${my_project.name} -- resolves to the same value: the catalog does not actually change, yet
+# both engines plan and execute its recreate.
 resources:
   postgres_projects:
     my_project:

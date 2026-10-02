@@ -4,14 +4,16 @@ bundle:
 sync:
   paths: []
 
-# Shows the same bug on a NON-postgres family (UC schemas), its boundary, and -- via the
-# recorded requests -- how terraform already avoids it at deploy while the direct engine does not.
+# When a resource is recreated, the direct deploy engine cannot resolve a reference to its
+# output fields at plan time (a recreate does not preserve the id), so the reference stays the
+# literal "${...}" placeholder. A dependent that uses it then diffs its saved value against the
+# placeholder and plans a phantom change -- even when the referenced value is actually unchanged.
 #
-# UC resources reference each other by NAME (catalog_name, schema_name) -- user-provided INPUT
-# fields the planner resolves from config even when the target is being recreated. So idiomatic
-# UC wiring never hits this bug. The exception is a reference to an OUTPUT-only field such as
-# .id (a schema's full_name "catalog.schema"): when the referent is recreated, .id cannot be
-# resolved at plan time and reads as a phantom change on the referrer.
+# This test shows that on UC schemas (Lakebase/postgres resources exhibit it too) and its
+# boundary: UC resources reference each other by NAME (catalog_name, schema_name) -- user-
+# provided INPUT fields the planner resolves from config even when the target is recreated, so
+# idiomatic UC wiring never hits it. The exception is a reference to an OUTPUT-only field such
+# as .id (a schema's full_name "catalog.schema").
 #
 # referent recreates on storage_root (immutable, non-identity), so its full_name / .id
 # (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so
