@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -154,24 +155,61 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			// References are now resolved, so re-check the planned changes and drop any that were
+			// only a phantom of an unresolved reference. A field that references a resource being
+			// recreated could not be read at plan time (a recreate does not preserve the id), so it
+			// diffed against the literal "${...}" placeholder (New) and inflated the action. A change
+			// is a phantom when it was a local edit -- New differs from the saved value Old -- yet the
+			// field's now-resolved value equals Old: the reference resolved back to an unchanged value.
+			// Recompute the action over what remains and downgrade.
 			//
-			// Success is recorded by the state writes inside Deploy, so a recreate reports
-			// each of its steps.
-			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
-			if err != nil {
-				// Empty for a create that never got an ID, and for a recreate whose delete
-				// step already dropped it.
-				failedID := b.StateDB.GetResourceID(resourceKey)
-				b.StateDB.RecordFailure(resourceKey, failedID, err)
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-				return false
+			// This only ever lowers the action: a genuine local edit resolves to a value that still
+			// differs from Old and is kept, and a remote-only change (New == Old, remote drift -- e.g.
+			// a permissions child re-applying its ACL) is never a phantom, so those are kept too.
+			// Starting from the plan's own Changes rather than re-diffing from scratch also preserves
+			// changes a struct diff here would not surface, such as a cluster's libraries.
+			//
+			// Child resources (permissions, grants) are excluded: their diff is specialized -- a
+			// stale object_id/full_name echoed by DoRead drives re-application -- which the
+			// value-level phantom test here would misread.
+			if action != deployplan.Create && len(entry.Changes) > 0 && !deployplan.IsChildResourceKey(resourceKey) {
+				remaining := make(deployplan.Changes, len(entry.Changes))
+				for pathStr, ch := range entry.Changes {
+					if path, perr := structpath.ParsePath(pathStr); perr == nil {
+						newVal, gerr := structaccess.Get(sv.Value, path)
+						if gerr == nil && !structdiff.IsEqual(ch.New, ch.Old) && structdiff.IsEqual(newVal, ch.Old) {
+							// A local edit that an unresolved reference stood in for; the reference
+							// resolved back to the saved value, so there is no change. Drop it.
+							continue
+						}
+					}
+					remaining[pathStr] = ch
+				}
+				if recomputed := getMaxAction(remaining); deployplan.GetHigherAction(recomputed, action) == action && recomputed != action {
+					log.Infof(ctx, "%s: downgrading %s to %s after resolving references", resourceKey, action, recomputed)
+					action = recomputed
+					entry.Action = action
+				}
 			}
 
-			// Reported before the remote-state refresh below: the resource is already
-			// deployed at this point, so the line is accurate even if the refresh fails.
-			if reportApplied {
-				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
+			if action != deployplan.Skip {
+				// Success is recorded by the state writes inside Deploy, so a recreate reports
+				// each of its steps.
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
+				if err != nil {
+					// Empty for a create that never got an ID, and for a recreate whose delete
+					// step already dropped it.
+					failedID := b.StateDB.GetResourceID(resourceKey)
+					b.StateDB.RecordFailure(resourceKey, failedID, err)
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
+
+				// Reported before the remote-state refresh below: the resource is already
+				// deployed at this point, so the line is accurate even if the refresh fails.
+				if reportApplied {
+					cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
+				}
 			}
 		}
 
