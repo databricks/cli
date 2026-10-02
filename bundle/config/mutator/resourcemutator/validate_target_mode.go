@@ -110,14 +110,16 @@ func findNonUserPath(b *bundle.Bundle) string {
 	if b.Config.Workspace.RootPath != "" && !containsName(b.Config.Workspace.RootPath) {
 		return "root_path"
 	}
-	if b.Config.Workspace.FilePath != "" && !containsName(b.Config.Workspace.FilePath) {
-		return "file_path"
+	if !b.IsImmutableFolder() {
+		if b.Config.Workspace.FilePath != "" && !containsName(b.Config.Workspace.FilePath) {
+			return "file_path"
+		}
+		if b.Config.Workspace.ArtifactPath != "" && !containsName(b.Config.Workspace.ArtifactPath) {
+			return "artifact_path"
+		}
 	}
 	if b.Config.Workspace.ResourcePath != "" && !containsName(b.Config.Workspace.ResourcePath) {
 		return "resource_path"
-	}
-	if b.Config.Workspace.ArtifactPath != "" && !containsName(b.Config.Workspace.ArtifactPath) {
-		return "artifact_path"
 	}
 	if b.Config.Workspace.StatePath != "" && !containsName(b.Config.Workspace.StatePath) {
 		return "state_path"

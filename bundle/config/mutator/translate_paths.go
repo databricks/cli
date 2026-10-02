@@ -323,15 +323,22 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
-		// Reject an explicit workspace.file_path: immutable bundles set it
-		// automatically to the content-addressed snapshot location. A user-supplied
-		// value would be silently discarded during path translation, so we error early.
-		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
-			return diag.Diagnostics{{
-				Severity:  diag.Error,
-				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",
-				Locations: []dyn.Location{loc},
-			}}
+		// Reject an explicit workspace.file_path or workspace.artifact_path: immutable
+		// bundles set both automatically to the content-addressed snapshot location.
+		// A user-supplied value would be silently discarded (file_path during path
+		// translation, artifact_path during artifact upload), so we error early.
+		var diags diag.Diagnostics
+		for _, configPath := range []string{"workspace.file_path", "workspace.artifact_path"} {
+			if loc := b.Config.GetLocation(configPath); loc.File != "" {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   configPath + " cannot be configured when experimental.immutable_folder is enabled",
+					Locations: []dyn.Location{loc},
+				})
+			}
+		}
+		if diags.HasError() {
+			return diags
 		}
 		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):

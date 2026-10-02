@@ -27,9 +27,28 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 		return nil
 	}
 
+	target := b.Config.Bundle.Target
+
+	// Immutable bundles deploy files to a content-addressed snapshot. Source-linked
+	// deployment would instead point ${workspace.file_path} at the mutable sync root,
+	// so a single resource could mix snapshot paths with source-tree paths that
+	// change without a deploy. The two modes are mutually exclusive.
+	if b.IsImmutableFolder() {
+		if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   "presets.source_linked_deployment cannot be enabled when experimental.immutable_folder is enabled",
+				Paths:     []dyn.Path{path},
+				Locations: b.Config.GetLocations(path[2:].String()),
+			}}
+		}
+		// Do not auto-enable source-linked deployment for development mode.
+		return nil
+	}
+
 	var diags diag.Diagnostics
 	isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
-	target := b.Config.Bundle.Target
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		if !isDatabricksWorkspace {
