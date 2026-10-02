@@ -7,8 +7,10 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -173,8 +175,9 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 			logdiag.LogError(ctx, err)
 			return
 		}
-		// A completed destroy's resources are gone, so its deployment record is deleted too.
-		if completed {
+		// Leave nodes inside root_path for files.Delete to purge. DeleteDeployment moves them
+		// into Trash, where they retain quota and escape the subsequent root deletion.
+		if completed && !deploymentNodeInRoot(b) {
 			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
@@ -234,6 +237,13 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	if _, err := removeEmptyDirs(stateDir, 0); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Debugf(ctx, "cannot prune empty state directories under %s: %v", stateDir, err)
 	}
+}
+
+// deploymentNodeInRoot reports whether deleting root_path will also delete the deployment node.
+func deploymentNodeInRoot(b *bundle.Bundle) bool {
+	nodePath := path.Join(b.Config.Workspace.StatePath, dms.DeploymentNodeName)
+	rootPrefix := strings.TrimSuffix(path.Clean(b.Config.Workspace.RootPath), "/") + "/"
+	return strings.HasPrefix(nodePath, rootPrefix)
 }
 
 // maxStateDirDepth caps removeEmptyDirs recursion. The local state tree is only a
@@ -306,7 +316,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
 				logdiag.LogError(ctx, err)
-			} else if completed {
+			} else if completed && !deploymentNodeInRoot(b) {
 				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 				if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))

@@ -203,7 +203,3 @@ false
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
-{
-  "method": "DELETE",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
-}

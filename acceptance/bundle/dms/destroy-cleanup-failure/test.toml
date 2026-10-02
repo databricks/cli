@@ -1,0 +1,3 @@
+# Fault injection is provided by the local test server.
+Cloud = false
+Env.MSYS_NO_PATHCONV = "1"
