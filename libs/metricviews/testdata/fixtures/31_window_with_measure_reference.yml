@@ -1,0 +1,14 @@
+version: 1.1
+source: select 'abc' as region
+dimensions:
+  - name: region
+    expr: region
+measures:
+  - name: count
+    expr: count(*)
+    window:
+      - order: region
+        semiadditive: last
+        range: all
+  - name: count_plus_one
+    expr: measure(count) + 1

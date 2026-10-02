@@ -1,0 +1,21 @@
+version: 1.1
+
+source: main.sales.orders
+comment: "Complex metric view with various comment patterns"
+filter: region = 'WEST'
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+    comment: "Month when the order was placed"
+  - name: region
+    expr: o_region
+measures:
+  - name: count_orders
+    expr: COUNT(*)
+  - name: total_revenue
+    expr: SUM(o_totalprice)
+    comment: "Sum of all order prices"
+    window:
+      - order: month
+        semiadditive: first
+        range: trailing 3 month

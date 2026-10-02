@@ -1,0 +1,8 @@
+version: 0.1
+source: main.default.t1
+dimensions:
+  - name: id
+    expr: id
+measures:
+  - name: sum_value
+    expr: sum(value)

@@ -1,0 +1,24 @@
+version: 1.1
+
+source: select * from main.sales.lineitem
+joins:
+  - name: orders
+    source: main.sales.orders
+    on: l_orderkey = o_orderkey
+    rely:
+      at_most_one_match: false
+  - name: nations
+    source: select * from main.sales.nations
+    using:
+      - nationkey
+    rely:
+      at_most_one_match: true
+filter: orders.o_clerk = 'Clerk#000001177'
+dimensions:
+  - name: order_status
+    expr: orders.o_orderstatus
+  - name: orders
+    expr: orders
+measures:
+  - name: max_order_date
+    expr: max(orders.o_orderdate)
