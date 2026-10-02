@@ -1,0 +1,7 @@
+# Local-only demonstration that the recreate-reference bug is not postgres-specific. UC
+# resources only hit it via .id (output) references; their idiomatic name references are
+# user-provided inputs that resolve from config. catalogs are direct-only, so this test uses a
+# literal catalog_name (main) to keep both engines runnable.
+Cloud = false
+RecordRequests = true
+EnvMatrix.DMS = []

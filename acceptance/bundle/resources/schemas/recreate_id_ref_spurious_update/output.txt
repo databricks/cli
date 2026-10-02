@@ -1,0 +1,36 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-id-ref-[UNIQUE_NAME]/default/files...
+Created schemas.consumer
+Created schemas.referent
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Recreate referent via storage_root (full_name/.id unchanged)
+>>> update_file.py databricks.yml s3://my-bucket/v1 s3://my-bucket/v2
+
+=== Plan
+>>> [CLI] bundle plan
+update schemas.consumer
+recreate schemas.referent
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+=== Deploy and record per-engine requests (see out.requests.*)
+>>> print_requests.py --sort //schemas
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.consumer
+  delete resources.schemas.referent
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.consumer
+  delete resources.schemas.referent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-id-ref-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted
