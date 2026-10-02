@@ -355,6 +355,8 @@ type appResourceSpec struct {
 }
 
 // appResourceSpecs maps manifest resource types to their DABs AppResource YAML specification.
+// Compat fallback for manifests without a resource binding; it also supplies the default
+// permission when the manifest does not declare one.
 var appResourceSpecs = map[string]appResourceSpec{
 	"sql_warehouse": {
 		yamlKey:    "sql_warehouse",
@@ -373,7 +375,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"experiment": {
 		yamlKey:    "experiment",
-		varFields:  [][2]string{{"id", "experiment_id"}},
+		varFields:  [][2]string{{"experimentId", "experiment_id"}},
 		permission: "CAN_READ",
 	},
 	"secret": {
@@ -398,7 +400,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"volume": {
 		yamlKey:      "uc_securable",
-		varFields:    [][2]string{{"id", "securable_full_name"}},
+		varFields:    [][2]string{{"path", "securable_full_name"}},
 		staticFields: [][2]string{{"securable_type", "VOLUME"}},
 		permission:   "READ_VOLUME",
 	},
@@ -426,6 +428,20 @@ var appResourceSpecs = map[string]appResourceSpec{
 	// 	varFields:  [][2]string{{"id", "name"}},
 	// 	permission: "CAN_USE",
 	// },
+}
+
+// resourceSpec returns the binding spec for a resource, preferring the manifest binding over appResourceSpecs.
+func resourceSpec(r manifest.Resource) (appResourceSpec, bool) {
+	if r.Binding == nil {
+		spec, ok := appResourceSpecs[r.Type]
+		return spec, ok
+	}
+	return appResourceSpec{
+		yamlKey:      r.Binding.YamlKey,
+		varFields:    r.Binding.VarFields,
+		staticFields: r.Binding.StaticFields,
+		permission:   appResourceSpecs[r.Type].permission,
+	}, true
 }
 
 // varNameForField returns the bundle variable name for a specific field of a resource.
@@ -461,7 +477,7 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 	}
 
 	// Include spec varFields not already covered by manifest Fields.
-	if spec, ok := appResourceSpecs[r.Type]; ok {
+	if spec, ok := resourceSpec(r); ok {
 		for _, f := range spec.varFields {
 			if !covered[f[0]] {
 				vars = append(vars, varInfo{
@@ -486,7 +502,7 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 // generateResourceYAML generates YAML for a single app resource based on its type.
 // Uses the appResourceSpecs mapping to produce the correct DABs AppResource structure.
 func generateResourceYAML(r manifest.Resource, indent int) string {
-	spec, ok := appResourceSpecs[r.Type]
+	spec, ok := resourceSpec(r)
 	if !ok {
 		return ""
 	}
