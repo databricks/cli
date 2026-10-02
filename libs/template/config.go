@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"maps"
 	"slices"
@@ -12,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 )
@@ -83,9 +85,34 @@ func (c *config) assignValuesFromFile(path string) error {
 	// the LoadInstance call, we disable the additional properties check,
 	// to allow those properties to be loaded.
 	c.schema.AdditionalProperties = true
-	configFromFile, err := c.schema.LoadInstance(path)
-	c.schema.AdditionalProperties = false
-
+	defer func() {
+		c.schema.AdditionalProperties = false
+	}()
+	var configFromFile map[string]any
+	var err error
+	if strings.HasPrefix(path, "dbfs:/Volumes/") {
+		var f filer.Filer
+		f, err = filer.NewFilesClient(c.ctx, cmdctx.WorkspaceClient(c.ctx), "/")
+		if err != nil {
+			return fmt.Errorf("failed to load config from file %s: %w", path, err)
+		}
+		var reader io.ReadCloser
+		reader, err = f.Read(c.ctx, strings.TrimPrefix(path, "dbfs:"))
+		if err != nil {
+			return fmt.Errorf("failed to load config from file %s: %w", path, err)
+		}
+		contents, readErr := io.ReadAll(reader)
+		closeErr := reader.Close()
+		if readErr != nil {
+			return fmt.Errorf("failed to load config from file %s: %w", path, readErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("failed to load config from file %s: %w", path, closeErr)
+		}
+		configFromFile, err = c.schema.LoadInstanceFromBytes(contents)
+	} else {
+		configFromFile, err = c.schema.LoadInstance(path)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to load config from file %s: %w", path, err)
 	}
