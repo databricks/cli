@@ -26,7 +26,7 @@ func TestNewRegistersAllSubcommands(t *testing.T) {
 func TestNewHelpMetadata(t *testing.T) {
 	cmd := New()
 
-	assert.Equal(t, "air", cmd.GroupID)
+	assert.Equal(t, "development", cmd.GroupID)
 	assert.Contains(t, cmd.Short, "*Public Preview*")
 }
 
