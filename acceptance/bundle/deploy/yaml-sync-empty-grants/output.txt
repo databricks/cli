@@ -1,6 +1,6 @@
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/yaml-sync-empty-grants/default/files...
-Created schemas.schema1
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+>>> musterr [CLI] bundle deploy
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details

@@ -21,6 +21,15 @@ const (
 // for existing terraform deployments (which are migrated to it after a deploy).
 const Default = EngineDirect
 
+// TerraformRemovedMessage is the error text shown when a bundle pins the removed
+// Terraform deployment engine, via bundle.engine or DATABRICKS_BUNDLE_ENGINE.
+// "terraform" is still recognized as a value so we can point at this specific
+// removal rather than reporting it as an unrecognized setting.
+const TerraformRemovedMessage = `the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details`
+
 // SourceDefault is the Source of an EngineSetting that neither the bundle config
 // nor the env var requested.
 const SourceDefault = "default"
@@ -44,7 +53,7 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
 	if !ok {
-		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
+		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'direct')", EnvVar, value)
 	}
 	return engine, nil
 }

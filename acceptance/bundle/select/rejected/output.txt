@@ -1,12 +1,12 @@
 
->>> [CLI] bundle plan --select my_job
-Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+>>> musterr [CLI] bundle plan --select my_job
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
 
-Exit code: 1
+>>> musterr [CLI] bundle deploy --select my_job
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
->>> [CLI] bundle deploy --select my_job
-Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
-
-
-Exit code: 1
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details

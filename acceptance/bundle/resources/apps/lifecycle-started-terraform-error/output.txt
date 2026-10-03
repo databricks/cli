@@ -1,16 +1,14 @@
 
 === bundle plan fails with lifecycle.started on terraform engine
->>> errcode [CLI] bundle plan
-Error: lifecycle.started is only supported in direct deployment mode
-  in databricks.yml:11:18
+>>> musterr [CLI] bundle plan
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
-
-Exit code: 1
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
 
 === bundle deploy fails with lifecycle.started on terraform engine
->>> errcode [CLI] bundle deploy
-Error: lifecycle.started is only supported in direct deployment mode
-  in databricks.yml:11:18
+>>> musterr [CLI] bundle deploy
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
-
-Exit code: 1
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
