@@ -194,6 +194,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 

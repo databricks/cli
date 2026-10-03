@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.foo.development
+  in databricks.yml:14:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created pipelines.foo
 Created schemas.bar
@@ -13,7 +17,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "comment": "This schema was created from DABs"
 }
 
-=== Assert the pipeline is created and uses the schema
+=== Assert the pipeline is created and uses the schemaWarning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.foo.development
+  in databricks.yml:14:20
+
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -54,6 +62,10 @@ test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/main/test-schema-[UNIQUE_NAME]/test
 
 === Try to redeploy the bundle - should fail without --auto-approve
 >>> [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.foo.development
+  in databricks.yml:14:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
@@ -66,6 +78,10 @@ Files: 1 uploaded, 1 deleted
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.foo.development
+  in databricks.yml:14:20
+
 The following resources will be deleted:
   delete resources.pipelines.foo
   delete resources.schemas.bar

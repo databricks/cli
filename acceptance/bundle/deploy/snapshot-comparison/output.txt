@@ -1,6 +1,10 @@
 
 === Deploy bundle 1 with terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.test_pipeline.development
+  in databricks.yml:14:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/snapshot-test-1-[UNIQUE_NAME]/default/files...
 Created jobs.test_job
 Created pipelines.test_pipeline
@@ -9,6 +13,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Run migrate on bundle 1
 >>> [CLI] bundle deployment migrate
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.test_pipeline.development
+  in databricks.yml:14:20
+
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/bundle1/.databricks/bundle/default/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
@@ -20,6 +28,10 @@ To undo the migration, remove [TEST_TMP_DIR]/bundle1/.databricks/bundle/default/
 
 === Deploy bundle 2 with terraform and YamlSync
 >>> DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC=true DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.test_pipeline.development
+  in databricks.yml:14:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/files...
 Created jobs.test_job
 Created pipelines.test_pipeline
@@ -40,6 +52,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Cleanup bundle 1
 >>> [CLI] bundle destroy --auto-approve
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.test_pipeline.development
+  in databricks.yml:14:20
+
 The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline
@@ -54,6 +70,10 @@ Destroy: 2 deleted
 
 === Cleanup bundle 2
 >>> [CLI] bundle destroy --auto-approve
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.test_pipeline.development
+  in databricks.yml:14:20
+
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 The following resources will be deleted:
   delete resources.jobs.test_job

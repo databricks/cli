@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/run/progress"
@@ -94,7 +95,12 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient(ctx)
 
-	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
+	// The preset is defaulted to true by "mode: development" and honors an explicit opt-out.
+	// Also require the resolved pipeline value: a Python mutator can set it back to false
+	// after the preset is applied, and that deployed false must keep winning.
+	development := config.IsExplicitlyEnabled(r.bundle.Config.Presets.PipelinesDevelopment) && r.pipeline.Development
+
+	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID, development)
 	if err != nil {
 		return nil, err
 	}
