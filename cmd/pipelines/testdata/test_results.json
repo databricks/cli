@@ -1,0 +1,12 @@
+{
+  "update_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c",
+  "pipeline_id": "2d0401ce-8229-4795-926f-c3991369655e",
+  "summary": {
+    "total": 4,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 1,
+    "errors": 1
+  },
+  "duration_seconds": 0
+}

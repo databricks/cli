@@ -1,0 +1,27 @@
+Running 4 pipeline tests for 2d0401ce-8229-4795-926f-c3991369655e (update 3627a3a1-2374-4bc2-981f-49bb81ef662c)
+
+PASS   test_demo.py::test_pass (<0.01s)
+FAIL   test_demo.py::test_fail (<0.01s)
+SKIP   test_demo.py::test_skip
+ERROR  test_demo.py::test_error
+
+Failures:
+
+FAIL  test_demo.py::test_fail (test_demo.py:8)
+  AssertionError: intentional demo failure
+  def test_fail():
+  >       assert 1 + 1 == 3, "intentional demo failure"
+  E       AssertionError: intentional demo failure
+
+  Workspace/Shared/sdp_m2_20260918/test_demo.py:9: AssertionError
+
+ERROR test_demo.py::test_error (test_demo.py:22)
+  RuntimeError: intentional setup error for demo
+  @pytest.fixture
+      def broken_setup():
+  >       raise RuntimeError("intentional setup error for demo")
+  E       RuntimeError: intentional setup error for demo
+
+  Workspace/Shared/sdp_m2_20260918/test_demo.py:19: RuntimeError
+
+4 tests: 1 passed, 1 failed, 1 skipped, 1 errors

@@ -30,6 +30,7 @@ Main Commands
   run                   Run a pipeline
   show                  Preview a table's columns and sample rows
   stop                  Stop a pipeline
+  test                  Run the tests for a pipeline
 
 Management Commands
   apply-environment     *Public Preview* Apply the latest environment to the pipeline.
