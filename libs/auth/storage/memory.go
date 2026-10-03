@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 
 	"golang.org/x/oauth2"
@@ -30,6 +31,12 @@ func cloneToken(t *oauth2.Token) *oauth2.Token {
 func cloneEntry(e Entry) Entry {
 	e.Token = cloneToken(e.Token)
 	return e
+}
+
+// Lock implements Store. Process memory is not shared with other processes,
+// so there is nothing to coordinate.
+func (s *memoryStore) Lock(context.Context) (func(), error) {
+	return func() {}, nil
 }
 
 // Put implements Store.

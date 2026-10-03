@@ -12,6 +12,7 @@ import (
 
 // testStore is a minimal in-memory Store used only by wrapper tests.
 type testStore struct {
+	noLock
 	mu      sync.Mutex
 	entries map[string]Entry
 }
