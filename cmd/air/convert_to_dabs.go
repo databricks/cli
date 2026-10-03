@@ -281,7 +281,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	name := cfg.ExperimentName
 
 	// ai_runtime_task: experiment + one deployment (command_path + compute) +
-	// code_source_path. Only the fields the strict schema allows.
+	// code_source_path and task-level runtime settings. Only the fields the strict
+	// schema allows.
 	//
 	// command_path is "./"-prefixed so bundle deploy treats it as LOCAL and uploads
 	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
@@ -319,6 +320,14 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	}
 	if cfg.MLflowArtifactLocation != nil {
 		aiRuntimeTask["mlflow_artifact_location"] = nv(*cfg.MLflowArtifactLocation, line)
+		line++
+	}
+	if cfg.Compute.PriorityClass != nil {
+		aiRuntimeTask["priority_class"] = nv(*cfg.Compute.PriorityClass, line)
+		line++
+	}
+	if cfg.Environment != nil && cfg.Environment.UnityCatalogImage != "" {
+		aiRuntimeTask["unity_catalog_image_path"] = nv(cfg.Environment.UnityCatalogImage, line)
 	}
 
 	// Task wrapper: task_key + framework fields (retries/timeout) + env key +
