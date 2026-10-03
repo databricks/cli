@@ -1,9 +1,11 @@
 package clusters
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -93,8 +95,26 @@ func sparkVersionsOverride(sparkVersionsCmd *cobra.Command) {
 	`)
 }
 
+// startIdempotentOverride matches the generated help text: starting a cluster
+// that is not TERMINATED is a no-op. The Clusters API returns INVALID_STATE
+// (ErrInvalidState) for that case, which made scripts fail despite the docs.
+func startIdempotentOverride(startCmd *cobra.Command, _ *compute.StartCluster) {
+	originalRunE := startCmd.RunE
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+		if err == nil {
+			return nil
+		}
+		if errors.Is(err, apierr.ErrInvalidState) {
+			return nil
+		}
+		return err
+	}
+}
+
 func init() {
 	listOverrides = append(listOverrides, listOverride)
 	listNodeTypesOverrides = append(listNodeTypesOverrides, listNodeTypesOverride)
 	sparkVersionsOverrides = append(sparkVersionsOverrides, sparkVersionsOverride)
+	startOverrides = append(startOverrides, startIdempotentOverride)
 }
