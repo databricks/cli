@@ -190,6 +190,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Description:          config.Description,
 		EditMode:             config.EditMode,
 		EmailNotifications:   config.EmailNotifications,
+		EnvironmentVariables: config.EnvironmentVariables,
 		Environments:         config.Environments,
 		Format:               config.Format,
 		GitSource:            config.GitSource,

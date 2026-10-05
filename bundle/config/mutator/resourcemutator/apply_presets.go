@@ -100,6 +100,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
+			//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {

@@ -166,7 +166,7 @@ AI Functions
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
-  workspace-entity-tag-assignments       *Beta* Manage tag assignments on workspace-scoped objects.
+  workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.
 
 Postgres
   postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.

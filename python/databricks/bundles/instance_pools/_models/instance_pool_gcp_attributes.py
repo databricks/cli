@@ -23,8 +23,12 @@ class InstancePoolGcpAttributes:
 
     gcp_availability: VariableOrOptional[GcpAvailability] = None
     """
-    This field determines whether the instance pool will contain preemptible
-    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    Availability type for the instances in the pool. One of:
+    
+    - `ON_DEMAND_GCP`: the pool uses on-demand instances only.
+    - `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.
+    - `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls
+      back to on-demand instances when preemptible capacity is unavailable.
     """
 
     local_ssd_count: VariableOrOptional[int] = None
@@ -44,9 +48,13 @@ class InstancePoolGcpAttributes:
     
     This field can be one of the following:
     - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region
+    - "auto" => Auto-AZ. Databricks selects the availability zone for each cluster independently when the cluster launches, and retries another zone if the cluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster land in the same zone, and different clusters backed by the pool can run in different zones.
     - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones (e.g. "us-west1-a").
     
     If empty, Databricks picks an availability zone to schedule the cluster on.
+    
+    You can change the zone on an existing pool. New clusters use the updated zone, and existing
+    clusters keep the zone they launched with.
     """
 
     @classmethod
@@ -62,8 +70,12 @@ class InstancePoolGcpAttributesDict(TypedDict, total=False):
 
     gcp_availability: VariableOrOptional[GcpAvailabilityParam]
     """
-    This field determines whether the instance pool will contain preemptible
-    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    Availability type for the instances in the pool. One of:
+    
+    - `ON_DEMAND_GCP`: the pool uses on-demand instances only.
+    - `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.
+    - `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls
+      back to on-demand instances when preemptible capacity is unavailable.
     """
 
     local_ssd_count: VariableOrOptional[int]
@@ -83,9 +95,13 @@ class InstancePoolGcpAttributesDict(TypedDict, total=False):
     
     This field can be one of the following:
     - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region
+    - "auto" => Auto-AZ. Databricks selects the availability zone for each cluster independently when the cluster launches, and retries another zone if the cluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster land in the same zone, and different clusters backed by the pool can run in different zones.
     - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones (e.g. "us-west1-a").
     
     If empty, Databricks picks an availability zone to schedule the cluster on.
+    
+    You can change the zone on an existing pool. New clusters use the updated zone, and existing
+    clusters keep the zone they launched with.
     """
 
 

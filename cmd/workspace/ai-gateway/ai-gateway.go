@@ -41,20 +41,26 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreateMcpServiceUserMappedCredential())
 	cmd.AddCommand(newCreateModelProviderService())
 	cmd.AddCommand(newCreateModelService())
+	cmd.AddCommand(newCreateSkill())
 	cmd.AddCommand(newDeleteMcpService())
 	cmd.AddCommand(newDeleteMcpServiceUserMappedCredential())
 	cmd.AddCommand(newDeleteModelProviderService())
 	cmd.AddCommand(newDeleteModelService())
+	cmd.AddCommand(newDeleteSkill())
+	cmd.AddCommand(newFinalizeSkill())
 	cmd.AddCommand(newGetMcpService())
 	cmd.AddCommand(newGetMcpServiceUserMappedCredential())
 	cmd.AddCommand(newGetModelProviderService())
 	cmd.AddCommand(newGetModelService())
+	cmd.AddCommand(newGetSkill())
 	cmd.AddCommand(newListMcpServices())
 	cmd.AddCommand(newListModelProviderServices())
 	cmd.AddCommand(newListModelServices())
+	cmd.AddCommand(newListSkills())
 	cmd.AddCommand(newUpdateMcpService())
 	cmd.AddCommand(newUpdateModelProviderService())
 	cmd.AddCommand(newUpdateModelService())
+	cmd.AddCommand(newUpdateSkill())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -424,6 +430,97 @@ func newCreateModelService() *cobra.Command {
 	return cmd
 }
 
+// start create-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSkillOverrides []func(
+	*cobra.Command,
+	*catalog.CreateSkillRequest,
+)
+
+func newCreateSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSkillReq catalog.CreateSkillRequest
+	createSkillReq.Skill = catalog.Skill{}
+	var createSkillJson flags.JsonFlag
+
+	cmd.Flags().Var(&createSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSkillReq.Skill.Comment, "comment", createSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&createSkillReq.Skill.Name, "name", createSkillReq.Skill.Name, `Resource name of the skill.`)
+
+	cmd.Use = "create-skill PARENT SKILL_ID"
+	cmd.Short = `*Beta* Create a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a skill.
+
+  Creates a skill in a Unity Catalog schema and provisions its managed bundle
+  storage. Specify its name in skill_id. The request contains an optional
+  comment but no bundle bytes. Upload bundle files through the Files API, then
+  call FinalizeSkill.
+
+  You must be the owner of the parent schema or have CREATE_VOLUME and
+  USE_SCHEMA on it, plus USE_CATALOG on the parent catalog.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    SKILL_ID: Name for the skill, e.g. "basic-math". The server normalizes this
+      identifier to lowercase. It is independent of the bundle name read from
+      SKILL.md.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSkillJson.Unmarshal(&createSkillReq.Skill)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createSkillReq.Parent = args[0]
+		createSkillReq.SkillId = args[1]
+
+		response, err := w.AiGateway.CreateSkill(ctx, createSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSkillOverrides {
+		fn(cmd, &createSkillReq)
+	}
+
+	return cmd
+}
+
 // start delete-mcp-service command
 
 // Slice with functions to override default command behavior.
@@ -687,6 +784,149 @@ func newDeleteModelService() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteModelServiceOverrides {
 		fn(cmd, &deleteModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start delete-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSkillOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteSkillRequest,
+)
+
+func newDeleteSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSkillReq catalog.DeleteSkillRequest
+
+	cmd.Flags().StringVar(&deleteSkillReq.Etag, "etag", deleteSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
+
+	cmd.Use = "delete-skill NAME"
+	cmd.Short = `*Beta* Delete a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a skill.
+
+  Deletes the skill identified by its resource name and makes its managed bundle
+  path unavailable. Managed bundle data is deleted asynchronously. Optionally
+  supply an etag to make the delete conditional on the skill not having
+  changed since it was read.
+
+  You must be the owner of the skill or have MANAGE on it, plus USE_CATALOG
+  on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteSkillReq.Name = args[0]
+
+		err = w.AiGateway.DeleteSkill(ctx, deleteSkillReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSkillOverrides {
+		fn(cmd, &deleteSkillReq)
+	}
+
+	return cmd
+}
+
+// start finalize-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var finalizeSkillOverrides []func(
+	*cobra.Command,
+	*catalog.FinalizeSkillRequest,
+)
+
+func newFinalizeSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var finalizeSkillReq catalog.FinalizeSkillRequest
+
+	cmd.Use = "finalize-skill NAME"
+	cmd.Short = `*Beta* Finalize a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Finalize a skill.
+
+  Finalizes a skill after its bundle is uploaded. This method reads SKILL.md
+  through the Files API using the caller's authorization. Its YAML frontmatter
+  must contain an agentskills.io-compliant name and a nonblank description
+  within the configured UTF-8 byte limit. On success, it replaces bundle_name
+  and description; refreshes finalize_time, update_time, and updated_by;
+  and returns the updated skill. comment is preserved. Re-finalization uses
+  the latest SKILL.md and is last-write-wins without an etag precondition.
+  Validation failures do not change metadata.
+
+  You must be the owner of the skill or have READ_VOLUME on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		finalizeSkillReq.Name = args[0]
+
+		response, err := w.AiGateway.FinalizeSkill(ctx, finalizeSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range finalizeSkillOverrides {
+		fn(cmd, &finalizeSkillReq)
 	}
 
 	return cmd
@@ -957,6 +1197,73 @@ func newGetModelService() *cobra.Command {
 	return cmd
 }
 
+// start get-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSkillOverrides []func(
+	*cobra.Command,
+	*catalog.GetSkillRequest,
+)
+
+func newGetSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSkillReq catalog.GetSkillRequest
+
+	cmd.Use = "get-skill NAME"
+	cmd.Short = `*Beta* Get a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a skill.
+
+  Returns the skill identified by its resource name.
+
+  You must be the owner of the skill or have READ_VOLUME, READ_METADATA, or
+  MANAGE on it, plus USE_CATALOG on the parent catalog and USE_SCHEMA on
+  the parent schema.
+
+  Arguments:
+    NAME: Full resource name of the skill. Format:
+      skills/{catalog}.{schema}.{skill}. Each {...} component is capped at
+      255 characters individually.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSkillReq.Name = args[0]
+
+		response, err := w.AiGateway.GetSkill(ctx, getSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSkillOverrides {
+		fn(cmd, &getSkillReq)
+	}
+
+	return cmd
+}
+
 // start list-mcp-services command
 
 // Slice with functions to override default command behavior.
@@ -1191,6 +1498,93 @@ func newListModelServices() *cobra.Command {
 	return cmd
 }
 
+// start list-skills command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSkillsOverrides []func(
+	*cobra.Command,
+	*catalog.ListSkillsRequest,
+)
+
+func newListSkills() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSkillsReq catalog.ListSkillsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSkillsLimit int
+
+	cmd.Flags().IntVar(&listSkillsReq.PageSize, "page-size", listSkillsReq.PageSize, `Maximum number of skills to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSkillsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSkillsReq.PageToken, "page-token", listSkillsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-skills PARENT"
+	cmd.Short = `*Beta* List skills.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List skills.
+
+  Lists skills in a Unity Catalog schema. Provide parent as
+  schemas/{catalog}.{schema}. Results are paginated; pass the returned
+  next_page_token to fetch subsequent pages.
+
+  Requires USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
+  schema. Only skills the caller can access as owner or through READ_VOLUME,
+  READ_METADATA, or MANAGE are returned.
+
+  Arguments:
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+
+      Required: skill listing is schema-scoped, so parent must be set; an
+      unset or empty parent is rejected with INVALID_PARAMETER_VALUE.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listSkillsReq.Parent = args[0]
+
+		response := w.AiGateway.ListSkills(ctx, listSkillsReq)
+		if listSkillsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSkillsLimit)
+		}
+		if listSkillsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSkillsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSkillsOverrides {
+		fn(cmd, &listSkillsReq)
+	}
+
+	return cmd
+}
+
 // start update-mcp-service command
 
 // Slice with functions to override default command behavior.
@@ -1326,8 +1720,9 @@ func newUpdateModelProviderService() *cobra.Command {
   plus USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
   schema.
 
-  Updating config.provider cannot change the provider type or switch between
-  Unity Catalog service-credential authentication and inline authentication.
+  Updating config.provider cannot change the provider type. Authentication
+  mode changes require feature availability and support for both modes on the
+  selected provider.
 
   Arguments:
     NAME: Resource name of the provider service. Format:
@@ -1343,7 +1738,9 @@ func newUpdateModelProviderService() *cobra.Command {
       config.allow_all_targets, config.targets, config.forward_headers,
       config.forward_query_parameters, config.forward_unmanaged_paths,
       config.rate_limits, or config.inference_table. The provider type is
-      immutable.`
+      immutable. A config or config.provider replacement that carries no
+      authentication material preserves the existing authentication binding;
+      input-only plaintext does not need to be read back and re-sent.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1499,6 +1896,102 @@ func newUpdateModelService() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateModelServiceOverrides {
 		fn(cmd, &updateModelServiceReq)
+	}
+
+	return cmd
+}
+
+// start update-skill command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSkillOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateSkillRequest,
+)
+
+func newUpdateSkill() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSkillReq catalog.UpdateSkillRequest
+	updateSkillReq.Skill = catalog.Skill{}
+	var updateSkillJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSkillReq.Etag, "etag", updateSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&updateSkillReq.Skill.Name, "name", updateSkillReq.Skill.Name, `Resource name of the skill.`)
+
+	cmd.Use = "update-skill NAME UPDATE_MASK"
+	cmd.Short = `*Beta* Update a skill.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a skill.
+
+  Updates a skill. Only fields named in update_mask are changed; currently
+  only comment is supported. The resource name is immutable. Optionally supply
+  an etag to make the update conditional on the skill not having changed since
+  it was read. Bundle files, grants, tags, and ownership are unchanged.
+
+  You must be the owner of the skill or have MANAGE on it, plus USE_CATALOG
+  on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the skill. Format: skills/{catalog}.{schema}.{skill}.
+      Each {...} component is capped at 255 characters individually.
+      Server-derived on Create from parent + skill_id; required and
+      immutable on Update/Get/Delete.
+    UPDATE_MASK: Fields to update; validated against skill. REQUIRED, matching the
+      sibling Update RPCs. comment is the only mutable field.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSkillJson.Unmarshal(&updateSkillReq.Skill)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSkillReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateSkillReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.AiGateway.UpdateSkill(ctx, updateSkillReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSkillOverrides {
+		fn(cmd, &updateSkillReq)
 	}
 
 	return cmd

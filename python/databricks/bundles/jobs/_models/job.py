@@ -29,6 +29,10 @@ from databricks.bundles.jobs._models.job_environment import (
     JobEnvironment,
     JobEnvironmentParam,
 )
+from databricks.bundles.jobs._models.job_environment_variables import (
+    JobEnvironmentVariables,
+    JobEnvironmentVariablesParam,
+)
 from databricks.bundles.jobs._models.job_notification_settings import (
     JobNotificationSettings,
     JobNotificationSettingsParam,
@@ -99,6 +103,18 @@ class Job(Resource):
     email_notifications: VariableOrOptional[JobEmailNotifications] = None
     """
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
+    """
+
+    environment_variables: VariableOrList[JobEnvironmentVariables] = field(
+        default_factory=list
+    )
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Named environment-variable entries that tasks can reference by key from
+    `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+    `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+    can reference at most one entry from this list.
     """
 
     environments: VariableOrList[JobEnvironment] = field(default_factory=list)
@@ -274,6 +290,16 @@ class JobDict(TypedDict, total=False):
     email_notifications: VariableOrOptional[JobEmailNotificationsParam]
     """
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
+    """
+
+    environment_variables: VariableOrList[JobEnvironmentVariablesParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Named environment-variable entries that tasks can reference by key from
+    `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+    `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+    can reference at most one entry from this list.
     """
 
     environments: VariableOrList[JobEnvironmentParam]
