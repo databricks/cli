@@ -321,7 +321,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// direct engine. Migrate is in-memory and reversible - nothing is written or pushed - so
 		// plan, run, and a declined deploy just drop it; deploy makes it durable by calling
 		// CommitMigration after approval, destroy as part of its teardown. The Terraform engine
-		// was removed in v1.19.0, so a migration failure is fatal - there is no engine to fall
+		// was removed in v1.20.0, so a migration failure is fatal - there is no engine to fall
 		// back to. Read-only commands that do not need state keep reading the Terraform state.
 		if b.MigratingToDirect && needsState {
 			if err := migrateTerraformToDirect(ctx, b, stateDesc); err != nil {
