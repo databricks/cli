@@ -171,10 +171,10 @@ func isScalarKind(k reflect.Kind) bool {
 
 // filterOwnFields returns the names that name a field directly declared on ownerType.
 // Unlike reflect.Type.FieldByName it does not follow promotion, so a promoted field of an
-// embedded struct is not treated as belonging to the outer struct. Marker names are matched
-// by Go field name (the ForceSendFields convention), so a field the copier maps across a
-// differing Go name under the same JSON name is not force-sent on the destination — this
-// matches the SDK's own utils.FilterFields behavior that the hand-written copies used.
+// embedded struct is not treated as belonging to the outer struct — that is what keeps a
+// wrapper's shadow ForceSendFields slice from inheriting an embedded spec's field names.
+// Markers are matched by Go field name (the ForceSendFields convention), so a field the copier
+// maps across a differing Go name under the same JSON name is not force-sent on the destination.
 func filterOwnFields(ownerType reflect.Type, names []string) []string {
 	own := make(map[string]bool, ownerType.NumField())
 	for field := range ownerType.Fields() {
