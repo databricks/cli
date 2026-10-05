@@ -185,3 +185,44 @@ func TestNoSameDepthJSONShadows(t *testing.T) {
 		"same-depth json name collisions found — encoding/json calls these ambiguous "+
 			"and serializes neither; structaccess cannot read or write them either")
 }
+
+// TestNoAnonymousPointerEmbeds forbids embedding a struct by pointer anywhere a resource can
+// reach. encoding/json promotes the fields of a *T embed the same as a T embed and resolves a
+// name to the shallower declaration regardless of whether the pointer is nil. structaccess
+// walks the value instead of the type: it skips a nil embedded pointer, so the field it
+// promotes is unreachable to Get and Set even though encoding/json still resolves the name to
+// it — serialized as absent (nil pointer) on the way out, allocated on the way in. A same-named
+// field deeper down then makes Get fall through to a field the wire format never carries.
+//
+// Embedding by value removes the nil case, so the shallower declaration always wins at the
+// value level too and structaccess agrees with encoding/json. No resource embeds a pointer
+// today; this keeps it that way rather than teaching structaccess to resolve on the type.
+func TestNoAnonymousPointerEmbeds(t *testing.T) {
+	seen := map[reflect.Type]bool{}
+	var offenders []string
+
+	var walk func(path string, ty reflect.Type)
+	walk = func(path string, ty reflect.Type) {
+		for ty.Kind() == reflect.Pointer || ty.Kind() == reflect.Slice || ty.Kind() == reflect.Map {
+			ty = ty.Elem()
+		}
+		if ty.Kind() != reflect.Struct || seen[ty] {
+			return
+		}
+		seen[ty] = true
+		for sf := range ty.Fields() {
+			if sf.Anonymous && sf.Type.Kind() == reflect.Pointer {
+				offenders = append(offenders,
+					fmt.Sprintf("%s embeds *%s by pointer", path, sf.Type.Elem().String()))
+			}
+			walk(path+"."+sf.Name, sf.Type)
+		}
+	}
+	walk("Resources", reflect.TypeFor[Resources]())
+
+	slices.Sort(offenders)
+	assert.Empty(t, offenders,
+		"a resource embeds a struct by pointer; a nil embedded pointer hides its promoted "+
+			"fields from structaccess while encoding/json still resolves names to them — "+
+			"embed by value instead")
+}
