@@ -1,0 +1,37 @@
+bundle:
+  name: job-runs-on-value-change-ref
+
+variables:
+  suffix:
+    default: suffix
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+    other:
+      name: other-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+    extra:
+      name: extra-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_value_change: ${resources.jobs.other.id}
+          - on_value_change: ${resources.jobs.other.id}-${var.suffix}-${resources.jobs.extra.id}
