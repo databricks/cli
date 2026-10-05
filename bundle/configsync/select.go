@@ -110,16 +110,17 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 	return keys, nil
 }
 
-// CheckSelectedInConfig fails when a selected resource is deployed but its key
-// is no longer in the configuration. Such a resource is planned as a delete with
-// no changes, so the run would otherwise report success and drop its remote
-// edits. Unlike a stale selector this fails the whole batch: the edits still
-// exist remotely and have nowhere to be written back.
+// CheckSelectedInConfig fails when selected resources are deployed but no longer
+// in the configuration. Unlike a stale selector, this fails the whole batch.
 func CheckSelectedInConfig(root dyn.Value, selected []string) error {
+	var missing []string
 	for _, key := range selected {
 		if _, err := dyn.Get(root, key); err != nil {
-			return fmt.Errorf("deployed resource %s is not in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced", key)
+			missing = append(missing, key)
 		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 	}
 	return nil
 }
