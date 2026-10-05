@@ -137,7 +137,7 @@ Resource: resources.pipelines.my_pipeline
   "refs_retargeted": 1,
   "refs_from_siblings": 7,
   "state_serial": [SERIAL],
-  "state_lineage": "[LINEAGE]",
+  "state_lineage": "[LINEAGE_HASH]",
   "state_source": "local",
   "states_available_count": 2,
   "state_resource_ids": {

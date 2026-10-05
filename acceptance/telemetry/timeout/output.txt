@@ -34,7 +34,7 @@ HH:MM:SS Info: telemetry upload failed: uploading telemetry logs timed out: Post
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -52,7 +52,7 @@ HH:MM:SS Info: telemetry upload failed: uploading telemetry logs timed out: Post
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",

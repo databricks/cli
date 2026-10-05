@@ -13,6 +13,7 @@ trap cleanup EXIT
 
 touch dummy.whl
 $CLI bundle deploy
+read_lineage.py > /dev/null
 job_id="$(read_id.py my_job)"
 
 
