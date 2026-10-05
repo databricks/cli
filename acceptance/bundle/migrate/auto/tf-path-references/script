@@ -1,0 +1,25 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# The config references other resources by Terraform field paths (see
+# resource_deps/tf_path_renames). Terraform resolved them on the original deploy; after
+# migration the direct engine must resolve them to the same values.
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+title "Plan migrates in memory: the terraform-path references resolve to the deployed values"
+trace $CLI bundle plan
+
+title "Deploy commits the migration without changing any resource"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Migrated state keeps the resolved names"
+trace print_state.py | jq -r '.state | to_entries[] | select(.key | startswith("resources.jobs.dst")) | "\(.key) \(.value.state.name)"'
+
+title "Redeploy is a no-op on direct"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"

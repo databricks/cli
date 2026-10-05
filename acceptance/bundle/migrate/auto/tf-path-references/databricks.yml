@@ -1,0 +1,38 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    src_pipeline:
+      name: source-pipeline
+      clusters:
+        - label: mycluster
+          num_workers: 1
+
+  jobs:
+    src_git:
+      name: src-git
+      git_source:
+        git_branch: main
+        git_url: https://github.com/databricks/cli
+        git_provider: gitHub
+    dst_git:
+      # "git_source[0].branch": git_source is a TF list-block ([0] required),
+      # "branch" is the TF field name for DABs "git_branch".
+      name: ${resources.jobs.src_git.git_source[0].branch}
+
+    src_tasks:
+      name: src-tasks
+      tasks:
+        - task_key: main
+          libraries:
+            - whl: /path/to/wheel.whl
+          notebook_task:
+            notebook_path: /Workspace/notebook
+    dst_tasks:
+      # "task[0].library[0].whl": "task" → "tasks", "library" → "libraries" (two renames).
+      name: ${resources.jobs.src_tasks.task[0].library[0].whl}
+
+    dst_pipeline:
+      # "cluster[0].label": "cluster" is TF name for DABs "clusters" on pipelines.
+      name: ${resources.pipelines.src_pipeline.cluster[0].label}
