@@ -145,7 +145,6 @@ tasks:
       # and cannot be resolved from this nested module.
       - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --disable gocritic ./..."
 
-
   lint-q-go-root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ — use `lint` for full coverage.
     sources:
@@ -248,7 +247,6 @@ tasks:
       - "**/*.go"
     cmds:
       - "go mod tidy"
-
 
   ws:
     desc: Fix whitespace issues
@@ -484,7 +482,6 @@ tasks:
           --rerun-fails \
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-10m}
-
 
   test-acc:
     desc: Run acceptance tests
@@ -958,8 +955,6 @@ tasks:
       - bundle/internal/validation/generated/**/*.go
     cmds:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
-
-
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
