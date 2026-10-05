@@ -2,14 +2,6 @@ package terraform
 
 import "strings"
 
-// BindOptions configures binding a bundle resource to an existing remote resource.
-type BindOptions struct {
-	AutoApprove  bool
-	ResourceType string
-	ResourceKey  string
-	ResourceId   string
-}
-
 var prefixToGroup = []struct{ prefix, group string }{
 	{"job_", "jobs"},
 	{"pipeline_", "pipelines"},
@@ -31,7 +23,7 @@ var grantsPrefix = []struct{ prefix, group string }{
 	{"registered_model_", "registered_models"},
 }
 
-// convertPermissionsResourceNameToKey converts terraform permission resource names back to hierarchical resource keys
+// convertPermissionResourceNameToKey converts terraform permission resource names back to hierarchical resource keys
 // e.g., "mlflow_experiment_foo" -> "resources.experiments.foo.permissions"
 func convertPermissionsResourceNameToKey(terraformName string) string {
 	for _, pg := range prefixToGroup {
