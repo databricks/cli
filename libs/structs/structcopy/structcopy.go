@@ -30,7 +30,8 @@ type Copier struct {
 }
 
 type copyOp struct {
-	// forceSendFields ops recompute a ForceSendFields slice; field-copy ops move one field.
+	// If true, this op writes a filtered ForceSendFields slice to dstIndex.
+	// Otherwise it copies the field at srcIndex to dstIndex.
 	forceSendFields bool
 
 	dstIndex []int // FieldByIndex path in the destination struct
