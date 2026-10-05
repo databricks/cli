@@ -374,7 +374,7 @@ code_source:
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
-	require.ErrorContains(t, err, "remote_volume is not supported")
+	require.ErrorContains(t, err, "remote_volume in code_source is not supported")
 }
 
 // env_variables / secrets / parameters ride as sidecar files (the ai_runtime_task

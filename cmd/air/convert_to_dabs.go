@@ -130,7 +130,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		// artifact location is set bundle-wide via workspace.artifact_path, not
 		// per-code-source, so a per-source Volume isn't representable here.
 		if snap.RemoteVolume != nil {
-			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
+			return nil, nil, errors.New("remote_volume in code_source is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
 		}
 	}
 

@@ -138,13 +138,15 @@ func TestLoadRunConfigWithOverrides(t *testing.T) {
 		assert.Equal(t, "0", cfg.EnvVariables["RANK"])
 	})
 
-	t.Run("intermediate maps are auto-created", func(t *testing.T) {
-		cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{"code_source.type=snapshot", "code_source.snapshot.root_path=/Workspace/x"})
-		require.NoError(t, err)
-		require.NotNil(t, cfg.CodeSource)
-		require.NotNil(t, cfg.CodeSource.Snapshot)
-		assert.Equal(t, "/Workspace/x", cfg.CodeSource.Snapshot.RootPath)
-	})
+	for _, path := range []string{"code_source.root_path", "code_source.snapshot.root_path"} {
+		t.Run(path+" override", func(t *testing.T) {
+			cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{path + "=/Workspace/x"})
+			require.NoError(t, err)
+			require.NotNil(t, cfg.CodeSource)
+			require.NotNil(t, cfg.CodeSource.Snapshot)
+			assert.Equal(t, "/Workspace/x", cfg.CodeSource.Snapshot.RootPath)
+		})
+	}
 
 	t.Run("unity catalog image override applies", func(t *testing.T) {
 		cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{"environment.unity_catalog_image=main.air.training:prod"})
