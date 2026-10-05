@@ -1,4 +1,5 @@
 trace $CLI selftest send-telemetry --debug
+extract_command_exec_id.py > /dev/null
 
 # pretty print the telemetry payload.
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'

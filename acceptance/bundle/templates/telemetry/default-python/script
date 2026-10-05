@@ -5,10 +5,8 @@ $CLI bundle init default-python --config-file input.json --output-dir output
 mv output/my_default_python/databricks.yml out.databricks.yml
 rm -r output
 
-bundle_uuid=$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)
-
-update_file.py "$OUT_REQUESTS" $bundle_uuid '[BUNDLE-UUID]'
-update_file.py out.databricks.yml $bundle_uuid '[BUNDLE-UUID]'
+extract_command_exec_id.py > /dev/null
+add_repl "$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)" BUNDLE-UUID
 
 # pretty print the telemetry payload.
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson'
