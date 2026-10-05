@@ -910,3 +910,43 @@ func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
 	assert.Equal(t, "set", target.Named, "Set must write to Named")
 	assert.Equal(t, "s", target.Skipped, "json:\"-\" field must stay out of reach")
 }
+
+func TestSet_NilParent(t *testing.T) {
+	type Leaf struct {
+		N int `json:"n,omitempty"`
+	}
+	type Mid struct {
+		C *Leaf `json:"c,omitempty"`
+	}
+	type T struct {
+		M  map[string]string `json:"m,omitempty"`
+		P  *Leaf             `json:"p,omitempty"`
+		A  *Mid              `json:"a,omitempty"`
+		S  []string          `json:"s,omitempty"`
+		NM map[string]string `json:"nm"`
+		NP *Leaf             `json:"np"`
+		NS []string          `json:"ns"`
+	}
+
+	tests := []struct {
+		path     string
+		errorMsg string
+	}{
+		{"m.k", "cannot set m.k: parent m is nil"},
+		{"p.n", "cannot set p.n: parent p is nil"},
+		{"a.c.n", "cannot set a.c.n: parent a.c is nil"},
+		{"s[0]", "cannot set s[0]: parent s is nil"},
+		{"nm.k", "cannot set nm.k: parent nm is nil"},
+		{"np.n", "cannot set np.n: parent np is nil"},
+		{"ns[0]", "cannot set ns[0]: parent ns is nil"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			target := &T{A: &Mid{}}
+			err := structaccess.SetByString(target, tt.path, "5")
+			assert.EqualError(t, err, tt.errorMsg)
+			assert.Equal(t, &T{A: &Mid{}}, target)
+		})
+	}
+}
