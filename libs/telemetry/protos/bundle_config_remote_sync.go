@@ -78,8 +78,8 @@ type BundleConfigRemoteSyncEvent struct {
 	// StateLineage is the hash of the state's lineage identifier (see
 	// libs/shortid), the same value reported in the user agent under "lineage".
 	// It cannot contain PII: the lineage is an opaque random UUID minted by
-	// dstate.GetOrInitLineage and is never derived from a user, workspace, path,
-	// or resource name.
+	// dstate.GetOrInitLineage (or by Terraform, for state migrated from it) and
+	// is never derived from a user, workspace, path, or resource name.
 	StateLineage string `json:"state_lineage,omitempty"`
 
 	// StateSource is "local" or "remote" — a closed, system-defined set of

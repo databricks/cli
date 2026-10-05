@@ -80,7 +80,8 @@ type Stats struct {
 // local/remote origin, candidate count) — never a path or a target name.
 //
 // None of these can contain PII: the lineage is a hash of an opaque random UUID
-// minted by the state layer, and the source is one of two fixed literals.
+// minted by the state layer (or by Terraform, for state migrated from it), and
+// the source is one of two fixed literals.
 // recordedVersion is the version the deployment metadata service holds, zero when the bundle does
 // not record deployment history. A recorded state file persists no serial of its own, so the
 // recorded version stands in for it and the field means the same thing for both backends.
