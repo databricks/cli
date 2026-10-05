@@ -1,4 +1,3 @@
 # Direct-engine demonstration of a plan-time reference-resolution limitation. Not Cloud: the
 # behavior lives in the planner and is shown against the testserver.
 Cloud = false
-RecordRequests = true
