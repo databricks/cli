@@ -2,6 +2,16 @@
 === Replay a prior terraform deployment
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
+=== Validation does not flag the reference
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
 === Plan after auto-migration
 >>> musterr [CLI] bundle plan
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
