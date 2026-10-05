@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 
 The SDK version lives in `go.mod` (`github.com/databricks/databricks-sdk-go`) and the pinned spec SHA lives in `.codegen/_openapi_sha`.
 These two move as a pair; everything else in this skill is regenerated from them or is fallout you fix by hand.
-Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `bundle/terraform_dabs_map/generated.go`, `python/databricks/bundles/**`); regenerate them.
+Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `python/databricks/bundles/**`); regenerate them.
 
 The Python tasks (`pydabs-*`, and the `pydabs-codegen` step inside `generate-check`) all run through `uv`. If one fails because `uv` is missing or because the host's `python3` is too old (e.g. 3.9), install `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`) rather than touching the system Python: `uv run` provisions the interpreter each package pins (`>=3.10`, and `==3.13.*` under `python/codegen/`) and downloads it if needed. Do not chase the system Python version.
 
@@ -34,7 +34,6 @@ Decide with the user whether to keep the tagging-producer drift or restore those
 **4. Regenerate everything downstream.**
 Run `./task generate-cligen` to regenerate the command stubs from the refreshed `.codegen/cli.json`.
 Run `./task generate-check` to regenerate the reproducible artifacts (schema, validation, direct-engine YAML, refschema, pydabs); a clean tree afterwards means zero drift.
-Regenerate the DABs<->TF field map with `./task generate-schema-map`, which `generate-check` does not run.
 Run `go build ./...` and fix compile breakages before touching acceptance goldens.
 
 **5. Handle SDK breaking changes.**
@@ -82,6 +81,5 @@ The bump-specific content for that template is a `## Changes` line ``Bump `githu
 
 ## Stacking and rebasing
 
-If a Terraform-provider bump PR is open and touches the same files (e.g. a value in `bundle/terraform_dabs_map/generated.go`), stack on it or merge it once landed.
 On any merge/rebase conflict in a generated file like `generated.go`, resolve to a compilable state and then regenerate rather than hand-merging.
 A squash-merged upstream PR leaves its original commits as non-ancestors, so the branch log may show duplicate commits even when the net diff vs `origin/main` is correct.

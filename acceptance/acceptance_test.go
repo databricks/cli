@@ -339,11 +339,6 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		})
 	}
 
-	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir && !skipToolBuilds {
-		setupTerraform(t, cwd, buildDir, &repls)
-	}
-
 	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
 	require.NoError(t, err)
 	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
@@ -2014,22 +2009,6 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 
 func BuildYamlfmt(t *testing.T) {
 	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
-}
-
-// setupTerraform installs terraform and configures environment variables for tests.
-func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.ReplacementsContext) {
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".", []string{})
-
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
-
-	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
-	t.Setenv("TERRAFORM", terraformExecPath)
-
-	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
-	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 }
 
 // loadScriptReplacements adds the replacements appended to replsPath by the scripts.
