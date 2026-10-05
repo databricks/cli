@@ -187,7 +187,7 @@ func TestInprocessMode(t *testing.T) {
 	// selftest/server too, which meant a second setup after StartDefaultServer had
 	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
 	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
-	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	// for the same reason - selftest/basic uses neither the wheel nor yamlfmt.
 	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
@@ -205,29 +205,8 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
-// helperScriptUsesEngineCache caches whether a _script helper in a given directory
-// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
-// Since _script helpers are shared across many tests, caching avoids redundant reads.
-var helperScriptUsesEngineCache sync.Map
-
-// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
-// contains $DATABRICKS_BUNDLE_ENGINE.
-func anyHelperScriptUsesEngine(dir string) bool {
-	if dir == "" || dir == "." {
-		return false
-	}
-	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
-		return v.(bool)
-	}
-	content, err := os.ReadFile(filepath.Join(dir, "_script"))
-	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
-		anyHelperScriptUsesEngine(filepath.Dir(dir))
-	helperScriptUsesEngineCache.Store(dir, result)
-	return result
-}
-
 // hasRunFilter returns true if the -run flag contains '=', indicating a specific
-// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+// EnvMatrix variant was requested (e.g. DMS=true).
 func hasRunFilter() bool {
 	f := flag.Lookup("test.run")
 	return f != nil && strings.Contains(f.Value.String(), "=")
@@ -264,7 +243,7 @@ func requirePrerequisites(t *testing.T) bool {
 
 // selectedTests, when non-empty, limits the run to those test directories.
 // skipToolBuilds skips building the tools that the selected tests do not use
-// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// (the databricks-bundles wheel, yamlfmt); it must stay false for a
 // full run.
 func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
@@ -654,10 +633,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
-				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
-				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
-					anyHelperScriptUsesEngine(dir)
-				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
+				expanded = internal.SubsetExpanded(expanded, dir)
 			}
 
 			// If the matrix expands to a single empty envset, run the test directly
@@ -1073,10 +1049,6 @@ func runTest(t *testing.T,
 		// (kill_after.py, callserver.py, …) would route their requests through
 		// the blocking proxy. NO_PROXY exempts them.
 		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
-		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
-		// check for updates. Disable it so these CONNECT requests don't reach the
-		// blocking proxy and fail every terraform-engine test.
-		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 	}
 	// Run from outputDir so the entry-point script isn't a bundle source; the script
 	// cd's into tmpDir (the bundle dir) as its first line.
@@ -2063,8 +2035,8 @@ func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, r
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
+	// E.g. if EnvVaryOutput is MODE = ["a", "b"] and current test running MODE="a" then
+	// notSelected contains ".b." meaning if filename contains that (e.g. out.deploy.b.txt) then we ignore it here.
 	notSelected []string
 }
 

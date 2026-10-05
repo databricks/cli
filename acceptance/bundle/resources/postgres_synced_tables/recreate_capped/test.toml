@@ -4,8 +4,7 @@ RecordRequests = false
 # table deletion never complete (it stays DELETING), so the post-delete poll would wait
 # forever; capping it to 1s makes the wait time out, which fails the recreate. Verifies
 # the cap and the resulting error are rendered.
-# Not run on cloud (would need a real source table) or on terraform (recreates without
-# polling — the flag is direct-only). The recreate itself is covered against a real
-# workspace by ../recreate.
+# Not run on cloud (would need a real source table). The recreate itself is covered
+# against a real workspace by ../recreate.
 Cloud = false
 Env.INJECT_STALE_ON_DIRECT = "1"

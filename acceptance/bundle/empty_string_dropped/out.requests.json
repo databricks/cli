@@ -35,7 +35,6 @@
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
-    "channel": "CURRENT",
     "clusters": [
       {
         "aws_attributes": {
@@ -48,7 +47,6 @@
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/state/metadata.json"
     },
-    "edition": "ADVANCED",
     "libraries": [
       {
         "file": {
