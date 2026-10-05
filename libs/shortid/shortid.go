@@ -1,9 +1,8 @@
 // Package shortid produces compact identifiers for the user agent and telemetry.
 //
-// An identifier is 40 bits encoded in base62 (0-9, A-Z, a-z), which is 7
-// characters long. 40 bits is enough to correlate requests and events while
-// keeping the user agent short. Plain alphanumerics avoid '-' and '_', which
-// read as separators in user agent and log values.
+// An identifier is 64 bits encoded in base62 (0-9, A-Z, a-z), which is 11
+// characters long, about a third of a UUID. Plain alphanumerics avoid '-' and
+// '_', which read as separators in user agent and log values.
 package shortid
 
 import (
@@ -13,10 +12,10 @@ import (
 
 const (
 	alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	numBytes = 5
+	numBytes = 8
 
-	// Length is fixed: 62^7 > 2^40, so every 40-bit value fits in 7 digits.
-	length = 7
+	// Length is fixed: 62^11 > 2^64, so every 64-bit value fits in 11 digits.
+	length = 11
 )
 
 func encode(b []byte) string {

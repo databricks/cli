@@ -8,17 +8,17 @@ import (
 
 func TestNew(t *testing.T) {
 	a := New()
-	assert.Regexp(t, `^[0-9A-Za-z]{7}$`, a)
+	assert.Regexp(t, `^[0-9A-Za-z]{11}$`, a)
 	assert.NotEqual(t, a, New())
 }
 
 func TestHash(t *testing.T) {
-	// First 5 bytes of sha256("abc") are ba 78 16 bf 8f.
-	assert.Equal(t, "E6C5ISd", Hash("abc"))
+	// First 8 bytes of sha256("abc") are ba 78 16 bf 8f 01 cf ea.
+	assert.Equal(t, "G0ZNUjK18Pa", Hash("abc"))
 	assert.NotEqual(t, Hash("abc"), Hash("abd"))
 }
 
 func TestEncodeBounds(t *testing.T) {
-	assert.Equal(t, "0000000", encode([]byte{0, 0, 0, 0, 0}))
-	assert.Equal(t, "JMAIjoV", encode([]byte{0xff, 0xff, 0xff, 0xff, 0xff}))
+	assert.Equal(t, "00000000000", encode([]byte{0, 0, 0, 0, 0, 0, 0, 0}))
+	assert.Equal(t, "LygHa16AHYF", encode([]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}))
 }
