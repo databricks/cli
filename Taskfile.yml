@@ -934,37 +934,12 @@ tasks:
           --dir "{{.ROOT_DIR}}" \
           --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
           --openapi-spec-sha "$OPENAPI_SHA"
-      # genkit also writes .gitattributes, but that file is owned by
-      # generate-cligen (which derives it from .gitattributes.manual plus the
-      # rendered file list), so discard genkit's copy.
-      - git checkout -- .gitattributes
+      # .codegen.json owns cleanup so all update-sdk callers use the same script
+      # locations and workflow paths. Its lock rewrite preserves dependency changes
+      # while removing internal registry URLs from published files.
+      # The SDK-version consistency check stays here (not in post_generate) for
+      # faster feedback when running generate-clijson manually.
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
-      - rm .github/workflows/next-changelog.yml
-      - mv tagging.py internal/genkit/tagging.py
-      - mv tagging.py.lock internal/genkit/tagging.py.lock
-      # The release workflow tagging.yml expects tagging.py in a different location
-      # so we rewrite via sed
-      - |
-        if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
-        else
-          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
-        fi
-      # In an environment configured with the internal PyPI proxy, uv bakes the
-      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
-      # locks because codegen never wants to change them), these locks legitimately
-      # track the synced producer's deps, so rewrite only the proxy URL back to the
-      # public registry and preserve any real dependency changes. Glob the lock
-      # files so a future genkit lock is scrubbed without editing this task. The
-      # trailing slash is optional so both proxy URL forms are matched.
-      # check-lockfiles is the backstop if this ever misses.
-      - |
-        if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
-        else
-          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
-        fi
-      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
