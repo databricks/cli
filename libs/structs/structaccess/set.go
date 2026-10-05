@@ -337,8 +337,8 @@ func isNumericKind(k reflect.Kind) bool {
 }
 
 // convertNumeric converts between numeric kinds and fails instead of losing data,
-// following the rules of libs/dyn/convert (normalizeInt, normalizeFloat). The one
-// exception is float to float, which is allowed even when it rounds or overflows.
+// following the rules of libs/dyn/convert (normalizeInt). Unlike normalizeFloat,
+// any conversion to a float kind is allowed, even when it rounds or overflows.
 func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Value, error) {
 	dstKind := targetType.Kind()
 	zero := reflect.New(targetType).Elem()
@@ -356,11 +356,7 @@ func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Va
 				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
 			}
 		default:
-			f := reflect.ValueOf(v).Convert(targetType).Float()
-			// float64(2^63) is out of int64 range, so it cannot be converted back to compare.
-			if f >= math.MaxInt64 || int64(f) != v {
-				return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
-			}
+			// Int to float: allowed even with a loss.
 		}
 
 	case valueVal.CanUint():
@@ -375,10 +371,7 @@ func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Va
 				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
 			}
 		default:
-			f := reflect.ValueOf(v).Convert(targetType).Float()
-			if f >= math.MaxUint64 || uint64(f) != v {
-				return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
-			}
+			// Uint to float: allowed even with a loss.
 		}
 
 	default:

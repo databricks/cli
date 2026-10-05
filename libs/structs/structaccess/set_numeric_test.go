@@ -66,11 +66,11 @@ func TestSetNumericConversion(t *testing.T) {
 
 		// float <- int/uint
 		{name: "float64 from small int", path: "f64", value: 1 << 53, expected: float64(1 << 53)},
-		{name: "float64 from int64 above 2^53", path: "f64", value: int64(1<<53 + 1), err: "cannot set 9007199254740993 to float64: precision loss"},
-		{name: "float64 from MaxInt64", path: "f64", value: int64(math.MaxInt64), err: "cannot set 9223372036854775807 to float64: precision loss"},
-		{name: "float64 from uint64 above 2^53", path: "f64", value: uint64(1<<53 + 1), err: "cannot set 9007199254740993 to float64: precision loss"},
-		{name: "float64 from MaxUint64", path: "f64", value: uint64(math.MaxUint64), err: "precision loss"},
-		{name: "float32 from int above 2^24", path: "f32", value: 1<<24 + 1, err: "cannot set 16777217 to float32: precision loss"},
+		{name: "float64 from int64 above 2^53 rounds", path: "f64", value: int64(1<<53 + 1), expected: float64(1 << 53)},
+		{name: "float64 from MaxInt64 rounds", path: "f64", value: int64(math.MaxInt64), expected: float64(math.MaxInt64)},
+		{name: "float64 from uint64 above 2^53 rounds", path: "f64", value: uint64(1<<53 + 1), expected: float64(1 << 53)},
+		{name: "float64 from MaxUint64 rounds", path: "f64", value: uint64(math.MaxUint64), expected: float64(math.MaxUint64)},
+		{name: "float32 from int above 2^24 rounds", path: "f32", value: 1<<24 + 1, expected: float32(1 << 24)},
 		{name: "float32 from int 2^24", path: "f32", value: 1 << 24, expected: float32(1 << 24)},
 
 		// float <- float
@@ -85,7 +85,7 @@ func TestSetNumericConversion(t *testing.T) {
 		{name: "ptr int32 from overflowing int64", path: "pi32", value: int64(1 << 40), err: "value 1099511627776 overflows int32"},
 		{name: "ptr uint from negative int", path: "pu", value: -1, err: "value -1 overflows uint"},
 		{name: "ptr float32 from overflowing float64", path: "pf32", value: 1e300, expected: float32(math.Inf(1))},
-		{name: "ptr float64 from large int64", path: "pf64", value: int64(1<<53 + 1), err: "precision loss"},
+		{name: "ptr float64 from large int64 rounds", path: "pf64", value: int64(1<<53 + 1), expected: float64(1 << 53)},
 		{name: "ptr float64 from small int", path: "pf64", value: 3, expected: 3.0},
 	}
 
