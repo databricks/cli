@@ -75,9 +75,11 @@ type BundleConfigRemoteSyncEvent struct {
 	// StateSerial is the state file's own monotonic counter.
 	StateSerial int64 `json:"state_serial,omitempty"`
 
-	// StateLineage is the state's lineage identifier. It cannot contain PII: it
-	// is an opaque random UUID minted by dstate.GetOrInitLineage and is never
-	// derived from a user, workspace, path, or resource name.
+	// StateLineage is the hash of the state's lineage identifier (see
+	// libs/shortid), the same value reported in the user agent under "lineage".
+	// It cannot contain PII: the lineage is an opaque random UUID minted by
+	// dstate.GetOrInitLineage and is never derived from a user, workspace, path,
+	// or resource name.
 	StateLineage string `json:"state_lineage,omitempty"`
 
 	// StateSource is "local" or "remote" — a closed, system-defined set of

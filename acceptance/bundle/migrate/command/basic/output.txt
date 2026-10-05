@@ -36,7 +36,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD-EXEC-ID] interactive/none engine/direct lineage/[LINEAGE] auth/pat"
     ]
   },
   "method": "GET",
@@ -48,7 +48,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD-EXEC-ID] interactive/none engine/direct lineage/[LINEAGE] auth/pat"
     ]
   },
   "method": "GET",
@@ -64,8 +64,8 @@ Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --get //jobs/get
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD-EXEC-ID] interactive/none engine/direct lineage/[LINEAGE] auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD-EXEC-ID] interactive/none engine/direct lineage/[LINEAGE] auth/pat"
 
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate

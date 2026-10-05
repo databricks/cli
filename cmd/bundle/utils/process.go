@@ -236,6 +236,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if !b.MigratingToDirect {
 			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 		}
+		ctx = WithLineageInUserAgent(ctx, stateDesc)
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
@@ -749,4 +750,15 @@ func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 Pipelines CLI currently only supports Lakeflow Spark Declarative Pipelines development.
 To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
 	}
+}
+
+// WithLineageInUserAgent tags the user agent with the hashed state lineage, so
+// requests from different CLI invocations against the same deployment can be
+// correlated. Before the first deploy there is no lineage and nothing is added.
+func WithLineageInUserAgent(ctx context.Context, stateDesc *statemgmt.StateDesc) context.Context {
+	lineage := stateDesc.LineageHash()
+	if lineage == "" {
+		return ctx
+	}
+	return useragent.InContext(ctx, "lineage", lineage)
 }
