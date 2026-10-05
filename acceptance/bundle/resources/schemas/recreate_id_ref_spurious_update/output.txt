@@ -19,7 +19,7 @@ Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
-=== Deploy and record the requests (see out.requests.direct.txt)
+=== Deploy and record the requests (see out.requests.txt)
 >>> print_requests.py --sort //schemas
 
 >>> [CLI] bundle destroy --auto-approve

@@ -1,7 +1,4 @@
-# Local-only demonstration of a direct-engine planner bug (reference to a resource being
-# recreated reads as a phantom change). Not Cloud: terraform updating the role in place (vs
-# the backend delete+create) is a testserver behavior.
+# Direct-engine demonstration of a plan-time reference-resolution limitation (a reference to a
+# resource being recreated reads as a phantom change). Not Cloud: shown against the testserver.
 Cloud = false
 RecordRequests = true
-EnvMatrix.DMS = []
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

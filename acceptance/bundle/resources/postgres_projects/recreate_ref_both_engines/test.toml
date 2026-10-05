@@ -1,7 +1,4 @@
-# Local-only demonstration of a plan-time reference-resolution limitation shared by both
-# engines. Not Cloud: terraform updating resources against the lenient testserver, and the
-# recorded request shapes, are testserver behaviors.
+# Direct-engine demonstration of a plan-time reference-resolution limitation. Not Cloud: the
+# behavior lives in the planner and is shown against the testserver.
 Cloud = false
 RecordRequests = true
-EnvMatrix.DMS = []
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

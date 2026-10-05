@@ -21,11 +21,11 @@ trace update_file.py databricks.yml "s3://my-bucket/v1" "s3://my-bucket/v2"
 title "Plan"
 trace $CLI bundle plan
 # Field-level proof: old is the resolved full_name, new is the still-unresolved reference.
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.schemas.consumer".changes.comment' > out.consumer_comment.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.schemas.consumer".changes.comment' > out.consumer_comment.json
 
 # WHAT ACTUALLY HAPPENED: deploy and record the requests (deploy stdout -> LOG.deploy; parallel
-# completion order is nondeterministic). out.requests.direct.txt shows the direct engine issues
+# completion order is nondeterministic). out.requests.txt shows the direct engine issues
 # a PATCH against the consumer schema -- a spurious update writing back its unchanged comment.
-title "Deploy and record the requests (see out.requests.direct.txt)"
+title "Deploy and record the requests (see out.requests.txt)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
-trace print_requests.py --sort '//schemas' > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py --sort '//schemas' > out.requests.txt

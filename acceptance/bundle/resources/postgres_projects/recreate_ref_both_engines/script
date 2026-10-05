@@ -25,9 +25,9 @@ trace $CLI bundle plan
 
 # WHAT ACTUALLY HAPPENED: the direct engine performs a real delete + create of the catalog.
 # Deploy stdout goes to LOG.deploy (parallel completion order is nondeterministic, so it is not
-# a golden); the API calls are recorded below. out.requests.direct.txt shows the DELETE + POST
+# a golden); the API calls are recorded below. out.requests.txt shows the DELETE + POST
 # issued against the catalog with an identical, unchanged spec -- a destructive recreate of a
 # resource that did not change.
-title "Deploy the recreate and record the requests (see out.requests.direct.txt)"
+title "Deploy the recreate and record the requests (see out.requests.txt)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
-trace print_requests.py --sort '//postgres' > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py --sort '//postgres' > out.requests.txt
