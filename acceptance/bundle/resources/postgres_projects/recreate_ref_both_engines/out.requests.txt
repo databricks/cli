@@ -1,24 +1,6 @@
 {
   "method": "DELETE",
-  "path": "/api/2.0/postgres/catalogs/mycat"
-}
-{
-  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/postgres/catalogs",
-  "q": {
-    "catalog_id": "mycat"
-  },
-  "body": {
-    "spec": {
-      "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
-      "create_database_if_missing": true,
-      "postgres_database": "appdb"
-    }
-  }
 }
 {
   "method": "POST",

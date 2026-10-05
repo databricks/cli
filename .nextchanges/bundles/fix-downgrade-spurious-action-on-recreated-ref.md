@@ -1,0 +1,1 @@
+* Direct engine: do not recreate or update a resource that references a resource being recreated when the referenced value is unchanged; the planned action is downgraded once the reference resolves at deploy. ([#6914](https://github.com/databricks/cli/pull/6914))

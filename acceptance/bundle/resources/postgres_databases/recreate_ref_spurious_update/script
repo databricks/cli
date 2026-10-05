@@ -26,7 +26,8 @@ trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databas
 
 # WHAT ACTUALLY HAPPENED: deploy and record the requests (deploy stdout -> LOG.deploy; parallel
 # completion order is nondeterministic). out.requests.txt shows the direct engine issues
-# a PATCH against my_database -- a spurious update writing back the unchanged role.
+# NO request for my_database: it downgraded the planned update to a no-op once ${my_role.name}
+# resolved to the unchanged value.
 title "Deploy and record the requests (see out.requests.txt)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
 trace print_requests.py --sort '//postgres' > out.requests.txt

@@ -16,11 +16,12 @@ sync:
 # as .id (a schema's full_name "catalog.schema").
 #
 # referent recreates on storage_root (immutable, non-identity), so its full_name / .id
-# (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so
-# the direct engine plans a spurious update of consumer.
+# (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so the
+# plan shows a spurious update of consumer -- but at deploy the direct engine downgrades it to a
+# no-op once ${referent.id} resolves to the unchanged value.
 #
 # This test runs the direct engine only. For context, the terraform engine (now being removed)
-# left consumer alone: it re-plans at apply, finds ${referent.id} resolved to the unchanged
+# also left consumer alone: it re-plans at apply, finds ${referent.id} resolved to the unchanged
 # value, and issues no request for consumer.
 resources:
   schemas:

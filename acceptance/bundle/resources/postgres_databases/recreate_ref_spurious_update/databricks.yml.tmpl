@@ -15,12 +15,13 @@ sync:
 # field in the PATCH update_mask, so it is delete + create -- see postgres_roles/
 # recreate-postgres-role). role_id is unchanged, so my_role.name (projects/.../roles/app-owner)
 # is stable. The direct engine cannot resolve ${my_role.name} while the role is recreated, so
-# my_database.role diffs the saved name against the "${...}" placeholder and plans an
-# unnecessary update.
+# my_database.role diffs the saved name against the "${...}" placeholder and the plan shows an
+# unnecessary update. At deploy, though, the direct engine downgrades it to a no-op -- it
+# re-diffs once ${my_role.name} resolves and sees it unchanged -- so my_database is left alone.
 #
 # This test runs the direct engine only. For context, the terraform engine (now being removed)
-# left my_database alone: against the lenient testserver it updates the role in place, so the
-# name reference resolved at plan and never diffed.
+# also left my_database alone, by a different route: against the lenient testserver it updates
+# the role in place, so the name reference resolved at plan and never diffed.
 resources:
   postgres_projects:
     my_project:
