@@ -1,0 +1,20 @@
+bundle:
+  name: dms-destroy-paths-$UNIQUE_NAME
+
+experimental:
+  deployment_history: true
+
+resources:
+  jobs:
+    example:
+      name: dms-destroy-paths-$UNIQUE_NAME
+
+targets:
+  nested:
+    default: true
+  colocated:
+    workspace:
+      state_path: ${workspace.root_path}
+  external:
+    workspace:
+      state_path: ${workspace.root_path}-state

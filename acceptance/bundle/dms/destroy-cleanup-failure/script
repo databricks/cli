@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+root="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-destroy-cleanup-failure-${UNIQUE_NAME}/default"
+node="$root/state/resources.deployment.json"
+deployment_id=$($CLI workspace get-status "$node" | jq -r .object_id)
+add_repl "$deployment_id" DEPLOYMENT_ID
+rm -f "$OUT_REQUESTS"
+
+title "Failed version completion preserves the deployment and its root"
+trace fault.py "POST /api/2.0/bundle/deployments/${deployment_id}/versions/2/complete" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/workspace/delete --keep
+trace print_requests.py --dms --method DELETE //api/2.0/bundle
+trace $CLI workspace get-status "$node" | jq '{object_type}'
+
+# Close the version whose completion was denied so the next destroy can proceed.
+trace $CLI bundle-deployments complete-version "deployments/${deployment_id}/versions/2" VERSION_COMPLETE_FAILURE | jq '{completion_reason}'
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Failed root deletion preserves readable deployment history"
+trace fault.py "POST /api/2.0/workspace/delete" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py --dms --method DELETE //api/2.0/bundle
+trace $CLI workspace get-status "$node" | jq '{object_type}'
+trace $CLI bundle-deployments get-deployment "deployments/${deployment_id}" | jq '{name}'
+
+title "Retry removes the deployment node with its root"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --dms --method DELETE //api/2.0/bundle --keep
+trace print_requests.py //api/2.0/workspace/delete
+trace musterr $CLI workspace get-status "$node"
+trace musterr $CLI workspace get-status "$root"
+rm -f "$OUT_REQUESTS"
