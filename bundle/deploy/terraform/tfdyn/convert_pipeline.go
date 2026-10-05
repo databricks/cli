@@ -2,7 +2,6 @@ package tfdyn
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
@@ -12,10 +11,6 @@ import (
 )
 
 func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	if vin.Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
-		return dyn.InvalidValue, errors.New("run_as.group_name for pipelines is not supported with the terraform engine; use the direct engine")
-	}
-
 	// Modify top-level keys.
 	vout, err := renameKeys(vin, map[string]string{
 		"libraries":     "library",
