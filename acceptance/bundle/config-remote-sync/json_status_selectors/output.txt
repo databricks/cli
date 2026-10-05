@@ -7,6 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "status": "skipped",
   "error": "no deployed jobs resource with id no-such-id-999; deployed jobs ids in state: [TEST_JOB_ID]",
+  "errorCode": "BUNDLE_LOAD_FAILED",
   "files": null,
   "changes": {}
 }
@@ -15,6 +16,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "status": "failed",
   "error": "invalid --select-ids value \"no-such-id-999\", expected \u003ctype\u003e:\u003cid\u003e (e.g. jobs:[NUMID])",
+  "errorCode": "BUNDLE_LOAD_FAILED",
   "files": null,
   "changes": {}
 }

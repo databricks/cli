@@ -121,6 +121,10 @@ Examples:
 					if err != nil {
 						return err
 					}
+					if err := configsync.CheckSelectedInConfig(b.Config.Value(), selected); err != nil {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResourceNotInConfig
+						return err
+					}
 					detected = configsync.FilterChanges(detected, selected)
 				}
 

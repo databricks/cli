@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -16,13 +17,22 @@ import (
 // is drift the caller reports as skipped, the latter is a failure.
 var ErrNoMatchingSelector = errors.New("no matching selector")
 
-// noMatchingSelectorError keeps the descriptive message while matching
-// ErrNoMatchingSelector via errors.Is, so the sentinel text never leaks into it.
-type noMatchingSelectorError struct{ msg string }
+// ErrResourceNotInConfig marks a selected resource that is deployed but whose
+// key is no longer in the configuration (renamed or removed locally since the
+// last deploy). Unlike a stale selector this is a failure: the resource still
+// exists remotely and its changes have nowhere to be written back.
+var ErrResourceNotInConfig = errors.New("resource not found in configuration")
 
-func (e *noMatchingSelectorError) Error() string { return e.msg }
+// selectorError keeps the descriptive message while matching its sentinel via
+// errors.Is, so the sentinel text never leaks into it.
+type selectorError struct {
+	msg      string
+	sentinel error
+}
 
-func (e *noMatchingSelectorError) Unwrap() error { return ErrNoMatchingSelector }
+func (e *selectorError) Error() string { return e.msg }
+
+func (e *selectorError) Unwrap() error { return e.sentinel }
 
 // IndexDeployedResources indexes the deployed resources by "<type>:<id>",
 // mapping to the plan key ("resources.<type>.<name>"). Indexing by the <type>
@@ -96,8 +106,9 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 	// nothing, so the caller does not report a spurious success.
 	if len(keys) == 0 {
 		resourceType, id, _ := strings.Cut(missing[0], ":")
-		return nil, &noMatchingSelectorError{
-			msg: fmt.Sprintf("no deployed %s resource with id %s; %s", resourceType, id, describeStateIDs(byTypeID, resourceType)),
+		return nil, &selectorError{
+			msg:      fmt.Sprintf("no deployed %s resource with id %s; %s", resourceType, id, describeStateIDs(byTypeID, resourceType)),
+			sentinel: ErrNoMatchingSelector,
 		}
 	}
 
@@ -107,6 +118,26 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 		log.Debugf(ctx, "config-remote-sync: skipping selector %q, no deployed resource with that id", selector)
 	}
 	return keys, nil
+}
+
+// CheckSelectedInConfig fails with ErrResourceNotInConfig when a selected plan
+// key is absent from the configuration. Such a resource is planned as a delete,
+// which carries no changes, so without this check the run would report a
+// success while its remote edits were silently dropped.
+func CheckSelectedInConfig(root dyn.Value, selected []string) error {
+	var missing []string
+	for _, key := range selected {
+		if _, err := dyn.Get(root, key); err != nil {
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return &selectorError{
+		msg:      fmt.Sprintf("deployed resource %s not found in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced", strings.Join(missing, ", ")),
+		sentinel: ErrResourceNotInConfig,
+	}
 }
 
 // maxReportedIDs bounds how many ids describeStateIDs lists, so the message stays

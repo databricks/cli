@@ -11,6 +11,7 @@ const (
 	BundleConfigRemoteSyncErrorCategoryYamlApplyFailed     BundleConfigRemoteSyncErrorCategory = "YAML_APPLY_FAILED"
 	BundleConfigRemoteSyncErrorCategorySaveFailed          BundleConfigRemoteSyncErrorCategory = "SAVE_FAILED"
 	BundleConfigRemoteSyncErrorCategoryOutputFailed        BundleConfigRemoteSyncErrorCategory = "OUTPUT_FAILED"
+	BundleConfigRemoteSyncErrorCategoryResourceNotInConfig BundleConfigRemoteSyncErrorCategory = "RESOURCE_NOT_IN_CONFIG"
 )
 
 // BundleConfigRemoteSyncEvent is emitted on every execution of the

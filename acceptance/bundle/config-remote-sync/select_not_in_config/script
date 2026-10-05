@@ -1,0 +1,30 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py test_job)"
+
+edit_resource.py jobs $job_id <<EOF2
+r["max_concurrent_runs"] = 5
+EOF2
+
+title "Rename the job key locally without deploying"
+echo
+cp databricks.yml databricks.yml.backup
+update_file.py databricks.yml "test_job:" "renamed_job:"
+
+title "Selecting the deployed job fails with RESOURCE_NOT_IN_CONFIG, exit 0"
+echo
+errcode $CLI bundle config-remote-sync --select-ids "jobs:$job_id" -o json
+
+title "Text mode fails the command"
+echo
+errcode $CLI bundle config-remote-sync --select-ids "jobs:$job_id"
+
+mv databricks.yml.backup databricks.yml
