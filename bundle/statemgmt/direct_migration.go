@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -312,22 +311,6 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}
 
-	// b.Config has been modified by terraform.Interpolate which converts bundle-style
-	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id}).
-	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
-	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
-	if err != nil {
-		return tempStatePath, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
-	}
-
-	var uninterpolatedConfig config.Root
-	err = uninterpolatedConfig.Mutate(func(_ dyn.Value) (dyn.Value, error) {
-		return uninterpolatedRoot, nil
-	})
-	if err != nil {
-		return tempStatePath, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
-	}
-
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return tempStatePath, false, nil, err
@@ -351,7 +334,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
-	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	hasWarnings, err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
 		return tempStatePath, hasWarnings, nil, err
 	}
@@ -365,5 +348,5 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, hasWarnings, nil, errors.New("state conversion failed")
 	}
 
-	return tempStatePath, hasWarnings, &uninterpolatedConfig, nil
+	return tempStatePath, hasWarnings, &b.Config, nil
 }
