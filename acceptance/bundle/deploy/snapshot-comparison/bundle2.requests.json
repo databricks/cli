@@ -1,0 +1,75 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/files/pipeline_notebook"
+          }
+        }
+      ],
+      "name": "[dev tester] Snapshot Test Pipeline snapshot-test-2-[UNIQUE_NAME]",
+      "tags": {
+        "dev": "tester"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/snapshot-test-2-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 4,
+      "name": "[dev tester] Snapshot Test Job snapshot-test-2-[UNIQUE_NAME]",
+      "queue": {
+        "enabled": true
+      },
+      "tags": {
+        "dev": "tester"
+      },
+      "tasks": [
+        {
+          "pipeline_task": {
+            "pipeline_id": "7a00a122-0b9d-7a30-7a00-a1220b9d7a31"
+          },
+          "task_key": "pipeline_task"
+        }
+      ]
+    }
+  }
+]

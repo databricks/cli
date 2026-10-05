@@ -1,0 +1,41 @@
+#!/bin/bash
+
+mkdir -p bundle1 bundle2
+
+export BUNDLE_NAME="snapshot-test-1-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > bundle1/databricks.yml
+cp notebook.py bundle1/
+cp pipeline_notebook.py bundle1/
+
+export BUNDLE_NAME="snapshot-test-2-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > bundle2/databricks.yml
+cp notebook.py bundle2/
+cp pipeline_notebook.py bundle2/
+
+cleanup() {
+    title "Cleanup bundle 1"
+    (cd bundle1 && trace $CLI bundle destroy --auto-approve)
+    title "Cleanup bundle 2"
+    (cd bundle2 && trace $CLI bundle destroy --auto-approve)
+}
+trap cleanup EXIT
+
+title "Replay the terraform deployment of bundle 1 (captured from a real terraform run)"
+(cd bundle1 && trace replay_tfstate.py ../bundle1.requests.json ../bundle1.tfstate)
+
+title "Run migrate on bundle 1"
+(cd bundle1 && trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 2 resources')
+
+title "Replay the terraform deployment of bundle 2, then deploy: the deploy migrates it to direct"
+(cd bundle2 && trace replay_tfstate.py ../bundle2.requests.json ../bundle2.tfstate)
+(cd bundle2 && trace $CLI bundle deploy)
+
+title "Normalize bundle names for comparison"
+trace cp bundle1/.databricks/bundle/default/resources.json tmp.bundle1.json
+trace cp bundle2/.databricks/bundle/default/resources.json tmp.bundle2.json
+
+trace update_file.py tmp.bundle1.json "snapshot-test-1-" "snapshot-test-NORMALIZED-"
+trace update_file.py tmp.bundle2.json "snapshot-test-2-" "snapshot-test-NORMALIZED-"
+
+title "Compare normalized snapshots"
+trace diff.py tmp.bundle1.json tmp.bundle2.json
