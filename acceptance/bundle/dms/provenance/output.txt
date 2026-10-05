@@ -72,13 +72,13 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "target_name": "dev",
   "deployment_mode": "DEPLOYMENT_MODE_DEVELOPMENT",
   "git_info": {
+    "origin_url": "https://github.com/databricks/bundle-examples.git",
     "branch": "main",
-    "commit": "[COMMIT]",
-    "origin_url": "https://github.com/databricks/bundle-examples.git"
+    "commit": "[COMMIT]"
   },
   "workspace_info": {
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/files",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev"
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev",
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/files"
   }
 }
 

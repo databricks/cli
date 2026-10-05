@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path"
 	"slices"
 	"strconv"
@@ -139,7 +140,62 @@ func deploymentBody(d *DmsDeployment) (map[string]any, error) {
 	if d.LastSuccessfulVersionID != "" {
 		body["last_successful_version_id"] = d.LastSuccessfulVersionID
 	}
+
+	// The service emits these blocks in proto field order rather than the SDK's
+	// alphabetical order, and `databricks api` prints response keys verbatim.
+	for field, order := range dmsNestedKeyOrder {
+		if nested, ok := body[field].(map[string]any); ok {
+			ordered, err := orderedObject(nested, order)
+			if err != nil {
+				return nil, err
+			}
+			body[field] = ordered
+		}
+	}
 	return body, nil
+}
+
+// dmsNestedKeyOrder is the key order the service uses for nested deployment blocks,
+// as observed on cloud. Keys not listed follow in alphabetical order.
+var dmsNestedKeyOrder = map[string][]string{
+	"git_info":       {"origin_url", "branch", "commit"},
+	"workspace_info": {"root_path", "file_path"},
+}
+
+// orderedObject renders obj as a JSON object with the keys in order first, then
+// any remaining keys alphabetically.
+func orderedObject(obj map[string]any, order []string) (json.RawMessage, error) {
+	keys := slices.Clone(order)
+	for _, k := range slices.Sorted(maps.Keys(obj)) {
+		if !slices.Contains(order, k) {
+			keys = append(keys, k)
+		}
+	}
+
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for _, k := range keys {
+		v, ok := obj[k]
+		if !ok {
+			continue
+		}
+		if buf.Len() > 1 {
+			buf.WriteByte(',')
+		}
+		kv, err := json.Marshal(k)
+		if err != nil {
+			return nil, err
+		}
+		vv, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(kv)
+		buf.WriteByte(':')
+		buf.Write(vv)
+	}
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
 }
 
 // dmsUpdatableDeploymentFields are the update_mask paths UpdateDeployment accepts.
