@@ -1,0 +1,32 @@
+
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Plan after auto-migration
+>>> musterr [CLI] bundle plan
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Error: invalid dependency "${databricks_pipeline.src_pipeline.id}", no such node ""
+
+
+=== Deploy after auto-migration
+>>> musterr [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: invalid dependency "${databricks_pipeline.src_pipeline.id}", no such node ""
+
+Files: 1 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+The following resources will be deleted:
+  delete resources.jobs.dst_job
+  delete resources.pipelines.src_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.src_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Migrated 2 resources to direct deployment engine.
+Destroy: 2 deleted

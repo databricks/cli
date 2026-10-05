@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    src_pipeline:
+      name: source-pipeline
+
+  jobs:
+    dst_job:
+      name: dst-job
+      tasks:
+        - task_key: main
+          pipeline_task:
+            # Terraform-style resource reference: databricks_pipeline is the terraform
+            # resource type for DABs "pipelines".
+            pipeline_id: ${databricks_pipeline.src_pipeline.id}

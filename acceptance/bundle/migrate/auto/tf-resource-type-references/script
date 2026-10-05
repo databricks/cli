@@ -1,0 +1,18 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# The config references the pipeline by its terraform resource type (${databricks_pipeline...}),
+# which terraform resolved on the original deploy. The direct engine does not support this syntax
+# (only terraform field paths inside ${resources.*}), so after auto-migration plan and deploy fail.
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+title "Plan after auto-migration"
+trace musterr $CLI bundle plan
+
+title "Deploy after auto-migration"
+trace musterr $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
