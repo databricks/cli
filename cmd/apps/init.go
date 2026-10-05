@@ -1237,7 +1237,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
 	srcProjectDir := findProjectSrcDir(templateDir)
-	if err := selectedManager.ValidateTemplate(srcProjectDir); err != nil {
+	if err := selectedManager.ValidateTemplate(srcProjectDir, opts.skipInstall); err != nil {
 		return err
 	}
 	var npmInstallCh <-chan error

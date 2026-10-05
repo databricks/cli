@@ -67,10 +67,12 @@ func rewriteScript(script string, m Manager, scripts map[string]any) string {
 
 		// npm consumes --; pnpm forwards every argument after the script name.
 		// https://docs.npmjs.com/cli/commands/npm-run-script and https://pnpm.io/cli/run
+		// Yarn and Bun also forward script flags without requiring a separator.
+		// https://yarnpkg.com/cli/run and https://bun.sh/docs/cli/run
 		args := ""
 		pos = nameEnd
 		switch {
-		case word == "pnpm" && m.Name == "npm":
+		case (word == "pnpm" || word == "yarn" || word == "bun") && m.Name == "npm":
 			argStart, argEnd := scriptToken(script, nameEnd)
 			if argStart != argEnd && !isScriptSeparator(script[argStart]) && script[argStart] != '#' {
 				args = " --"

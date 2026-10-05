@@ -5,7 +5,7 @@
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/test-app-pnpm
-  Files: 4
+  Files: 6
 
   Next steps:
 
@@ -46,7 +46,7 @@ command:
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/test-app-npm
-  Files: 4
+  Files: 6
 
   Next steps:
 
@@ -151,6 +151,13 @@ null
   "lodash": "4.17.21"
 }
 
+=== Lockless templates reject installation before creating the project
+>>> [CLI] apps init --name lockless-app-npm --template standard-template --package-manager npm
+Error: template has no npm-shrinkwrap.json or package-lock.json required by "npm ci"; add npm-shrinkwrap.json or package-lock.json to the template or use --skip-install to scaffold without installing dependencies
+
+>>> [CLI] apps init --name lockless-app-pnpm --template standard-template --package-manager pnpm
+Error: template has no pnpm-lock.yaml required by "pnpm install --frozen-lockfile"; add pnpm-lock.yaml to the template or use --skip-install to scaffold without installing dependencies
+
 === Npm-only custom template rejects pnpm before copying
 >>> [CLI] apps init --name incompatible-app --template npm-only-template --skip-install
 Error: template has package-lock.json but no pnpm-lock.yaml required by "pnpm install --frozen-lockfile"; use --package-manager npm or add pnpm-lock.yaml to the template
@@ -217,6 +224,29 @@ Error: npm --version returned invalid version "invalid"; ensure npm is working, 
 >>> CLI_TEST_NPM_VERSION= [CLI] apps init --name empty-app --template npm-only-template --package-manager npm
 Error: npm --version returned invalid version ""; ensure npm is working, or use --skip-install
 
+=== Version-like branch keeps pnpm
+>>> [CLI] apps init --name branch-app --branch 0.81-maintenance --skip-install
+✔ Cloning template (branch 0.81-maintenance)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/branch-app
+  Files: 6
+
+  Next steps:
+
+    cd branch-app
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "branch-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+"pnpm@11.0.8"
+
 === First dual-manager template version keeps pnpm
 >>> [CLI] apps init --name dual-manager-app --version 0.82.0 --package-manager pnpm --skip-install
 ✔ Cloning template (version 0.82.0)
@@ -225,7 +255,7 @@ Error: npm --version returned invalid version ""; ensure npm is working, or use 
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/dual-manager-app
-  Files: 4
+  Files: 6
 
   Next steps:
 
@@ -250,7 +280,7 @@ Warn: Package manager "pnpm" is not supported for AppKit version 0.81.0, using n
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/older-app
-  Files: 4
+  Files: 6
 
   Next steps:
 
@@ -276,7 +306,7 @@ Warn: Package manager "pnpm" is not supported for AppKit version 0.57.0, using n
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/fallback-app
-  Files: 4
+  Files: 6
 
   Next steps:
 
@@ -296,13 +326,13 @@ null
 >>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-older-app --version 0.81.0
 ✔ Cloning template (version 0.81.0)
 Warn: Package manager "pnpm" is not supported for AppKit version 0.81.0, using npm instead
-✔ Creating project
 ✔ Installing dependencies
+✔ Creating project
 
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/installed-older-app
-  Files: 4
+  Files: 6
 
   Next steps:
 

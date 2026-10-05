@@ -72,6 +72,15 @@ func TestRewriteScriptArguments(t *testing.T) {
 		want    string
 	}{
 		{"npm", "pnpm run task --port 1234", "npm run task -- --port 1234"},
+		{"npm", "yarn run task --port 1234", "npm run task -- --port 1234"},
+		{"npm", "bun run task --port 1234", "npm run task -- --port 1234"},
+		{"npm", "yarn task --port 1234", "npm run task -- --port 1234"},
+		{"npm", "bun task --port 1234", "npm run task -- --port 1234"},
+		{"npm", `yarn run task --label "hello world"`, `npm run task -- --label "hello world"`},
+		{"npm", `bun run task --label "hello world"`, `npm run task -- --label "hello world"`},
+		{"npm", "yarn run task # comment", "npm run task # comment"},
+		{"npm", "bun run task # comment", "npm run task # comment"},
+		{"npm", "yarn run task --port 1234 && bun run task --port 5678", "npm run task -- --port 1234 && npm run task -- --port 5678"},
 		{"npm", `pnpm run task --label "hello world"`, `npm run task -- --label "hello world"`},
 		{"npm", "pnpm task --port 1234", "npm run task -- --port 1234"},
 		{"npm", "pnpm run task first -- --port 1234", "npm run task -- first -- --port 1234"},

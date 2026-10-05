@@ -136,7 +136,7 @@ func TestValidateTemplate(t *testing.T) {
 				for _, file := range files {
 					require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("lockfile"), 0o644))
 				}
-				err := m.ValidateTemplate(dir)
+				err := m.ValidateTemplate(dir, false)
 				hasSelectedLockfile := slices.Contains(files, "pnpm-lock.yaml")
 				if name == "npm" {
 					hasSelectedLockfile = slices.Contains(files, "package-lock.json") || slices.Contains(files, "npm-shrinkwrap.json")
@@ -148,6 +148,42 @@ func TestValidateTemplate(t *testing.T) {
 					}
 					require.ErrorContains(t, err, "use --package-manager "+other)
 					assert.ErrorContains(t, err, strings.Join(m.LockfileNames, " or "))
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	}
+}
+
+func TestValidateTemplateWithoutLockfiles(t *testing.T) {
+	tests := []struct {
+		name        string
+		file        string
+		skipInstall bool
+		wantErr     bool
+	}{
+		{"Node install", "package.json", false, true},
+		{"Node template install", "package.json.tmpl", false, true},
+		{"Node skip install", "package.json", true, false},
+		{"Node template skip install", "package.json.tmpl", true, false},
+		{"Python install", "requirements.txt", false, false},
+		{"empty template", "", false, false},
+	}
+	for _, name := range []string{"npm", "pnpm"} {
+		m, err := pkgmanager.Resolve(name)
+		require.NoError(t, err)
+		for _, tt := range tests {
+			t.Run(name+"/"+tt.name, func(t *testing.T) {
+				dir := t.TempDir()
+				if tt.file != "" {
+					require.NoError(t, os.WriteFile(filepath.Join(dir, tt.file), []byte("{}"), 0o644))
+				}
+				err := m.ValidateTemplate(dir, tt.skipInstall)
+				if tt.wantErr {
+					require.ErrorContains(t, err, strings.Join(m.LockfileNames, " or "))
+					assert.ErrorContains(t, err, m.InstallCommand)
+					assert.ErrorContains(t, err, "--skip-install")
 				} else {
 					require.NoError(t, err)
 				}
@@ -497,6 +533,24 @@ func TestEffectiveManager(t *testing.T) {
 		},
 
 		// Explicit pnpm requests with non-concrete versions
+		{
+			name:            "pnpm with version-like branch below threshold",
+			selectedManager: pnpm,
+			version:         "0.81-maintenance",
+			expectManager:   "pnpm",
+		},
+		{
+			name:            "pnpm with v-prefixed version-like branch above threshold",
+			selectedManager: pnpm,
+			version:         "v0.83-maintenance",
+			expectManager:   "pnpm",
+		},
+		{
+			name:            "pnpm with template-prefixed version-like branch",
+			selectedManager: pnpm,
+			version:         "template-v0.81-maintenance",
+			expectManager:   "pnpm",
+		},
 		{
 			name:            "pnpm with main branch",
 			selectedManager: pnpm,

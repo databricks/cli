@@ -32,6 +32,12 @@ trace $CLI apps init --name standard-app-npm --template standard-template --pack
 cat standard-app-npm/app.yaml
 jq '.scripts, .packageManager, .overrides' standard-app-npm/package.json
 
+title "Lockless templates reject installation before creating the project"
+for manager in npm pnpm; do
+    musterr trace $CLI apps init --name "lockless-app-$manager" --template standard-template --package-manager "$manager"
+    test ! -e "lockless-app-$manager"
+done
+
 title "Npm-only custom template rejects pnpm before copying"
 musterr trace $CLI apps init --name incompatible-app --template npm-only-template --skip-install
 test ! -e incompatible-app
@@ -74,11 +80,17 @@ git commit -qm 'Add template'
 git tag template-v0.81.0
 git tag template-v0.57.0
 git tag template-v0.82.0
+git branch 0.81-maintenance
 repo_url=$(python3 -c 'from pathlib import Path; print(Path.cwd().as_uri())')
 export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="url.${repo_url}/.insteadOf"
 export GIT_CONFIG_VALUE_0="https://github.com/databricks/appkit"
 export DATABRICKS_APPKIT_TEMPLATE_PATH=""
+
+title "Version-like branch keeps pnpm"
+trace $CLI apps init --name branch-app --branch 0.81-maintenance --skip-install
+cat branch-app/app.yaml
+jq '.packageManager' branch-app/package.json
 
 title "First dual-manager template version keeps pnpm"
 trace $CLI apps init --name dual-manager-app --version 0.82.0 --package-manager pnpm --skip-install

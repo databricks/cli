@@ -118,18 +118,18 @@ func EffectiveManager(selected Manager, resolvedVersion string) (Manager, bool) 
 		return selected, false
 	}
 
-	// Non-concrete versions (main, latest, empty, or branch names) are treated as supporting dual-PM.
-	// Only concrete semantic versions are subject to the threshold check.
-	if !isSemverVersion(resolvedVersion) {
-		return selected, false
-	}
-
 	// Extract the semantic version from template-v prefix if present.
 	version := resolvedVersion
 	const prefix = "template-v"
 	version = strings.TrimPrefix(version, prefix)
 	if !strings.HasPrefix(version, "v") {
 		version = "v" + version
+	}
+
+	// Non-concrete versions (main, latest, empty, or branch names) are treated as supporting dual-PM.
+	// Only concrete semantic versions are subject to the threshold check.
+	if !semver.IsValid(version) {
+		return selected, false
 	}
 
 	// Compare the version against the threshold.
@@ -140,27 +140,6 @@ func EffectiveManager(selected Manager, resolvedVersion string) (Manager, bool) 
 	}
 
 	return selected, false
-}
-
-// isSemverVersion checks if a version string appears to be a semantic version.
-// Returns false for non-concrete refs like "main", "latest", empty, or branch names.
-func isSemverVersion(version string) bool {
-	if version == "" || version == "main" {
-		return false
-	}
-
-	// Strip template-v prefix if present to check the core version.
-	const prefix = "template-v"
-	core := strings.TrimPrefix(version, prefix)
-
-	// Check if it looks like a semver: starts with v or a digit, and contains dots.
-	// This rejects branch names like "feature-x" or "release-0.24" while accepting "0.25.0" and "v0.25.0".
-	if (core != "" && (core[0] == 'v' || (core[0] >= '0' && core[0] <= '9'))) &&
-		strings.Contains(core, ".") {
-		return true
-	}
-
-	return false
 }
 
 // FindLockfile returns the lockfile used by the manager, or an empty name if none exists.
@@ -178,7 +157,7 @@ func (m Manager) FindLockfile(dir string) (string, error) {
 
 // ValidateTemplate rejects templates with a lockfile only for another supported manager.
 // Templates without lockfiles can still be scaffolded with --skip-install.
-func (m Manager) ValidateTemplate(dir string) error {
+func (m Manager) ValidateTemplate(dir string, skipInstall bool) error {
 	name, err := m.FindLockfile(dir)
 	if err != nil || name != "" {
 		return err
@@ -195,6 +174,18 @@ func (m Manager) ValidateTemplate(dir string) error {
 			lockfiles := strings.Join(m.LockfileNames, " or ")
 			return fmt.Errorf("template has %s but no %s required by %q; use --package-manager %s or add %s to the template", name, lockfiles, m.InstallCommand, other.Name, lockfiles)
 		}
+	}
+	if skipInstall {
+		return nil
+	}
+	for _, name := range []string{"package.json", "package.json.tmpl"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); errors.Is(err, fs.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return fmt.Errorf("check %s: %w", name, err)
+		}
+		lockfiles := strings.Join(m.LockfileNames, " or ")
+		return fmt.Errorf("template has no %s required by %q; add %s to the template or use --skip-install to scaffold without installing dependencies", lockfiles, m.InstallCommand, lockfiles)
 	}
 	return nil
 }
