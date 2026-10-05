@@ -1,0 +1,52 @@
+
+=== Replay a terraform deployment of the bundle (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== config-remote-sync migrates the terraform state in memory and detects the remote change
+>>> [CLI] bundle config-remote-sync
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  max_concurrent_runs: replace
+
+
+
+=== The terraform state is untouched: config-remote-sync does not commit the migration
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json)
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Saving writes the remote change into the config
+>>> [CLI] bundle config-remote-sync --save
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  max_concurrent_runs: replace
+
+
+
+>>> cat databricks.yml
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    test_job:
+      name: test-job
+      max_concurrent_runs: 3
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+=== Cleanup
+>>> [CLI] bundle destroy --auto-approve
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Migrated 1 resource to direct deployment engine.
+Destroy: 1 deleted

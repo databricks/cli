@@ -33,16 +33,16 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	if !ok {
 		return diag.Diagnostics{{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q or %q)", configEngine, engine.EngineTerraform, engine.EngineDirect),
+			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
 			Locations: []dyn.Location{loc},
 		}}
 	}
 
 	if parsed == engine.EngineTerraform {
 		return diag.Diagnostics{{
-			Severity:  diag.Warning,
-			Summary:   "the terraform deployment engine is deprecated and will stop working in a future version of the CLI",
-			Detail:    "See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine",
+			Severity:  diag.Error,
+			Summary:   engine.TerraformRemovedSummary,
+			Detail:    engine.TerraformRemovedDetail,
 			Locations: []dyn.Location{loc},
 		}}
 	}
