@@ -22,7 +22,7 @@ class LifecycleWithStarted:
 
     started: VariableOrOptional[bool] = None
     """
-    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
+    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.
     """
 
     @classmethod
@@ -43,7 +43,7 @@ class LifecycleWithStartedDict(TypedDict, total=False):
 
     started: VariableOrOptional[bool]
     """
-    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
+    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.
     """
 
 

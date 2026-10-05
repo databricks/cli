@@ -622,7 +622,7 @@ resources:
       "$fields":
         "libraries":
           "description": |-
-            A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+            A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -632,7 +632,7 @@ resources:
                 Lifecycle setting to prevent the resource from being destroyed.
             "started":
               "description": |-
-                Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
+                Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.
         "permissions":
           "description": |-
             The permissions to apply to this resource.

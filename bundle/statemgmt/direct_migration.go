@@ -276,9 +276,8 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}
 
-	// b.Config has been modified by terraform.Interpolate which converts bundle-style
-	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id}).
-	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
+	// The config may use terraform-style references (${databricks_pipeline.x.id}).
+	// BuildStateFromTF expects ${resources.*} references, so rewrite them first.
 	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
 	if err != nil {
 		return tempStatePath, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
