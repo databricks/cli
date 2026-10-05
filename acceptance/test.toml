@@ -107,9 +107,9 @@ New = 'json.plan_version = [PLAN_VERSION];'
 # Short base62 ids (libs/shortid): cmd-exec-id is random per invocation and the lineage
 # hash follows the state's random lineage UUID.
 [[Repls]]
-Old = '(cmd-exec-id/|"cmd_exec_id": ")[0-9A-Za-z]{7}'
+Old = '(cmd-exec-id/|"cmd_exec_id": ")[0-9A-Za-z]{11}'
 New = '${1}[CMD-EXEC-ID]'
 
 [[Repls]]
-Old = '(lineage/|"state_lineage": ")[0-9A-Za-z]{7}'
+Old = '(lineage/|"state_lineage": ")[0-9A-Za-z]{11}'
 New = '${1}[LINEAGE]'
