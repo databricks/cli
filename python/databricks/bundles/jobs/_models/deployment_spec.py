@@ -32,23 +32,6 @@ class DeploymentSpec:
     """
 
     command_path: VariableOrOptional[str] = None
-    """
-    [Public Preview] Workspace path of the script to run on each node in this deployment.
-    Upload the script to this path and supply the path here. When the task
-    runs, the file at this path is run on each node; if it fails, the task
-    fails with its exit code.
-    
-    Example script contents::
-    
-        # Plain Python:
-        python train.py --epochs 10
-    
-        # Multi-GPU via accelerate:
-        accelerate launch train.py --config config.yaml
-    
-        # Distributed via torchrun:
-        torchrun --nproc_per_node=8 train.py
-    """
 
     name: VariableOrOptional[str] = None
     """
@@ -75,23 +58,6 @@ class DeploymentSpecDict(TypedDict, total=False):
     """
 
     command_path: VariableOrOptional[str]
-    """
-    [Public Preview] Workspace path of the script to run on each node in this deployment.
-    Upload the script to this path and supply the path here. When the task
-    runs, the file at this path is run on each node; if it fails, the task
-    fails with its exit code.
-    
-    Example script contents::
-    
-        # Plain Python:
-        python train.py --epochs 10
-    
-        # Multi-GPU via accelerate:
-        accelerate launch train.py --config config.yaml
-    
-        # Distributed via torchrun:
-        torchrun --nproc_per_node=8 train.py
-    """
 
     name: VariableOrOptional[str]
     """

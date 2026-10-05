@@ -22,14 +22,6 @@ class InstancePoolGcpAttributes:
     """
 
     gcp_availability: VariableOrOptional[GcpAvailability] = None
-    """
-    Availability type for the instances in the pool. One of:
-    
-    - `ON_DEMAND_GCP`: the pool uses on-demand instances only.
-    - `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.
-    - `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls
-      back to on-demand instances when preemptible capacity is unavailable.
-    """
 
     local_ssd_count: VariableOrOptional[int] = None
     """
@@ -69,14 +61,6 @@ class InstancePoolGcpAttributesDict(TypedDict, total=False):
     """"""
 
     gcp_availability: VariableOrOptional[GcpAvailabilityParam]
-    """
-    Availability type for the instances in the pool. One of:
-    
-    - `ON_DEMAND_GCP`: the pool uses on-demand instances only.
-    - `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.
-    - `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls
-      back to on-demand instances when preemptible capacity is unavailable.
-    """
 
     local_ssd_count: VariableOrOptional[int]
     """
