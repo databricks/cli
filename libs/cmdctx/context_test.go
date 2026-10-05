@@ -44,5 +44,5 @@ func TestCommandGenerateExecId(t *testing.T) {
 	assert.Equal(t, v, ExecId(ctx))
 
 	// The value should be a short id (see libs/shortid).
-	assert.Regexp(t, `^[0-9A-Za-z_-]{7}$`, v)
+	assert.Regexp(t, `^[0-9A-Za-z]{7}$`, v)
 }

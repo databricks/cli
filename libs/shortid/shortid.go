@@ -1,21 +1,35 @@
 // Package shortid produces compact identifiers for the user agent and telemetry.
 //
-// An identifier is 40 bits encoded with the unpadded URL-safe base64 alphabet,
-// which is 7 characters long. 40 bits is enough to correlate requests and events
-// while keeping the user agent short. The alphabet (A-Z, a-z, 0-9, '-', '_') is
-// accepted as a user agent value by the SDK.
+// An identifier is 40 bits encoded in base62 (0-9, A-Z, a-z), which is 7
+// characters long. 40 bits is enough to correlate requests and events while
+// keeping the user agent short. Plain alphanumerics avoid '-' and '_', which
+// read as separators in user agent and log values.
 package shortid
 
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 )
 
-const numBytes = 5
+const (
+	alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	numBytes = 5
+
+	// Length is fixed: 62^7 > 2^40, so every 40-bit value fits in 7 digits.
+	length = 7
+)
 
 func encode(b []byte) string {
-	return base64.RawURLEncoding.EncodeToString(b[:numBytes])
+	var n uint64
+	for _, c := range b[:numBytes] {
+		n = n<<8 | uint64(c)
+	}
+	out := make([]byte, length)
+	for i := length - 1; i >= 0; i-- {
+		out[i] = alphabet[n%uint64(len(alphabet))]
+		n /= uint64(len(alphabet))
+	}
+	return string(out)
 }
 
 // New returns a random identifier.
