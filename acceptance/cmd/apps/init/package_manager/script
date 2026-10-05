@@ -73,11 +73,17 @@ git add template
 git commit -qm 'Add template'
 git tag template-v0.81.0
 git tag template-v0.57.0
+git tag template-v0.82.0
 repo_url=$(python3 -c 'from pathlib import Path; print(Path.cwd().as_uri())')
 export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="url.${repo_url}/.insteadOf"
 export GIT_CONFIG_VALUE_0="https://github.com/databricks/appkit"
 export DATABRICKS_APPKIT_TEMPLATE_PATH=""
+
+title "First dual-manager template version keeps pnpm"
+trace $CLI apps init --name dual-manager-app --version 0.82.0 --package-manager pnpm --skip-install
+cat dual-manager-app/app.yaml
+jq '.scripts.build, .packageManager' dual-manager-app/package.json
 
 title "Version downgrade uses npm throughout"
 trace $CLI apps init --name older-app --version 0.81.0 --skip-install

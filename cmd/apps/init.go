@@ -1203,7 +1203,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if usingDefaultTemplate {
 		effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
 		if downgraded {
-			log.Warnf(ctx, "Package manager %q is not supported for AppKit version %s, using npm instead",
+			log.Warnf(ctx, "Package manager %q is not supported for AppKit %s, using npm instead",
 				selectedManager.Name, refLabel)
 		}
 		selectedManager = effective

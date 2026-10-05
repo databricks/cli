@@ -6,6 +6,7 @@ Ignore = [
     "standard-app-pnpm",
     "standard-app-npm",
     "older-app",
+    "dual-manager-app",
     "fallback-app",
     "compatible-app",
     "installed-app",

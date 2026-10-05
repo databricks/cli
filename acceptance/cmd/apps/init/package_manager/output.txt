@@ -217,10 +217,34 @@ Error: npm --version returned invalid version "invalid"; ensure npm is working, 
 >>> CLI_TEST_NPM_VERSION= [CLI] apps init --name empty-app --template npm-only-template --package-manager npm
 Error: npm --version returned invalid version ""; ensure npm is working, or use --skip-install
 
+=== First dual-manager template version keeps pnpm
+>>> [CLI] apps init --name dual-manager-app --version 0.82.0 --package-manager pnpm --skip-install
+✔ Cloning template (version 0.82.0)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/dual-manager-app
+  Files: 4
+
+  Next steps:
+
+    cd dual-manager-app
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "dual-manager-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+"pnpm run build:server && pnpm run build:client"
+"pnpm@11.0.8"
+
 === Version downgrade uses npm throughout
 >>> [CLI] apps init --name older-app --version 0.81.0 --skip-install
 ✔ Cloning template (version 0.81.0)
-Warn: Package manager "pnpm" is not supported for AppKit version version 0.81.0, using npm instead
+Warn: Package manager "pnpm" is not supported for AppKit version 0.81.0, using npm instead
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -246,7 +270,7 @@ null
 >>> DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false [CLI] apps init --name fallback-app --skip-install
 Warn: Template version not found, falling back to embedded version 0.57.0
 ✔ Cloning template (version 0.57.0)
-Warn: Package manager "pnpm" is not supported for AppKit version version 0.57.0, using npm instead
+Warn: Package manager "pnpm" is not supported for AppKit version 0.57.0, using npm instead
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -271,7 +295,7 @@ null
 === Version downgrade resolves the installed npm pin
 >>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-older-app --version 0.81.0
 ✔ Cloning template (version 0.81.0)
-Warn: Package manager "pnpm" is not supported for AppKit version version 0.81.0, using npm instead
+Warn: Package manager "pnpm" is not supported for AppKit version 0.81.0, using npm instead
 ✔ Creating project
 ✔ Installing dependencies
 
