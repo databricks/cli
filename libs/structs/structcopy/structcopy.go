@@ -9,7 +9,9 @@ package structcopy
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -89,7 +91,12 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 	}
 
 	var ops []copyOp
-	for name, dst := range dstFields {
+	// Emit ops in destination declaration order so the plan is deterministic.
+	names := slices.SortedFunc(maps.Keys(dstFields), func(a, b string) int {
+		return slices.Compare(dstFields[a].index, dstFields[b].index)
+	})
+	for _, name := range names {
+		dst := dstFields[name]
 		src, ok := srcFields[name]
 		if !ok {
 			// Field absent from the source type is left zero in the destination.
