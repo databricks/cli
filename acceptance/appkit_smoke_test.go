@@ -32,42 +32,7 @@ const (
 // TestAppsInitAppKit082 uses the actual release artifacts and package managers.
 // The build tag keeps network downloads and package installation out of TestAccept.
 func TestAppsInitAppKit082(t *testing.T) {
-	var workDir string
-	if KeepTmp {
-		var err error
-		workDir, err = os.MkdirTemp("", "appkit-082-smoke-") //nolint:usetesting // -keeptmp preserves the generated apps for inspection.
-		require.NoError(t, err)
-	} else {
-		workDir = t.TempDir()
-	}
-	t.Logf("Smoke test directory: %s", filepath.ToSlash(workDir))
-
-	cli := CLIPath
-	if cli == "" {
-		cli = BuildCLI(t, workDir, "", runtime.GOOS, runtime.GOARCH)
-	}
-	cli, err := filepath.Abs(cli)
-	require.NoError(t, err)
-
-	// Keep GitHub/package registry credentials, but isolate workspace credentials
-	// and template overrides from the developer's environment.
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "DATABRICKS_") || strings.HasPrefix(key, "OTEL_") || strings.HasPrefix(key, "MLFLOW_") {
-			t.Setenv(key, "")
-		}
-	}
-	t.Setenv("CI", "true")
-	t.Setenv("NODE_ENV", "development")
-	t.Setenv("DO_NOT_TRACK", "1")
-	t.Setenv("OTEL_SDK_DISABLED", "true")
-	t.Setenv("DATABRICKS_CACHE_DIR", filepath.Join(workDir, "cache"))
-
-	server := testserver.New(t)
-	testserver.AddDefaultHandlers(server)
-	configFile := filepath.Join(workDir, ".databrickscfg")
-	testutil.WriteFile(t, configFile, fmt.Sprintf("[%s]\nhost = %s\ntoken = %s\n", appkitSmokeProfile, server.URL, testserver.UserNameTokenPrefix+"appkit-smoke"))
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	cli, workDir := setupAppKitSmoke(t, "appkit-082-smoke-")
 
 	t.Run("version_tag", func(t *testing.T) {
 		// Exercise the public --version path independently of the artifact path.
@@ -130,6 +95,48 @@ func TestAppsInitAppKit082(t *testing.T) {
 			checkInstalledAppKitSmokeVersion(t, installedDir)
 		})
 	})
+}
+
+func setupAppKitSmoke(t *testing.T, prefix string) (string, string) {
+	t.Helper()
+	var workDir string
+	if KeepTmp {
+		var err error
+		workDir, err = os.MkdirTemp("", prefix) //nolint:usetesting // -keeptmp preserves the generated apps for inspection.
+		require.NoError(t, err)
+	} else {
+		workDir = t.TempDir()
+	}
+	t.Logf("Smoke test directory: %s", filepath.ToSlash(workDir))
+
+	cli := CLIPath
+	if cli == "" {
+		cli = BuildCLI(t, workDir, "", runtime.GOOS, runtime.GOARCH)
+	}
+	cli, err := filepath.Abs(cli)
+	require.NoError(t, err)
+
+	// Keep GitHub/package registry credentials, but isolate workspace credentials
+	// and template overrides from the developer's environment.
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(key, "DATABRICKS_") || strings.HasPrefix(key, "OTEL_") || strings.HasPrefix(key, "MLFLOW_") {
+			t.Setenv(key, "")
+		}
+	}
+	t.Setenv("CI", "true")
+	t.Setenv("NODE_ENV", "development")
+	t.Setenv("DO_NOT_TRACK", "1")
+	t.Setenv("OTEL_SDK_DISABLED", "true")
+	t.Setenv("DATABRICKS_CACHE_DIR", filepath.Join(workDir, "cache"))
+
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	configFile := filepath.Join(workDir, ".databrickscfg")
+	testutil.WriteFile(t, configFile, fmt.Sprintf("[%s]\nhost = %s\ntoken = %s\n", appkitSmokeProfile, server.URL, testserver.UserNameTokenPrefix+"appkit-smoke"))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	return cli, workDir
 }
 
 func downloadAppKitSmokeTemplate(t *testing.T, workDir string) string {
