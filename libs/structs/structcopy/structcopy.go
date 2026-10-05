@@ -41,7 +41,7 @@ type copyOp struct {
 	dstType  reflect.Type // target type for Convert
 
 	// forceSendFields ops:
-	ownerType reflect.Type // struct type owning the ForceSendFields slice, for validity filtering
+	ownFields map[string]bool // field names declared directly on the slice's owner struct
 }
 
 // jsonFieldInfo locates a top-level JSON field within a struct, resolved through
@@ -105,7 +105,7 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 	}
 
 	for _, target := range dstForceSend {
-		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownerType: target.ownerType})
+		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownFields: ownFieldNames(target.ownerType)})
 	}
 
 	return &Copier{dstElem: dstElem, ops: ops, srcForceSendIndex: srcForceSendIndex}, nil
@@ -129,7 +129,7 @@ func (c *Copier) Copy(src any) any {
 			// its own struct's fields. Filtering by directly-declared (not promoted) fields is
 			// what keeps a shadow slice — e.g. a wrapper that re-declares ForceSendFields above
 			// an embedded spec — from being populated with the embed's promoted field names.
-			filtered := filterOwnFields(op.ownerType, srcForceSend)
+			filtered := filterOwnFields(op.ownFields, srcForceSend)
 			dstVal.FieldByIndex(op.dstIndex).Set(reflect.ValueOf(filtered))
 			continue
 		}
@@ -169,17 +169,22 @@ func isScalarKind(k reflect.Kind) bool {
 	}
 }
 
-// filterOwnFields returns the names that name a field directly declared on ownerType.
-// Unlike reflect.Type.FieldByName it does not follow promotion, so a promoted field of an
-// embedded struct is not treated as belonging to the outer struct — that is what keeps a
-// wrapper's shadow ForceSendFields slice from inheriting an embedded spec's field names.
-// Markers are matched by Go field name (the ForceSendFields convention), so a field the copier
-// maps across a differing Go name under the same JSON name is not force-sent on the destination.
-func filterOwnFields(ownerType reflect.Type, names []string) []string {
-	own := make(map[string]bool, ownerType.NumField())
-	for field := range ownerType.Fields() {
+// ownFieldNames returns the names of fields declared directly on t. Unlike
+// reflect.Type.FieldByName it does not follow promotion, so a promoted field of an embedded
+// struct is not treated as belonging to the outer struct — that is what keeps a wrapper's
+// shadow ForceSendFields slice from inheriting an embedded spec's field names.
+func ownFieldNames(t reflect.Type) map[string]bool {
+	own := make(map[string]bool, t.NumField())
+	for field := range t.Fields() {
 		own[field.Name] = true
 	}
+	return own
+}
+
+// filterOwnFields returns the names present in own. Markers are matched by Go field name (the
+// ForceSendFields convention), so a field the copier maps across a differing Go name under the
+// same JSON name is not force-sent on the destination.
+func filterOwnFields(own map[string]bool, names []string) []string {
 	var result []string
 	for _, name := range names {
 		if own[name] {
