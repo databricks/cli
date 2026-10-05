@@ -167,6 +167,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		cmd.SetContext(ctx)
 	}
 
+	// Reject an invalid or removed DATABRICKS_BUNDLE_ENGINE before initialization, so
+	// the removal error comes before any initialize-time validation (such as
+	// validate.TFOnlyReferences). A terraform bundle.engine is reported during
+	// initialization by validate.ValidateEngine, with its location.
+	if b.Config.Bundle.Engine == engine.EngineNotSet {
+		if _, err := ResolveEngineSetting(ctx, b); err != nil {
+			return b, nil, err
+		}
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)

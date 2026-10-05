@@ -201,8 +201,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		mutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
-		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
-		// points to a Terraform-only field with no DABs equivalent.
+		// Errors when a cross-resource reference points to a Terraform-only field
+		// with no DABs equivalent.
 		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
