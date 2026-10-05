@@ -336,74 +336,67 @@ func isNumericKind(k reflect.Kind) bool {
 	}
 }
 
-func isIntKind(k reflect.Kind) bool {
-	return k >= reflect.Int && k <= reflect.Int64
-}
-
-func isUintKind(k reflect.Kind) bool {
-	return k >= reflect.Uint && k <= reflect.Uint64
-}
-
 // convertNumeric converts between numeric kinds and fails instead of losing data,
-// following the rules of libs/dyn/convert (normalizeInt, normalizeFloat):
-//   - float to int requires an integral value that fits the destination;
-//   - int to int (or uint) requires the value to fit the destination;
-//   - int to float requires the value to be exactly representable;
-//   - float64 to float32 must not overflow to infinity.
+// following the rules of libs/dyn/convert (normalizeInt, normalizeFloat). The one
+// exception is float to float, which is allowed even when it rounds or overflows.
 func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Value, error) {
-	srcKind := valueVal.Kind()
 	dstKind := targetType.Kind()
 	zero := reflect.New(targetType).Elem()
 
 	switch {
-	case isIntKind(srcKind) && isIntKind(dstKind):
-		if v := valueVal.Int(); zero.OverflowInt(v) {
-			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
-		}
-	case isIntKind(srcKind) && isUintKind(dstKind):
-		if v := valueVal.Int(); v < 0 || zero.OverflowUint(uint64(v)) {
-			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
-		}
-	case isUintKind(srcKind) && isIntKind(dstKind):
-		if v := valueVal.Uint(); v > math.MaxInt64 || zero.OverflowInt(int64(v)) {
-			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
-		}
-	case isUintKind(srcKind) && isUintKind(dstKind):
-		if v := valueVal.Uint(); zero.OverflowUint(v) {
-			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
-		}
-	case isIntKind(srcKind) && !isIntKind(dstKind) && !isUintKind(dstKind):
+	case valueVal.CanInt():
 		v := valueVal.Int()
-		f := reflect.ValueOf(v).Convert(targetType).Float()
-		// float64(2^63) is out of int64 range, so it cannot be converted back to compare.
-		if f >= math.MaxInt64 || int64(f) != v {
-			return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+		switch {
+		case zero.CanInt():
+			if zero.OverflowInt(v) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		case zero.CanUint():
+			if v < 0 || zero.OverflowUint(uint64(v)) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		default:
+			f := reflect.ValueOf(v).Convert(targetType).Float()
+			// float64(2^63) is out of int64 range, so it cannot be converted back to compare.
+			if f >= math.MaxInt64 || int64(f) != v {
+				return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+			}
 		}
-	case isUintKind(srcKind) && !isIntKind(dstKind) && !isUintKind(dstKind):
+
+	case valueVal.CanUint():
 		v := valueVal.Uint()
-		f := reflect.ValueOf(v).Convert(targetType).Float()
-		if f >= math.MaxUint64 || uint64(f) != v {
-			return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+		switch {
+		case zero.CanInt():
+			if v > math.MaxInt64 || zero.OverflowInt(int64(v)) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		case zero.CanUint():
+			if zero.OverflowUint(v) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		default:
+			f := reflect.ValueOf(v).Convert(targetType).Float()
+			if f >= math.MaxUint64 || uint64(f) != v {
+				return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+			}
 		}
-	case isIntKind(dstKind) || isUintKind(dstKind):
-		// float source
+
+	default:
 		f := valueVal.Float()
+		if !zero.CanInt() && !zero.CanUint() {
+			// Float to float: allowed even with a loss.
+			break
+		}
 		if math.IsNaN(f) || f != math.Trunc(f) {
 			return reflect.Value{}, fmt.Errorf("cannot set %v to %s: precision loss", f, dstKind)
 		}
 		// Bounds are powers of two, so they are exact in float64.
 		bits := float64(targetType.Bits())
 		lo, hi := 0.0, math.Exp2(bits)
-		if isIntKind(dstKind) {
+		if zero.CanInt() {
 			lo, hi = -math.Exp2(bits-1), math.Exp2(bits-1)
 		}
 		if f < lo || f >= hi {
-			return reflect.Value{}, fmt.Errorf("value %v overflows %s", f, dstKind)
-		}
-	default:
-		// float to float
-		f := valueVal.Float()
-		if zero.OverflowFloat(f) {
 			return reflect.Value{}, fmt.Errorf("value %v overflows %s", f, dstKind)
 		}
 	}

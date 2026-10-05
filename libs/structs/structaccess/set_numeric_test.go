@@ -75,7 +75,8 @@ func TestSetNumericConversion(t *testing.T) {
 
 		// float <- float
 		{name: "float32 from float64", path: "f32", value: 1.5, expected: float32(1.5)},
-		{name: "float32 from overflowing float64", path: "f32", value: 1e300, err: "value 1e+300 overflows float32"},
+		{name: "float32 from rounding float64", path: "f32", value: 1.1, expected: float32(1.1)},
+		{name: "float32 from overflowing float64", path: "f32", value: 1e300, expected: float32(math.Inf(1))},
 		{name: "float64 from float32", path: "f64", value: float32(0.5), expected: 0.5},
 
 		// pointer targets
@@ -83,7 +84,7 @@ func TestSetNumericConversion(t *testing.T) {
 		{name: "ptr int from fractional float", path: "pi", value: 1.9, err: "cannot set 1.9 to int: precision loss"},
 		{name: "ptr int32 from overflowing int64", path: "pi32", value: int64(1 << 40), err: "value 1099511627776 overflows int32"},
 		{name: "ptr uint from negative int", path: "pu", value: -1, err: "value -1 overflows uint"},
-		{name: "ptr float32 from overflowing float64", path: "pf32", value: 1e300, err: "overflows float32"},
+		{name: "ptr float32 from overflowing float64", path: "pf32", value: 1e300, expected: float32(math.Inf(1))},
 		{name: "ptr float64 from large int64", path: "pf64", value: int64(1<<53 + 1), err: "precision loss"},
 		{name: "ptr float64 from small int", path: "pf64", value: 3, expected: 3.0},
 	}
