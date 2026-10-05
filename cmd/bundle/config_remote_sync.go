@@ -84,16 +84,8 @@ Examples:
 				stats.Engine = stateDesc.Engine
 				stats.CollectStateStats(stateDesc, b.DeploymentBundle.StateDB.VersionID)
 
-				// Open the deployment state once and reuse it for both planning and
-				// selector resolution (avoids reading the terraform snapshot twice).
-				deployBundle, err := configsync.OpenDeploymentState(ctx, b, stateDesc.Engine)
-				if err != nil {
-					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
-					if errors.Is(err, configsync.ErrStateSnapshotNotFound) {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
-					}
-					return err
-				}
+				// ProcessBundleRet has already opened the direct state for reading.
+				deployBundle := &b.DeploymentBundle
 
 				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {

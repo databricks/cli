@@ -100,7 +100,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
-		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 }
 
