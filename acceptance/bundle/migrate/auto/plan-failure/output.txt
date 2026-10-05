@@ -12,7 +12,7 @@ API error_code: INJECTED
 API message: Fault injected by test.
 Error: migrating Terraform state to the direct engine: the migrated state failed its plan check: planning failed
 
-The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migration of your bundle failed. Install Databricks CLI v1.19.x to deploy on Terraform, or report this at dabs-feedback@databricks.com
+The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migration of your bundle failed. Install Databricks CLI v1.19.x to deploy on Terraform, and please report this to dabs-feedback@databricks.com
 
 
 >>> print_migration_telemetry
