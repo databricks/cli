@@ -104,9 +104,11 @@ New = '"plan_version": [PLAN_VERSION],'
 Old = 'json\.plan_version = 2;'
 New = 'json.plan_version = [PLAN_VERSION];'
 
-# cmd-exec-id is a random short id (libs/shortid) per invocation. The lineage hash is
-# not masked here: fixture lineages hash to stable values, and tests with a freshly
-# minted lineage register its hash with read_lineage.py.
+# cmd-exec-id is a random short id (libs/shortid) per invocation, so mask it in user
+# agents. The telemetry cmd_exec_id field is not masked here: tests register the exact id
+# with extract_command_exec_id.py, so it is only replaced if it matches the user agent.
+# The lineage hash is not masked either: fixture lineages hash to stable values, and
+# tests with a freshly minted lineage register its hash with read_lineage.py.
 [[Repls]]
-Old = '(cmd-exec-id/|"cmd_exec_id": ")[0-9A-Za-z]{11}'
-New = '${1}[CMD_EXEC_ID_HASH]'
+Old = 'cmd-exec-id/[0-9A-Za-z]{11}'
+New = 'cmd-exec-id/[CMD_EXEC_ID_HASH]'
