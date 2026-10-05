@@ -978,5 +978,5 @@ func TestSet_AllocationWithExistingParents(t *testing.T) {
 	}, *target)
 
 	err := structaccess.SetByString(target, "sl[1].k", "3")
-	assert.EqualError(t, err, "failed to navigate to parent sl[1]: sl[1]: index out of range, length is 1")
+	assert.EqualError(t, err, "failed to navigate to parent sl[1]: sl[1]: index out of range, length is 1") //nolint:dupword
 }
