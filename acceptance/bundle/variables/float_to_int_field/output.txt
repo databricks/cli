@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle validate
+Warning: cannot accurately represent "5.9" as integer due to precision loss
+  at resources.jobs.foo.max_concurrent_runs
+  in databricks.yml:13:28
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+
+>>> [CLI] bundle validate -o json
+Warning: cannot accurately represent "5.9" as integer due to precision loss
+  at resources.jobs.foo.max_concurrent_runs
+  in databricks.yml:13:28
+
+{
+  "variables": {
+    "x": {
+      "default": 5.9,
+      "value": 5.9
+    }
+  },
+  "max_concurrent_runs": 1
+}
