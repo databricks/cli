@@ -3,6 +3,7 @@ package structaccess
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -280,6 +281,11 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 		return valueVal, nil
 	}
 
+	// Numeric conversions must not silently truncate, wrap or round.
+	if isNumericKind(valueType.Kind()) && isNumericKind(targetType.Kind()) {
+		return convertNumeric(valueVal, targetType)
+	}
+
 	// Convertibility check (handles typedefed types)
 	if valueType.ConvertibleTo(targetType) {
 		return valueVal.Convert(targetType), nil
@@ -292,6 +298,15 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 			// Create a new pointer and set the value
 			ptr := reflect.New(elemType)
 			ptr.Elem().Set(valueVal)
+			return ptr, nil
+		}
+		if isNumericKind(valueType.Kind()) && isNumericKind(elemType.Kind()) {
+			converted, err := convertNumeric(valueVal, elemType)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(converted)
 			return ptr, nil
 		}
 		if valueType.ConvertibleTo(elemType) {
@@ -308,6 +323,91 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 	}
 
 	return reflect.Value{}, fmt.Errorf("cannot convert %s to %s", valueType, targetType)
+}
+
+func isNumericKind(k reflect.Kind) bool {
+	switch k {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return true
+	}
+	return false
+}
+
+func isIntKind(k reflect.Kind) bool {
+	return k >= reflect.Int && k <= reflect.Int64
+}
+
+func isUintKind(k reflect.Kind) bool {
+	return k >= reflect.Uint && k <= reflect.Uint64
+}
+
+// convertNumeric converts between numeric kinds and fails instead of losing data,
+// following the rules of libs/dyn/convert (normalizeInt, normalizeFloat):
+//   - float to int requires an integral value that fits the destination;
+//   - int to int (or uint) requires the value to fit the destination;
+//   - int to float requires the value to be exactly representable;
+//   - float64 to float32 must not overflow to infinity.
+func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Value, error) {
+	srcKind := valueVal.Kind()
+	dstKind := targetType.Kind()
+	zero := reflect.New(targetType).Elem()
+
+	switch {
+	case isIntKind(srcKind) && isIntKind(dstKind):
+		if v := valueVal.Int(); zero.OverflowInt(v) {
+			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+		}
+	case isIntKind(srcKind) && isUintKind(dstKind):
+		if v := valueVal.Int(); v < 0 || zero.OverflowUint(uint64(v)) {
+			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+		}
+	case isUintKind(srcKind) && isIntKind(dstKind):
+		if v := valueVal.Uint(); v > math.MaxInt64 || zero.OverflowInt(int64(v)) {
+			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+		}
+	case isUintKind(srcKind) && isUintKind(dstKind):
+		if v := valueVal.Uint(); zero.OverflowUint(v) {
+			return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+		}
+	case isIntKind(srcKind) && !isIntKind(dstKind) && !isUintKind(dstKind):
+		v := valueVal.Int()
+		f := reflect.ValueOf(v).Convert(targetType).Float()
+		// float64(2^63) is out of int64 range, so it cannot be converted back to compare.
+		if f >= math.MaxInt64 || int64(f) != v {
+			return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+		}
+	case isUintKind(srcKind) && !isIntKind(dstKind) && !isUintKind(dstKind):
+		v := valueVal.Uint()
+		f := reflect.ValueOf(v).Convert(targetType).Float()
+		if f >= math.MaxUint64 || uint64(f) != v {
+			return reflect.Value{}, fmt.Errorf("cannot set %d to %s: precision loss", v, dstKind)
+		}
+	case isIntKind(dstKind) || isUintKind(dstKind):
+		// float source
+		f := valueVal.Float()
+		if math.IsNaN(f) || f != math.Trunc(f) {
+			return reflect.Value{}, fmt.Errorf("cannot set %v to %s: precision loss", f, dstKind)
+		}
+		// Bounds are powers of two, so they are exact in float64.
+		bits := float64(targetType.Bits())
+		lo, hi := 0.0, math.Exp2(bits)
+		if isIntKind(dstKind) {
+			lo, hi = -math.Exp2(bits-1), math.Exp2(bits-1)
+		}
+		if f < lo || f >= hi {
+			return reflect.Value{}, fmt.Errorf("value %v overflows %s", f, dstKind)
+		}
+	default:
+		// float to float
+		f := valueVal.Float()
+		if zero.OverflowFloat(f) {
+			return reflect.Value{}, fmt.Errorf("value %v overflows %s", f, dstKind)
+		}
+	}
+
+	return valueVal.Convert(targetType), nil
 }
 
 // updateForceSendFields handles ForceSendFields when setting values:
