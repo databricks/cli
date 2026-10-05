@@ -47,6 +47,52 @@ DESCRIPTIONS: dict[str, str] = {
     ),
 }
 
+# Field-level counterpart to DESCRIPTIONS: individual upstream property
+# descriptions that aren't valid reStructuredText and break the Sphinx docs
+# build. Keyed by schema name, then field name. Same burn-down rules apply --
+# each entry is a temporary override until the proto comment is fixed upstream,
+# and override_field_descriptions flags entries that upstream has already fixed.
+#
+# jobs.DeploymentSpec.command_path: the upstream comment embeds a Markdown
+# ```bash code fence, which docutils parses as an unterminated inline literal.
+# Rewritten as an RST literal block.
+#
+# compute.InstancePoolGcpAttributes.gcp_availability: the upstream comment's
+# final bullet wraps onto an unindented continuation line, which docutils
+# rejects as an unexpected unindent. Rewritten with the continuation aligned to
+# the bullet text.
+FIELD_DESCRIPTIONS: dict[str, dict[str, str]] = {
+    "jobs.DeploymentSpec": {
+        "command_path": (
+            "[Public Preview] Workspace path of the script to run on each node in this deployment.\n"
+            "Upload the script to this path and supply the path here. When the task\n"
+            "runs, the file at this path is run on each node; if it fails, the task\n"
+            "fails with its exit code.\n"
+            "\n"
+            "Example script contents::\n"
+            "\n"
+            "    # Plain Python:\n"
+            "    python train.py --epochs 10\n"
+            "\n"
+            "    # Multi-GPU via accelerate:\n"
+            "    accelerate launch train.py --config config.yaml\n"
+            "\n"
+            "    # Distributed via torchrun:\n"
+            "    torchrun --nproc_per_node=8 train.py"
+        ),
+    },
+    "compute.InstancePoolGcpAttributes": {
+        "gcp_availability": (
+            "Availability type for the instances in the pool. One of:\n"
+            "\n"
+            "- `ON_DEMAND_GCP`: the pool uses on-demand instances only.\n"
+            "- `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.\n"
+            "- `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls\n"
+            "  back to on-demand instances when preemptible capacity is unavailable."
+        ),
+    },
+}
+
 
 def add_extra_required_fields(schemas: dict[str, Schema]):
     output = {}
@@ -83,6 +129,38 @@ def override_descriptions(schemas: dict[str, Schema]):
                     "description was fixed, so remove the override"
                 )
             output[name] = replace(schema, description=override)
+        else:
+            output[name] = schema
+
+    return output
+
+
+def override_field_descriptions(schemas: dict[str, Schema]):
+    if missing := FIELD_DESCRIPTIONS.keys() - schemas.keys():
+        raise ValueError(
+            f"Cannot override field descriptions for unknown schemas: {missing}"
+        )
+
+    output = {}
+    for name, schema in schemas.items():
+        if field_overrides := FIELD_DESCRIPTIONS.get(name):
+            if unknown := field_overrides.keys() - schema.properties.keys():
+                raise ValueError(
+                    f"Cannot override unknown fields {unknown} in schema {name}"
+                )
+
+            new_properties = dict(schema.properties)
+            for field_name, override in field_overrides.items():
+                prop = new_properties[field_name]
+                if prop.description == override:
+                    raise ValueError(
+                        f"Field description override for {name}.{field_name} is a "
+                        "no-op; the upstream description was fixed, so remove the "
+                        "override"
+                    )
+                new_properties[field_name] = replace(prop, description=override)
+
+            output[name] = replace(schema, properties=new_properties)
         else:
             output[name] = schema
 

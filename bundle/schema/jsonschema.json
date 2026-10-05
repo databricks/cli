@@ -8087,7 +8087,7 @@
                   "description": "Attributes set during instance pool creation which are related to GCP.",
                   "properties": {
                     "gcp_availability": {
-                      "description": "Availability type for the instances in the pool. One of:\n\n- `ON_DEMAND_GCP`: the pool uses on-demand instances only.\n- `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.\n- `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls\n  back to on-demand instances when preemptible capacity is unavailable.",
+                      "description": "Availability type for the instances in the pool. One of:\n\n- `ON_DEMAND_GCP`: the pool uses on-demand instances only.\n- `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.\n- `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls\nback to on-demand instances when preemptible capacity is unavailable.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -9706,7 +9706,7 @@
                   "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
                   "properties": {
                     "command_path": {
-                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents::\n\n    # Plain Python:\n    python train.py --epochs 10\n\n    # Multi-GPU via accelerate:\n    accelerate launch train.py --config config.yaml\n\n    # Distributed via torchrun:\n    torchrun --nproc_per_node=8 train.py",
+                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n```bash\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py\n```",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
