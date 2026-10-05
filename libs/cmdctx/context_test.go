@@ -3,7 +3,6 @@ package cmdctx
 import (
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,6 +43,6 @@ func TestCommandGenerateExecId(t *testing.T) {
 	// Subsequent calls should return the same value.
 	assert.Equal(t, v, ExecId(ctx))
 
-	// The value should be a valid UUID.
-	assert.NoError(t, uuid.Validate(v))
+	// The value should be a short id (see libs/shortid).
+	assert.Regexp(t, `^[0-9A-Za-z_-]{7}$`, v)
 }
