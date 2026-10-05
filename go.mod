@@ -17,7 +17,6 @@ require (
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
-	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.11.0 // MIT
 	github.com/klauspost/pgzip v1.2.6 // MIT

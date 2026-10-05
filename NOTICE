@@ -19,18 +19,6 @@ License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
 
 ---
 
-This Software contains code from the following open source projects, licensed under the MPL 2.0 license:
-
-hashicorp/go-version - https://github.com/hashicorp/go-version
-Copyright 2014 HashiCorp, Inc.
-License - https://github.com/hashicorp/go-version/blob/main/LICENSE
-
-hashicorp/terraform - https://github.com/hashicorp/terraform
-Copyright 2014 HashiCorp, Inc.
-License - https://github.com/hashicorp/terraform/blob/v1.5.5/LICENSE
-
----
-
 This Software contains code from the following open source projects, licensed under the BSD (2-clause) license:
 
 pkg/browser - https://github.com/pkg/browser

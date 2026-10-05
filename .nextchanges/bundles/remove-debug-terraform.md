@@ -1,0 +1,1 @@
+* Remove the hidden `bundle debug terraform` command. The CLI Docker image no longer ships Terraform or the Databricks Terraform provider. ([#PLACEHOLDER](https://github.com/databricks/cli/pull/6932))
