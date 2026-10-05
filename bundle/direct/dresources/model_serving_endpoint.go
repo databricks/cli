@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -103,7 +104,7 @@ func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemot
 		RouteOptimized:     state.RouteOptimized,
 		Tags:               state.Tags,
 		TelemetryConfig:    state.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.EndpointDetails.ForceSendFields),
+		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.ForceSendFields),
 
 		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
 		// TODO(shreyas): Add a warning when users try setting top level rate limits.
@@ -126,6 +127,20 @@ type ModelServingEndpointRemote struct {
 	RouteOptimized     bool                             `json:"route_optimized,omitempty"`
 	Tags               []serving.EndpointTag            `json:"tags,omitempty"`
 	TelemetryConfig    *serving.TelemetryConfig         `json:"telemetry_config,omitempty"`
+
+	// ForceSendFields surfaces EndpointDetails.ForceSendFields at the root so RemapState is a
+	// plain field copy rather than reaching into the nested EndpointDetails struct.
+	ForceSendFields []string `json:"-"`
+}
+
+// Custom marshalers so the SDK's ForceSendFields convention is honored on the wrapper and its
+// extra fields survive a JSON state round-trip (mirrors VectorSearchEndpointRemote).
+func (s *ModelServingEndpointRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s ModelServingEndpointRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *ModelServingEndpointRemote {
@@ -141,6 +156,7 @@ func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *Mo
 		RouteOptimized:     details.RouteOptimized,
 		Tags:               details.Tags,
 		TelemetryConfig:    details.TelemetryConfig,
+		ForceSendFields:    utils.FilterFields[ModelServingEndpointRemote](details.ForceSendFields),
 	}
 }
 

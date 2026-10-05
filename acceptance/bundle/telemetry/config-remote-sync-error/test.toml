@@ -4,4 +4,4 @@ GOOS.windows = false
 # STATE_NOT_FOUND is a terraform-only path: the terraform engine pulls a config
 # snapshot that doesn't exist without a prior deploy, while the direct engine
 # does not. Pin the engine so the test exercises that specific failure.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+Env.DATABRICKS_BUNDLE_ENGINE = "terraform"

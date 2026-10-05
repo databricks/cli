@@ -1,0 +1,9 @@
+Cloud = false
+RecordRequests = true
+
+# Detecting a config change to an explicit zero-value bool (gcp_attributes.use_preemptible_executors: false)
+# is direct-engine behavior; the terraform engine handles zero values differently.
+
+Ignore = [
+    "databricks.yml",
+]

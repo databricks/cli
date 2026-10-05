@@ -7,7 +7,7 @@ cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .b
 # set as soon as the deployment state is pulled, not only inside deployCore. Before
 # that fix state_engine was empty on this path, which the dashboard showed as
 # engine="unknown". state_engine is engine-specific, so capture it per-engine.
-cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
+cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata' > out.resources_metadata.txt
 
 rm "$OUT_REQUESTS"
 rm telemetry.json

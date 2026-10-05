@@ -1,3 +1,1 @@
 Ignore = [".databricks"]
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

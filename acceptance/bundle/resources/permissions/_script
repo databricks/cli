@@ -1,7 +1,7 @@
 trace $CLI bundle validate -o json | nostamp.py | jq .resources.$RESOURCE.foo.permissions
 rm "$OUT_REQUESTS"
 
-$CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan.json
 
 print_requests() {
     jq -c < "$OUT_REQUESTS" | jq 'select(.method != "GET" and (.path | contains("permissions")) and (.path | contains("/api/2.0/bundle") | not))'
@@ -10,7 +10,7 @@ print_requests() {
 
 rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
-print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests > out.requests.deploy.json
 
 trace $CLI bundle destroy --auto-approve
-print_requests > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests > out.requests.destroy.json

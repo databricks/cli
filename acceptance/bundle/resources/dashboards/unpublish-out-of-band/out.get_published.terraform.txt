@@ -1,5 +1,0 @@
-
->>> errcode [CLI] lakeview get-published [DASHBOARD1_ID]
-Error: Unable to find published dashboard [[DASHBOARD1_ID]]
-
-Exit code: 1

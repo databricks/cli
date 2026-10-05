@@ -1,11 +1,15 @@
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "my_test_code-0.0.1-py3-none-any.whl" > /dev/null
 
 trace find.py --expect 1 whl
 
 title "Expecting 1 wheels to be uploaded"
 trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
+cat LOG.redeploy | contains.py "my_test_code-0.0.1-py3-none-any.whl" > /dev/null
 title "No calls to delete internal folder expected"
 trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' "$OUT_REQUESTS"
 

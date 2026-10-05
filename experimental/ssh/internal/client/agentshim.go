@@ -16,9 +16,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -111,17 +116,152 @@ func agentByName(name string) (agentSpec, bool) {
 	return agentSpec{}, false
 }
 
-func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) error {
+func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
+	// from here too. Each failing step sets outcome.errorCategory; the returned error is
+	// picked up via the named return.
+	start := time.Now()
+	outcome := agentShimOutcome{}
+	launched := false
+	defer func() {
+		// A successful launch replaces this process with execve below (having emitted and
+		// uploaded its own event first), so this defer normally runs only when the launch
+		// failed; cmd/root then uploads the buffered event as usual on the returned error.
+		// `launched` guards the rare case where execProcess itself returns an error: the
+		// success event is already uploaded, so don't emit a second, contradictory event.
+		if retErr == nil || launched {
+			return
+		}
+		outcome.err = retErr
+		outcome.ctxErr = ctx.Err()
+		logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	}()
+
 	agent, ok := agentByName(agentName)
 	if !ok {
-		return fmt.Errorf("unsupported agent %q", agentName)
+		return categorize(protos.SshAgentShimErrorCategoryUnsupportedAgent, fmt.Errorf("unsupported agent %q", agentName))
 	}
 	// Probe first: fail fast before the slow first-run bootstrap if the gateway is off.
+	// probeAIGateway attributes the specific GATEWAY_* cause; GATEWAY_UNAVAILABLE is the fallback.
 	if err := probeAIGateway(ctx, client); err != nil {
-		return err
+		return ensureCategory(protos.SshAgentShimErrorCategoryGatewayUnavailable, err)
 	}
 	workspace := strings.TrimRight(client.Config.Host, "/")
-	return bootstrapAndLaunchAgent(ctx, agent, workspace, agentArgs)
+
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryToolchainSetupFailed, fmt.Errorf("failed to resolve home directory: %w", err))
+	}
+	// bootstrapToolchain attributes the per-component install failure; TOOLCHAIN_SETUP_FAILED
+	// is the fallback for a lock or PATH problem.
+	if err := bootstrapToolchain(ctx, home); err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryToolchainSetupFailed, err)
+	}
+
+	argv0, argv, environ, err := prepareAgentLaunch(ctx, home, agent, workspace, agentArgs)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryAgentLaunchFailed, err)
+	}
+
+	// The agent is ready to launch. execProcess replaces this process, so cmd/root's
+	// end-of-command telemetry upload never runs; emit and flush the success event first.
+	launched = true
+	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
+	return execProcess(argv0, argv, environ)
+}
+
+// agentShimOutcome is the observed result of an agent-shim launch, collected by
+// RunAgentShim for telemetry.
+type agentShimOutcome struct {
+	err error
+	// ctxErr is the context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries
+	// no trace of the cancellation.
+	ctxErr error
+}
+
+// launchError carries the telemetry category for a failure alongside the underlying error,
+// so RunAgentShim can attribute it via errors.As rather than matching on the error text
+// (which the repo forbids). It is transparent to the user: Error and Unwrap both delegate.
+type launchError struct {
+	category protos.SshAgentShimErrorCategory
+	err      error
+}
+
+func (e *launchError) Error() string { return e.err.Error() }
+func (e *launchError) Unwrap() error { return e.err }
+
+// categorize tags err with a telemetry category. A nil err is returned unchanged.
+func categorize(category protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &launchError{category: category, err: err}
+}
+
+// ensureCategory tags err with fallback unless a deeper call already attributed it, so the
+// most specific category set at the failure site wins over the stage's coarse fallback.
+func ensureCategory(fallback protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	if _, ok := errors.AsType[*launchError](err); ok {
+		return err
+	}
+	return categorize(fallback, err)
+}
+
+// category returns the error category to report. An interruption means the user gave up,
+// whichever step observed it first, so it wins over the category attributed at the failure
+// site; an unattributed failure is reported as UNKNOWN so it stays countable.
+func (o agentShimOutcome) category() protos.SshAgentShimErrorCategory {
+	if o.err == nil {
+		return protos.SshAgentShimErrorCategoryUnspecified
+	}
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
+		return protos.SshAgentShimErrorCategoryUserAborted
+	}
+	if le, ok := errors.AsType[*launchError](o.err); ok {
+		return le.category
+	}
+	return protos.SshAgentShimErrorCategoryUnknown
+}
+
+func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimOutcome, setupDuration time.Duration) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshAgentShimEvent: buildAgentShimEvent(agentName, outcome, setupDuration),
+	})
+}
+
+// buildAgentShimEvent maps the agent name and outcome onto the telemetry event. It is
+// separated from logAgentShimEvent so the field mapping can be unit tested.
+func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+	return &protos.SshAgentShimEvent{
+		AgentName:       agentName,
+		IsSuccess:       outcome.err == nil,
+		ErrorCategory:   outcome.category(),
+		SetupDurationMs: setupDuration.Milliseconds(),
+	}
+}
+
+// uploadAgentShimTelemetry flushes buffered telemetry before the shim execs into the agent.
+// A successful launch replaces this process (see execProcess), so the end-of-command upload
+// in cmd/root.Execute never runs; this rebuilds the ExecutionContext that upload would have
+// attached. Best-effort: an upload failure must not stop the launch.
+func uploadAgentShimTelemetry(ctx context.Context, agentName string, execDuration time.Duration) {
+	err := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdctx.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         "ssh_agent-shim_" + agentName,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs: execDuration.Milliseconds(),
+		ExitCode:        0,
+	})
+	if err != nil {
+		log.Debugf(ctx, "agent-shim telemetry upload failed: %s", err)
+	}
 }
 
 // --- Unity AI Gateway preflight ---
@@ -193,21 +333,21 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	case looksLikeTransient(modelSvc.err) || looksLikeTransient(legacy.err):
 		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
 		// rather than sending them to the enablement docs.
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayTransientError, versionNeutralGatewayError(
 			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
-		)
+		))
 	default:
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayNotEnabled, versionNeutralGatewayError(
 			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.err.Error(), legacy.err.Error(), aiGatewayDocsURL),
-		)
+		))
 	}
 }
 
@@ -296,25 +436,20 @@ func looksLikeTransient(err error) bool {
 }
 
 func aiGatewayAuthError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayAuthFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host),
-	)
+	))
 }
 
 func aiGatewayScopeError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayScopeFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host),
-	)
+	))
 }
 
 // --- end Unity AI Gateway preflight ---
 
-func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace string, agentArgs []string) error {
-	home, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
+func bootstrapToolchain(ctx context.Context, home string) error {
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
@@ -325,7 +460,7 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 		prependPath(ctx, filepath.Dir(self))
 	}
 
-	err = ensureToolchain(ctx, home, runtime.GOARCH)
+	err := ensureToolchain(ctx, home, runtime.GOARCH)
 	if err != nil {
 		return err
 	}
@@ -334,7 +469,7 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 	// box so it doesn't clutter the agent session.
 	disableNpmUpdateNotifier(ctx)
 
-	return launchAgent(ctx, home, agent, workspace, agentArgs)
+	return nil
 }
 
 func toolchainReady() bool {
@@ -375,7 +510,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 			}
 			return nil
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryUvInstallFailed, err)
 		}
 	}
 
@@ -388,7 +523,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 			}
 			return nil
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryGatewayCLIInstallFailed, err)
 		}
 	}
 
@@ -396,7 +531,7 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 		if err := runStep(ctx, "Installing Node.js", func(out io.Writer) error {
 			return ensureBinary(ctx, home, out, nodeSpec)
 		}); err != nil {
-			return err
+			return categorize(protos.SshAgentShimErrorCategoryNodeInstallFailed, err)
 		}
 	}
 
@@ -505,16 +640,18 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	}
 }
 
-func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
+// prepareAgentLaunch resolves the Unity Gateway CLI and builds the argv and environment for
+// launching the agent. It stops short of the exec so the caller can emit telemetry first.
+func prepareAgentLaunch(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) (argv0 string, argv, environ []string, err error) {
 	ugPath, err := exec.LookPath("ucode")
 	if err != nil {
-		return fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err)
+		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err))
 	}
 	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
-		return err
+		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
 	}
-	argv := []string{"ucode", agent.name}
+	argv = []string{"ucode", agent.name}
 	if workspace != "" {
 		argv = append(argv, "--workspace", workspace)
 	}
@@ -527,7 +664,7 @@ func launchAgent(ctx context.Context, home string, agent agentSpec, workspace st
 			_ = os.Setenv("DATABRICKS_BEARER", token)
 		}
 	}
-	return execProcess(ugPath, argv, os.Environ())
+	return ugPath, argv, os.Environ(), nil
 }
 
 // put the Databricks context where the agent reads it, returning any extra argv.

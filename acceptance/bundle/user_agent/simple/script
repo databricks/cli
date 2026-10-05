@@ -1,20 +1,20 @@
 trace $CLI bundle validate
-trace print_requests.py --sort --get > out.requests.validate.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.validate.json
 
 trace $CLI bundle summary
-trace print_requests.py --sort --get > out.requests.summary.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.summary.json
 
 trace $CLI bundle plan
-trace print_requests.py --sort --get > out.requests.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.plan.json
 
 trace $CLI bundle deploy
-trace print_requests.py --sort --get '^//telemetry-ext' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get '^//telemetry-ext' > out.requests.deploy.json
 
 trace $CLI bundle plan
-trace print_requests.py --sort --get > out.requests.plan2.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.plan2.json
 
 musterr trace $CLI bundle run foo
-trace print_requests.py --sort --get > out.requests.run.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.run.json
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py --sort --get > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --sort --get > out.requests.destroy.json

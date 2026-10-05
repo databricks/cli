@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -29,6 +30,17 @@ type SecretScopeRemote struct {
 	ScopeBackendType     workspace.ScopeBackendType                  `json:"scope_backend_type,omitempty"`
 	BackendAzureKeyvault *workspace.AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
 	ForceSendFields      []string                                    `json:"-"`
+}
+
+// Custom marshalers so the root ForceSendFields is honored: a force-sent zero-valued
+// scalar (e.g. scope_backend_type) survives serialization instead of being dropped by
+// omitempty, which plain encoding/json would do since it does not know the convention.
+func (s *SecretScopeRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s SecretScopeRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSecretScope {

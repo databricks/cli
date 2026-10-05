@@ -93,12 +93,19 @@ Example:
 	return cmd
 }
 
-// waitForRunning polls the sandbox until it reaches Running or the timeout
-// elapses. The spinner is updated with the elapsed seconds each poll so the
-// user can tell progress is happening, and a transition to an unexpected
-// terminal state (Stopped / Terminated / Failed) short-circuits with a
-// useful error rather than waiting out the full timeout.
 func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
+	return waitForState(ctx, api, s, id, "Running", "Starting", "Stopped", "Terminated", "Failed")
+}
+
+// The API rejects start requests until teardown finishes, so STOPPING needs
+// its own polling phase.
+func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
+	return waitForState(ctx, api, s, id, "Stopped", "Stopping", "Terminated", "Failed")
+}
+
+// Centralizing lifecycle polling keeps timeout, cancellation, and terminal
+// state handling consistent across start and SSH.
+func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
 	start := time.Now()
 	deadline := start.Add(startWaitTimeout)
 	for {
@@ -106,16 +113,18 @@ func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string)
 		if err != nil {
 			return nil, fmt.Errorf("polling status of %s: %w", id, err)
 		}
-		switch strings.ToLower(sb.Status) {
-		case "running":
+		if strings.EqualFold(sb.Status, targetStatus) {
 			return sb, nil
-		case "stopped", "terminated", "failed":
-			return nil, fmt.Errorf("sandbox %s reached unexpected state %q while starting", id, sb.Status)
+		}
+		for _, unexpectedStatus := range unexpectedStatuses {
+			if strings.EqualFold(sb.Status, unexpectedStatus) {
+				return nil, fmt.Errorf("sandbox %s reached unexpected state %q while %s", id, sb.Status, strings.ToLower(operation))
+			}
 		}
 		elapsed := time.Since(start).Round(time.Second)
-		s.Update(fmt.Sprintf("Starting %s… (%s)", id, elapsed))
+		s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("sandbox %s did not reach Running within %s (last seen %s)", id, startWaitTimeout, sb.Status)
+			return nil, fmt.Errorf("sandbox %s did not reach %s within %s (last seen %s)", id, targetStatus, startWaitTimeout, sb.Status)
 		}
 		select {
 		case <-ctx.Done():

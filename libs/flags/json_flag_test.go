@@ -12,6 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestJsonFlagValidate(t *testing.T) {
+	var unset JsonFlag
+	assert.NoError(t, unset.Validate())
+
+	var valid JsonFlag
+	require.NoError(t, valid.Set(`{"job_id": 18000000000000000123}`))
+	assert.NoError(t, valid.Validate())
+
+	var invalid JsonFlag
+	require.NoError(t, invalid.Set(`{"a": 1,}`))
+	assert.EqualError(t, invalid.Validate(), "error decoding JSON at (inline):1:9: invalid character '}' looking for beginning of object key string")
+}
+
 func TestJsonFlagEmpty(t *testing.T) {
 	var body JsonFlag
 
