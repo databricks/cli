@@ -35,7 +35,7 @@ const warnPrefix = "migration to direct: "
 // back to: the command cannot proceed until the state migrates or the user downgrades.
 const migrationFailedHint = `
 
-The Terraform deployment engine was removed in Databricks CLI v1.20.0, so this state cannot be deployed as-is. Install Databricks CLI v1.19.x to deploy on Terraform, or report this at dabs-feedback@databricks.com`
+The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migration of your bundle failed. Install Databricks CLI v1.19.x to deploy on Terraform, or report this at dabs-feedback@databricks.com`
 
 // Migrate converts the bundle's terraform state to a direct-engine state and opens
 // b.DeploymentBundle.StateDB with it in memory. Returns false when there is no terraform state
