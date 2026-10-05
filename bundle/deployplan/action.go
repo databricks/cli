@@ -31,9 +31,16 @@ func (a Action) IsStateOnlyDelete() bool {
 }
 
 func (a Action) IsChildResource() bool {
-	// Note, strictly speaking ResourceKey could be resources.jobs["my.job"] but
-	// we have an assumption in many other places that it's always looks like "resources.jobs.my_job"
-	items := strings.Split(a.ResourceKey, ".")
+	return IsChildResourceKey(a.ResourceKey)
+}
+
+// IsChildResourceKey reports whether key names a child resource (a resource's
+// permissions or grants node), e.g. "resources.jobs.foo.permissions".
+//
+// Note, strictly speaking the key could be resources.jobs["my.job"] but we have an
+// assumption in many other places that it always looks like "resources.jobs.my_job".
+func IsChildResourceKey(key string) bool {
+	items := strings.Split(key, ".")
 	return len(items) == 4
 }
 

@@ -25,7 +25,8 @@ trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.schemas.consumer
 
 # WHAT ACTUALLY HAPPENED: deploy and record the requests (deploy stdout -> LOG.deploy; parallel
 # completion order is nondeterministic). out.requests.txt shows the direct engine issues
-# a PATCH against the consumer schema -- a spurious update writing back its unchanged comment.
+# NO request for consumer: it downgraded the planned update to a no-op once ${referent.id}
+# resolved to the unchanged value.
 title "Deploy and record the requests (see out.requests.txt)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
 trace print_requests.py --sort '//schemas' > out.requests.txt
