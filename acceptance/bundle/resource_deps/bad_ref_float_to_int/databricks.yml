@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    bar:
+      name: job bar
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            azure_attributes:
+              spot_bid_max_price: 1.9
+    foo:
+      name: job foo
+      max_concurrent_runs: ${resources.jobs.bar.job_clusters[0].new_cluster.azure_attributes.spot_bid_max_price}
