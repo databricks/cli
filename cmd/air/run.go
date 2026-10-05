@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,6 +20,9 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
+
+// dryRunValidationTimeout bounds only the config:validate request.
+const dryRunValidationTimeout = 15 * time.Second
 
 // runResult is the JSON payload for `air run`.
 type runResult struct {
@@ -42,7 +46,35 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 	}
 }
 
+// validateDryRunInWorkspace marks transient workspace access failures incomplete;
+// configuration, authentication, and permission errors are returned directly.
+func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			return ctx, err
+		}
+		ctx = cmd.Context()
+	}
+
+	w := cmdctx.WorkspaceClient(ctx)
+	_, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
+	if err != nil {
+		if !validationCouldNotComplete(err) {
+			return ctx, err
+		}
+		return ctx, asIncompleteConfigValidation(err)
+	}
+
+	validationCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	return ctx, validateConfig(validationCtx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken)
+}
+
 func newRunCommand() *cobra.Command {
+	return newRunCommandWithValidationTimeout(dryRunValidationTimeout)
+}
+
+func newRunCommandWithValidationTimeout(validationTimeout time.Duration) *cobra.Command {
 	var (
 		file           string
 		watch          bool
@@ -90,12 +122,12 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config without submitting")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config against the workspace without submitting a run")
 	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
 	_ = cmd.MarkFlagRequired("file")
 
-	// --dry-run only validates the config locally, so it needs no workspace.
-	// Submission requires an authenticated client.
+	// --dry-run authenticates after local parsing and validation so syntax, unknown
+	// fields, and invalid overrides remain actionable without valid credentials.
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if dryRun {
 			return nil
@@ -112,7 +144,22 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		if dryRun {
+			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
+			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
+			if validationErr != nil && !configValidationIncomplete(validationErr) {
+				return validationErr
+			}
+			if err := validateIdempotencyToken(idempotencyToken); err != nil {
+				return err
+			}
+			if validationErr != nil {
+				cmdio.LogString(ctx, fmt.Sprintf("Warning: workspace validation could not be completed (%s); only local validation was performed.", validationErr))
+			}
 			if root.OutputType(cmd) == flags.OutputText {
+				if validationErr != nil {
+					cmdio.LogString(ctx, fmt.Sprintf("Dry run: local validation passed for %q; not submitting.", cfg.ExperimentName))
+					return nil
+				}
 				cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for %q is valid; not submitting.", cfg.ExperimentName))
 				return nil
 			}
@@ -122,6 +169,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		warnExperimentalContainers(ctx, cfg)
 
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+		w := cmdctx.WorkspaceClient(ctx)
 
 		// Announce the experiment before uploading; skipped in JSON mode to keep
 		// stdout a clean envelope stream.
@@ -129,7 +177,6 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
 		}
 
-		w := cmdctx.WorkspaceClient(ctx)
 		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err

@@ -249,26 +249,6 @@ func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
 	}`, string(b))
 }
 
-func TestSubmitToken(t *testing.T) {
-	cfg := &runConfig{IdempotencyToken: new("from-config")}
-
-	tok, err := submitToken("from-flag", cfg) // flag wins
-	require.NoError(t, err)
-	assert.Equal(t, "from-flag", tok)
-
-	tok, err = submitToken("", cfg) // then config
-	require.NoError(t, err)
-	assert.Equal(t, "from-config", tok)
-
-	tok, err = submitToken("", &runConfig{}) // else generated
-	require.NoError(t, err)
-	assert.NotEmpty(t, tok)
-
-	// An over-long token errors instead of being truncated.
-	_, err = submitToken(strings.Repeat("a", 65), cfg)
-	require.ErrorContains(t, err, "64 characters or less")
-}
-
 type blockingLaunchWriter struct {
 	started       chan struct{}
 	release       chan struct{}
@@ -357,7 +337,14 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
-	stubValidateConfig(server)
+	var validatedToken string
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		runOptions := body["run_options"].(map[string]any)
+		validatedToken = runOptions["idempotency_token"].(string)
+		return validateConfigResponse{}
+	})
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -371,6 +358,7 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
 	// command.sh under the run's launch directory.

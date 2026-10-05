@@ -80,6 +80,8 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
+	server.Handle("POST", "/api/2.0/ai-training/config:validate", aiTrainingValidateConfig)
+
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
 		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"

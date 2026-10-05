@@ -30,27 +30,56 @@ type validateConfigResponse struct {
 	Errors []configFieldError `json:"errors"`
 }
 
+// incompleteConfigValidationError means workspace validation could not produce
+// a result. Callers may fall back to local validation.
+type incompleteConfigValidationError struct {
+	err error
+}
+
+func (e *incompleteConfigValidationError) Error() string { return e.err.Error() }
+func (e *incompleteConfigValidationError) Unwrap() error { return e.err }
+
+func asIncompleteConfigValidation(err error) error {
+	return &incompleteConfigValidationError{err: err}
+}
+
+func configValidationIncomplete(err error) bool {
+	_, ok := errors.AsType[*incompleteConfigValidationError](err)
+	return ok
+}
+
 // preflightValidate checks the config against the backend before any upload, so
 // a bad config fails fast with the server's own field-level errors.
 //
-// It fails open: the endpoint is behind a SAFE flag and older workspaces do not
-// have it, so a disabled or missing endpoint skips the check and lets submission
-// proceed (where the config is validated again, authoritatively). A 5xx is a
-// backend problem, not the user's config, so it fails open too. Only a 4xx (the
-// server rejected the config) or a populated error list blocks.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer) error {
+// It fails open if the endpoint is disabled during rollback or is temporarily
+// unavailable, letting submission proceed because submission validates the
+// config authoritatively. Backend 5xx responses also fail open; other API errors
+// and field errors block submission.
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+	err := validateConfig(ctx, w, cfg, commandPath, containers, idempotencyToken)
+	if endpointUnavailable(err) || serverError(err) {
+		return nil
+	}
+	return err
+}
+
+// validateConfig performs the current backend validation without client-side
+// availability fallbacks. The legacy response reports field errors only; it
+// cannot yet distinguish complete success from skipped backend dependencies.
+func validateConfig(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
 	var resp validateConfigResponse
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath, containers), &resp)
+	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath, containers, idempotencyToken), &resp)
 	if err != nil {
-		if endpointUnavailable(err) || serverError(err) {
-			return nil
+		validationErr := fmt.Errorf("failed to validate config: %w", err)
+		if validationCouldNotComplete(err) {
+			return asIncompleteConfigValidation(validationErr)
 		}
-		return fmt.Errorf("failed to validate config: %w", err)
+		return validationErr
 	}
 	if len(resp.Errors) == 0 {
 		return nil
@@ -58,11 +87,33 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	return errors.New(formatConfigErrors(resp.Errors))
 }
 
+// validationCouldNotComplete separates failures that prevent the optional
+// backend check from authoritative request failures and cancellation. A non-API
+// error is a transport failure from the validation RPC.
+func validationCouldNotComplete(err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
+		return true
+	}
+	return apiErr.ErrorCode == "FEATURE_DISABLED" ||
+		apiErr.StatusCode == http.StatusNotFound ||
+		apiErr.StatusCode == http.StatusNotImplemented ||
+		apiErr.StatusCode == http.StatusRequestTimeout ||
+		apiErr.StatusCode == http.StatusTooManyRequests ||
+		apiErr.StatusCode >= 500
+}
+
 // validateConfigRequest builds the {task, run_options} body from the user's config. commandPath is
 // the workspace path where the command script will be uploaded; the caller computes it before this
 // call so the server can validate the real path. `parameters` is intentionally omitted: it is
 // free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
-func validateConfigRequest(cfg *runConfig, commandPath string, containers []submittedContainer) map[string]any {
+func validateConfigRequest(cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) map[string]any {
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
@@ -99,20 +150,18 @@ func validateConfigRequest(cfg *runConfig, commandPath string, containers []subm
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
 	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)
 
-	req := map[string]any{"task": task}
-	if runOptions := validateConfigRunOptions(cfg); len(runOptions) > 0 {
-		req["run_options"] = runOptions
+	return map[string]any{
+		"task":        task,
+		"run_options": validateConfigRunOptions(cfg, idempotencyToken),
 	}
-	return req
 }
 
-// validateConfigRunOptions gathers the run-level fields into run_options,
-// omitting any the user didn't set.
-func validateConfigRunOptions(cfg *runConfig) map[string]any {
-	runOptions := map[string]any{}
+// validateConfigRunOptions includes the effective idempotency token and any
+// run-level fields the user set.
+func validateConfigRunOptions(cfg *runConfig, idempotencyToken string) map[string]any {
+	runOptions := map[string]any{"idempotency_token": idempotencyToken}
 	putOpt(runOptions, "max_retries", cfg.MaxRetries)
 	putOpt(runOptions, "timeout_minutes", cfg.TimeoutMinutes)
-	putOpt(runOptions, "idempotency_token", cfg.IdempotencyToken)
 	putOpt(runOptions, "usage_policy_name", cfg.UsagePolicyName)
 	putOpt(runOptions, "usage_policy_id", cfg.UsagePolicyID)
 	if len(cfg.EnvVariables) > 0 {
@@ -132,9 +181,8 @@ func putOpt[T any](m map[string]any, key string, value *T) {
 	}
 }
 
-// endpointUnavailable reports whether the failure means the endpoint isn't there
-// to answer — the flag is off, or the workspace predates it — as opposed to the
-// config being rejected. Those cases fail open.
+// endpointUnavailable reports whether the endpoint is disabled during rollback
+// or temporarily unavailable, as opposed to the config being rejected.
 func endpointUnavailable(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
