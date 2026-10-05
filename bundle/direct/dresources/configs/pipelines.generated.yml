@@ -1,5 +1,4 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: ingestion_definition.source_type
-    reason: spec:output_only
+fields:
+  ingestion_definition.source_type: [mutable_output]

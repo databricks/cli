@@ -1,32 +1,16 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: config.provider_type
-    reason: spec:immutable
-
-ignore_remote_changes:
-  - field: config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext
-    reason: spec:input_only
-  - field: config.anthropic.direct.api_key.plaintext
-    reason: spec:input_only
-  - field: config.azure_openai.direct.api_key.plaintext
-    reason: spec:input_only
-  - field: config.azure_openai.direct.entra_service_principal.client_secret.plaintext
-    reason: spec:input_only
-  - field: config.custom.direct.api_key.plaintext
-    reason: spec:input_only
-  - field: config.custom.direct.header_auth.api_key_value.plaintext
-    reason: spec:input_only
-  - field: config.gemini_enterprise.direct.api_key.plaintext
-    reason: spec:input_only
-  - field: config.microsoft_foundry.direct.api_key.plaintext
-    reason: spec:input_only
-  - field: config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext
-    reason: spec:input_only
-  - field: config.openai.direct.api_key.plaintext
-    reason: spec:input_only
-
-  - field: config.inference_table.is_deleted
-    reason: spec:output_only
-  - field: config.inference_table.table
-    reason: spec:output_only
+fields:
+  config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext: [input_only]
+  config.anthropic.direct.api_key.plaintext: [input_only]
+  config.azure_openai.direct.api_key.plaintext: [input_only]
+  config.azure_openai.direct.entra_service_principal.client_secret.plaintext: [input_only]
+  config.custom.direct.api_key.plaintext: [input_only]
+  config.custom.direct.header_auth.api_key_value.plaintext: [input_only]
+  config.gemini_enterprise.direct.api_key.plaintext: [input_only]
+  config.inference_table.is_deleted: [mutable_output]
+  config.inference_table.table: [mutable_output]
+  config.microsoft_foundry.direct.api_key.plaintext: [input_only]
+  config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext: [input_only]
+  config.openai.direct.api_key.plaintext: [input_only]
+  config.provider_type: [immutable]

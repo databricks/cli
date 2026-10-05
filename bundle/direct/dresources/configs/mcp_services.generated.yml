@@ -1,7 +1,5 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: config.source_connection.is_deleted
-    reason: spec:output_only
-  - field: config.source_connection.options
-    reason: spec:output_only
+fields:
+  config.source_connection.is_deleted: [mutable_output]
+  config.source_connection.options: [mutable_output]

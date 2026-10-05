@@ -1,3 +1,2 @@
-provided_id_fields:
-  - field: name
-    reason: id_field
+fields:
+  name: [id]

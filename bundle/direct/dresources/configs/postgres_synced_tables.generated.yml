@@ -1,41 +1,22 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: accelerated_sync
-    reason: spec:input_only
-  - field: branch
-    reason: spec:input_only
-  - field: create_database_objects_if_missing
-    reason: spec:input_only
-  - field: existing_pipeline_id
-    reason: spec:input_only
-  - field: extra_columns
-    reason: spec:input_only
-  - field: extra_columns[*].column_name
-    reason: spec:input_only
-  - field: extra_columns[*].column_type
-    reason: spec:input_only
-  - field: extra_columns[*].compute
-    reason: spec:input_only
-  - field: extra_columns[*].maintenance
-    reason: spec:input_only
-  - field: new_pipeline_spec
-    reason: spec:input_only
-  - field: postgres_database
-    reason: spec:input_only
-  - field: primary_key_columns
-    reason: spec:input_only
-  - field: scheduling_policy
-    reason: spec:input_only
-  - field: source_table_full_name
-    reason: spec:input_only
-  - field: timeseries_key
-    reason: spec:input_only
-  - field: type_overrides
-    reason: spec:input_only
-  - field: type_overrides[*].column_name
-    reason: spec:input_only
-  - field: type_overrides[*].pg_type
-    reason: spec:input_only
-  - field: type_overrides[*].size
-    reason: spec:input_only
+fields:
+  accelerated_sync: [input_only]
+  branch: [input_only]
+  create_database_objects_if_missing: [input_only]
+  existing_pipeline_id: [input_only]
+  extra_columns: [input_only]
+  extra_columns[*].column_name: [input_only]
+  extra_columns[*].column_type: [input_only]
+  extra_columns[*].compute: [input_only]
+  extra_columns[*].maintenance: [input_only]
+  new_pipeline_spec: [input_only]
+  postgres_database: [input_only]
+  primary_key_columns: [input_only]
+  scheduling_policy: [input_only]
+  source_table_full_name: [input_only]
+  timeseries_key: [input_only]
+  type_overrides: [input_only]
+  type_overrides[*].column_name: [input_only]
+  type_overrides[*].pg_type: [input_only]
+  type_overrides[*].size: [input_only]

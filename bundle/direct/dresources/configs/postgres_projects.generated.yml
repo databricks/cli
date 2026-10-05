@@ -1,27 +1,13 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: pg_version
-    reason: spec:immutable
-
-ignore_remote_changes:
-  - field: budget_policy_id
-    reason: spec:input_only
-  - field: custom_tags
-    reason: spec:input_only
-  - field: custom_tags[*].key
-    reason: spec:input_only
-  - field: custom_tags[*].value
-    reason: spec:input_only
-  - field: default_branch
-    reason: spec:input_only
-  - field: default_endpoint_settings
-    reason: spec:input_only
-  - field: display_name
-    reason: spec:input_only
-  - field: enable_pg_native_login
-    reason: spec:input_only
-  - field: history_retention_duration
-    reason: spec:input_only
-  - field: pg_version
-    reason: spec:input_only
+fields:
+  budget_policy_id: [input_only]
+  custom_tags: [input_only]
+  custom_tags[*].key: [input_only]
+  custom_tags[*].value: [input_only]
+  default_branch: [input_only]
+  default_endpoint_settings: [input_only]
+  display_name: [input_only]
+  enable_pg_native_login: [input_only]
+  history_retention_duration: [input_only]
+  pg_version: [immutable, input_only]

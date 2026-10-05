@@ -1,8 +1,4 @@
-provided_id_fields:
+fields:
   # project_id is immutable (part of hierarchical name, not in API spec)
-  - field: project_id
-    reason: id_field
-stable_output_fields:
-  # name ("projects/{project_id}") is backend-assigned at creation and immutable;
-  # see the stable_output_fields doc in config.go and ES-2202624.
-  - field: name
+  project_id: [id]
+  name: [immutable_output]
