@@ -8,7 +8,7 @@ rm -r output
 cmd_exec_id=$(extract_command_exec_id.py)
 bundle_uuid=$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)
 
-update_file.py "$OUT_REQUESTS" $cmd_exec_id  '[CMD-EXEC-ID]'
+update_file.py "$OUT_REQUESTS" $cmd_exec_id  '[CMD_EXEC_ID_HASH]'
 update_file.py "$OUT_REQUESTS" $bundle_uuid '[BUNDLE-UUID]'
 update_file.py out.databricks.yml $bundle_uuid '[BUNDLE-UUID]'
 

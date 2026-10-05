@@ -49,7 +49,7 @@ Resource: resources.jobs.my_job
   "files_written_count": 1,
   "skipped_changes_count": 1,
   "state_serial": 1,
-  "state_lineage": "[LINEAGE]",
+  "state_lineage": "[LINEAGE_HASH]",
   "state_source": "local",
   "states_available_count": 2,
   "state_resource_ids": {
