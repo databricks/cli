@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[FOO_ID] -o json
 {
   "status": "failed",
-  "error": "deployed resource resources.jobs.foo not found in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced",
+  "error": "deployed resource resources.jobs.foo is not in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced",
   "errorCode": "RESOURCE_NOT_IN_CONFIG",
   "files": null,
   "changes": {}
@@ -16,6 +16,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "error_message": "deployed resource resources.jobs.foo not found in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced",
+  "error_message": "deployed resource resources.jobs.foo is not in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced",
   "error_category": "RESOURCE_NOT_IN_CONFIG"
 }

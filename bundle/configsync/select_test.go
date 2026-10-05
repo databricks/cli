@@ -6,7 +6,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -93,24 +92,6 @@ func TestFilterChanges(t *testing.T) {
 
 	// The input map is never mutated.
 	assert.Len(t, changes, 7)
-}
-
-func TestCheckSelectedInConfig(t *testing.T) {
-	root := dyn.V(map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"jobs": dyn.V(map[string]dyn.Value{
-				"foo": dyn.V(map[string]dyn.Value{"name": dyn.V("foo")}),
-			}),
-		}),
-	})
-
-	assert.NoError(t, CheckSelectedInConfig(root, []string{"resources.jobs.foo"}))
-	assert.NoError(t, CheckSelectedInConfig(root, nil))
-
-	err := CheckSelectedInConfig(root, []string{"resources.jobs.foo", "resources.jobs.bar", "resources.pipelines.baz"})
-	assert.ErrorIs(t, err, ErrResourceNotInConfig)
-	assert.NotErrorIs(t, err, ErrNoMatchingSelector)
-	assert.Equal(t, "deployed resource resources.jobs.bar, resources.pipelines.baz not found in the bundle configuration; it was renamed or removed since the last deploy, so its remote changes cannot be synced", err.Error())
 }
 
 func TestDescribeStateIDs(t *testing.T) {

@@ -1,3 +1,0 @@
-Cloud = true
-GOOS.windows = false
-EnvMatrix.DMS = ["", "true"]

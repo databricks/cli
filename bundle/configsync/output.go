@@ -35,8 +35,8 @@ const (
 type DiffOutput struct {
 	Status SyncStatus `json:"status"`
 	Error  string     `json:"error,omitempty"`
-	// ErrorCode is the telemetry error category, so callers can branch on the
-	// failure kind without parsing Error.
+	// ErrorCode is the telemetry error category, set only when the failure was
+	// explicitly classified.
 	ErrorCode string       `json:"errorCode,omitempty"`
 	Files     []FileChange `json:"files"`
 	Changes   Changes      `json:"changes"`
@@ -48,6 +48,7 @@ type DiffOutput struct {
 // returns the error so the CLI still fails loudly for humans.
 func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChange, changes Changes, err error) error {
 	status := StatusSuccess
+	errorCode := stats.ErrorCategory
 	if err != nil {
 		if stats.ErrorCategory == "" {
 			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
@@ -77,7 +78,7 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 	}
 	if err != nil {
 		output.Error = err.Error()
-		output.ErrorCode = string(stats.ErrorCategory)
+		output.ErrorCode = string(errorCode)
 	}
 	result, marshalErr := json.MarshalIndent(output, "", "  ")
 	if marshalErr != nil {
