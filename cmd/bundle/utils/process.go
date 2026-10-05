@@ -465,7 +465,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
-		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
+		phases.PreDeployChecks(ctx, b, downgradeWarningToError)
 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
@@ -503,7 +503,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan, dmsDeployment)
+		phases.Deploy(ctx, b, outputHandler, requiredEngine, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

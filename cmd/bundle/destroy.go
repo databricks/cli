@@ -82,7 +82,7 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		AlwaysPull:                            true,
 		SkipEnforcingDeploymentHistorySetting: true,
 		PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-			phases.Destroy(ctx, b, stateDesc.Engine)
+			phases.Destroy(ctx, b)
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

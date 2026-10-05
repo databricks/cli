@@ -1,15 +1,15 @@
-package terraform
+package deploy
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -51,13 +51,14 @@ func TestCheckDashboardsModifiedRemotely_NoDashboards(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false))
 	assert.Empty(t, diags)
 }
 
 func TestCheckDashboardsModifiedRemotely_FirstDeployment(t *testing.T) {
 	b := mockDashboardBundle(t)
-	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	openDashboardState(t, b, dstate.NewDatabase("lineage", 1))
+	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false))
 	assert.Empty(t, diags)
 }
 
@@ -65,7 +66,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
-	writeFakeDashboardState(t, ctx, b)
+	writeFakeDashboardState(t, b)
 
 	// Mock the call to the API.
 	m := mocks.NewMockWorkspaceClient(t)
@@ -80,7 +81,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// No changes, so no diags.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
 	assert.Empty(t, diags)
 }
 
@@ -88,7 +89,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
-	writeFakeDashboardState(t, ctx, b)
+	writeFakeDashboardState(t, b)
 
 	// Mock the call to the API.
 	m := mocks.NewMockWorkspaceClient(t)
@@ -103,7 +104,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// The dashboard has changed, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `dashboard "dash1" has been modified remotely`, diags[0].Summary)
@@ -114,7 +115,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
-	writeFakeDashboardState(t, ctx, b)
+	writeFakeDashboardState(t, b)
 
 	// Mock the call to the API.
 	m := mocks.NewMockWorkspaceClient(t)
@@ -126,7 +127,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// Unable to get the dashboard, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `failed to get dashboard "dash1"`, diags[0].Summary)
@@ -137,7 +138,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.
 	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
-	writeFakeDashboardState(t, ctx, b)
+	writeFakeDashboardState(t, b)
 
 	// Mock the call to the API.
 	m := mocks.NewMockWorkspaceClient(t)
@@ -152,64 +153,21 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// The dashboard has changed, but in plan mode expect a warning instead of an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(true, engine.EngineTerraform))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(true))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Warning, diags[0].Severity)
 		assert.Equal(t, `dashboard "dash1" has been modified remotely`, diags[0].Summary)
 	}
 }
 
-func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle) {
-	_, path := b.StateFilenameTerraform(ctx)
+func openDashboardState(t *testing.T, b *bundle.Bundle, data dstate.Database) {
+	b.DeploymentBundle.StateDB.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), data)
+}
 
-	// Write fake state file.
-	testutil.WriteFile(t, path, `
-    {
-      "version": 4,
-      "terraform_version": "1.5.5",
-      "resources": [
-        {
-          "mode": "managed",
-          "type": "databricks_dashboard",
-          "name": "dash1",
-          "instances": [
-            {
-              "schema_version": 0,
-              "attributes": {
-                "etag": "1000",
-                "id": "id1"
-              }
-            }
-          ]
-        },
-        {
-          "mode": "managed",
-          "type": "databricks_job",
-          "name": "job",
-          "instances": [
-            {
-              "schema_version": 0,
-              "attributes": {
-                "id": "1234"
-              }
-            }
-          ]
-        },
-        {
-          "mode": "managed",
-          "type": "databricks_dashboard",
-          "name": "dash2",
-          "instances": [
-            {
-              "schema_version": 0,
-              "attributes": {
-                "etag": "1001",
-                "id": "id2"
-              }
-            }
-          ]
-        }
-      ]
-    }
-	`)
+func writeFakeDashboardState(t *testing.T, b *bundle.Bundle) {
+	data := dstate.NewDatabase("lineage", 1)
+	data.State["resources.dashboards.dash1"] = dstate.ResourceEntry{ID: "id1", State: json.RawMessage(`{"etag": "1000"}`)}
+	data.State["resources.jobs.job"] = dstate.ResourceEntry{ID: "1234", State: json.RawMessage(`{}`)}
+	data.State["resources.dashboards.dash2"] = dstate.ResourceEntry{ID: "id2", State: json.RawMessage(`{"etag": "1001"}`)}
+	openDashboardState(t, b, data)
 }

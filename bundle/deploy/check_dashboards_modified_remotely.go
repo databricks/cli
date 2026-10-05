@@ -1,4 +1,4 @@
-package terraform
+package deploy
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -18,17 +17,8 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDeployment bool) ([]dashboardState, error) {
-	var state ExportedResourcesMap
-	var err error
-	if directDeployment {
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		state, err = ParseResourcesState(ctx, b)
-		if err != nil {
-			return nil, err
-		}
-	}
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) []dashboardState {
+	state := b.DeploymentBundle.ExportState(ctx)
 
 	var dashboards []dashboardState
 	for resourceKey, instance := range state {
@@ -50,12 +40,11 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 		})
 	}
 
-	return dashboards, nil
+	return dashboards
 }
 
 type checkDashboardsModifiedRemotely struct {
 	isPlan bool
-	engine engine.EngineType
 }
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
@@ -73,10 +62,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	dashboards := collectDashboardsFromState(ctx, b)
 
 	var diags diag.Diagnostics
 	for _, dashboard := range dashboards {
@@ -131,6 +117,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{isPlan: isPlan, engine: engine}
+func CheckDashboardsModifiedRemotely(isPlan bool) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan}
 }
