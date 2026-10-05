@@ -36,6 +36,7 @@ jobs:
           changed_files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- \
             .github/workflows/python_push.yml \
             Taskfile.yml \
+            acceptance/bundle/python/ \
             go.mod \
             go.sum \
             libs/dyn/dynvar/testdata/reference_vectors.json \
