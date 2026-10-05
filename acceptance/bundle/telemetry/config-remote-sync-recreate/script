@@ -1,5 +1,5 @@
 trace $CLI bundle deploy
-read_lineage.py > /dev/null
+read_lineage.py
 
 pipeline_id="$(read_id.py foo)"
 

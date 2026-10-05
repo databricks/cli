@@ -37,7 +37,7 @@ cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experime
 # the sync.paths restriction in databricks.yml (see the comment there).
 cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | (startswith("direct_drymigrate_") or startswith("engine_terraform_")) | not))' > out.telemetry.txt
 
-extract_command_exec_id.py > /dev/null
+extract_command_exec_id.py
 add_repl "11111111-2222-3333-4444-555555555555" BUNDLE_UUID
 add_repl "$(jq -r .id .databricks/bundle/default/deployment.json)" DEPLOYMENT_ID
 
