@@ -20,13 +20,13 @@ trace update_file.py databricks.yml "postgres_role: app_role" "postgres_role: ne
 # recreate does not preserve the id) and diffs the saved name against the literal "${...}"
 # placeholder -> spurious "update postgres_databases.my_database".
 title "Plan"
-trace $CLI bundle plan > out.plan.txt
+trace $CLI bundle plan
 # Field-level proof: old is the real name, new is the still-unresolved reference.
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database".changes.role' > out.database_role.json
 
 # WHAT ACTUALLY HAPPENED: deploy and record the requests (deploy stdout -> LOG.deploy; parallel
 # completion order is nondeterministic). out.requests.txt shows the direct engine issues
 # a PATCH against my_database -- a spurious update writing back the unchanged role.
-title "Deploy and record the requests (see out.plan.txt, out.requests.txt)"
+title "Deploy and record the requests (see out.requests.txt)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
 trace print_requests.py --sort '//postgres' > out.requests.txt

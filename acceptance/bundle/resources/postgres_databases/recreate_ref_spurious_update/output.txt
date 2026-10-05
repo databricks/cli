@@ -14,10 +14,14 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan
 >>> [CLI] bundle plan
+update postgres_databases.my_database
+recreate postgres_roles.my_role
+
+Plan: 1 to add, 1 to change, 1 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 
-=== Deploy and record the requests (see out.plan.txt, out.requests.txt)
+=== Deploy and record the requests (see out.requests.txt)
 >>> print_requests.py --sort //postgres
 
 >>> [CLI] bundle destroy --auto-approve
