@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Print the lineage hash of the state, as the CLI reports it in the user agent (lineage/...)
-and telemetry (state_lineage). Update ACC_REPLS to replace it with [LINEAGE_HASH].
+Update ACC_REPLS to replace the lineage hash of the state, as the CLI reports it in the user
+agent (lineage/...) and telemetry (state_lineage), with [LINEAGE_HASH].
 
 Use it after the deploy that mints a fresh lineage; fixture lineages hash to stable values
 and need no replacement.
@@ -39,9 +39,7 @@ def main():
 
     filename = get_state_file(args.target, backup=False)
     lineage = json.loads(open(filename).read())["lineage"]
-    value = shortid_hash(lineage)
-    add_repl(value, "LINEAGE_HASH")
-    print(value)
+    add_repl(shortid_hash(lineage), "LINEAGE_HASH")
 
 
 if __name__ == "__main__":

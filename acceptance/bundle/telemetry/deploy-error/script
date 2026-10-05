@@ -2,5 +2,5 @@ errcode trace $CLI bundle deploy
 
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log | {execution_context}' > out.telemetry.txt
 
-extract_command_exec_id.py > /dev/null
+extract_command_exec_id.py
 rm "$OUT_REQUESTS"

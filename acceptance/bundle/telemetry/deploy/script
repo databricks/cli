@@ -34,7 +34,7 @@ cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experime
 ids=$($CLI bundle summary -o json | jq '[.resources[] | to_entries[] | {key: (.value.id | tostring), value: .key}] | from_entries')
 cat telemetry.json | jq --argjson ids "$ids" 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("engine_terraform_") | not)) | .entry.databricks_cli_log.bundle_deploy_event |= (.resource_job_ids |= sort_by($ids[.]) | .resource_pipeline_ids |= sort_by($ids[.]))' > out.telemetry.txt
 
-extract_command_exec_id.py > /dev/null
+extract_command_exec_id.py
 add_repl "11111111-2222-3333-4444-555555555555" BUNDLE_UUID
 add_repl "$(jq -r .id .databricks/bundle/default/deployment.json)" DEPLOYMENT_ID
 

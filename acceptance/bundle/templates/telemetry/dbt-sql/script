@@ -5,7 +5,7 @@ $CLI bundle init dbt-sql --config-file input.json --output-dir output
 mv output/my_dbt_sql/databricks.yml out.databricks.yml
 rm -r output
 
-extract_command_exec_id.py > /dev/null
+extract_command_exec_id.py
 add_repl "$(cat out.databricks.yml | grep -o 'uuid: [^\n]*' | cut -d ' ' -f2)" BUNDLE-UUID
 
 # pretty print the telemetry payload.
