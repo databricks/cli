@@ -47,6 +47,22 @@ DESCRIPTIONS: dict[str, str] = {
     ),
 }
 
+# Field-level counterpart to DESCRIPTIONS. Some upstream property descriptions
+# aren't valid reStructuredText and break the Sphinx docs build. We can't render
+# them and don't want to maintain a hand-copied RST version, so drop the
+# description entirely until the proto comment is fixed upstream. Keyed by schema
+# name, then the field names whose descriptions to drop. drop_field_descriptions
+# flags entries that upstream has already fixed (the description is now empty).
+#
+# jobs.DeploymentSpec.command_path: embeds a Markdown ```bash code fence, which
+# docutils parses as an unterminated inline literal.
+# compute.InstancePoolGcpAttributes.gcp_availability: the final bullet wraps onto
+# an unindented continuation line, which docutils rejects as an unexpected unindent.
+DROP_FIELD_DESCRIPTIONS: dict[str, list[str]] = {
+    "jobs.DeploymentSpec": ["command_path"],
+    "compute.InstancePoolGcpAttributes": ["gcp_availability"],
+}
+
 
 def add_extra_required_fields(schemas: dict[str, Schema]):
     output = {}
@@ -83,6 +99,37 @@ def override_descriptions(schemas: dict[str, Schema]):
                     "description was fixed, so remove the override"
                 )
             output[name] = replace(schema, description=override)
+        else:
+            output[name] = schema
+
+    return output
+
+
+def drop_field_descriptions(schemas: dict[str, Schema]):
+    if missing := DROP_FIELD_DESCRIPTIONS.keys() - schemas.keys():
+        raise ValueError(
+            f"Cannot drop field descriptions for unknown schemas: {missing}"
+        )
+
+    output = {}
+    for name, schema in schemas.items():
+        if drop_fields := DROP_FIELD_DESCRIPTIONS.get(name):
+            if unknown := set(drop_fields) - schema.properties.keys():
+                raise ValueError(
+                    f"Cannot drop description for unknown fields {unknown} in schema {name}"
+                )
+
+            new_properties = dict(schema.properties)
+            for field_name in drop_fields:
+                prop = new_properties[field_name]
+                if not prop.description:
+                    raise ValueError(
+                        f"Field description drop for {name}.{field_name} is a no-op; "
+                        "the upstream description is already empty, so remove the entry"
+                    )
+                new_properties[field_name] = replace(prop, description=None)
+
+            output[name] = replace(schema, properties=new_properties)
         else:
             output[name] = schema
 

@@ -32,4 +32,4 @@ trace $CLI jobs delete $job_id
 trace musterr $CLI jobs get $job_id
 
 # This shows that even if job is deleted, you still get permission error when trying to delete it.
-trace errcode as-test-sp $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode as-test-sp $CLI bundle destroy --auto-approve &> out.destroy.txt

@@ -12,7 +12,6 @@ CloudEnvs.azure = false
 # rolls back to its prior state on a partial failure, which makes the recorded
 # output diverge from the direct engine. Run them on direct only; the error
 # surface is the same regardless of engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
     "databricks.yml",

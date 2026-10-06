@@ -18,37 +18,35 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class AvroTransformerOptions:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     parse_mode: VariableOrOptional[ParseMode] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Parse mode for Avro data.
-    Valid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.
+    [Beta] (Optional) Parse mode for Avro data.
+    Valid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.
     """
 
     schema: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Inline Avro JSON schema string.
+    [Beta] Inline Avro JSON schema string.
     """
 
     schema_file_path: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path to a schema file (.avsc).
+    [Beta] Path to a schema file (.avsc).
     """
 
     schema_registry: VariableOrOptional[SchemaRegistryConfig] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Schema registry to resolve the Avro schema at runtime instead of
+    [Beta] (Optional) Schema registry to resolve the Avro schema at runtime instead of
     providing it inline or via a file path.
     """
 
@@ -67,29 +65,29 @@ class AvroTransformerOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Parse mode for Avro data.
-    Valid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.
+    [Beta] (Optional) Parse mode for Avro data.
+    Valid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.
     """
 
     schema: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Inline Avro JSON schema string.
+    [Beta] Inline Avro JSON schema string.
     """
 
     schema_file_path: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path to a schema file (.avsc).
+    [Beta] Path to a schema file (.avsc).
     """
 
     schema_registry: VariableOrOptional[SchemaRegistryConfigParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Schema registry to resolve the Avro schema at runtime instead of
+    [Beta] (Optional) Schema registry to resolve the Avro schema at runtime instead of
     providing it inline or via a file path.
     """
 

@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"slices"
 	"strings"
 
@@ -23,10 +22,6 @@ func recoverTelemetry(ctx context.Context) {
 		log.Debugf(ctx, "config-remote-sync telemetry panicked and was skipped: %v", r)
 	}
 }
-
-// ErrStateSnapshotNotFound indicates the deployed state snapshot required for
-// change detection does not exist (the bundle was likely never deployed).
-var ErrStateSnapshotNotFound = errors.New("state snapshot not found")
 
 // Stats accumulates aggregate counters for a single config-remote-sync run.
 // All values are counts, booleans, or enumerated categories; no resource

@@ -2,7 +2,7 @@ trace cat databricks.yml
 touch foo.py
 touch bar.py
 trace $CLI bundle plan  # should show 'create'
-$CLI bundle plan -o json | nostamp.py > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan_create.json
 trace $CLI bundle deploy
 
 ppid1=`read_id.py my`
@@ -18,7 +18,7 @@ trace print_requests
 
 trace update_file.py databricks.yml $CONFIG_UPDATE
 trace $CLI bundle plan  # should show 'recreate'
-$CLI bundle plan -o json | nostamp.py > out.plan_recreate.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan_recreate.json
 trace $CLI bundle deploy --auto-approve
 trace print_requests
 

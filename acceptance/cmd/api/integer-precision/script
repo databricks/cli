@@ -1,0 +1,20 @@
+# databricks api must preserve integers exactly, both in what it sends and what
+# it prints: any integer above 2^53 loses its low digits through a float64
+# (...000), and the query-string path additionally renders a large float64 in
+# exponent form. test.toml rewrites the fixed id below to [JOB_ID] only when its
+# exact digits survive, so [JOB_ID] in a golden proves the round-trip is lossless.
+
+title "Response: a >2^53 id is rendered exactly, in server key order"
+# The response goes straight to the golden (no re-parse), so the unescaped '<'
+# and the key order (name before job_id) also show it is not re-marshalled.
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/test/bigint
+
+title "Request body (POST): the id in --json is sent verbatim"
+# print_requests re-parses the recorded body, so '<' is normalised away here;
+# the preserved key order (name before job_id) is what shows the body is verbatim.
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/test/bigint --json '{"name": "a<b", "job_id": 18000000000000000123}' > /dev/null
+trace print_requests.py //test/bigint --del-field headers
+
+title "Request query (GET): the id in --json survives in the query string"
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/test/bigint --json '{"job_id": 18000000000000000123}' > /dev/null
+trace print_requests.py --get //test/bigint --del-field headers

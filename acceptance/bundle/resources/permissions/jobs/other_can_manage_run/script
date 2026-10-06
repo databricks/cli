@@ -5,4 +5,4 @@ trace errcode $CLI bundle deploy -t green
 print_requests.py //jobs --nostamp &> out.deploy.requests.json
 
 trace errcode $CLI bundle destroy -t green --auto-approve
-print_requests.py //jobs --nostamp &> out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //jobs --nostamp &> out.destroy.requests.json

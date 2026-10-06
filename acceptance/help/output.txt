@@ -166,7 +166,7 @@ AI Functions
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
-  workspace-entity-tag-assignments       *Beta* Manage tag assignments on workspace-scoped objects.
+  workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.
 
 Postgres
   postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
@@ -178,12 +178,12 @@ Domains
   domains                                *Beta* Manage domains for organizing and discovering data assets.
 
 Developer Tools
+  air                                    *Public Preview* Run and manage AI Runtime training workloads
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:
   account                                Databricks Account Commands
-  air                                    Run and manage AI Runtime training workloads
   aitools                                Databricks skills and plugins for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands

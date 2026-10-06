@@ -139,7 +139,39 @@ func deploymentBody(d *DmsDeployment) (map[string]any, error) {
 	if d.LastSuccessfulVersionID != "" {
 		body["last_successful_version_id"] = d.LastSuccessfulVersionID
 	}
+
+	// The service emits these blocks in proto field order rather than the SDK's
+	// alphabetical order, and `databricks api` prints response keys verbatim.
+	if gi := d.Deployment.GitInfo; gi != nil {
+		body["git_info"] = dmsGitInfo{OriginUrl: gi.OriginUrl, Branch: gi.Branch, Commit: gi.Commit}
+	}
+	if wi := d.Deployment.WorkspaceInfo; wi != nil {
+		body["workspace_info"] = dmsWorkspaceInfo{
+			RootPath:       wi.RootPath,
+			FilePath:       wi.FilePath,
+			BundleRootPath: wi.BundleRootPath,
+			GitFolderPath:  wi.GitFolderPath,
+			SourceLinked:   wi.SourceLinked,
+		}
+	}
 	return body, nil
+}
+
+// dmsGitInfo mirrors bundledeployments.GitInfo with fields in the service's key order.
+type dmsGitInfo struct {
+	OriginUrl string `json:"origin_url,omitempty"`
+	Branch    string `json:"branch,omitempty"`
+	Commit    string `json:"commit,omitempty"`
+}
+
+// dmsWorkspaceInfo mirrors bundledeployments.WorkspaceInfo with fields in the service's
+// key order. Only root_path and file_path have been observed on cloud; the rest follow.
+type dmsWorkspaceInfo struct {
+	RootPath       string `json:"root_path,omitempty"`
+	FilePath       string `json:"file_path,omitempty"`
+	BundleRootPath string `json:"bundle_root_path,omitempty"`
+	GitFolderPath  string `json:"git_folder_path,omitempty"`
+	SourceLinked   bool   `json:"source_linked,omitempty"`
 }
 
 // dmsUpdatableDeploymentFields are the update_mask paths UpdateDeployment accepts.

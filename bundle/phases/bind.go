@@ -33,85 +33,78 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	if engine.IsDirect() {
-		if stateDesc.IsDMS() {
-			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-			return
-		}
+	// The terraform engine was removed in v1.20.0. bind does not migrate on its own, so a
+	// terraform state means the user must migrate first (via "bundle deploy").
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
+		return
+	}
 
-		// Direct engine: import into temp state, run plan, check for changes
-		// This follows the same pattern as terraform import
-		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
-		if !ok {
-			groupName = opts.ResourceType
-		}
-		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
+	if stateDesc.IsDMS() {
+		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
+		return
+	}
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
+	// Direct engine: import into temp state, run plan, check for changes.
+	groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
+	if !ok {
+		groupName = opts.ResourceType
+	}
+	resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
+	_, statePath := b.StateFilenameDirect(ctx)
 
-		// If there are changes and auto-approve is not set, show plan and ask for confirmation
-		if result.HasChanges && !opts.AutoApprove {
-			// Display the planned changes for the bound resource
-			cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
+	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
-			// Show details of what will change
-			if result.Plan != nil {
-				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-					cmdio.LogString(ctx, "\nChanges detected:")
-					for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-						change := entry.Changes[field]
-						if change.Action != deployplan.Skip {
-							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-						}
+	// If there are changes and auto-approve is not set, show plan and ask for confirmation
+	if result.HasChanges && !opts.AutoApprove {
+		// Display the planned changes for the bound resource
+		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
+
+		// Show details of what will change
+		if result.Plan != nil {
+			if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
+				cmdio.LogString(ctx, "\nChanges detected:")
+				for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+					change := entry.Changes[field]
+					if change.Action != deployplan.Skip {
+						cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
 					}
-					cmdio.LogString(ctx, "")
 				}
-			}
-
-			if !cmdio.IsPromptSupported(ctx) {
-				result.Cancel()
-				logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
-				return
-			}
-
-			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
-			if err != nil {
-				result.Cancel()
-				logdiag.LogError(ctx, err)
-				return
-			}
-			if !ans {
-				result.Cancel()
-				logdiag.LogError(ctx, errors.New("import aborted"))
-				return
+				cmdio.LogString(ctx, "")
 			}
 		}
 
-		// Finalize: rename temp state to final location
-		err = result.Finalize()
+		if !cmdio.IsPromptSupported(ctx) {
+			result.Cancel()
+			logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+			return
+		}
+
+		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
+			result.Cancel()
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		// Terraform engine: use terraform import
-		bundle.ApplySeqContext(
-			ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Import(opts),
-		)
-		if logdiag.HasError(ctx) {
+		if !ans {
+			result.Cancel()
+			logdiag.LogError(ctx, errors.New("import aborted"))
 			return
 		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	// Finalize: rename temp state to final location
+	err = result.Finalize()
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b)
 }
 
 func jsonDump(ctx context.Context, v any, field string) string {
@@ -123,7 +116,7 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
+func Unbind(ctx context.Context, b *bundle.Bundle, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalUnbind))
@@ -135,29 +128,24 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	if engine.IsDirect() {
-		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
-		if !ok {
-			groupName = tfResourceType
-		}
-		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	} else {
-		bundle.ApplySeqContext(
-			ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Unbind(bundleType, tfResourceType, resourceKey),
-		)
-		if logdiag.HasError(ctx) {
-			return
-		}
+	// The terraform engine was removed in v1.20.0. unbind does not migrate on its own, so a
+	// terraform state means the user must migrate first (via "bundle deploy").
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
+		return
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	groupName, ok := terraform.TerraformToGroupName[tfResourceType]
+	if !ok {
+		groupName = tfResourceType
+	}
+	fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
+	_, statePath := b.StateFilenameDirect(ctx)
+	err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b)
 }

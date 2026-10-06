@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -15,20 +14,14 @@ import (
 )
 
 // PushResourcesState uploads the local state file to the remote location.
-func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
+func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
-	var remotePath, localPath string
-
-	if engine.IsDirect() {
-		remotePath, localPath = b.StateFilenameDirect(ctx)
-	} else {
-		remotePath, localPath = b.StateFilenameTerraform(ctx)
-	}
+	remotePath, localPath := b.StateFilenameDirect(ctx)
 
 	local, err := os.Open(localPath)
 	if errors.Is(err, fs.ErrNotExist) {

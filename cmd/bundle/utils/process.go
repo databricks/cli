@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -316,14 +315,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the direct state.
 		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 
-		// Migrate a Terraform state to the direct engine: when the direct engine is requested
-		// (the default) and the existing state still uses Terraform, convert it so the run
-		// proceeds on the direct engine. Migrate is in-memory and reversible - nothing is written
-		// or pushed - so plan, run, and a declined deploy just drop it and stay on terraform;
-		// deploy makes it durable by calling CommitMigration after approval, destroy as part of
-		// its teardown. If the migration's plan check fails, Migrate leaves the Terraform state
-		// intact and the run falls back to the terraform engine. Read-only commands that do not
-		// need state keep reading the Terraform state as-is.
+		// Migrate a Terraform state to the direct engine: the direct engine is the only engine,
+		// so when the existing state still uses Terraform, convert it so the run proceeds on the
+		// direct engine. Migrate is in-memory and reversible - nothing is written or pushed - so
+		// plan, run, and a declined deploy just drop it; deploy makes it durable by calling
+		// CommitMigration after approval, destroy as part of its teardown. The Terraform engine
+		// was removed in v1.20.0, so a migration failure is fatal - there is no engine to fall
+		// back to. Read-only commands that do not need state keep reading the Terraform state.
 		if b.MigratingToDirect && needsState {
 			if err := migrateTerraformToDirect(ctx, b, stateDesc); err != nil {
 				logdiag.LogError(ctx, err)
@@ -338,15 +336,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if b.MigratingToDirect {
 			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 			cmd.SetContext(ctx)
-		}
-
-		// --select is only supported by the direct engine, which tracks resource
-		// dependencies in the plan graph (used to expand the selection transitively).
-		// Validate once the engine is final (after any migration above), rather than
-		// silently planning/deploying every resource on terraform.
-		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
-			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
@@ -428,19 +417,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			var state statemgmt.ExportedResourcesMap
-			if stateDesc.Engine.IsDirect() {
-				state = b.DeploymentBundle.ExportState(ctx)
-			} else {
-				var err error
-				state, err = terraform.ParseResourcesState(ctx, b)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-			}
 			mutators := []bundle.Mutator{
-				statemgmt.Load(state, modes...),
+				statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
@@ -456,10 +434,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// precomputed plan. Artifact uploads are handled inside Deploy by extracting remote
 		// paths from the plan's new_state and finding the matching local files.
 		if opts.ReadPlanPath != "" {
-			if !stateDesc.Engine.IsDirect() {
-				logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
 			var err error
 			plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
 			if err != nil {
@@ -538,15 +512,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
-
-		// The user opted out of the direct engine (engine: terraform), so no migration ran.
-		// Do a throwaway conversion of the just-deployed terraform state to record
-		// direct_drymigrate_* telemetry — the fleet-wide "could this bundle migrate?"
-		// signal. Runs after the deploy so mutating b.Config during the conversion is
-		// harmless, and only when the deploy succeeded on a terraform state.
-		if stateDesc != nil && requiredEngine.Type == engine.EngineTerraform && !stateDesc.Engine.IsDirect() {
-			statemgmt.DryRunMigrationTelemetry(ctx, b)
-		}
 	}
 
 	if opts.PostStateFunc != nil {
@@ -559,10 +524,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // migrateTerraformToDirect converts the bundle's Terraform state to the direct engine in memory.
-// On success it advances stateDesc and metrics to the direct engine. Any failure that leaves the
-// migration unviable (parse, conversion, plan check) leaves the Terraform state intact
-// (migrated=false) so the caller proceeds on the terraform engine and the command still runs;
-// only an internal error returns. Nothing is committed here - deploy calls statemgmt.CommitMigration
+// On success it advances stateDesc and metrics to the direct engine. Any failure (parse,
+// conversion, plan check) is fatal and returns an error: the Terraform engine was removed, so there
+// is no engine to fall back to. Nothing is committed here - deploy calls statemgmt.CommitMigration
 // after approval, destroy commits as part of its teardown. The caller tags the user agent with the
 // resolved stateDesc.Engine afterwards.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
@@ -583,18 +547,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
+		parsed, ok := engine.Parse(string(configEngine))
+		if !ok {
+			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+		}
+		if parsed == engine.EngineTerraform {
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
+		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return engine.EngineSetting{}, err
+	}
+	if envEngine == engine.EngineTerraform {
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil

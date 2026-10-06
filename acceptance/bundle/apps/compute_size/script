@@ -17,4 +17,4 @@ sed -i.bak 's/compute_size: LARGE/compute_size: MEDIUM/' databricks.yml
 {
   trace errcode $CLI bundle deploy
   trace $CLI apps get "app-$UNIQUE_NAME" | jq '{compute_size: .compute_size}'
-} &> out.update.$DATABRICKS_BUNDLE_ENGINE.txt
+} &> out.update.txt

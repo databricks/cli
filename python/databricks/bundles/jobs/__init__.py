@@ -144,6 +144,12 @@ __all__ = [
     "JobEnvironment",
     "JobEnvironmentDict",
     "JobEnvironmentParam",
+    "JobEnvironmentVariables",
+    "JobEnvironmentVariablesDict",
+    "JobEnvironmentVariablesParam",
+    "JobEnvironmentVariablesSpec",
+    "JobEnvironmentVariablesSpecDict",
+    "JobEnvironmentVariablesSpecParam",
     "JobNotificationSettings",
     "JobNotificationSettingsDict",
     "JobNotificationSettingsParam",
@@ -566,6 +572,16 @@ from databricks.bundles.jobs._models.job_environment import (
     JobEnvironment,
     JobEnvironmentDict,
     JobEnvironmentParam,
+)
+from databricks.bundles.jobs._models.job_environment_variables import (
+    JobEnvironmentVariables,
+    JobEnvironmentVariablesDict,
+    JobEnvironmentVariablesParam,
+)
+from databricks.bundles.jobs._models.job_environment_variables_spec import (
+    JobEnvironmentVariablesSpec,
+    JobEnvironmentVariablesSpecDict,
+    JobEnvironmentVariablesSpecParam,
 )
 from databricks.bundles.jobs._models.job_notification_settings import (
     JobNotificationSettings,

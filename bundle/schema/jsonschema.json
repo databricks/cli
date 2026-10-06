@@ -64,11 +64,9 @@
                   {
                     "type": "string",
                     "enum": [
-                      "terraform",
                       "direct"
                     ],
                     "enumDescriptions": [
-                      "Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct",
                       "Deploy by calling the Databricks APIs directly. This is the default."
                     ]
                   },
@@ -178,16 +176,14 @@
                         "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                       },
                       "compute_max_instances": {
-                        "description": "[Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.",
+                        "description": "Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.",
                         "$ref": "#/$defs/int",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "GA"
                       },
                       "compute_min_instances": {
-                        "description": "[Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.",
+                        "description": "Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.",
                         "$ref": "#/$defs/int",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "GA"
                       },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
@@ -1246,6 +1242,11 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications",
                         "x-databricks-launch-stage": "GA"
                       },
+                      "environment_variables": {
+                        "description": "[Beta] Named environment-variable entries that tasks can reference by key from\n`TaskSettings.environment_variables_key`. Each entry's `spec` holds inline\n`variables` and optional `.env` `files`. Maximum 10 entries per job. A task\ncan reference at most one entry from this list.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironmentVariables",
+                        "x-databricks-launch-stage": "PUBLIC_BETA"
+                      },
                       "environments": {
                         "description": "A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.\n\nFor notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment",
@@ -2046,9 +2047,11 @@
                         "deprecated": true
                       },
                       "development": {
-                        "description": "Whether the pipeline is in Development mode. Defaults to false.",
+                        "description": "Whether the pipeline is in Development mode. Defaults to false.\n\nDeprecated: set development mode for each update instead.",
                         "$ref": "#/$defs/bool",
-                        "x-databricks-launch-stage": "GA"
+                        "x-databricks-launch-stage": "GA",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "edition": {
                         "description": "Pipeline product edition.",
@@ -3729,7 +3732,7 @@
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "engine": {
-                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"direct\".",
+                      "description": "The deployment engine to use. Valid values are `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"direct\".",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                     },
                     "git": {
@@ -5825,16 +5828,14 @@
                   "description": "Header-based API-key authentication for a custom provider: the secret is\nforwarded on outbound requests under a caller-chosen HTTP header, as\n`\u003capi_key_name\u003e: \u003capi_key_value\u003e`.",
                   "properties": {
                     "api_key_name": {
-                      "description": "[Private Preview] HTTP header name that carries the API key on outbound requests (e.g.,\n`Ocp-Apim-Subscription-Key`). The value forwarded under this header is\nsupplied via `api_key_value`.",
+                      "description": "HTTP header name that carries the API key on outbound requests (e.g.,\n`Ocp-Apim-Subscription-Key`). The value forwarded under this header is\nsupplied via `api_key_value`.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "api_key_value": {
-                      "description": "[Private Preview] Secret value forwarded under the `api_key_name` header on outbound\nrequests. Supplied as inline plaintext via `ProviderSecret.plaintext`.",
+                      "description": "Secret value forwarded under the `api_key_name` header on outbound\nrequests. Supplied as inline plaintext via `ProviderSecret.plaintext`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -5882,10 +5883,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "header_auth": {
-                      "description": "[Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests\nunder a caller-chosen HTTP header rather than as an `Authorization`\nbearer token. Set this instead of `api_key` for header auth.",
+                      "description": "Header-based API-key auth: the secret is forwarded on outbound requests\nunder a caller-chosen HTTP header rather than as an `Authorization`\nbearer token. Set this instead of `api_key` for header auth.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -5986,6 +5986,11 @@
                     "region": {
                       "description": "GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).\nRequired on Create.",
                       "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "service_credential": {
+                      "description": "Reference to a Unity Catalog service credential authorizing Gemini\nEnterprise requests. On Create, supply `service_credential.name` as\n`credentials/{name}`; required when using service-credential\nauthentication and mutually exclusive with `api_key`. The credential is\nreferenced by name; its value is not carried here. On read, the resolved\n`id` and `is_deleted` are also populated. Supported only on GCP-hosted\nworkspaces.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigServiceCredential",
                       "x-databricks-launch-stage": "GA"
                     }
                   },
@@ -6140,9 +6145,37 @@
                       "description": "Inline plaintext credential. INPUT_ONLY: the value never round-trips on\nreads. Get and List responses omit `plaintext`; the enclosing secret\nobject remains present to indicate that a secret is configured.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "secret_reference": {
+                      "description": "Reference to a customer-owned UC Secret that carries this secret value.\nThe value is read at invoke time under the model provider service\nowner's access and is never copied onto the model provider service, so\nrotating the UC Secret takes effect with no change to the model provider\nservice. On Create, supply `secret_reference.name` as\n`secrets/{catalog}.{schema}.{secret}`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigSecretReference",
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigSecretReference": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Reference to a customer-owned UC Secret backing a secret-bearing provider\nfield, in the `ProviderSecret.secret_reference` arm.",
+                  "properties": {
+                    "name": {
+                      "description": "Resource name of the bound UC Secret, in the form\n`secrets/{catalog}.{schema}.{secret}`. On Create the caller supplies the\nname here. On read it reflects the secret's current name at read time.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
                 },
                 {
                   "type": "string",
@@ -7759,6 +7792,11 @@
                       "description": "List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "project_environment": {
+                      "description": "[Beta] File path of pyproject.toml file that defines the project-scoped environment.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -7879,10 +7917,10 @@
                     "GPU_8xB300"
                   ],
                   "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Private Preview]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -7950,7 +7988,7 @@
                   "description": "Attributes set during instance pool creation which are related to Amazon Web Services.",
                   "properties": {
                     "availability": {
-                      "description": "Availability type used for the spot nodes.",
+                      "description": "Availability type used for the instances in the pool. Supports on-demand, spot, and\nspot-with-fallback (the pool acquires spot instances first, and falls back to on-demand\ninstances when spot capacity is unavailable).\n\nYou can change this value on an existing pool. New clusters use the updated availability, and\nexisting clusters keep the availability they launched with.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAwsAttributesAvailability",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7960,12 +7998,12 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "spot_bid_price_percent": {
-                      "description": "Calculates the bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.",
+                      "description": "Calculates the bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nYou can change this value on an existing pool. New clusters use the updated bid price, and\nexisting clusters keep the bid price they launched with.",
                       "$ref": "#/$defs/int",
                       "x-databricks-launch-stage": "GA"
                     },
                     "zone_id": {
-                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method.",
+                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method.\n\nSet this field to \"auto\" to enable Auto-AZ, in which case Databricks selects the availability\nzone for each cluster independently when the cluster launches, and retries another zone if the\ncluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster\nland in the same zone, and different clusters backed by the pool can run in different zones.\n\nYou can change the zone on an existing pool. New clusters use the updated zone, and existing\nclusters keep the zone they launched with.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -8001,7 +8039,7 @@
                   "description": "Attributes set during instance pool creation which are related to Azure.",
                   "properties": {
                     "availability": {
-                      "description": "Availability type used for the spot nodes.",
+                      "description": "Availability type used for the instances in the pool. Supports on-demand, spot, and\nspot-with-fallback (the pool acquires spot instances first, and falls back to on-demand\ninstances when spot capacity is unavailable).\n\nYou can change this value on an existing pool. New clusters use the updated availability, and\nexisting clusters keep the availability they launched with.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAzureAttributesAvailability",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8011,7 +8049,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "spot_bid_max_price": {
-                      "description": "With variable pricing, you have option to set a max price, in US dollars (USD)\nFor example, the value 2 would be a max price of $2.00 USD per hour.\nIf you set the max price to be -1, the VM won't be evicted based on price.\nThe price for the VM will be the current price for spot or the price for a standard VM,\nwhich ever is less, as long as there is capacity and quota available.",
+                      "description": "With variable pricing, you have option to set a max price, in US dollars (USD)\nFor example, the value 2 would be a max price of $2.00 USD per hour.\nIf you set the max price to be -1, the VM won't be evicted based on price.\nThe price for the VM will be the current price for spot or the price for a standard VM,\nwhich ever is less, as long as there is capacity and quota available.\n\nYou can change this value on an existing pool. New clusters use the updated max price, and\nexisting clusters keep the max price they launched with.",
                       "$ref": "#/$defs/float64",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -8047,7 +8085,7 @@
                   "description": "Attributes set during instance pool creation which are related to GCP.",
                   "properties": {
                     "gcp_availability": {
-                      "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+                      "description": "Availability type for the instances in the pool. One of:\n\n- `ON_DEMAND_GCP`: the pool uses on-demand instances only.\n- `PREEMPTIBLE_GCP`: the pool uses preemptible instances only.\n- `PREEMPTIBLE_WITH_FALLBACK_GCP`: the pool acquires preemptible instances first, and falls\nback to on-demand instances when preemptible capacity is unavailable.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8057,7 +8095,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "zone_id": {
-                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west1-a\". The provided availability\nzone must be in the same region as the Databricks workspace. For example, \"us-west1-a\"\nis not a valid zone id if the Databricks workspace resides in the \"us-east1\" region.\nThis is an optional field at instance pool creation, and if not specified, a default zone will be used.\n\nThis field can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones (e.g. \"us-west1-a\").\n\nIf empty, Databricks picks an availability zone to schedule the cluster on.",
+                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west1-a\". The provided availability\nzone must be in the same region as the Databricks workspace. For example, \"us-west1-a\"\nis not a valid zone id if the Databricks workspace resides in the \"us-east1\" region.\nThis is an optional field at instance pool creation, and if not specified, a default zone will be used.\n\nThis field can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region\n- \"auto\" =\u003e Auto-AZ. Databricks selects the availability zone for each cluster independently when the cluster launches, and retries another zone if the cluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster land in the same zone, and different clusters backed by the pool can run in different zones.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones (e.g. \"us-west1-a\").\n\nIf empty, Databricks picks an availability zone to schedule the cluster on.\n\nYou can change the zone on an existing pool. New clusters use the updated zone, and existing\nclusters keep the zone they launched with.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9200,9 +9238,9 @@
                   "type": "object",
                   "properties": {
                     "hardware_accelerator": {
-                      "description": "[Beta] Hardware accelerator configuration for Serverless GPU workloads.",
+                      "description": "[Public Preview] Hardware accelerator configuration for Serverless GPU workloads.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     }
                   },
                   "additionalProperties": false
@@ -9382,10 +9420,9 @@
                   "type": "object",
                   "properties": {
                     "maintenance_window": {
-                      "description": "[Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.",
+                      "description": "Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.MaintenanceWindow",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "pause_status": {
                       "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.",
@@ -9413,10 +9450,9 @@
                   "description": "Continuous trigger. Stripped-down counterpart to `ContinuousSettings`: `pause_status` is owned by the enclosing\n`TriggerConfiguration` and intentionally omitted here.",
                   "properties": {
                     "maintenance_window": {
-                      "description": "[Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,\nmaintenance may run at any time.",
+                      "description": "[Beta] Defines when platform-initiated maintenance may run for this trigger. If unspecified,\nmaintenance may run at any time.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.MaintenanceWindow",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "task_retry_mode": {
                       "description": "[Beta] Whether the continuous job applies task-level retries. Defaults to NEVER.",
@@ -9548,15 +9584,6 @@
                     "FRIDAY",
                     "SATURDAY",
                     "SUNDAY"
-                  ],
-                  "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9677,7 +9704,7 @@
                   "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
                   "properties": {
                     "command_path": {
-                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
+                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n```bash\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py\n```",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
@@ -9694,7 +9721,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "command_path",
                     "compute"
                   ]
                 },
@@ -10061,6 +10087,16 @@
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
+                    "on_maintenance_complete": {
+                      "description": "A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "on_maintenance_start": {
+                      "description": "A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
                     "on_start": {
                       "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                       "$ref": "#/$defs/slice/string",
@@ -10105,6 +10141,59 @@
                   "required": [
                     "environment_key"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.JobEnvironmentVariables": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A named environment-variable entry, defined once at the job level and\nreferenced by key from one or more tasks. Entries live on\n`JobSettings.environment_variables`, and tasks select one via\n`TaskSettings.environment_variables_key`.",
+                  "properties": {
+                    "environment_variables_key": {
+                      "description": "[Beta] Identifier for this entry. Must be unique within\n`JobSettings.environment_variables`. Tasks reference it from\n`TaskSettings.environment_variables_key`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "spec": {
+                      "description": "[Beta] The environment variable specification.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironmentVariablesSpec",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "environment_variables_key"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.JobEnvironmentVariablesSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The environment variables and files associated with a job environment\nvariable entry. Runtime environment variables override inline `variables`,\nwhich override values from `files`, on duplicate keys.",
+                  "properties": {
+                    "files": {
+                      "description": "[Beta] Workspace (`/Workspace/...`) or UC Volumes (`/Volumes/...`) paths to\n`.env` files. Maximum 5 files. Files are read, parsed, and merged at\ntask execution time, not at job creation or update API call time.\n\nFile format: each line containing a variable must be exactly `KEY=VALUE`.\nEmpty and whitespace-only lines, and lines beginning with `#`, are ignored.\nKeys must match the same regex as inlined variable names\n(`^[A-Za-z_][A-Za-z0-9_]*$`); the value continues to the end of the line.\nNo other syntax is supported — no inline comments, no quoted values, no\nescape sequences, no variable interpolation. Any other line that does not\nmatch the `KEY=VALUE` shape fails the run.\n\nSize limits: maximum 32,768 bytes (32 KiB) per file on disk;\nmaximum 1,024 bytes (1 KiB) per `KEY=VALUE` line combined.\nFiles or lines exceeding these limits fail the run.\n\nOn a duplicate key, the later file wins; `variables` override values\nfrom any file.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "variables": {
+                      "description": "[Beta] Environment variables specified directly as key/value pairs. Maximum 20\nentries.\n\nEach key must be 1 to 256 characters and match\n`^[A-Za-z_][A-Za-z0-9_]*$`: it must start with an ASCII letter or\nunderscore and contain only ASCII letters, digits, and underscores. Each\nvalue can be any Unicode string of up to 512 characters, including an\nempty string.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -10370,22 +10459,19 @@
                   "description": "A recurring weekly time window during which platform-initiated maintenance is\nallowed to run for a continuous job.",
                   "properties": {
                     "day_of_week": {
-                      "description": "[Private Preview] The day of week on which maintenance is allowed to happen. This field is required.",
+                      "description": "The day of week on which maintenance is allowed to happen. This field is required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DayOfWeek",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "start_hour": {
-                      "description": "[Private Preview] An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.\nPlatform-initiated maintenance is triggered only within a one-hour window starting at this hour.\nThis field is required.",
+                      "description": "An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.\nPlatform-initiated maintenance is triggered only within a one-hour window starting at this hour.\nThis field is required.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     },
                     "timezone_id": {
-                      "description": "[Private Preview] A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
+                      "description": "A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -11518,9 +11604,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "compute": {
-                      "description": "[Beta] Task level compute configuration.",
+                      "description": "[Public Preview] Task level compute configuration.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Compute",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
                     "condition_task": {
                       "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
@@ -11580,6 +11666,11 @@
                       "description": "The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "environment_variables_key": {
+                      "description": "[Beta] Reference to a `JobEnvironmentVariables` entry defined in\n`JobSettings.environment_variables`. The selected entry's variables are\napplied to this task at execution time. This field supports serverless\ntasks using environment version 5 or later.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "existing_cluster_id": {
                       "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs.\nWhen running jobs or tasks on an existing cluster, you may need to manually restart\nthe cluster if it stops responding. We suggest running jobs and tasks on new clusters for\ngreater reliability",
@@ -11768,6 +11859,16 @@
                     },
                     "on_failure": {
                       "description": "A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "on_maintenance_complete": {
+                      "description": "A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "on_maintenance_start": {
+                      "description": "A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -11975,6 +12076,16 @@
                     },
                     "on_failure": {
                       "description": "An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Webhook",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "on_maintenance_complete": {
+                      "description": "An optional list of system notification IDs to call when platform-initiated maintenance completes for a continuous job.\nA maximum of 3 destinations can be specified for the `on_maintenance_complete` property.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Webhook",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "on_maintenance_start": {
+                      "description": "An optional list of system notification IDs to call when platform-initiated maintenance starts for a continuous job.\nA maximum of 3 destinations can be specified for the `on_maintenance_start` property.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Webhook",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -12222,28 +12333,24 @@
                   "type": "object",
                   "properties": {
                     "parse_mode": {
-                      "description": "[Private Preview] (Optional) Parse mode for Avro data.\nValid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.",
+                      "description": "[Beta] (Optional) Parse mode for Avro data.\nValid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema": {
-                      "description": "[Private Preview] Inline Avro JSON schema string.",
+                      "description": "[Beta] Inline Avro JSON schema string.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema_file_path": {
-                      "description": "[Private Preview] Path to a schema file (.avsc).",
+                      "description": "[Beta] Path to a schema file (.avsc).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema_registry": {
-                      "description": "[Private Preview] (Optional) Schema registry to resolve the Avro schema at runtime instead of\nproviding it inline or via a file path.",
+                      "description": "[Beta] (Optional) Schema registry to resolve the Avro schema at runtime instead of\nproviding it inline or via a file path.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -12280,10 +12387,9 @@
                   "type": "object",
                   "properties": {
                     "subject": {
-                      "description": "[Private Preview] Required: subject name to resolve in the registry.",
+                      "description": "[Beta] Required: subject name to resolve in the registry.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -12394,16 +12500,14 @@
                       "doNotSuggest": true
                     },
                     "smartsheet_options": {
-                      "description": "[Private Preview] Smartsheet specific options for ingestion",
+                      "description": "[Beta] Smartsheet specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "tiktok_ads_options": {
-                      "description": "[Private Preview] TikTok Ads specific options for ingestion",
+                      "description": "[Beta] TikTok Ads specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "zendesk_support_options": {
                       "description": "[Public Preview] Zendesk Support specific options for ingestion",
@@ -13255,9 +13359,9 @@
                     "[Beta]",
                     "[Public Preview]",
                     "[Beta]",
-                    "[Private Preview]",
+                    "[Beta]",
                     "[Public Preview]",
-                    "[Private Preview]",
+                    "[Beta]",
                     "[Beta]",
                     "[Private Preview]"
                   ]
@@ -13889,8 +13993,8 @@
                     "PERMISSIVE"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -14267,34 +14371,29 @@
                   "type": "object",
                   "properties": {
                     "desc_file_path": {
-                      "description": "[Private Preview] Required: path to the .desc file (dbfs:/... or /Volumes/...).",
+                      "description": "[Beta] Required: path to the .desc file (dbfs:/... or /Volumes/...).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "message_name": {
-                      "description": "[Private Preview] Required: fully-qualified message type name.",
+                      "description": "[Beta] Required: fully-qualified message type name.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "parse_mode": {
-                      "description": "[Private Preview] (Optional) Parse mode for Protobuf data.\nValid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.",
+                      "description": "[Beta] (Optional) Parse mode for Protobuf data.\nValid values: FAILFAST, PERMISSIVE. Defaults to PERMISSIVE.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "recursive_fields_max_depth": {
-                      "description": "[Private Preview] (Optional) Maximum expansion depth for recursive protobuf fields.\nSpark SQL does not natively support recursive types, so recursive\nfields are expanded up to this depth and truncated beyond it.\nValid values: -1 (disallow recursive fields), 0 (drop), 1-10.",
+                      "description": "[Beta] (Optional) Maximum expansion depth for recursive protobuf fields.\nSpark SQL does not natively support recursive types, so recursive\nfields are expanded up to this depth and truncated beyond it.\nValid values: -1 (disallow recursive fields), 0 (drop), 1-10.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema_registry": {
-                      "description": "[Private Preview] (Optional) Schema registry to resolve the Protobuf schema at runtime instead\nof providing it via desc_file_path.",
+                      "description": "[Beta] (Optional) Schema registry to resolve the Protobuf schema at runtime instead\nof providing it via desc_file_path.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -14504,22 +14603,19 @@
                   "type": "object",
                   "properties": {
                     "confluent_options": {
-                      "description": "[Private Preview] Required: Confluent-compatible schema registry options.",
+                      "description": "[Beta] Required: Confluent-compatible schema registry options.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluentSchemaRegistryOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "connection_name": {
-                      "description": "[Private Preview] (Optional) UC connection for registry authentication.\nSpecify if different from the top-level source connection.",
+                      "description": "[Beta] (Optional) UC connection for registry authentication.\nSpecify if different from the top-level source connection.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "protobuf_message_name": {
-                      "description": "[Private Preview] (Optional, Protobuf only) Selects a specific message from a schema that\ndefines multiple Protobuf messages. Simple (\"Location\") or fully-qualified\n(\"com.example.protos.Location\"). Defaults to the first message.",
+                      "description": "[Beta] (Optional, Protobuf only) Selects a specific message from a schema that\ndefines multiple Protobuf messages. Simple (\"Location\") or fully-qualified\n(\"com.example.protos.Location\"). Defaults to the first message.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -14645,10 +14741,9 @@
                   "description": "Smartsheet specific options for ingestion",
                   "properties": {
                     "enforce_schema": {
-                      "description": "[Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
+                      "description": "[Beta] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -14894,56 +14989,49 @@
                       "doNotSuggest": true
                     },
                     "data_level": {
-                      "description": "[Private Preview] Deprecated. Use custom_report_options.data_level instead.",
+                      "description": "[Beta] Deprecated. Use custom_report_options.data_level instead.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "x-databricks-launch-stage": "PUBLIC_BETA",
                       "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
                       "deprecated": true
                     },
                     "dimensions": {
-                      "description": "[Private Preview] Deprecated. Use custom_report_options.dimensions instead.",
+                      "description": "[Beta] Deprecated. Use custom_report_options.dimensions instead.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "x-databricks-launch-stage": "PUBLIC_BETA",
                       "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
                       "deprecated": true
                     },
                     "lookback_window_days": {
-                      "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
+                      "description": "[Beta] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "metrics": {
-                      "description": "[Private Preview] Deprecated. Use custom_report_options.metrics instead.",
+                      "description": "[Beta] Deprecated. Use custom_report_options.metrics instead.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "x-databricks-launch-stage": "PUBLIC_BETA",
                       "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
                       "deprecated": true
                     },
                     "query_lifetime": {
-                      "description": "[Private Preview] Deprecated. Use custom_report_options.query_lifetime instead.",
+                      "description": "[Beta] Deprecated. Use custom_report_options.query_lifetime instead.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "x-databricks-launch-stage": "PUBLIC_BETA",
                       "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
                       "deprecated": true
                     },
                     "report_type": {
-                      "description": "[Private Preview] Deprecated. Use custom_report_options.report_type instead.",
+                      "description": "[Beta] Deprecated. Use custom_report_options.report_type instead.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "x-databricks-launch-stage": "PUBLIC_BETA",
                       "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
                       "deprecated": true
                     },
                     "sync_start_date": {
-                      "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
+                      "description": "[Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -15011,10 +15099,10 @@
                     "AUCTION_AD"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -15037,12 +15125,12 @@
                     "GMV_MAX"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -15058,10 +15146,9 @@
                   "description": "Specifies how to transform binary data into structured data.",
                   "properties": {
                     "avro_options": {
-                      "description": "[Private Preview]",
+                      "description": "[Beta]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AvroTransformerOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "format": {
                       "description": "[Beta] Required: the wire format of the data.",
@@ -15086,10 +15173,9 @@
                       "doNotSuggest": true
                     },
                     "protobuf_options": {
-                      "description": "[Private Preview]",
+                      "description": "[Beta]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ProtobufTransformerOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -15113,8 +15199,8 @@
                   "enumDescriptions": [
                     "[Beta]",
                     "[Beta]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -15150,10 +15236,9 @@
                   "description": "Take a snapshot once per day, at the configured hour.",
                   "properties": {
                     "hour": {
-                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -15179,13 +15264,13 @@
                     "SUNDAY"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -15270,16 +15355,14 @@
                   "description": "Take a snapshot once per month, on the configured day at the configured hour.",
                   "properties": {
                     "day": {
-                      "description": "[Private Preview] The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
+                      "description": "[Beta] The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "hour": {
-                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -15498,28 +15581,24 @@
                   "description": "One cadence at which automatic snapshots are taken.",
                   "properties": {
                     "daily_schedule": {
-                      "description": "[Private Preview] Take a snapshot once per day.",
+                      "description": "[Beta] Take a snapshot once per day.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DailySchedule",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "monthly_schedule": {
-                      "description": "[Private Preview] Take a snapshot once per month.",
+                      "description": "[Beta] Take a snapshot once per month.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.MonthlySchedule",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "retention": {
-                      "description": "[Private Preview] How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
+                      "description": "[Beta] How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "weekly_schedule": {
-                      "description": "[Private Preview] Take a snapshot once per week.",
+                      "description": "[Beta] Take a snapshot once per week.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.WeeklySchedule",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -15669,16 +15748,14 @@
                   "description": "Take a snapshot once per week, on the configured day at the configured hour.",
                   "properties": {
                     "day_of_week": {
-                      "description": "[Private Preview] The day of the week on which to take the snapshot.",
+                      "description": "[Beta] The day of the week on which to take the snapshot.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DayOfWeek",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "hour": {
-                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "description": "[Beta] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -17580,7 +17657,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n+-------+--------------------------------------+--------------------------------+\n| Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |\n+-------+--------------------------------------+--------------------------------+\n| AWS   | On Demand Driver with Spot Executors | On Demand Driver and\nExecutors | | AZURE | On Demand Driver and Executors       | On Demand Driver\nand Executors |\n+-------+--------------------------------------+--------------------------------+",
+                  "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n- AWS, COST_OPTIMIZED: On Demand Driver with Spot Executors.\n- AWS, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.\n- AZURE, COST_OPTIMIZED: On Demand Driver and Executors.\n- AZURE, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.",
                   "enum": [
                     "POLICY_UNSPECIFIED",
                     "COST_OPTIMIZED",
@@ -19091,6 +19168,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "jobs.JobEnvironmentVariables": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironmentVariables"
                     }
                   },
                   {
