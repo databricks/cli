@@ -12,8 +12,7 @@ const (
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
-	// Outcome of an automatic post-deploy migration to the direct engine, which
-	// runs unless the user opted out with engine: terraform.
+	// Outcome of an automatic migration of terraform state to the direct engine.
 	//   - migrate_error:        state conversion itself errored.
 	//   - migrate_commit_error: the state was converted, but committing it
 	//                           (renaming files / pushing to workspace) failed.
