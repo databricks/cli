@@ -102,6 +102,15 @@ func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte
 	if err != nil {
 		return nil, err
 	}
+	// YAML decodes omitted and null pointers alike. Preserve explicit nulls so validation rejects them.
+	if cfg.CodeSource != nil {
+		if cfg.CodeSource.Type == nil && codeSourceFieldPresent(document, "type") {
+			cfg.CodeSource.Type = new(string)
+		}
+		if cfg.CodeSource.LegacySnapshot == nil && codeSourceFieldPresent(document, "snapshot") {
+			cfg.CodeSource.LegacySnapshot = &snapshotSourceConfig{}
+		}
+	}
 	if err := validateRunConfig(cfg); err != nil {
 		return nil, err
 	}
@@ -113,6 +122,15 @@ func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte
 	}
 	cfg.artifactYAML = artifactYAML
 	return cfg, nil
+}
+
+func codeSourceFieldPresent(document *yaml.Node, field string) bool {
+	codeSource, _ := mappingValue(document.Content[0], "code_source")
+	if codeSource == nil || codeSource.Kind != yaml.MappingNode {
+		return false
+	}
+	fieldNode, _ := mappingValue(codeSource, field)
+	return fieldNode != nil
 }
 
 func stripYAMLComments(node *yaml.Node) {

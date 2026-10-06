@@ -1,14 +1,12 @@
 
->>> errcode [CLI] bundle config-remote-sync
-Error: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
+>>> musterr [CLI] bundle config-remote-sync
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
-Exit code: 1
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
 
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "engine": "terraform",
-  "state_source": "local",
-  "states_available_count": 0,
-  "error_message": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",
-  "error_category": "STATE_NOT_FOUND"
+  "error_message": "the Terraform deployment engine has been removed in Databricks CLI v1.20.0\n\nRemove the \"bundle.engine\" setting (or set it to \"direct\") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.\nSee https://docs.databricks.com/dev-tools/bundles/direct for details",
+  "error_category": "BUNDLE_LOAD_FAILED"
 }
