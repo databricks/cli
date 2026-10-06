@@ -19,7 +19,7 @@ const (
 //
 // All fields are aggregate counts, booleans, or system-defined categories.
 // No resource names, keys, field paths, file paths, or configuration values
-// are logged.
+// are logged outside ErrorMessage.
 type BundleConfigRemoteSyncEvent struct {
 	// Whether the command was invoked with --save (config files written to
 	// disk) as opposed to diff-only mode.

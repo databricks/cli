@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -108,21 +107,6 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 		log.Debugf(ctx, "config-remote-sync: skipping selector %q, no deployed resource with that id", selector)
 	}
 	return keys, nil
-}
-
-// CheckSelectedInConfig fails when selected resources are deployed but no longer
-// in the configuration. Unlike a stale selector, this fails the whole batch.
-func CheckSelectedInConfig(root dyn.Value, selected []string) error {
-	var missing []string
-	for _, key := range selected {
-		if _, err := dyn.Get(root, key); err != nil {
-			missing = append(missing, key)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
-	}
-	return nil
 }
 
 // maxReportedIDs bounds how many ids describeStateIDs lists, so the message stays

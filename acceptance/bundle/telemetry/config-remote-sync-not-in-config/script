@@ -1,8 +1,7 @@
 trace $CLI bundle deploy
 job_id="$(read_id.py foo)"
 
-# The deployed job's key is renamed locally, so --select-ids resolves to a key
-# the configuration no longer has.
+# The deployed job's key is renamed locally, so the config no longer has it.
 update_file.py databricks.yml "    foo:" "    bar:"
 
 trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" -o json
