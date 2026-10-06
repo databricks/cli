@@ -3,7 +3,6 @@ package initializer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,8 +79,8 @@ func (i *InitializerNodeJs) SupportsDevRemote() bool {
 // runInstall runs the package manager install in the project directory.
 func (i *InitializerNodeJs) runInstall(ctx context.Context, workDir string) error {
 	// Check if the package manager binary is available
-	if _, err := exec.LookPath(i.manager.Name); err != nil {
-		return fmt.Errorf("%s is unavailable; install it and retry, or use --skip-install to scaffold without running setup: %w", i.manager.Name, err)
+	if err := i.manager.ValidateExecutable(); err != nil {
+		return err
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {

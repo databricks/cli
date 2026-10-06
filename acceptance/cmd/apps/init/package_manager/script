@@ -1,8 +1,70 @@
 #!/bin/bash
 
 go build -o "fake-bin/npm$(go env GOEXE)" ./npm/main.go
+cp "fake-bin/npm$(go env GOEXE)" "fake-bin/npx$(go env GOEXE)"
 export PATH="$PWD/fake-bin:$PATH"
 export CLI_TEST_NPM_VERSION=unavailable
+
+title "Missing pnpm fails before creating files, and the same name can be retried"
+musterr trace PATH="$PWD/fake-bin" $CLI apps init --name retry-app --template pnpm-template
+test ! -e retry-app
+trace PATH="$PWD/fake-bin" $CLI apps init --name retry-app --template pnpm-template --skip-install
+jq '.packageManager' retry-app/package.json
+
+title "Missing npm also fails before creating files"
+mkdir empty-bin
+musterr trace PATH="$PWD/empty-bin" $CLI apps init --name missing-npm --template npm-only-template
+test ! -e missing-npm
+
+title "Explicit manager values must be nonempty and supported"
+musterr trace $CLI apps init --name invalid-manager --package-manager= --skip-install
+musterr trace $CLI apps init --name invalid-manager --package-manager yarn --skip-install
+test ! -e invalid-manager
+
+title "Python templates reject an explicit Node.js package manager"
+for template in python-template python-pip-template; do
+    musterr trace PATH="$PWD/fake-bin" $CLI apps init --name python-app --template "$template" --package-manager npm --skip-install
+    test ! -e python-app
+done
+trace PATH="$PWD/fake-bin" $CLI apps init --name python-app --template python-template --skip-install
+
+cp "fake-bin/npm$(go env GOEXE)" "fake-bin/pnpm$(go env GOEXE)"
+
+title "Pnpm includes development dependencies and preserves the template pin"
+trace NODE_ENV=production $CLI apps init --name pnpm-installed --template pnpm-template
+cat pnpm-installed/node_modules/installed-pin
+trace NODE_ENV=production CLI_TEST_INSTALL_MODE=retry $CLI apps init --name pnpm-retried --template pnpm-template
+cat pnpm-retried/node_modules/installed-pin
+
+title "Failed installs remove the project so the same name can be retried"
+musterr trace CLI_TEST_INSTALL_MODE=fail $CLI apps init --name install-failed --template pnpm-template
+test ! -e install-failed
+trace $CLI apps init --name install-failed --template pnpm-template
+test -d install-failed/node_modules
+
+title "Validation after background preparation cancels installation and removes files"
+musterr trace CLI_TEST_INSTALL_MODE=wait $CLI apps init --name validation-failed --template pnpm-template --run invalid
+test ! -e validation-failed
+test ! -e uncanceled-install
+
+title "Failed background preparation is cleaned up even without an installer channel"
+musterr trace $CLI apps init --name preparation-failed --template broken-template
+test ! -e preparation-failed
+
+title "Failed setup removes the project"
+musterr trace CLI_TEST_NPM_VERSION=11.4.1 $CLI apps init --name setup-failed --template setup-template
+test ! -e setup-failed
+
+title "In-place failures preserve the current directory and existing git metadata"
+mkdir -p in-place-failed/.git
+musterr withdir in-place-failed trace CLI_TEST_INSTALL_MODE=fail $CLI apps init --name . --template "$PWD/pnpm-template"
+test -d in-place-failed/.git
+test -f in-place-failed/package.json
+
+title "A failed dev command preserves the completed project"
+musterr trace $CLI apps init --name dev-failed --template pnpm-template --run dev
+test -f dev-failed/package.json
+test -d dev-failed/node_modules
 
 # Test default package manager (pnpm)
 trace $CLI apps init --name test-app-pnpm --skip-install
@@ -39,12 +101,12 @@ for manager in npm pnpm; do
 done
 
 title "Npm-only custom template rejects pnpm before copying"
-musterr trace $CLI apps init --name incompatible-app --template npm-only-template --skip-install
+musterr trace $CLI apps init --name incompatible-app --template npm-only-template --package-manager pnpm --skip-install
 test ! -e incompatible-app
 test -f npm-only-template/package-lock.json
 
-title "Npm-only custom template accepts the suggested manager"
-trace $CLI apps init --name compatible-app --template npm-only-template --package-manager npm --skip-install
+title "Npm-only custom template selects npm quietly"
+trace $CLI apps init --name compatible-app --template npm-only-template --skip-install
 diff.py npm-only-template/package-lock.json compatible-app/package-lock.json
 jq '.packageManager' compatible-app/package.json
 
@@ -101,6 +163,10 @@ title "Version downgrade uses npm throughout"
 trace $CLI apps init --name older-app --version 0.81.0 --skip-install
 cat older-app/app.yaml
 jq '.scripts.build, .packageManager' older-app/package.json
+
+title "Explicit pnpm on an older template warns before selecting npm"
+trace $CLI apps init --name explicit-older-app --version 0.81.0 --package-manager pnpm --skip-install
+jq '.packageManager' explicit-older-app/package.json
 
 title "Missing version falls back to the embedded template and its package manager"
 trace DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false $CLI apps init --name fallback-app --skip-install

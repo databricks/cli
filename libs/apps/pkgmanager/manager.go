@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// pnpmPin is the version required by the AppKit template.
+	// pnpmPin is used when the template does not provide a pnpm pin.
 	pnpmPin = "pnpm@11.0.8"
 
 	// pnpmDualPMThreshold is the first AppKit template version that supports dual package manager
@@ -36,9 +36,11 @@ type Manager struct {
 // managers is the internal registry of supported package managers.
 var managers = map[string]Manager{
 	"pnpm": {
-		Name:                "pnpm",
-		InstallCommand:      "pnpm install --frozen-lockfile",
-		InstallArgs:         []string{"install", "--frozen-lockfile"},
+		Name:           "pnpm",
+		InstallCommand: "pnpm install --frozen-lockfile",
+		// Include dev dependencies regardless of production settings.
+		// https://pnpm.io/cli/install#--prod--p
+		InstallArgs:         []string{"install", "--frozen-lockfile", "--prod=false"},
 		LockfileNames:       []string{"pnpm-lock.yaml"},
 		WorkspaceConfigName: "pnpm-workspace.yaml",
 		Pin:                 pnpmPin,
@@ -76,34 +78,71 @@ func Default() Manager {
 	return managers["pnpm"]
 }
 
+// Detect selects pnpm when its lockfile exists, otherwise npm when its lockfile exists.
+// Lockless templates use the default manager and require --skip-install.
+func Detect(dir string) (Manager, error) {
+	for _, name := range []string{"pnpm", "npm"} {
+		m := managers[name]
+		lockfile, err := m.FindLockfile(dir)
+		if err != nil {
+			return Manager{}, err
+		}
+		if lockfile != "" {
+			return m, nil
+		}
+	}
+	return Default(), nil
+}
+
+// IsNodeTemplate reports whether the template contains a Node.js package manifest.
+func IsNodeTemplate(dir string) (bool, error) {
+	for _, name := range []string{"package.json", "package.json.tmpl"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); errors.Is(err, fs.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return false, fmt.Errorf("check %s: %w", name, err)
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+// ValidateExecutable checks that the selected package manager is available.
+func (m Manager) ValidateExecutable() error {
+	if _, err := exec.LookPath(m.Name); err != nil {
+		if m.Name == "pnpm" {
+			// https://pnpm.io/installation
+			return fmt.Errorf("pnpm is unavailable; use --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use --skip-install: %w", err)
+		}
+		return fmt.Errorf("%s is unavailable; install it and retry, or use --skip-install to scaffold without running setup: %w", m.Name, err)
+	}
+	return nil
+}
+
 // ResolvePin records the installed npm version for Node.js templates.
 // Call only when installing; scaffolding with --skip-install must not require npm.
 func (m Manager) ResolvePin(ctx context.Context, templateDir string) (Manager, error) {
 	if m.Name != "npm" {
 		return m, nil
 	}
-	for _, name := range []string{"package.json", "package.json.tmpl"} {
-		if _, err := os.Stat(filepath.Join(templateDir, name)); errors.Is(err, fs.ErrNotExist) {
-			continue
-		} else if err != nil {
-			return m, fmt.Errorf("check %s: %w", name, err)
-		}
-
-		cmd := exec.CommandContext(ctx, m.Name, "--version")
-		// Ignore inherited template/project pins when selecting the installed npm.
-		// https://github.com/nodejs/corepack#environment-variables
-		cmd.Env = append(os.Environ(), "COREPACK_ENABLE_PROJECT_SPEC=0")
-		output, err := cmd.Output()
-		if err != nil {
-			return m, fmt.Errorf("detect npm version; ensure npm is installed and working, or use --skip-install: %w", err)
-		}
-		version := strings.TrimSpace(string(output))
-		if !semver.IsValid("v" + version) {
-			return m, fmt.Errorf("npm --version returned invalid version %q; ensure npm is working, or use --skip-install", version)
-		}
-		m.Pin = "npm@" + version
-		return m, nil
+	isNode, err := IsNodeTemplate(templateDir)
+	if err != nil || !isNode {
+		return m, err
 	}
+
+	cmd := exec.CommandContext(ctx, m.Name, "--version")
+	// Ignore inherited template/project pins when selecting the installed npm.
+	// https://github.com/nodejs/corepack#environment-variables
+	cmd.Env = append(os.Environ(), "COREPACK_ENABLE_PROJECT_SPEC=0")
+	output, err := cmd.Output()
+	if err != nil {
+		return m, fmt.Errorf("detect npm version; ensure npm is installed and working, or use --skip-install: %w", err)
+	}
+	version := strings.TrimSpace(string(output))
+	if !semver.IsValid("v" + version) {
+		return m, fmt.Errorf("npm --version returned invalid version %q; ensure npm is working, or use --skip-install", version)
+	}
+	m.Pin = "npm@" + version
 	return m, nil
 }
 
@@ -178,12 +217,11 @@ func (m Manager) ValidateTemplate(dir string, skipInstall bool) error {
 	if skipInstall {
 		return nil
 	}
-	for _, name := range []string{"package.json", "package.json.tmpl"} {
-		if _, err := os.Stat(filepath.Join(dir, name)); errors.Is(err, fs.ErrNotExist) {
-			continue
-		} else if err != nil {
-			return fmt.Errorf("check %s: %w", name, err)
-		}
+	isNode, err := IsNodeTemplate(dir)
+	if err != nil {
+		return err
+	}
+	if isNode {
 		lockfiles := strings.Join(m.LockfileNames, " or ")
 		return fmt.Errorf("template has no %s required by %q; add %s to the template or use --skip-install to scaffold without installing dependencies", lockfiles, m.InstallCommand, lockfiles)
 	}
@@ -230,15 +268,20 @@ func (m Manager) Prune(dir string) error {
 }
 
 // Rewrite mutates a decoded package.json (map[string]any) with package-manager-specific
-// transformations: updates "packageManager" and normalizes scripts. Without a resolved
-// pin, it preserves the template's pin only if it belongs to the selected manager.
+// transformations: updates "packageManager" and normalizes scripts. It preserves
+// matching pnpm pins; npm uses the installed version when available.
 // Script invocations, including those in command chains, use explicit "run" form.
 // Native package-manager operations and non-string script values are preserved.
 // Rewrite modifies the map in place and returns it for convenience.
 func Rewrite(pkg map[string]any, m Manager) map[string]any {
+	pin, _ := pkg["packageManager"].(string)
+	if m.Name == "pnpm" && strings.HasPrefix(pin, "pnpm@") {
+		// Templates may require a different pnpm version or an integrity suffix.
+		m.Pin = pin
+	}
 	if m.Pin != "" {
 		pkg["packageManager"] = m.Pin
-	} else if pin, _ := pkg["packageManager"].(string); !strings.HasPrefix(pin, m.Name+"@") {
+	} else if !strings.HasPrefix(pin, m.Name+"@") {
 		delete(pkg, "packageManager")
 	}
 

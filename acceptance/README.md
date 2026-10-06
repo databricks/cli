@@ -15,29 +15,6 @@ The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/accep
 
 To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires the `deco` tool and access to a test env).
 
-## AppKit 0.82.0 pnpm smoke test
-
-Run this separately from the default suite to test the real AppKit release:
-
-```sh
-go test ./acceptance -tags appkit_smoke -run '^TestAppsInitAppKit082$' -count=1 -v -timeout 15m -keeptmp
-```
-
-Prerequisites: Go, Git, Node.js (AppKit CI uses Node 24), pnpm 11.0.8, npm/npx, and `gh` authenticated with access to `databricks/appkit` Actions artifacts. The test downloads packages from GitHub and the npm registry. It builds this checkout's CLI and uses a temporary profile pointing to a local mock workspace; no real workspace or deployment is needed.
-
-The suite checks:
-
-- The public `apps init --version 0.82.0 --package-manager pnpm` path.
-- Scaffolding from the release's template bundle with `--skip-install`, including the pnpm pin, scripts, deployment command, lockfile, configuration, and tarballs.
-- `pnpm install --frozen-lockfile` in the generated app, with the package manager's error output visible.
-- Full `apps init` with installation and setup, verifying both installed AppKit packages are exactly 0.82.0.
-
-The bundle is pinned to [prepare-release run 216](https://github.com/databricks/appkit/actions/runs/36871528478). The test checks its `VERSION` and verifies the bundled tarballs against the release's `SHA256SUMS`. Artifact expiration or missing access fails the test; it never substitutes a newer release. It also leaves the supplied lockfile unchanged.
-
-Observed on 2026-10-02: scaffolding passes. Version resolution fails because `template-v0.82.0` is missing, and installation fails with `ERR_PNPM_OUTDATED_LOCKFILE`: the bundle's manifest references the 0.82.0 tarballs while its pnpm lockfile still references 0.76.1. These failures remain visible in the smoke test.
-
-`-keeptmp` retains the generated apps and downloaded artifacts in the directory printed at the start. Omit it for automatic cleanup. To run just scaffolding, use `-run '^TestAppsInitAppKit082$/^release_bundle$/^scaffold$'`. The regular offline `TestAccept/cmd/apps/init/package_manager` test separately covers pnpm selection at the 0.82.0 threshold with local fixtures.
-
 ## Authoring
 
 To author a test,

@@ -1,0 +1,7 @@
+{
+  "name": "{{.projectName}}",
+  "packageManager": "pnpm@10.17.1+sha224.abc",
+  "scripts": {
+    "dev": "node --version"
+  }
+}

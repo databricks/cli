@@ -1,6 +1,15 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Env.DATABRICKS_APPKIT_TEMPLATE_PATH = "template"
 Ignore = [
+    "empty-bin",
+    "in-place-failed",
+    "retry-app",
+    "python-app",
+    "pnpm-installed",
+    "pnpm-retried",
+    "install-failed",
+    "dev-failed",
+    "explicit-older-app",
     "test-app-pnpm",
     "test-app-npm",
     "standard-app-pnpm",
@@ -24,3 +33,7 @@ Ignore = [
 [[Repls]]
 Old = "✔ Dependencies installed"
 New = "✔ Installing dependencies"
+
+[[Repls]]
+Old = '\$PATH|%PATH%'
+New = "PATH"

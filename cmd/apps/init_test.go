@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -1277,6 +1278,59 @@ func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
 			})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
+		})
+	}
+}
+
+func TestRunCreateCleansUpPartialScaffold(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		files   map[string]string
+		manager string
+		wantErr string
+	}{
+		{
+			name:    "copy",
+			files:   map[string]string{"a.txt": "copied first", "z/child.txt": "directory", "z.tmpl": "conflicts with directory"},
+			wantErr: "open ",
+		},
+		{
+			name:    "prune",
+			files:   map[string]string{"package.json": `{}`, "package-lock.json": `{}`, "pnpm-lock.yaml/child.txt": "cannot remove nonempty directory"},
+			manager: "npm",
+			wantErr: "prune package manager artifacts",
+		},
+		{
+			name:    "package JSON",
+			files:   map[string]string{"package.json": `null`},
+			wantErr: "update package.json",
+		},
+		{
+			name:    "bundle YAML",
+			files:   map[string]string{"appkit.plugins.json": `{"plugins":{}}`, "databricks.yml": "bundle: ["},
+			wantErr: "update project name",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			src, output := t.TempDir(), t.TempDir()
+			for name, content := range tt.files {
+				path := filepath.Join(src, filepath.FromSlash(name))
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+				require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+			}
+			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), nil)
+			err := runCreate(ctx, createOptions{
+				templatePath:          src,
+				name:                  "test-app",
+				nameProvided:          true,
+				outputDir:             output,
+				skipInstall:           true,
+				packageManager:        tt.manager,
+				packageManagerChanged: tt.manager != "",
+			})
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.NoDirExists(t, filepath.Join(output, "test-app"))
+			assert.DirExists(t, src)
 		})
 	}
 }

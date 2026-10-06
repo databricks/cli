@@ -162,24 +162,25 @@ Environment variables:
 			}
 
 			return runCreate(ctx, createOptions{
-				templatePath:   templatePath,
-				branch:         branch,
-				version:        version,
-				name:           name,
-				nameProvided:   cmd.Flags().Changed("name"),
-				warehouseID:    warehouseID,
-				description:    description,
-				outputDir:      outputDir,
-				plugins:        pluginsFlag,
-				deploy:         deploy,
-				deployChanged:  cmd.Flags().Changed("deploy"),
-				run:            run,
-				runChanged:     cmd.Flags().Changed("run"),
-				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
-				setValues:      setValues,
-				autoApprove:    autoApprove,
-				skipInstall:    skipInstall,
-				packageManager: packageManager,
+				templatePath:          templatePath,
+				branch:                branch,
+				version:               version,
+				name:                  name,
+				nameProvided:          cmd.Flags().Changed("name"),
+				warehouseID:           warehouseID,
+				description:           description,
+				outputDir:             outputDir,
+				plugins:               pluginsFlag,
+				deploy:                deploy,
+				deployChanged:         cmd.Flags().Changed("deploy"),
+				run:                   run,
+				runChanged:            cmd.Flags().Changed("run"),
+				pluginsChanged:        cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				setValues:             setValues,
+				autoApprove:           autoApprove,
+				skipInstall:           skipInstall,
+				packageManager:        packageManager,
+				packageManagerChanged: cmd.Flags().Changed("package-manager"),
 			})
 		},
 	}
@@ -200,30 +201,31 @@ Environment variables:
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
-	cmd.Flags().StringVar(&packageManager, "package-manager", pkgmanager.Default().Name, "Package manager to use (pnpm, npm)")
+	cmd.Flags().StringVar(&packageManager, "package-manager", "", "Node.js package manager (pnpm, npm; default: inferred from template)")
 
 	return cmd
 }
 
 type createOptions struct {
-	templatePath   string
-	branch         string
-	version        string
-	name           string
-	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
-	warehouseID    string
-	description    string
-	outputDir      string
-	plugins        []string
-	deploy         bool
-	deployChanged  bool // true if --deploy flag was explicitly set
-	run            string
-	runChanged     bool     // true if --run flag was explicitly set
-	pluginsChanged bool     // true if --plugins flag was explicitly set
-	setValues      []string // --set plugin.resourceKey.field=value pairs
-	autoApprove    bool
-	skipInstall    bool
-	packageManager string
+	templatePath          string
+	branch                string
+	version               string
+	name                  string
+	nameProvided          bool // true if --name flag was explicitly set (enables "flags mode")
+	warehouseID           string
+	description           string
+	outputDir             string
+	plugins               []string
+	deploy                bool
+	deployChanged         bool // true if --deploy flag was explicitly set
+	run                   string
+	runChanged            bool     // true if --run flag was explicitly set
+	pluginsChanged        bool     // true if --plugins flag was explicitly set
+	setValues             []string // --set plugin.resourceKey.field=value pairs
+	autoApprove           bool
+	skipInstall           bool
+	packageManager        string
+	packageManagerChanged bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -689,31 +691,19 @@ func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
 // rewritePackageJSON applies project naming and package-manager selection to a
 // Node template, independently of its bundle configuration or plugin selection.
 func rewritePackageJSON(destDir, newName string, selectedManager pkgmanager.Manager) error {
-	// Update package.json via single JSON round-trip: set name, packageManager, and normalize scripts.
 	pkgPath := filepath.Join(destDir, "package.json")
 	data, err := os.ReadFile(pkgPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
 		return fmt.Errorf("read package.json: %w", err)
 	}
-	if err == nil {
-		var pkg map[string]any
-		if err := json.Unmarshal(data, &pkg); err != nil {
-			return fmt.Errorf("parse package.json: %w", err)
-		}
-		pkg["name"] = newName
-		// Apply package-manager-specific transformations.
-		pkgmanager.Rewrite(pkg, selectedManager)
-		out, err := json.MarshalIndent(pkg, "", "  ")
-		if err != nil {
-			return fmt.Errorf("encode package.json: %w", err)
-		}
-		// Preserve trailing newline convention.
-		out = append(out, '\n')
-		if err := safeWriteFile(pkgPath, out); err != nil {
-			return err
-		}
+	out, err := pkgmanager.RewriteJSON(data, newName, selectedManager)
+	if err != nil {
+		return err
 	}
-	return nil
+	return safeWriteFile(pkgPath, out)
 }
 
 // replaceProjectName updates the project name in key files after copying a
@@ -867,7 +857,7 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		log.Warnf(ctx, "Failed to create %s: %v, skipping background npm install", destDir, err)
+		log.Warnf(ctx, "Failed to create %s: %v, skipping background install", destDir, err)
 		return nil
 	}
 
@@ -901,7 +891,7 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 	}
 
 	if !pkgWritten {
-		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
+		log.Warnf(ctx, "Failed to write package.json to %s, skipping background install", destDir)
 		return nil
 	}
 	if err := rewritePackageJSON(destDir, projectName, m); err != nil {
@@ -1007,8 +997,11 @@ func awaitBackgroundInstall(ctx context.Context, ch <-chan error) error {
 	}
 }
 
-func runCreate(ctx context.Context, opts createOptions) error {
+func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 	// Validate package manager early to provide clear feedback.
+	if opts.packageManagerChanged && opts.packageManager == "" {
+		return errors.New("--package-manager must be npm or pnpm")
+	}
 	selectedManager, err := pkgmanager.Resolve(opts.packageManager)
 	if err != nil {
 		return err
@@ -1197,18 +1190,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		defer cleanup()
 	}
 
-	// Apply version-based package manager constraints: pnpm is only supported
-	// from a specific AppKit version onwards. If the resolved version is below the
-	// threshold, downgrade pnpm requests to npm (with a warning).
-	if usingDefaultTemplate {
-		effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
-		if downgraded {
-			log.Warnf(ctx, "Package manager %q is not supported for AppKit %s, using npm instead",
-				selectedManager.Name, refLabel)
-		}
-		selectedManager = effective
-	}
-
 	// Check for generic subdirectory first (default for multi-template repos)
 	templateDir := filepath.Join(resolvedPath, "generic")
 	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
@@ -1233,20 +1214,77 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		cmdio.LogString(ctx, "Note: agentic mode active — resource validation skipped.")
 	}
 
+	srcProjectDir := findProjectSrcDir(templateDir)
+	isNode, err := pkgmanager.IsNodeTemplate(srcProjectDir)
+	if err != nil {
+		return err
+	}
+	if opts.packageManagerChanged && !isNode {
+		return errors.New("--package-manager is only supported for Node.js templates; remove the flag for this template")
+	}
+	if isNode {
+		if !opts.packageManagerChanged {
+			selectedManager, err = pkgmanager.Detect(srcProjectDir)
+			if err != nil {
+				return err
+			}
+		}
+		// Apply version-based package manager constraints: pnpm is only supported
+		// from a specific AppKit version onwards. If the resolved version is below the
+		// threshold, downgrade pnpm requests to npm (with a warning).
+		if usingDefaultTemplate {
+			effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
+			if downgraded && opts.packageManagerChanged {
+				log.Warnf(ctx, "Package manager %q is not supported for AppKit %s, using npm instead",
+					selectedManager.Name, refLabel)
+			}
+			selectedManager = effective
+		}
+
+		if err := selectedManager.ValidateTemplate(srcProjectDir, opts.skipInstall); err != nil {
+			return err
+		}
+		if !opts.skipInstall {
+			if err := selectedManager.ValidateExecutable(); err != nil {
+				return err
+			}
+			selectedManager, err = selectedManager.ResolvePin(ctx, srcProjectDir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var installCh <-chan error
+	var projectStarted, projectComplete bool
+	installCtx, cancelInstall := context.WithCancel(ctx)
+	defer func() {
+		cancelInstall()
+		if installCh != nil {
+			// Stop the installer before removing files it may still be writing.
+			<-installCh
+		}
+		if runErr == nil || !projectStarted || projectComplete {
+			return
+		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		if err := os.RemoveAll(destDir); err != nil {
+			log.Warnf(ctx, "Failed to clean up %s: %v", filepath.ToSlash(destDir), err)
+		}
+	}()
+
 	// Start install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
-	srcProjectDir := findProjectSrcDir(templateDir)
-	if err := selectedManager.ValidateTemplate(srcProjectDir, opts.skipInstall); err != nil {
-		return err
-	}
-	var npmInstallCh <-chan error
-	if !opts.skipInstall {
-		selectedManager, err = selectedManager.ResolvePin(ctx, srcProjectDir)
-		if err != nil {
-			return err
-		}
-		npmInstallCh = startBackgroundInstall(ctx, srcProjectDir, destDir, opts.name, selectedManager)
+	if isNode && !opts.skipInstall {
+		projectStarted = true
+		installCh = startBackgroundInstall(installCtx, srcProjectDir, destDir, opts.name, selectedManager)
 	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
@@ -1399,24 +1437,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Track whether we started creating the project for cleanup on failure.
-	// The background npm install may have created destDir early.
-	var projectCreated bool
-	var runErr error
-	defer func() {
-		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
-			return
-		}
-		if inPlace {
-			// destDir is "." here; a wholesale RemoveAll would wipe the
-			// user's current directory (including any pre-existing .git).
-			// Leave the partial scaffold and tell the user to clean up.
-			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
-			return
-		}
-		os.RemoveAll(destDir)
-	}()
-
 	// Set description default
 	if opts.description == "" {
 		opts.description = prompt.DefaultAppDescription
@@ -1487,8 +1507,10 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// no concurrent writes to destDir. The install ran with the raw lock file; the
 	// dependency tree is determined entirely by the lockfile which has no
 	// template variables, so the installed node_modules is valid.
-	if npmInstallCh != nil {
-		if err := awaitBackgroundInstall(ctx, npmInstallCh); err != nil {
+	if installCh != nil {
+		err := awaitBackgroundInstall(ctx, installCh)
+		installCh = nil
+		if err != nil {
 			log.Warnf(ctx, "Background install failed: %v, will retry during project initialization", err)
 			os.RemoveAll(filepath.Join(destDir, "node_modules"))
 		}
@@ -1496,6 +1518,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Copy template with variable substitution
 	var fileCount int
+	projectStarted = true
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
 		var copyErr error
 		fileCount, copyErr = copyTemplate(ctx, templateDir, destDir, vars)
@@ -1504,11 +1527,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if runErr != nil {
 		return runErr
 	}
-	projectCreated = true // From here on, cleanup on failure
 
 	// Prune non-selected package manager artifacts.
-	if err := selectedManager.Prune(destDir); err != nil {
-		return fmt.Errorf("prune package manager artifacts: %w", err)
+	if isNode {
+		if err := selectedManager.Prune(destDir); err != nil {
+			return fmt.Errorf("prune package manager artifacts: %w", err)
+		}
 	}
 
 	// For pre-rendered templates, update package.json name (not a .tmpl file)
@@ -1555,6 +1579,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return errors.New("--run=dev-remote is only supported for Node.js projects with @databricks/appkit")
 		}
 	}
+
+	projectComplete = true
 
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone

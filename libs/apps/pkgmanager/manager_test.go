@@ -82,6 +82,9 @@ func TestRewritePin(t *testing.T) {
 		{"skip removes bun", "npm", "", "bun@1.2.0", nil},
 		{"skip leaves absent pin", "npm", "", nil, nil},
 		{"pnpm replaces npm", "pnpm", "", "npm@9.9.4", "pnpm@11.0.8"},
+		{"pnpm preserves template pin", "pnpm", "", "pnpm@10.17.1", "pnpm@10.17.1"},
+		{"pnpm preserves integrity", "pnpm", "", "pnpm@11.0.8+sha224.abc", "pnpm@11.0.8+sha224.abc"},
+		{"pnpm adds missing pin", "pnpm", "", nil, "pnpm@11.0.8"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			m, err := pkgmanager.Resolve(tt.manager)
@@ -115,6 +118,71 @@ func TestDefault(t *testing.T) {
 	resolved, err := pkgmanager.Resolve("")
 	require.NoError(t, err)
 	assert.Equal(t, m, resolved)
+}
+
+func TestDetect(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		files []string
+		want  string
+	}{
+		{"lockless", nil, "pnpm"},
+		{"npm", []string{"package-lock.json"}, "npm"},
+		{"shrinkwrap", []string{"npm-shrinkwrap.json"}, "npm"},
+		{"pnpm", []string{"pnpm-lock.yaml"}, "pnpm"},
+		{"both", []string{"package-lock.json", "pnpm-lock.yaml"}, "pnpm"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, name := range tt.files {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, name), nil, 0o644))
+			}
+			m, err := pkgmanager.Detect(dir)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, m.Name)
+		})
+	}
+}
+
+func TestIsNodeTemplate(t *testing.T) {
+	for _, tt := range []struct {
+		file string
+		want bool
+	}{
+		{"package.json", true},
+		{"package.json.tmpl", true},
+		{"pyproject.toml", false},
+		{"requirements.txt", false},
+	} {
+		t.Run(tt.file, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(dir, tt.file), nil, 0o644))
+			got, err := pkgmanager.IsNodeTemplate(dir)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestValidateExecutable(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	for _, name := range []string{"npm", "pnpm"} {
+		t.Run(name, func(t *testing.T) {
+			m, err := pkgmanager.Resolve(name)
+			require.NoError(t, err)
+			err = m.ValidateExecutable()
+			require.ErrorIs(t, err, exec.ErrNotFound)
+			assert.ErrorContains(t, err, "--skip-install")
+			if name == "pnpm" {
+				assert.ErrorContains(t, err, "--package-manager npm")
+				assert.ErrorContains(t, err, "corepack enable pnpm")
+				assert.ErrorContains(t, err, "npx get-pnpm")
+			}
+		})
+	}
+	executable, err := os.Executable()
+	require.NoError(t, err)
+	require.NoError(t, (pkgmanager.Manager{Name: executable}).ValidateExecutable())
 }
 
 func TestValidateTemplate(t *testing.T) {
