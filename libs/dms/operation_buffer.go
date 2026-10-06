@@ -4,22 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
 // plan reads.
 const bufferedOperations = 10
-
-// stagedSequenceID is what version creation leaves on a staged operation, so a resource's first
-// update sends it as the precondition.
-const stagedSequenceID = "0"
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
 // path: writes are queued and sent on one background goroutine. It exists only while a bundle
@@ -34,15 +27,14 @@ type OperationBuffer struct {
 	done      chan struct{}
 	stopQueue func()
 
-	// sequenceIDs holds the token the last update for a resource returned. A resource absent
-	// from it has only what staging left, so its first update sends that. Unguarded: run is the
-	// only goroutine that writes, one update at a time.
+	// sequenceIDs holds the token the last update for a resource returned. A missing key reads as
+	// 0, which is what staging leaves. Unguarded: run is the only goroutine that writes, one update at a time.
 	//
 	// TODO: revisit and possibly deprecate. Sequence ids guard against an earlier update
 	// overwriting a later one, which cannot happen here - updates for a resource are sent one at a
 	// time from a single goroutine. UpdateOperation requires them today, so the client cannot
 	// simply stop sending them.
-	sequenceIDs map[string]string
+	sequenceIDs map[string]int64
 
 	// mu guards the fields below.
 	mu sync.Mutex
@@ -69,7 +61,7 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		done:         make(chan struct{}),
 		pending:      make(map[string]OperationUpdate),
 		latestState:  make(map[string]OperationUpdate),
-		sequenceIDs:  make(map[string]string),
+		sequenceIDs:  make(map[string]int64),
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
@@ -154,28 +146,18 @@ func (b *OperationBuffer) run(ctx context.Context) {
 
 // write sends one update, at the sequence id the resource is at.
 func (b *OperationBuffer) write(ctx context.Context, key string, update OperationUpdate) error {
-	sequenceID, written := b.sequenceIDs[key]
-	if !written {
-		sequenceID = stagedSequenceID
-	}
-
-	operation, err := newOperationUpdate(update, sequenceID)
-	if err != nil {
-		return err
-	}
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
-		Operation:  operation,
-		UpdateMask: fieldmask.FieldMask{Paths: strings.Split(update.Fields.Mask(), ",")},
+		Operation:  update.operation(b.sequenceIDs[key]),
+		UpdateMask: update.Fields.Mask(),
 	})
 	if err != nil {
 		return err
 	}
 
 	// The next write for this resource echoes the sequence id this one earned.
-	b.sequenceIDs[key] = strconv.FormatInt(result.SequenceId, 10)
-
+	b.sequenceIDs[key] = result.SequenceId
 	return nil
 }
 

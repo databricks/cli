@@ -583,9 +583,20 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 
 		if dmsDeployment.DeploymentID != "" {
 			w := cmdctx.WorkspaceClient(ctx)
-			resources, err := dms.ListResources(ctx, w.BundleDeployments, dmsDeployment.DeploymentID)
+			recorded, err := w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
+				Parent: dms.DeploymentName(dmsDeployment.DeploymentID),
+			})
 			if err != nil {
-				return err
+				return fmt.Errorf("listing resources from the deployment history service: %w", err)
+			}
+			resources := make([]dms.Resource, len(recorded))
+			for i, res := range recorded {
+				// DMS keys drop the "resources." prefix; add it back for local state.
+				resources[i] = dms.Resource{
+					Key:   dms.StatePrefix + res.ResourceKey,
+					ID:    res.ResourceId,
+					State: res.State,
+				}
 			}
 			if err := db.applyDMSState(resources); err != nil {
 				return err

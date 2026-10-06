@@ -3,7 +3,6 @@ package dms
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/diag"
@@ -146,32 +145,27 @@ func (u OperationUpdate) Merge(newer OperationUpdate) OperationUpdate {
 	return merged
 }
 
-// newOperationUpdate builds the operation from the masked fields, plus the sequence_id check.
+// operation builds the request body from the masked fields, plus the sequence_id check.
 // Force-send them (empty = clear, and 0 is a real sequence_id); never force state, since a missing state means the resource is gone.
-func newOperationUpdate(update OperationUpdate, sequenceID string) (bundledeployments.Operation, error) {
-	sequence, err := strconv.ParseInt(sequenceID, 10, 64)
-	if err != nil {
-		return bundledeployments.Operation{}, fmt.Errorf("invalid sequence id %q: %w", sequenceID, err)
-	}
-
+func (u OperationUpdate) operation(sequenceID int64) bundledeployments.Operation {
 	operation := bundledeployments.Operation{
-		SequenceId:      sequence,
+		SequenceId:      sequenceID,
 		ForceSendFields: []string{"SequenceId"},
 	}
-	if update.Fields.Has(FieldState) && update.State != nil {
-		operation.State = string(update.State)
+	if u.Fields.Has(FieldState) && u.State != nil {
+		operation.State = string(u.State)
 	}
-	if update.Fields.Has(FieldErrorMessage) {
-		operation.ErrorMessage = update.ErrorMessage
+	if u.Fields.Has(FieldErrorMessage) {
+		operation.ErrorMessage = u.ErrorMessage
 		operation.ForceSendFields = append(operation.ForceSendFields, "ErrorMessage")
 	}
-	if update.Fields.Has(FieldResourceID) {
-		operation.ResourceId = update.ResourceID
+	if u.Fields.Has(FieldResourceID) {
+		operation.ResourceId = u.ResourceID
 		operation.ForceSendFields = append(operation.ForceSendFields, "ResourceId")
 	}
-	if update.Fields.Has(FieldStatus) {
-		operation.Status = update.Status
+	if u.Fields.Has(FieldStatus) {
+		operation.Status = u.Status
 		operation.ForceSendFields = append(operation.ForceSendFields, "Status")
 	}
-	return operation, nil
+	return operation
 }
