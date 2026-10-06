@@ -85,9 +85,13 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
+		// Like the real API, a masked field that is absent from the body is cleared.
 		for field := range strings.SplitSeq(updateReq.UpdateMask, ",") {
-			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
-				existingMap[strings.TrimSpace(field)] = v
+			field = strings.TrimSpace(field)
+			if v, ok := updateMap[field]; ok {
+				existingMap[field] = v
+			} else {
+				delete(existingMap, field)
 			}
 		}
 
@@ -95,9 +99,12 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		if err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
-		if err := json.Unmarshal(merged, &existing); err != nil {
+		// Decode into a fresh value: unmarshaling into existing would keep cleared fields.
+		var mergedApp apps.App
+		if err := json.Unmarshal(merged, &mergedApp); err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
+		existing = mergedApp
 	}
 	setUcSecurableKinds(&existing)
 	s.Apps[name] = existing

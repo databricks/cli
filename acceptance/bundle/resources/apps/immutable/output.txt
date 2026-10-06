@@ -23,7 +23,6 @@ You can access the app at my-immutable-app-123.cloud.databricksapps.com
     "no_compute": "true"
   },
   "body": {
-    "description": "",
     "name": "my-immutable-app"
   }
 }

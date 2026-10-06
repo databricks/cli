@@ -1,2 +1,3 @@
 trace $CLI bundle deploy
 trace print_requests.py //apps
+trace $CLI bundle plan

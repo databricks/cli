@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    foo:
+      name: myapp
+      source_code_path: ./app
