@@ -232,7 +232,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
+		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -516,7 +516,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// A migrating deploy already backed up terraform.tfstate when it committed the
 		// converted state above; this handles a plain direct deploy that still finds a
 		// lingering remote terraform state.
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
+		if b != nil && stateDesc != nil && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
 			statemgmt.BackupRemoteTerraformState(ctx, b)
 
 			if logdiag.HasError(ctx) {
@@ -565,13 +565,7 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		if parsed == engine.EngineTerraform {
 			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedConfigMessage)
 		}
-		source := "bundle.engine setting"
-		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
-		if locs := v.Locations(); len(locs) > 0 {
-			loc := locs[0]
-			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
-		}
-		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
+		return engine.EngineSetting{Type: parsed, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
@@ -582,10 +576,10 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedEnvMessage)
 	}
 	if envEngine != engine.EngineNotSet {
-		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
+		return engine.EngineSetting{Type: envEngine}, nil
 	}
 
-	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+	return engine.EngineSetting{Type: engine.Default, IsDefault: true}, nil
 }
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json

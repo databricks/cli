@@ -26,7 +26,8 @@ func TestResolveEngineSettingEnvVarUsedWhenNoConfig(t *testing.T) {
 	result, err := ResolveEngineSetting(ctx, b)
 	require.NoError(t, err)
 	assert.Equal(t, engine.EngineDirect, result.Type)
-	assert.Contains(t, result.Source, engine.EnvVar)
+	assert.Equal(t, engine.EngineNotSet, result.ConfigType)
+	assert.False(t, result.IsDefault)
 }
 
 func TestResolveEngineSettingNothingSet(t *testing.T) {

@@ -23,13 +23,13 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		return ctx
 	}
 
-	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
+	_, err := utils.ResolveEngineSetting(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return ctx
 	}
 
-	stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
+	stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 	if logdiag.HasError(ctx) {
 		return ctx
 	}
