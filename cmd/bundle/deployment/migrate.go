@@ -1,7 +1,6 @@
 package deployment
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -126,19 +125,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("state file %s already exists", localPath)
 		}
 
-		state := make(map[string]dstate.ResourceEntry)
-		for key, id := range tfState.IDs {
-			state[key] = dstate.ResourceEntry{
-				ID:    id,
-				State: json.RawMessage("{}"),
-			}
-		}
-
-		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
-		migratedDB.State = state
-
 		var stateDB dstate.DeploymentState
-		stateDB.OpenWithData(tempStatePath, migratedDB)
+		stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1))
 
 		tempStatePathAutoRemove := true
 
@@ -163,6 +151,10 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 
 		if err := stateDB.UpgradeToWrite(); err != nil {
 			return fmt.Errorf("upgrading state for apply: %w", err)
+		}
+
+		if err := migrate.SeedState(ctx, &stateDB, tfState); err != nil {
+			return err
 		}
 
 		if _, err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfState.Attrs, tfState.IDs, ""); err != nil {
@@ -197,7 +189,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(tfState.IDs), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 

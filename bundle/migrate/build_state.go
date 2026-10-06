@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
@@ -19,6 +20,28 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
+
+// SeedState records every terraform-state resource in stateDB, which must be open for write, so
+// the migrated state persists all deployed resources, including ones the current config no longer
+// declares. BuildStateFromTF then overwrites the config-declared entries with their full state (the
+// later WAL entry wins on replay); the rest keep this minimal entry, which is enough for the first
+// direct plan to delete them. Without this, a config that dropped every resource would record no
+// WAL entries at all and Finalize would persist no state file. An empty terraform state seeds
+// nothing, so its base file is written directly; the header-only Finalize leaves it intact.
+func SeedState(ctx context.Context, stateDB *dstate.DeploymentState, tfState *TFState) error {
+	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
+		if err := stateDB.Persist(); err != nil {
+			return fmt.Errorf("persisting empty migrated state: %w", err)
+		}
+		return nil
+	}
+	for key, id := range tfState.IDs {
+		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
+			return fmt.Errorf("seeding migrated state for %s: %w", key, err)
+		}
+	}
+	return nil
+}
 
 // BuildStateFromTF iterates over bundle resources, resolves cross-resource
 // references using TF state attributes, and writes each resource's state entry.
