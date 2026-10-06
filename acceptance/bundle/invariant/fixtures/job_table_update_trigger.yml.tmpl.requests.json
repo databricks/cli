@@ -1,0 +1,29 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job-[UNIQUE_NAME]",
+      "queue": {
+        "enabled": true
+      },
+      "trigger": {
+        "pause_status": "UNPAUSED",
+        "table_update": {
+          "condition": "ANY_UPDATED",
+          "table_names": [
+            "samples.nyctaxi.trips"
+          ],
+          "wait_after_last_change_seconds": 60
+        }
+      }
+    }
+  }
+]

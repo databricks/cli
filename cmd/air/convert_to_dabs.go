@@ -122,12 +122,15 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	if cfg.UsagePolicyName != nil {
 		return nil, nil, errors.New("usage_policy_name is not yet supported by convert-to-dabs")
 	}
+	if len(cfg.Containers) > 0 {
+		return nil, nil, errors.New("containers are not yet supported by convert-to-dabs; run this config with 'databricks air run'")
+	}
 	if snap := codeSnapshot(cfg); snap != nil {
 		// remote_volume points the code archive at a specific UC Volume. The bundle's
 		// artifact location is set bundle-wide via workspace.artifact_path, not
 		// per-code-source, so a per-source Volume isn't representable here.
 		if snap.RemoteVolume != nil {
-			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
+			return nil, nil, errors.New("remote_volume in code_source is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
 		}
 	}
 
@@ -278,7 +281,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	name := cfg.ExperimentName
 
 	// ai_runtime_task: experiment + one deployment (command_path + compute) +
-	// code_source_path. Only the fields the strict schema allows.
+	// code_source_path and task-level runtime settings. Only the fields the strict
+	// schema allows.
 	//
 	// command_path is "./"-prefixed so bundle deploy treats it as LOCAL and uploads
 	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
@@ -316,6 +320,14 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	}
 	if cfg.MLflowArtifactLocation != nil {
 		aiRuntimeTask["mlflow_artifact_location"] = nv(*cfg.MLflowArtifactLocation, line)
+		line++
+	}
+	if cfg.Compute.PriorityClass != nil {
+		aiRuntimeTask["priority_class"] = nv(*cfg.Compute.PriorityClass, line)
+		line++
+	}
+	if cfg.Environment != nil && cfg.Environment.UnityCatalogImage != "" {
+		aiRuntimeTask["unity_catalog_image_path"] = nv(cfg.Environment.UnityCatalogImage, line)
 	}
 
 	// Task wrapper: task_key + framework fields (retries/timeout) + env key +

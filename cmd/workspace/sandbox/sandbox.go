@@ -43,6 +43,7 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	cmd.AddCommand(newDeleteSandbox())
 	cmd.AddCommand(newExecuteCommandSync())
 	cmd.AddCommand(newGetSandbox())
+	cmd.AddCommand(newListCommands())
 	cmd.AddCommand(newListSandboxes())
 	cmd.AddCommand(newStartSandbox())
 	cmd.AddCommand(newStopSandbox())
@@ -353,6 +354,70 @@ Get a sandbox.
 	// Apply optional overrides to this command.
 	for _, fn := range getSandboxOverrides {
 		fn(cmd, &getSandboxReq)
+	}
+
+	return cmd
+}
+
+// start list-commands command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listCommandsOverrides []func(
+	*cobra.Command,
+	*sandbox.ListCommandsRequest,
+)
+
+func newListCommands() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listCommandsReq sandbox.ListCommandsRequest
+
+	cmd.Flags().IntVar(&listCommandsReq.PageSize, "page-size", listCommandsReq.PageSize, `Maximum number of commands to return.`)
+	cmd.Flags().StringVar(&listCommandsReq.PageToken, "page-token", listCommandsReq.PageToken, `Page token returned by a previous ListCommands call.`)
+
+	cmd.Use = "list-commands PARENT"
+	cmd.Short = `*Beta* List the tracked command executions in a sandbox.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List the tracked command executions in a sandbox.
+
+  Lists the tracked command executions (running and completed) in a sandbox.
+
+  Arguments:
+    PARENT: The sandbox whose commands to list, in the form sandboxes/{sandbox_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listCommandsReq.Parent = args[0]
+
+		response, err := w.Sandbox.ListCommands(ctx, listCommandsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listCommandsOverrides {
+		fn(cmd, &listCommandsReq)
 	}
 
 	return cmd

@@ -2,7 +2,6 @@
 # Local only: the out-of-band library is injected via the Libraries API, deterministic locally but racy on cloud (the job-installed variant runs on cloud in interactive_cluster_declared_libs).
 RecordRequests = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # READPLAN=1 feeds the serialized plan to `bundle deploy --plan`.
 EnvMatrix.READPLAN = ["", "1"]
 

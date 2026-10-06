@@ -1,4 +1,4 @@
-Error: run_as section cannot specify both user_name and service_principal_name
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
   in databricks.yml:6:3
 
 Name: run_as

@@ -2,21 +2,13 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"io/fs"
-	"os"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
-	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
@@ -132,29 +124,6 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}, nil
 }
 
-// OpenDeploymentState returns the deployment bundle whose StateDB is open for
-// reading. For the direct engine the caller (process.go) has already opened
-// b.DeploymentBundle; for the terraform engine the config snapshot is opened
-// here. Both yield read-mode state, so GetResourceID and Data.State are usable.
-// Open the state once per command and pass it to CalculatePlan and
-// ResolveResourceSelectors so the terraform snapshot is read only once.
-func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*direct.DeploymentBundle, error) {
-	if err := ensureSnapshotAvailable(ctx, b, engine); err != nil {
-		return nil, fmt.Errorf("state snapshot not available: %w", err)
-	}
-
-	if engine.IsDirect() {
-		return &b.DeploymentBundle, nil
-	}
-
-	deployBundle := &direct.DeploymentBundle{}
-	_, statePath := b.StateFilenameConfigSnapshot(ctx)
-	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		return nil, fmt.Errorf("failed to open state: %w", err)
-	}
-	return deployBundle, nil
-}
-
 // isPermissionsOrGrantsSubResource reports whether a plan resource key is a
 // permissions or grants sub-resource ("resources.<type>.<name>.permissions" /
 // ".grants"). It classifies the key structurally via config.GetNodeAndType,
@@ -222,49 +191,4 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	}
 
 	return changes, nil
-}
-
-func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) error {
-	if engine.IsDirect() {
-		return nil
-	}
-
-	remotePathSnapshot, localPathSnapshot := b.StateFilenameConfigSnapshot(ctx)
-
-	if _, err := os.Stat(localPathSnapshot); err == nil {
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("checking snapshot file: %w", err)
-	}
-
-	log.Debugf(ctx, "Resources state snapshot not found locally, pulling from remote")
-
-	f, err := deploy.StateFiler(ctx, b)
-	if err != nil {
-		return fmt.Errorf("getting state filer: %w", err)
-	}
-
-	r, err := f.Read(ctx, remotePathSnapshot)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// Wrap the sentinel so callers can classify this failure
-			// (telemetry reports it as STATE_NOT_FOUND).
-			return fmt.Errorf("resources state snapshot not found remotely at %s: %w", remotePathSnapshot, ErrStateSnapshotNotFound)
-		}
-		return fmt.Errorf("reading remote snapshot: %w", err)
-	}
-	defer r.Close()
-
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return fmt.Errorf("reading snapshot content: %w", err)
-	}
-
-	err = atomicfile.Write(localPathSnapshot, content, 0o600, atomicfile.MkDir(0o700))
-	if err != nil {
-		return fmt.Errorf("writing snapshot file: %w", err)
-	}
-
-	log.Debugf(ctx, "Pulled config snapshot from remote to %s", localPathSnapshot)
-	return nil
 }

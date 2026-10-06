@@ -1,0 +1,140 @@
+# Two-image end-to-end GRPO: TRL trains on rank 1 and uses TRL's vLLM server
+# on rank 0 for generations and model-weight synchronization. Build the images
+# from the two Dockerfiles in this directory, publish them to Unity Catalog,
+# and replace both image placeholders below before submitting this file.
+experiment_name: qwen_grpo_multi_image
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 2
+max_retries: 0
+containers:
+  - name: inference
+    ranks: [0]
+    unity_catalog_image: your_catalog.your_schema.vllm_trl:0.24.0
+    environment_variables:
+      variables:
+        MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+        HF_HOME: /local_disk0/huggingface
+    command: |
+      set -euo pipefail
+      unset MASTER_ADDR MASTER_PORT WORLD_SIZE RANK LOCAL_RANK LOCAL_WORLD_SIZE
+      unset NODE_RANK GROUP_RANK ROLE_RANK ROLE_WORLD_SIZE ROLE_NAME TORCHELASTIC_RUN_ID
+      trl vllm-serve --model "$MODEL_ID" --host 0.0.0.0 --port 8000 \
+        --tensor-parallel-size 1 --gpu-memory-utilization 0.6 --max-model-len 1024 \
+        --log-level warning &
+      SERVER_PID=$!
+      export SERVER_PID
+      python3 - <<'PY' &
+      import os
+      import signal
+      from http.server import BaseHTTPRequestHandler, HTTPServer
+      pid = int(os.environ["SERVER_PID"])
+      class Handler(BaseHTTPRequestHandler):
+          def do_POST(self):
+              if self.path != "/shutdown":
+                  self.send_error(404)
+                  return
+              os.kill(pid, signal.SIGTERM)
+              self.send_response(200)
+              self.end_headers()
+          def log_message(self, *_):
+              pass
+      HTTPServer(("0.0.0.0", 9000), Handler).serve_forever()
+      PY
+      SUPERVISOR_PID=$!
+      status=0
+      wait "$SERVER_PID" || status=$?
+      kill "$SUPERVISOR_PID" 2>/dev/null || true
+      if [ "$status" -ne 0 ] && [ "$status" -ne 143 ]; then exit "$status"; fi
+
+  - name: trainer
+    ranks: [1]
+    unity_catalog_image: your_catalog.your_schema.trl_vllm:0.24.0
+    environment_variables:
+      variables:
+        MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+        HF_HOME: /local_disk0/huggingface
+    command: |-
+      set -euo pipefail
+      export VLLM_HOST="$MASTER_ADDR"
+      cleanup() {
+        python - <<'PY' || true
+      import os
+      import urllib.request
+      url = f'http://{os.environ["VLLM_HOST"]}:9000/shutdown'
+      urllib.request.urlopen(urllib.request.Request(url, method="POST"), timeout=10)
+      PY
+      }
+      trap cleanup EXIT
+
+      python - <<'PY'
+      import os
+      import time
+      import urllib.request
+      base = f'http://{os.environ["VLLM_HOST"]}:8000'
+      for attempt in range(120):
+          try:
+              with urllib.request.urlopen(base + "/health/", timeout=5) as response:
+                  if response.status == 200:
+                      break
+          except Exception:
+              time.sleep(5)
+      else:
+          raise RuntimeError("TRL vLLM server did not become ready within 10 minutes")
+      print("TRL vLLM server is reachable from trainer rank", flush=True)
+      PY
+
+      # Rank 0 serves generations. Only rank 1 participates in training.
+      unset MASTER_ADDR MASTER_PORT WORLD_SIZE RANK LOCAL_RANK LOCAL_WORLD_SIZE
+      unset NODE_RANK GROUP_RANK ROLE_RANK ROLE_WORLD_SIZE ROLE_NAME TORCHELASTIC_RUN_ID
+
+      python - <<'PY'
+      import os
+      import re
+      import trl
+      from datasets import Dataset
+      from trl import GRPOConfig, GRPOTrainer
+
+      problems = [(a, b) for a in range(11, 19) for b in (3, 7, 9, 13)]
+      dataset = Dataset.from_dict({
+          "prompt": [f"What is {a} + {b}? Reply with only the integer." for a, b in problems],
+          "answer": [str(a + b) for a, b in problems],
+      })
+      def arithmetic_reward(completions, answer, **_):
+          scores = []
+          for text, expected in zip(completions, answer):
+              numbers = re.findall(r"-?\d+", text)
+              if numbers:
+                  error = abs(int(numbers[-1]) - int(expected))
+                  scores.append(1.0 if error == 0 else 0.5 / (1.0 + error))
+              else:
+                  scores.append(0.0)
+          return scores
+
+      print(f"TRL {trl.__version__}; 32 examples; 5 epochs; vLLM server mode", flush=True)
+      args = GRPOConfig(
+          output_dir="/local_disk0/qwen-grpo-e2e-five-epochs",
+          num_train_epochs=5,
+          per_device_train_batch_size=2,
+          gradient_accumulation_steps=2,
+          learning_rate=5e-6,
+          num_generations=2,
+          max_prompt_length=64,
+          max_completion_length=32,
+          bf16=True,
+          gradient_checkpointing=False,
+          logging_steps=1,
+          save_strategy="no",
+          report_to="none",
+          use_vllm=True,
+          vllm_mode="server",
+          vllm_server_host=os.environ["VLLM_HOST"],
+          vllm_server_port=8000,
+          vllm_server_timeout=600.0,
+      )
+      trainer = GRPOTrainer(model=os.environ["MODEL_ID"], args=args,
+                            reward_funcs=arithmetic_reward, train_dataset=dataset)
+      trainer.train()
+      trainer.save_model()
+      print("End-to-end GRPO completed: 5 epochs, 32 arithmetic prompts", flush=True)
+      PY

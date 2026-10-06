@@ -1,0 +1,23 @@
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Replay a terraform deployment of the bundle (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+job_id="$(read_id.py test_job)"
+
+edit_resource.py jobs $job_id <<EOF2
+r["max_concurrent_runs"] = 3
+EOF2
+
+title "config-remote-sync migrates the terraform state in memory and detects the remote change"
+trace $CLI bundle config-remote-sync
+
+title "The terraform state is untouched: config-remote-sync does not commit the migration"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json)'
+
+title "Saving writes the remote change into the config"
+trace $CLI bundle config-remote-sync --save
+trace cat databricks.yml

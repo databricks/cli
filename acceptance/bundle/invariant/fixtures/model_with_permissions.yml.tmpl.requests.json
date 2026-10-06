@@ -1,0 +1,25 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/mlflow/registered-models/create",
+    "body": {
+      "name": "test-model-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/registered-models/8790683807422935000",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_READ"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

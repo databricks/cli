@@ -1,0 +1,26 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/apps",
+    "body": {
+      "description": "This is a test app",
+      "name": "app-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/apps/app-[UNIQUE_NAME]",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_USE"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

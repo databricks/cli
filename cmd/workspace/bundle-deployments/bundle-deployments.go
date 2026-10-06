@@ -92,9 +92,8 @@ func newCompleteVersion() *cobra.Command {
   Arguments:
     NAME: The name of the version to complete. Format:
       deployments/{deployment_id}/versions/{version_id}
-    COMPLETION_REASON: The reason for completing the version. Must be a terminal reason:
-      VERSION_COMPLETE_SUCCESS, VERSION_COMPLETE_FAILURE, or
-      VERSION_COMPLETE_FORCE_ABORT.
+    COMPLETION_REASON: The reason for completing the version. Must be VERSION_COMPLETE_SUCCESS or
+      VERSION_COMPLETE_FAILURE.
       Supported values: [VERSION_COMPLETE_FAILURE, VERSION_COMPLETE_FORCE_ABORT, VERSION_COMPLETE_LEASE_EXPIRED, VERSION_COMPLETE_SUCCESS]`
 
 	cmd.Annotations = make(map[string]string)

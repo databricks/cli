@@ -1,0 +1,21 @@
+# Fixture endpoints exercised only by this test. The GET response carries a
+# >2^53 integer id and non-alphabetical keys so the golden shows the CLI renders
+# the body verbatim (server key order kept, '<' not escaped) instead of
+# round-tripping it through a Go map.
+[[Server]]
+Pattern = "GET /api/2.0/test/bigint"
+Response.Body = '{"name": "a<b", "job_id": 18000000000000000123}'
+
+[[Server]]
+Pattern = "POST /api/2.0/test/bigint"
+Response.Body = '{}'
+
+# Rewrite the fixed test id to a readable placeholder *before* the global
+# [NUMID] normalization (Order 10). The placeholder appears only when the exact
+# digits survive the round-trip: a float64-rounded id (18000000000000000000)
+# wouldn't match this pattern and would fall through to [NUMID], failing the
+# golden. So [JOB_ID] in the golden is itself the proof that precision is kept.
+[[Repls]]
+Old = '18000000000000000123'
+New = '[JOB_ID]'
+Order = 1

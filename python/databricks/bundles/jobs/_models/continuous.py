@@ -26,9 +26,7 @@ class Continuous:
 
     maintenance_window: VariableOrOptional[MaintenanceWindow] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
+    Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
     """
 
     pause_status: VariableOrOptional[PauseStatus] = None
@@ -54,9 +52,7 @@ class ContinuousDict(TypedDict, total=False):
 
     maintenance_window: VariableOrOptional[MaintenanceWindowParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
+    Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
     """
 
     pause_status: VariableOrOptional[PauseStatusParam]

@@ -5,7 +5,7 @@ NEW_PIPELINE_ID=$($CLI pipelines create --json @pipeline.json | jq -r .pipeline_
 add_repl $NEW_PIPELINE_ID NEW_PIPELINE_ID
 
 rm -f "$OUT_REQUESTS"
-trace musterr $CLI bundle deployment bind foo $NEW_PIPELINE_ID &> out.bind-fail.$DATABRICKS_BUNDLE_ENGINE.txt
+trace musterr $CLI bundle deployment bind foo $NEW_PIPELINE_ID &> out.bind-fail.txt
 print_requests.py '^//import-file/' '^//workspace/'
 
 rm -f "$OUT_REQUESTS"
