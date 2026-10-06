@@ -39,8 +39,9 @@ config
   Fields:
     experiment_name              (required) Name of the experiment.
     compute                      (required) Which accelerators to run on and how many.
-    environment                  Python dependencies, or a custom Docker image, for the run's runtime.
-    command                      (required) Shell command that starts the workload.
+    environment                  Python dependencies, runtime version, or a Unity Catalog image for a single-command run.
+    command                      Shell command that starts the workload.
+    containers                   Rank-partitioned containers for heterogeneous workloads.
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
@@ -114,29 +115,34 @@ config.compute.accelerator_type
   Type:     string
   Required: no
 
-=== conditionally required leaf
->>> [CLI] air run -h config.code_source.type
-config.code_source.type
-  Kind of code source. Must be "snapshot", the only supported type.
+=== code source fields
+>>> [CLI] air run -h config.code_source
+config.code_source
+  Local code to upload and make available to the run.
 
-  Type:     string
-  Required: when code_source is set
+  Fields:
+    root_path      Root of the code source to archive.
+    remote_volume  Volume to upload the archive to.
+    git            Pin the snapshot to a specific git revision.
+    include_paths  Restrict the archive to these paths, relative to root_path and without "..".
 
-=== union field reports both accepted shapes
->>> [CLI] air run -h config.code_source.snapshot.git.remote
-config.code_source.snapshot.git.remote
+Use "-h config.code_source.<field>" for details on a field.
+
+=== union field
+>>> [CLI] air run -h config.code_source.git.remote
+config.code_source.git.remote
   No longer supported: the snapshot archives your local copy. Only false is accepted; use commit to pin a revision.
 
   Type:     bool or string
   Required: no
 
-=== git-pinned subdirectory snapshots document root_path scoping
->>> [CLI] air run -h config.code_source.snapshot.root_path
-config.code_source.snapshot.root_path
+=== git-pinned subdirectory documents root_path scoping
+>>> [CLI] air run -h config.code_source.root_path
+config.code_source.root_path
   Root of the code source to archive. A git-pinned subdirectory packages only that subtree.
 
   Type:     string
-  Required: when code_source.snapshot is set
+  Required: when code_source is set
 
 === the config. prefix is optional
 >>> [CLI] air run -h compute.num_accelerators

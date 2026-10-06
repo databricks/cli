@@ -12,7 +12,7 @@ package terraform_dabs_map
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 34 dabs-only
 // jobs / databricks_job: 261 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
@@ -105,14 +105,42 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 	},
 	"jobs": {
+		"email_notifications": {
+			"on_maintenance_complete": {}, // jobs.*.email_notifications.on_maintenance_complete
+			"on_maintenance_start":    {}, // jobs.*.email_notifications.on_maintenance_start
+		},
+		"environment_variables": {
+			"environment_variables_key": {}, // jobs.*.environment_variables.environment_variables_key
+			"spec": {
+				"files": {}, // jobs.*.environment_variables.spec.files
+				"variables": {
+					"*": {}, // jobs.*.environment_variables.spec.variables.*
+				},
+			},
+		},
+		"environments": {
+			"spec": {
+				"project_environment": {}, // jobs.*.environments.spec.project_environment
+			},
+		},
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
 			},
 		},
 		"tasks": {
+			"email_notifications": {
+				"on_maintenance_complete": {}, // jobs.*.tasks.email_notifications.on_maintenance_complete
+				"on_maintenance_start":    {}, // jobs.*.tasks.email_notifications.on_maintenance_start
+			},
+			"environment_variables_key": {}, // jobs.*.tasks.environment_variables_key
 			"for_each_task": {
 				"task": {
+					"email_notifications": {
+						"on_maintenance_complete": {}, // jobs.*.tasks.for_each_task.task.email_notifications.on_maintenance_complete
+						"on_maintenance_start":    {}, // jobs.*.tasks.for_each_task.task.email_notifications.on_maintenance_start
+					},
+					"environment_variables_key": {}, // jobs.*.tasks.for_each_task.task.environment_variables_key
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -121,10 +149,34 @@ var DABsOnlyFields = map[string]FieldSet{
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
 					},
+					"webhook_notifications": {
+						"on_maintenance_complete": {
+							"id": {}, // jobs.*.tasks.for_each_task.task.webhook_notifications.on_maintenance_complete.id
+						},
+						"on_maintenance_start": {
+							"id": {}, // jobs.*.tasks.for_each_task.task.webhook_notifications.on_maintenance_start.id
+						},
+					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+			},
+			"webhook_notifications": {
+				"on_maintenance_complete": {
+					"id": {}, // jobs.*.tasks.webhook_notifications.on_maintenance_complete.id
+				},
+				"on_maintenance_start": {
+					"id": {}, // jobs.*.tasks.webhook_notifications.on_maintenance_start.id
+				},
+			},
+		},
+		"webhook_notifications": {
+			"on_maintenance_complete": {
+				"id": {}, // jobs.*.webhook_notifications.on_maintenance_complete.id
+			},
+			"on_maintenance_start": {
+				"id": {}, // jobs.*.webhook_notifications.on_maintenance_start.id
 			},
 		},
 	},

@@ -2,10 +2,10 @@
 mkdir -p .databricks
 
 $CLI bundle plan -o json > .databricks/tmp.plan_create.json
-nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan_create.json > out.plan_create.json
 $CLI bundle deploy $(readplanarg .databricks/tmp.plan_create.json)
 grep -v TO_DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace cat databricks.yml
 $CLI bundle plan -o json > .databricks/tmp.plan_update.json
-nostamp < .databricks/tmp.plan_update.json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan_update.json > out.plan_update.json
 $CLI bundle deploy $(readplanarg .databricks/tmp.plan_update.json)

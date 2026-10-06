@@ -28,4 +28,4 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 2 warnings
-Error: 2 warnings were found. Warnings are not allowed in strict mode
+Error: 2 warnings were found. Warnings are treated as errors in strict mode

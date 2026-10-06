@@ -1,7 +1,10 @@
 package resourcemutator
 
 import (
+	"fmt"
+	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -11,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -160,8 +164,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // two conditions:
 //  1. The resource supports setting a run_as identity to a different user
 //     from the owner/creator of the resource. For example, jobs.
-//  2. Run as semantics do not apply to the resource. We do not plan to add
-//     platform side support for `run_as` for these resources. For example,
+//  2. Run as semantics do not apply to the resource's current API. For example,
 //     experiments or registered models.
 //
 // Any resource that is not on the allow list cannot be used when the bundle
@@ -169,14 +172,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // return an error if such a resource has been defined, and the run_as identity
 // is different from the current deployment identity.
 //
-// Action Item: If you are adding a new resource to DABs, please check in with
-// the relevant owning team whether the resource should be on the allow list or (implicitly) on
-// the deny list. Any resources that could have run_as semantics in the future
-// should be on the deny list.
-// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
-// are planning to add platform side support for `run_as` for these resources at
-// some point in the future. These resources are (implicitly) on the deny list, since
-// they are not on the allow list below.
+// If a resource gains run_as support, review this list and the group support
+// classification below. Model serving endpoints are excluded. Dashboards are
+// allowed when embed_credentials is false and rejected otherwise.
 var allowList = []string{
 	"alerts",
 	"catalogs",
@@ -214,6 +212,75 @@ var allowList = []string{
 	"vector_search_endpoints",
 	"vector_search_indexes",
 	"volumes",
+}
+
+type groupRunAsSupport int
+
+const (
+	groupRunAsUnsupported groupRunAsSupport = iota
+	groupRunAsSupported
+)
+
+// Classify every resource type that exposes a run_as field.
+var groupRunAsSupportByResource = map[string]groupRunAsSupport{
+	"alerts":    groupRunAsUnsupported,
+	"jobs":      groupRunAsSupported,
+	"pipelines": groupRunAsSupported,
+}
+
+func TestRunAsGroupSupportClassification(t *testing.T) {
+	actual := make(map[string]groupRunAsSupport)
+	resourceTypes := reflect.TypeFor[config.Resources]()
+	for field := range resourceTypes.Fields() {
+		require.Equal(t, reflect.Map, field.Type.Kind(), field.Name)
+		require.Equal(t, reflect.Pointer, field.Type.Elem().Kind(), field.Name)
+		resourceType := field.Type.Elem().Elem()
+		runAsField, ok := resourceType.FieldByName("RunAs")
+		if !ok {
+			continue
+		}
+
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		require.Equal(t, reflect.Pointer, runAsField.Type.Kind(), name)
+		runAsType := runAsField.Type.Elem()
+		require.Equal(t, reflect.Struct, runAsType.Kind(), name)
+		support := groupRunAsUnsupported
+		if _, ok := runAsType.FieldByName("GroupName"); ok {
+			support = groupRunAsSupported
+		}
+		actual[name] = support
+	}
+
+	require.Equal(t, groupRunAsSupportByResource, actual)
+}
+
+func TestRunAsGroupSupportBehavior(t *testing.T) {
+	for resourceType, support := range groupRunAsSupportByResource {
+		t.Run(resourceType, func(t *testing.T) {
+			yaml := fmt.Sprintf("run_as: {group_name: group}\nworkspace: {current_user: {userName: deployer}}\nresources:\n  %s: {test: {}}\n", resourceType)
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+
+			switch support {
+			case groupRunAsUnsupported:
+				require.ErrorContains(t, diags.Error(), "run_as.group_name")
+			case groupRunAsSupported:
+				require.NoError(t, diags.Error())
+				switch resourceType {
+				case "jobs":
+					assert.Equal(t, "group", b.Config.Resources.Jobs["test"].RunAs.GroupName)
+				case "pipelines":
+					assert.Equal(t, "group", b.Config.Resources.Pipelines["test"].RunAs.GroupName)
+				default:
+					t.Fatalf("add a group propagation assertion for %s", resourceType)
+				}
+			default:
+				t.Fatalf("unknown group run_as support level for %s", resourceType)
+			}
+		})
+	}
 }
 
 func TestRunAsErrorForUnsupportedResources(t *testing.T) {
@@ -318,5 +385,134 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		}
 		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
+	}
+}
+
+func TestRunAsIdentities(t *testing.T) {
+	for _, tc := range []struct {
+		runAs     string
+		wantError bool
+	}{
+		{`null`, true},
+		{`{}`, true},
+		{`{user_name: ""}`, true},
+		{`{service_principal_name: ""}`, true},
+		{`{group_name: ""}`, true},
+		{`{user_name: user}`, false},
+		{`{service_principal_name: sp}`, false},
+		{`{group_name: group}`, false},
+		{`{user_name: "", service_principal_name: "", group_name: ""}`, true},
+		{`{user_name: "", service_principal_name: "", group_name: group}`, false},
+		{`{user_name: user, service_principal_name: sp}`, true},
+		{`{user_name: user, group_name: group}`, true},
+		{`{service_principal_name: sp, group_name: group}`, true},
+		{`{user_name: user, service_principal_name: sp, group_name: group}`, true},
+	} {
+		t.Run(tc.runAs, func(t *testing.T) {
+			yaml := "workspace: {current_user: {userName: deployer}}\nrun_as: " + tc.runAs
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			if tc.wantError {
+				require.ErrorContains(t, diags.Error(), "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name")
+				assert.Equal(t, []dyn.Location{r.GetLocation("run_as")}, diags[0].Locations)
+			} else {
+				require.NoError(t, diags.Error())
+			}
+		})
+	}
+}
+
+func TestRunAsLegacyGroup(t *testing.T) {
+	for _, runAs := range []string{`{group_name: group}`, `{group_name: ""}`} {
+		t.Run(runAs, func(t *testing.T) {
+			yaml := "workspace: {current_user: {userName: deployer}}\nexperimental: {use_legacy_run_as: true}\nrun_as: " + runAs
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			require.ErrorContains(t, diags.Error(), "run_as.group_name is not supported with experimental.use_legacy_run_as")
+		})
+	}
+}
+
+func TestRunAsGroupResources(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		resource  string
+		wantError string
+	}{
+		{name: "alert", resource: `alerts: {test: {}}`, wantError: "alerts do not support run_as.group_name"},
+		{name: "model serving", resource: `model_serving_endpoints: {test: {}}`, wantError: "Run as identity: group \"group\""},
+		{name: "alert sp override", resource: `alerts: {test: {run_as: {service_principal_name: sp}}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := "run_as: {group_name: group}\nworkspace: {current_user: {userName: group}}\nresources:\n  " + tc.resource
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			before := b.Config.Value().Get("resources")
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			if tc.wantError != "" {
+				require.Error(t, diags.Error())
+				assert.Contains(t, diags.Error().Error(), tc.wantError)
+			} else {
+				require.NoError(t, diags.Error())
+				assert.Equal(t, before, b.Config.Value().Get("resources"))
+			}
+		})
+	}
+}
+
+func TestRunAsGroupInheritance(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		root   string
+		target string
+		want   jobs.JobRunAs
+	}{
+		{name: "root group", root: `{group_name: group}`, target: `{}`, want: jobs.JobRunAs{GroupName: "group"}},
+		{name: "target group replaces user", root: `{user_name: user}`, target: `{run_as: {group_name: group}}`, want: jobs.JobRunAs{GroupName: "group"}},
+		{name: "target user replaces group", root: `{group_name: group}`, target: `{run_as: {user_name: user}}`, want: jobs.JobRunAs{UserName: "user"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := fmt.Sprintf(`
+workspace: {current_user: {userName: deployer}}
+run_as: %s
+targets:
+  test: %s
+resources:
+  jobs:
+    inherited: {}
+    user: {run_as: {user_name: other_user}}
+    sp: {run_as: {service_principal_name: other_sp}}
+    group: {run_as: {group_name: other_group}}
+  pipelines:
+    inherited: {}
+    user: {run_as: {user_name: other_user}}
+    sp: {run_as: {service_principal_name: other_sp}}
+    group: {run_as: {group_name: other_group}}
+`, tc.root, tc.target)
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			require.NoError(t, r.MergeTargetOverrides("test"))
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			require.NoError(t, diags.Error())
+			assert.Equal(t, &tc.want, b.Config.RunAs)
+			assert.Equal(t, &tc.want, b.Config.Resources.Jobs["inherited"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{UserName: "other_user"}, b.Config.Resources.Jobs["user"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Jobs["sp"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{GroupName: "other_group"}, b.Config.Resources.Jobs["group"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{
+				GroupName:            tc.want.GroupName,
+				ServicePrincipalName: tc.want.ServicePrincipalName,
+				UserName:             tc.want.UserName,
+			}, b.Config.Resources.Pipelines["inherited"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{UserName: "other_user"}, b.Config.Resources.Pipelines["user"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Pipelines["sp"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{GroupName: "other_group"}, b.Config.Resources.Pipelines["group"].RunAs)
+		})
 	}
 }

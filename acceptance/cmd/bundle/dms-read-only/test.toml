@@ -11,7 +11,6 @@ Cloud = false
 # bundle-deployments is a workspace-service command independent of the bundle
 # deploy engine, so pin to a single value instead of the inherited matrix so
 # it runs once (empty list would run on both direct and terraform CI runners).
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Normalize the git commit SHA so the golden output isn't tied to a specific
 # commit value.

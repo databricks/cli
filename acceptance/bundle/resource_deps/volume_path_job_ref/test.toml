@@ -5,4 +5,3 @@ RecordRequests = true
 # direct engine resolves it at deploy; Terraform cannot export that attribute,
 # so the case is unsupported there (see CHANGELOG.md). Direct is the
 # default engine, so the motivating use case works out of the box.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

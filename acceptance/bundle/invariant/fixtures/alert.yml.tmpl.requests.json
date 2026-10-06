@@ -1,0 +1,50 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/alerts",
+    "body": {
+      "custom_summary": "test-alert",
+      "display_name": "test-alert-[UNIQUE_NAME]",
+      "evaluation": {
+        "comparison_operator": "EQUAL",
+        "notification": {
+          "notify_on_ok": false,
+          "retrigger_seconds": 60
+        },
+        "source": {
+          "aggregation": "MAX",
+          "display": "1",
+          "name": "1"
+        },
+        "threshold": {
+          "value": {
+            "double_value": 1
+          }
+        }
+      },
+      "parent_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/resources",
+      "query_text": "select 1\n",
+      "schedule": {
+        "quartz_cron_schedule": "0 0 9 10 1 ?",
+        "timezone_id": "UTC"
+      },
+      "warehouse_id": "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/alertsv2/79fec857-226d-6338-79fe-c857226d6339",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_MANAGE"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

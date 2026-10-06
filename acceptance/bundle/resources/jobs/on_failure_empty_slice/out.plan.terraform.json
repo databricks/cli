@@ -1,8 +1,0 @@
-{
-  "cli_version": "[CLI_VERSION]",
-  "plan": {
-    "resources.jobs.refresh_usage_logs": {
-      "action": "skip"
-    }
-  }
-}

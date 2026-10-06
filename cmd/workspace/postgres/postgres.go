@@ -2668,9 +2668,8 @@ func newGetCdfConfig() *cobra.Command {
 
 Get a change data feed configuration.
 
-  Get a single Lakebase CDF configuration, including the source Postgres schema,
-  target Unity Catalog schema, and the identity under which writes are
-  authorized.
+  Get a single Lakebase CDF configuration, including the source Postgres schema
+  and target Unity Catalog schema.
 
   Arguments:
     NAME: The resource name of the CdfConfig to retrieve. Format:
@@ -3214,8 +3213,10 @@ func newGetSnapshotSchedule() *cobra.Command {
 	var getSnapshotScheduleReq postgres.GetSnapshotScheduleRequest
 
 	cmd.Use = "get-snapshot-schedule NAME"
-	cmd.Short = `Get a Snapshot Schedule.`
-	cmd.Long = `Get a Snapshot Schedule.
+	cmd.Short = `*Beta* Get a Snapshot Schedule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Snapshot Schedule.
 
   Retrieves the snapshot schedule for a branch. A branch with no configured
   schedule returns an empty schedule (not NOT_FOUND).
@@ -3224,12 +3225,9 @@ func newGetSnapshotSchedule() *cobra.Command {
     NAME: The resource name of the branch's snapshot schedule. Format:
       projects/{project_id}/branches/{branch_id}/snapshot-schedule`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -4936,8 +4934,10 @@ func newUpdateSnapshotSchedule() *cobra.Command {
 	// TODO: array: schedule
 
 	cmd.Use = "update-snapshot-schedule NAME UPDATE_MASK"
-	cmd.Short = `Update a Snapshot Schedule.`
-	cmd.Long = `Update a Snapshot Schedule.
+	cmd.Short = `*Beta* Update a Snapshot Schedule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a Snapshot Schedule.
 
   Sets the snapshot schedule for a branch. The schedule field is replaced
   wholesale; an empty schedule disables automatic snapshots.
@@ -4953,12 +4953,9 @@ func newUpdateSnapshotSchedule() *cobra.Command {
     UPDATE_MASK: Fields to update. The only updatable path is schedule, which replaces
       the entire set of cadences.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

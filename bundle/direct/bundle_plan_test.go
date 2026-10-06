@@ -341,6 +341,7 @@ func TestScalarZeroChange(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		field          string
 		ch             *deployplan.ChangeDesc
 		expectedAction deployplan.ActionType
 		expectedReason string
@@ -348,12 +349,14 @@ func TestScalarZeroChange(t *testing.T) {
 		{
 			// The fix: config sets the field to 0 for the first time (remote lacks it).
 			name:           "explicit config zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: nil},
 			expectedAction: deployplan.Update,
 		},
 		{
 			// Config never set it, the backend just echoed a zero: not a change.
 			name:           "backend-echoed zero is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: 0},
 			expectedAction: deployplan.Skip,
 			expectedReason: deployplan.ReasonEmpty,
@@ -361,6 +364,7 @@ func TestScalarZeroChange(t *testing.T) {
 		{
 			// Control: nothing set anywhere.
 			name:           "all empty is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: nil},
 			expectedAction: deployplan.Skip,
 			expectedReason: deployplan.ReasonEmpty,
@@ -372,6 +376,7 @@ func TestScalarZeroChange(t *testing.T) {
 			// updates even though the remote already reports 0 — before the fix it was
 			// wrongly skipped as empty.
 			name:           "explicit zero on a managed field updates even when remote reports zero",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: 0},
 			expectedAction: deployplan.Update,
 		},
@@ -380,8 +385,66 @@ func TestScalarZeroChange(t *testing.T) {
 			// genuine local change (Old 0, New nil differ), symmetric with setting it, so it
 			// updates rather than being dismissed as empty.
 			name:           "clearing an integer zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
 			expectedAction: deployplan.Update,
+		},
+		{
+			// Same treatment for a bool: an explicit false the prior state lacked is a real
+			// change on a managed field (use_preemptible_executors), not an empty no-op.
+			name:           "explicit bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: false, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// But a false the backend echoes for a bool the config never set stays a no-op.
+			name:           "backend-echoed bool false is a no-op",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: false},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// Clearing a bool the config previously set to false is symmetric with setting it.
+			name:           "clearing a bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: false, New: nil, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// And for a float: an explicit 0.0 the prior state lacked is a real change.
+			name:           "explicit float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: 0.0, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Clearing a float the config previously set to 0.0 is symmetric with setting it.
+			name:           "clearing a float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: 0.0, New: nil, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Unlike an explicit 0/false, an explicit "" in New is left as a no-op: strings are
+			// not in isZeroScalar. (In practice DropEmptyStrings strips "" upstream, so New is
+			// never "" from real config; this pins the classifier and fails if reflect.String
+			// is ever added to isZeroScalar.)
+			name:           "explicit empty string is a no-op",
+			field:          "gcp_attributes.google_service_account",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: "", Remote: ""},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// A backend-echoed "" (config and state nil) is empty on every side and stays a
+			// no-op. isZeroScalar is never called on Remote, so this is generic empty handling.
+			name:           "backend-echoed empty string is a no-op",
+			field:          "gcp_attributes.google_service_account",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: ""},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
 		},
 	}
 
@@ -389,7 +452,7 @@ func TestScalarZeroChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			adapter, ok := adapters["clusters"]
 			require.True(t, ok)
-			changes := deployplan.Changes{"gcp_attributes.local_ssd_count": tt.ch}
+			changes := deployplan.Changes{tt.field: tt.ch}
 			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {

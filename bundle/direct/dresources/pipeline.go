@@ -112,7 +112,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 			Configuration:       spec.Configuration,
 			Continuous:          spec.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 			Deployment:          spec.Deployment,
-			Development:         spec.Development,
+			Development:         spec.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 			DryRun:              false,
 			Edition:             spec.Edition,
 			Environment:         spec.Environment,
@@ -181,7 +181,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		Configuration:        config.Configuration,
 		Continuous:           config.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 		Deployment:           config.Deployment,
-		Development:          config.Development,
+		Development:          config.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 		Edition:              config.Edition,
 		Environment:          config.Environment,
 		EventLog:             config.EventLog,

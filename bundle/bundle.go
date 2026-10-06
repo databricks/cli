@@ -32,7 +32,6 @@ import (
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
@@ -64,9 +63,6 @@ const resourcesFilename = "resources.json"
 
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
-
-// Filename where config snapshot is stored for experimental YAML sync
-const configSnapshotFilename = "resources-config-sync-snapshot.json"
 
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
@@ -178,17 +174,8 @@ type Bundle struct {
 	// which lists everything tracked, this counts only what actually changed.
 	FileCounts libsync.FileCounts
 
-	// Stores an initialized copy of this bundle's Terraform wrapper.
-	Terraform *tfexec.Terraform
-
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
-
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformPlanIsEmpty bool
 
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
@@ -436,11 +423,6 @@ func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
 
 func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
-}
-
-// StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
-func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
-	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
 }
 
 // IsImmutableFolder reports whether experimental.immutable_folder is enabled.

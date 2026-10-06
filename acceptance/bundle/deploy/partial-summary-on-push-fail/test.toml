@@ -4,5 +4,4 @@
 #
 # The injected path is the direct-engine state file (state/resources.json), so
 # this runs on the direct engine only.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Ignore = [".databricks", ".gitignore"]
