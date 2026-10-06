@@ -6,14 +6,14 @@ export PATH="$PWD/fake-bin:$PATH"
 export CLI_TEST_NPM_VERSION=unavailable
 
 title "Missing pnpm fails before creating files, and the same name can be retried"
-musterr trace PATH="$PWD/fake-bin" $CLI apps init --name retry-app --template pnpm-template
+PATH="$PWD/fake-bin" musterr trace $CLI apps init --name retry-app --template pnpm-template
 test ! -e retry-app
-trace PATH="$PWD/fake-bin" $CLI apps init --name retry-app --template pnpm-template --skip-install
+PATH="$PWD/fake-bin" trace $CLI apps init --name retry-app --template pnpm-template --skip-install
 jq '.packageManager' retry-app/package.json
 
 title "Missing npm also fails before creating files"
 mkdir empty-bin
-musterr trace PATH="$PWD/empty-bin" $CLI apps init --name missing-npm --template npm-only-template
+PATH="$PWD/empty-bin" musterr trace $CLI apps init --name missing-npm --template npm-only-template
 test ! -e missing-npm
 
 title "Explicit manager values must be nonempty and supported"
@@ -23,10 +23,10 @@ test ! -e invalid-manager
 
 title "Python templates reject an explicit Node.js package manager"
 for template in python-template python-pip-template; do
-    musterr trace PATH="$PWD/fake-bin" $CLI apps init --name python-app --template "$template" --package-manager npm --skip-install
+    PATH="$PWD/fake-bin" musterr trace $CLI apps init --name python-app --template "$template" --package-manager npm --skip-install
     test ! -e python-app
 done
-trace PATH="$PWD/fake-bin" $CLI apps init --name python-app --template python-template --skip-install
+PATH="$PWD/fake-bin" trace $CLI apps init --name python-app --template python-template --skip-install
 
 cp "fake-bin/npm$(go env GOEXE)" "fake-bin/pnpm$(go env GOEXE)"
 
@@ -57,7 +57,7 @@ test ! -e setup-failed
 
 title "In-place failures preserve the current directory and existing git metadata"
 mkdir -p in-place-failed/.git
-musterr withdir in-place-failed trace CLI_TEST_INSTALL_MODE=fail $CLI apps init --name . --template "$PWD/pnpm-template"
+musterr withdir in-place-failed trace CLI_TEST_INSTALL_MODE=fail $CLI apps init --name . --template ../pnpm-template
 test -d in-place-failed/.git
 test -f in-place-failed/package.json
 

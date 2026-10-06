@@ -1,9 +1,9 @@
 
 === Missing pnpm fails before creating files, and the same name can be retried
->>> PATH=[TEST_TMP_DIR]/fake-bin [CLI] apps init --name retry-app --template pnpm-template
+>>> [CLI] apps init --name retry-app --template pnpm-template
 Error: pnpm is unavailable; use --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use --skip-install: exec: "pnpm": executable file not found in PATH
 
->>> PATH=[TEST_TMP_DIR]/fake-bin [CLI] apps init --name retry-app --template pnpm-template --skip-install
+>>> [CLI] apps init --name retry-app --template pnpm-template --skip-install
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -19,7 +19,7 @@ Error: pnpm is unavailable; use --package-manager npm, install pnpm with corepac
 "pnpm@10.17.1+sha224.abc"
 
 === Missing npm also fails before creating files
->>> PATH=[TEST_TMP_DIR]/empty-bin [CLI] apps init --name missing-npm --template npm-only-template
+>>> [CLI] apps init --name missing-npm --template npm-only-template
 Error: npm is unavailable; install it and retry, or use --skip-install to scaffold without running setup: exec: "npm": executable file not found in PATH
 
 === Explicit manager values must be nonempty and supported
@@ -30,13 +30,13 @@ Error: --package-manager must be npm or pnpm
 Error: unknown package manager "yarn" (allowed: npm, pnpm)
 
 === Python templates reject an explicit Node.js package manager
->>> PATH=[TEST_TMP_DIR]/fake-bin [CLI] apps init --name python-app --template python-template --package-manager npm --skip-install
+>>> [CLI] apps init --name python-app --template python-template --package-manager npm --skip-install
 Error: --package-manager is only supported for Node.js templates; remove the flag for this template
 
->>> PATH=[TEST_TMP_DIR]/fake-bin [CLI] apps init --name python-app --template python-pip-template --package-manager npm --skip-install
+>>> [CLI] apps init --name python-app --template python-pip-template --package-manager npm --skip-install
 Error: --package-manager is only supported for Node.js templates; remove the flag for this template
 
->>> PATH=[TEST_TMP_DIR]/fake-bin [CLI] apps init --name python-app --template python-template --skip-install
+>>> [CLI] apps init --name python-app --template python-template --skip-install
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -121,7 +121,7 @@ Error: load manifest: parse manifest: json: cannot unmarshal array into Go value
 Error: Failed to run appkit setup: exit status 1
 
 === In-place failures preserve the current directory and existing git metadata
->>> CLI_TEST_INSTALL_MODE=fail [CLI] apps init --name . --template [TEST_TMP_DIR]/pnpm-template
+>>> CLI_TEST_INSTALL_MODE=fail [CLI] apps init --name . --template ../pnpm-template
 Warn: Background install failed: exit status 1, will retry during project initialization
 ✔ Creating project
 Warn: scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)
