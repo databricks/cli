@@ -37,7 +37,7 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 ### Migrating the existing deployment
 
 The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
-When a bundle still has Terraform state (`.databricks/bundle/<target>/terraform/terraform.tfstate` or its copy in the workspace), the CLI converts it to direct state in memory before running the command. Commands that only read state (e.g. `bundle plan`, `bundle summary`) work on the converted state without writing it. `bundle deploy` and `bundle destroy` commit the migration: the direct state is written locally and to the workspace, and the Terraform state is kept as `terraform.tfstate.backup`.
+When a bundle still has Terraform state (`.databricks/bundle/<target>/terraform/terraform.tfstate` or its copy in the workspace), the CLI converts it to direct state in memory before running the command. Commands that only read state (e.g. `bundle plan`, `bundle summary`) work on the converted state without writing it. `bundle deploy` and `bundle destroy` commit the migration: the direct state is written locally and to the workspace, and the Terraform state is retired: the workspace copy is backed up and the local `terraform.tfstate` is renamed to `terraform.tfstate.backup`. `bundle destroy` removes all local state for the target, including that backup.
 
 If the automatic migration fails, the command fails with an error; please report it to dabs-feedback@databricks.com. To keep deploying with Terraform in the meantime, use Databricks CLI v1.19.x, the last version that ships the Terraform engine.
 

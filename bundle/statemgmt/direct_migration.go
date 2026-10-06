@@ -172,9 +172,9 @@ func recordAutoMigrateSource(b *bundle.Bundle, requiredEngine engine.EngineSetti
 }
 
 // checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
-// runs a full plan against it, and returns the plan (and a non-nil error if the
-// plan fails). Individual planning errors are emitted as warnings with warnPrefix
-// so they are visible without failing the deploy. The plan is run in an isolated
+// runs a full plan against it, and returns the plan, or a non-nil error if the
+// plan fails (the caller fails the migration on it). Diagnostics collected while planning
+// are additionally logged as warnings with warnPrefix for visibility. The plan is run in an isolated
 // context so its diagnostics do not affect the deploy's own error state. The
 // returned plan lets the caller inspect the planned actions (e.g. reject a
 // migration that would recreate a resource).
