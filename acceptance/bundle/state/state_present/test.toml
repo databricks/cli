@@ -1,8 +1,8 @@
-# This test deploys on terraform and migrates to direct. Terraform deployments are not supported
-# with deployment-history recording, so it only runs without it.
+# This test replays a terraform-state fixture and migrates it to direct. Migrating a terraform
+# state is not supported with deployment-history recording, so it only runs without it.
 EnvMatrix.DMS = [""]
 
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-Ignore = [".databricks"]
+Ignore = [".databricks", ".gitignore"]
