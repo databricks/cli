@@ -73,5 +73,9 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
+=== Old project is gone after recreate
+>>> musterr [CLI] postgres get-project [MY_PROJECT_ID]
+Error: project id not found [TraceId: [UUID]]
+
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!
