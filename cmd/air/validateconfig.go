@@ -30,34 +30,34 @@ type validateConfigResponse struct {
 	Errors []configFieldError `json:"errors"`
 }
 
-// incompleteConfigValidationError means workspace validation could not produce
-// a result. Callers may fall back to local validation.
-type incompleteConfigValidationError struct {
-	err error
+// validationUnavailableError means the backend check could not finish.
+type validationUnavailableError struct {
+	err       error
+	retryable bool
 }
 
-func (e *incompleteConfigValidationError) Error() string { return e.err.Error() }
-func (e *incompleteConfigValidationError) Unwrap() error { return e.err }
+func (e *validationUnavailableError) Error() string { return e.err.Error() }
+func (e *validationUnavailableError) Unwrap() error { return e.err }
 
-func asIncompleteConfigValidation(err error) error {
-	return &incompleteConfigValidationError{err: err}
+func asValidationUnavailable(err error, retryable bool) error {
+	return &validationUnavailableError{
+		err:       fmt.Errorf("config validation unavailable: %w", err),
+		retryable: retryable,
+	}
 }
 
-func configValidationIncomplete(err error) bool {
-	_, ok := errors.AsType[*incompleteConfigValidationError](err)
-	return ok
+func validationUnavailable(err error) (*validationUnavailableError, bool) {
+	return errors.AsType[*validationUnavailableError](err)
 }
 
 // preflightValidate checks the config against the backend before any upload, so
 // a bad config fails fast with the server's own field-level errors.
 //
-// It fails open if the endpoint is disabled during rollback or is temporarily
-// unavailable, letting submission proceed because submission validates the
-// config authoritatively. Backend 5xx responses also fail open; other API errors
-// and field errors block submission.
+// It fails open for service unavailability because submission validates the
+// config authoritatively. Caller errors and field errors still block.
 func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
 	err := validateConfig(ctx, w, cfg, commandPath, containers, idempotencyToken)
-	if endpointUnavailable(err) || serverError(err) {
+	if _, unavailable := validationUnavailable(err); unavailable {
 		return nil
 	}
 	return err
@@ -76,8 +76,8 @@ func validateConfig(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath, containers, idempotencyToken), &resp)
 	if err != nil {
 		validationErr := fmt.Errorf("failed to validate config: %w", err)
-		if validationCouldNotComplete(err) {
-			return asIncompleteConfigValidation(validationErr)
+		if unavailable, retryable := classifyValidationFailure(err); unavailable {
+			return asValidationUnavailable(validationErr, retryable)
 		}
 		return validationErr
 	}
@@ -87,26 +87,30 @@ func validateConfig(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	return errors.New(formatConfigErrors(resp.Errors))
 }
 
-// validationCouldNotComplete separates failures that prevent the optional
-// backend check from authoritative request failures and cancellation. A non-API
-// error is a transport failure from the validation RPC.
-func validationCouldNotComplete(err error) bool {
+// classifyValidationFailure separates service failures from caller errors and
+// reports whether retrying the same request may succeed.
+func classifyValidationFailure(err error) (unavailable, retryable bool) {
 	if errors.Is(err, context.Canceled) {
-		return false
+		return false, false
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
-		return true
+		return true, true
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	if !ok {
-		return true
+		return true, true
 	}
-	return apiErr.ErrorCode == "FEATURE_DISABLED" ||
+	if apiErr.ErrorCode == "FEATURE_DISABLED" ||
 		apiErr.StatusCode == http.StatusNotFound ||
-		apiErr.StatusCode == http.StatusNotImplemented ||
-		apiErr.StatusCode == http.StatusRequestTimeout ||
+		apiErr.StatusCode == http.StatusNotImplemented {
+		return true, false
+	}
+	if apiErr.StatusCode == http.StatusRequestTimeout ||
 		apiErr.StatusCode == http.StatusTooManyRequests ||
-		apiErr.StatusCode >= 500
+		apiErr.StatusCode >= 500 {
+		return true, true
+	}
+	return false, false
 }
 
 // validateConfigRequest builds the {task, run_options} body from the user's config. commandPath is
@@ -149,6 +153,9 @@ func validateConfigRequest(cfg *runConfig, commandPath string, containers []subm
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
 	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)
+	if image := cfg.unityCatalogImagePath(); image != "" {
+		task["unity_catalog_image_path"] = image
+	}
 
 	return map[string]any{
 		"task":        task,
@@ -179,24 +186,6 @@ func putOpt[T any](m map[string]any, key string, value *T) {
 	if value != nil {
 		m[key] = *value
 	}
-}
-
-// endpointUnavailable reports whether the endpoint is disabled during rollback
-// or temporarily unavailable, as opposed to the config being rejected.
-func endpointUnavailable(err error) bool {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
-		apiErr.StatusCode == http.StatusNotFound ||
-		apiErr.StatusCode == http.StatusNotImplemented)
-}
-
-// serverError reports whether the failure is a 5xx: a backend problem, not the
-// user's config. The SDK already retries the transient subset (503, 429, IO
-// errors); a 5xx that still surfaces here fails open, since blocking a submit on
-// a backend blip isn't actionable and submit re-validates anyway.
-func serverError(err error) bool {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.StatusCode >= 500
 }
 
 // formatConfigErrors renders the field errors as one message, one problem per

@@ -46,8 +46,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 	}
 }
 
-// validateDryRunInWorkspace marks transient workspace access failures incomplete;
-// configuration, authentication, and permission errors are returned directly.
+// validateDryRunInWorkspace keeps caller errors distinct from service failures.
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
@@ -59,10 +58,11 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	w := cmdctx.WorkspaceClient(ctx)
 	_, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
 	if err != nil {
-		if !validationCouldNotComplete(err) {
+		unavailable, retryable := classifyValidationFailure(err)
+		if !unavailable {
 			return ctx, err
 		}
-		return ctx, asIncompleteConfigValidation(err)
+		return ctx, asValidationUnavailable(err, retryable)
 	}
 
 	validationCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -146,20 +146,21 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		if dryRun {
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
-			if validationErr != nil && !configValidationIncomplete(validationErr) {
-				return validationErr
-			}
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
 				return err
 			}
 			if validationErr != nil {
-				cmdio.LogString(ctx, fmt.Sprintf("Warning: workspace validation could not be completed (%s); only local validation was performed.", validationErr))
+				unavailable, ok := validationUnavailable(validationErr)
+				if !ok {
+					return validationErr
+				}
+				kind := "PERMANENT"
+				if unavailable.retryable {
+					kind = "TRANSIENT"
+				}
+				return renderError(ctx, cmd, "VALIDATION_UNAVAILABLE", kind, unavailable.retryable, validationErr)
 			}
 			if root.OutputType(cmd) == flags.OutputText {
-				if validationErr != nil {
-					cmdio.LogString(ctx, fmt.Sprintf("Dry run: local validation passed for %q; not submitting.", cfg.ExperimentName))
-					return nil
-				}
 				cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for %q is valid; not submitting.", cfg.ExperimentName))
 				return nil
 			}

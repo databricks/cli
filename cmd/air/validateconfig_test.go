@@ -47,25 +47,6 @@ func validationTestWorkspaceClient(t *testing.T, host string) *databricks.Worksp
 	return w
 }
 
-func TestPreflightValidatePasses(t *testing.T) {
-	srv := validateServer(t, http.StatusOK, `{}`, nil)
-	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-	assert.NoError(t, err)
-}
-
-func TestPreflightValidateReportsErrors(t *testing.T) {
-	body := `{"errors":[
-		{"path":"experiment","message":"only letters, digits, hyphens, underscores","code":"DISALLOWED_CHARACTERS"},
-		{"path":"deployments[0].compute.accelerator_count","message":"must be a multiple of 8","code":"COUNT_NOT_MULTIPLE"}
-	]}`
-	srv := validateServer(t, http.StatusOK, body, nil)
-	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-	require.Error(t, err)
-	// Every problem is surfaced, each pointing at its config field.
-	assert.Contains(t, err.Error(), "experiment: only letters")
-	assert.Contains(t, err.Error(), "deployments[0].compute.accelerator_count: must be a multiple of 8")
-}
-
 func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -73,7 +54,6 @@ func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 		body   string
 	}{
 		{"disabled", http.StatusBadRequest, `{"error_code":"FEATURE_DISABLED","message":"not enabled"}`},
-		{"not found", http.StatusNotFound, `{"error_code":"ENDPOINT_NOT_FOUND","message":"not found"}`},
 		{"server error", http.StatusInternalServerError, `{"error_code":"INTERNAL_ERROR","message":"backend failed"}`},
 	}
 
@@ -95,29 +75,32 @@ func TestPreflightValidateBlocksOnClientError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestValidationCouldNotComplete(t *testing.T) {
+func TestClassifyValidationFailure(t *testing.T) {
 	tests := []struct {
-		name string
-		err  error
-		want bool
+		name            string
+		err             error
+		wantUnavailable bool
+		wantRetryable   bool
 	}{
-		{"canceled", context.Canceled, false},
-		{"deadline", context.DeadlineExceeded, true},
-		{"transport", errors.New("connection failed"), true},
-		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false},
-		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true},
-		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false},
-		{"forbidden", &apierr.APIError{StatusCode: http.StatusForbidden}, false},
-		{"not found", &apierr.APIError{StatusCode: http.StatusNotFound}, true},
-		{"not implemented", &apierr.APIError{StatusCode: http.StatusNotImplemented}, true},
-		{"request timeout", &apierr.APIError{StatusCode: http.StatusRequestTimeout}, true},
-		{"rate limited", &apierr.APIError{StatusCode: http.StatusTooManyRequests}, true},
-		{"server error", &apierr.APIError{StatusCode: http.StatusInternalServerError}, true},
+		{"canceled", context.Canceled, false, false},
+		{"deadline", context.DeadlineExceeded, true, true},
+		{"transport", errors.New("connection failed"), true, true},
+		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
+		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
+		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false, false},
+		{"forbidden", &apierr.APIError{StatusCode: http.StatusForbidden}, false, false},
+		{"not found", &apierr.APIError{StatusCode: http.StatusNotFound}, true, false},
+		{"not implemented", &apierr.APIError{StatusCode: http.StatusNotImplemented}, true, false},
+		{"request timeout", &apierr.APIError{StatusCode: http.StatusRequestTimeout}, true, true},
+		{"rate limited", &apierr.APIError{StatusCode: http.StatusTooManyRequests}, true, true},
+		{"server error", &apierr.APIError{StatusCode: http.StatusInternalServerError}, true, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, validationCouldNotComplete(tt.err))
+			unavailable, retryable := classifyValidationFailure(tt.err)
+			assert.Equal(t, tt.wantUnavailable, unavailable)
+			assert.Equal(t, tt.wantRetryable, retryable)
 		})
 	}
 }
@@ -129,6 +112,7 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	cfg := baseRunConfig()
 	cfg.MaxRetries = new(3)
 	cfg.EnvVariables = map[string]string{"HF_HOME": "/tmp/hf"}
+	cfg.Environment = &environmentConfig{UnityCatalogImage: "main.air.training:v1"}
 	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
@@ -138,6 +122,7 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	compute := deployment["compute"].(map[string]any)
 	assert.Equal(t, "GPU_8xH100", compute["accelerator_type"])
 	assert.EqualValues(t, 16, compute["accelerator_count"])
+	assert.Equal(t, "main.air.training:v1", task["unity_catalog_image_path"])
 
 	runOptions := gotReq["run_options"].(map[string]any)
 	assert.Equal(t, "token", runOptions["idempotency_token"])

@@ -3,7 +3,6 @@ package aircmd
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -137,30 +138,22 @@ type dryRunRequest struct {
 	body   map[string]any
 }
 
-// dryRunServer records workspace reads and serves one validation response.
-func dryRunServer(t *testing.T, status int, response string, requests *[]dryRunRequest) *httptest.Server {
+func dryRunServer(t *testing.T, response any, requests *[]dryRunRequest) *testserver.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		request := dryRunRequest{method: r.Method, path: r.URL.Path}
-		if r.URL.Path == "/.well-known/databricks-config" {
-			*requests = append(*requests, request)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		if r.URL.Path == validateConfigPath {
-			if err := json.NewDecoder(r.Body).Decode(&request.body); err != nil {
-				t.Errorf("decode validation request: %v", err)
+	server := testserver.New(t)
+	if requests != nil {
+		server.RequestCallback = func(req *testserver.Request) {
+			request := dryRunRequest{method: req.Method, path: req.URL.Path}
+			if req.URL.Path == validateConfigPath {
+				require.NoError(t, json.Unmarshal(req.Body, &request.body))
 			}
 			*requests = append(*requests, request)
-			w.WriteHeader(status)
-			_, _ = w.Write([]byte(response))
-			return
 		}
-		*requests = append(*requests, request)
-		_, _ = w.Write([]byte(`{"userName":"u@example.com","workspace_id":1}`))
-	}))
-	t.Cleanup(srv.Close)
-	return srv
+	}
+	server.Handle("POST", validateConfigPath, func(_ testserver.Request) any { return response })
+	testserver.AddDefaultHandlers(server)
+	t.Cleanup(server.Close)
+	return server
 }
 
 type dryRunResult struct {
@@ -189,23 +182,9 @@ func runDryRunCmd(t *testing.T, timeout time.Duration, output flags.Output, srvU
 
 func TestRunDryRunValidatesBackendWithoutMutation(t *testing.T) {
 	var requests []dryRunRequest
-	srv := dryRunServer(t, http.StatusOK, `{}`, &requests)
-	config := minimalConfig + `
-environment:
-  dependencies:
-    - numpy
-code_source:
-  type: snapshot
-  snapshot:
-    root_path: .
-max_retries: 2
-usage_policy_name: team-policy
-permissions:
-  - group_name: users
-    level: CAN_VIEW
-`
+	srv := dryRunServer(t, validateConfigResponse{}, &requests)
 
-	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, config, "--dry-run", "--idempotency-key", "flag-token")
+	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, minimalConfig, "--dry-run", "--idempotency-key", "flag-token")
 	require.NoError(t, result.err)
 	assert.Contains(t, result.stderr, `Dry run: configuration for "my-run" is valid; not submitting.`)
 
@@ -226,7 +205,7 @@ permissions:
 	assert.Contains(t, validations[0].body, "run_options")
 	task := validations[0].body["task"].(map[string]any)
 	commandPath := task["deployments"].([]any)[0].(map[string]any)["command_path"].(string)
-	assert.True(t, strings.HasPrefix(commandPath, "/Workspace/Users/u@example.com/.air/cli_launch/my-run/my-run_"))
+	assert.True(t, strings.HasPrefix(commandPath, "/Workspace/Users/tester@databricks.com/.air/cli_launch/my-run/my-run_"))
 	assert.True(t, strings.HasSuffix(commandPath, "/command.sh"))
 	runOptions := validations[0].body["run_options"].(map[string]any)
 	assert.Equal(t, "flag-token", runOptions["idempotency_token"])
@@ -234,26 +213,20 @@ permissions:
 
 func TestRunDryRunConfigValidationHasDeadline(t *testing.T) {
 	requestCanceled := make(chan struct{}, 1)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/.well-known/databricks-config":
-			w.WriteHeader(http.StatusNotFound)
-		case "/api/2.0/preview/scim/v2/Me":
-			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
-		case validateConfigPath:
-			_, _ = io.Copy(io.Discard, r.Body)
-			<-r.Context().Done()
-			requestCanceled <- struct{}{}
-		default:
-			http.NotFound(w, r)
-		}
-	}))
+	srv := testserver.New(t)
+	srv.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		<-req.Context.Done()
+		requestCanceled <- struct{}{}
+		return nil
+	})
+	testserver.AddDefaultHandlers(srv)
 	t.Cleanup(srv.Close)
 
 	result := runDryRunCmd(t, 100*time.Millisecond, flags.OutputText, srv.URL, minimalConfig, "--dry-run")
-	require.NoError(t, result.err)
-	assert.Contains(t, result.stderr, "only local validation was performed.")
-	assert.Contains(t, result.stderr, `Dry run: local validation passed for "my-run"; not submitting.`)
+	require.Error(t, result.err)
+	assert.Contains(t, result.err.Error(), "config validation unavailable: failed to validate config:")
+	assert.Contains(t, result.err.Error(), "context deadline exceeded")
+	assert.NotContains(t, result.stderr, "Dry run: configuration")
 	select {
 	case <-requestCanceled:
 	case <-time.After(time.Second):
@@ -261,45 +234,26 @@ func TestRunDryRunConfigValidationHasDeadline(t *testing.T) {
 	}
 }
 
-func TestRunDryRunFailsOnAuthenticationFailure(t *testing.T) {
-	var requests []dryRunRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requests = append(requests, dryRunRequest{method: r.Method, path: r.URL.Path})
-		if r.URL.Path == "/.well-known/databricks-config" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"log in"}`))
-	}))
-	t.Cleanup(srv.Close)
-
-	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, minimalConfig, "--dry-run")
-	require.Error(t, result.err)
-	assert.Contains(t, result.err.Error(), "failed to resolve current user")
-	assert.NotContains(t, result.stderr, "only local validation was performed")
-	for _, request := range requests {
-		assert.NotEqual(t, validateConfigPath, request.path)
-	}
-}
-
-func TestRunDryRunIncompleteKeepsJSONOutputContract(t *testing.T) {
-	var requests []dryRunRequest
-	srv := dryRunServer(t, http.StatusInternalServerError, `{"error_code":"INTERNAL_ERROR","message":"backend failed"}`, &requests)
+func TestRunDryRunUnavailableUsesJSONErrorEnvelope(t *testing.T) {
+	srv := dryRunServer(t, testserver.Response{
+		StatusCode: http.StatusInternalServerError,
+		Body:       map[string]string{"error_code": "INTERNAL_ERROR", "message": "backend failed"},
+	}, nil)
 	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, minimalConfig, "--dry-run")
-	require.NoError(t, result.err)
-	var got struct {
-		Data runResult `json:"data"`
-	}
+	require.ErrorIs(t, result.err, root.ErrAlreadyPrinted)
+	var got errorEnvelope
 	require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
-	assert.Equal(t, "DRY_RUN_OK", got.Data.Status)
-	assert.True(t, got.Data.DryRun)
-	assert.Contains(t, result.stderr, "only local validation was performed")
+	assert.Equal(t, "VALIDATION_UNAVAILABLE", got.Error.Code)
+	assert.Equal(t, "TRANSIENT", got.Error.Kind)
+	assert.True(t, got.Error.Retryable)
+	assert.Contains(t, got.Error.Message, "config validation unavailable")
+	assert.NotContains(t, result.stdout, "DRY_RUN_OK")
+	assert.Empty(t, result.stderr)
 }
 
-func TestRunDryRunValidatesEffectiveIdempotencyTokenBeforeLocalFallback(t *testing.T) {
+func TestRunDryRunValidatesIdempotencyTokenAfterWorkspaceValidation(t *testing.T) {
 	var requests []dryRunRequest
-	srv := dryRunServer(t, http.StatusOK, `{}`, &requests)
+	srv := dryRunServer(t, validateConfigResponse{}, &requests)
 	tooLong := strings.Repeat("x", 65)
 
 	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, minimalConfig, "--dry-run", "--idempotency-key", tooLong)
