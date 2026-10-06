@@ -128,6 +128,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	r := b.Config.Resources
 	for i := range r.Pipelines {
+		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 		if r.Pipelines[i].Development {
 			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}

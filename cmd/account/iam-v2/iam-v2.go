@@ -109,6 +109,9 @@ Create a direct group membership.
 
   Creates a group membership (assigns a principal to a group).
 
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.
     PRINCIPAL_ID: Internal ID of the principal in Databricks.`
@@ -708,6 +711,9 @@ Delete a direct group membership.
 
   Deletes a group membership (unassigns a principal from a group).
 
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
+
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.
     PRINCIPAL_ID: Required. Internal ID of the principal to be unassigned from the group.`
@@ -776,6 +782,9 @@ func newDeleteGroup() *cobra.Command {
 Delete a group in the account.
 
   Deletes a group from the Databricks account by its internal ID.
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
 
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.`
@@ -2590,6 +2599,9 @@ Update a group in the account.
   When AIM is enabled and the group is an external identity (its external_id is
   set), only external_id can be updated; its other fields are sourced from your
   identity provider.
+
+  Authorization: the caller must be an account admin or a manager of the group
+  (holds the roles/group.manager role on it).
 
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.
