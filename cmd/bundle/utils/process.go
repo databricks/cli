@@ -579,7 +579,7 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{}, err
 	}
 	if envEngine == engine.EngineTerraform {
-		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedEnvMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil

@@ -3,5 +3,5 @@
 >>> musterr [CLI] pipelines deploy
 Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
 
-Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+Unset the DATABRICKS_BUNDLE_ENGINE environment variable (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
 See https://docs.databricks.com/dev-tools/bundles/direct for details

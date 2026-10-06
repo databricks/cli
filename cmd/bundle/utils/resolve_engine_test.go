@@ -52,3 +52,18 @@ func TestResolveEngineSettingInvalidEnvVarIgnoredWhenConfigSet(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, engine.EngineDirect, result.Type)
 }
+
+func TestResolveEngineSettingTerraformEnvVar(t *testing.T) {
+	ctx := env.Set(t.Context(), engine.EnvVar, "terraform")
+	b := &bundle.Bundle{Config: config.Root{}}
+	_, err := ResolveEngineSetting(ctx, b)
+	assert.EqualError(t, err, engine.TerraformRemovedEnvMessage)
+}
+
+func TestResolveEngineSettingTerraformConfig(t *testing.T) {
+	// The config takes priority, so it is the setting to remove even if the env var also says terraform.
+	ctx := env.Set(t.Context(), engine.EnvVar, "terraform")
+	b := &bundle.Bundle{Config: config.Root{Bundle: config.Bundle{Engine: engine.EngineTerraform}}}
+	_, err := ResolveEngineSetting(ctx, b)
+	assert.EqualError(t, err, engine.TerraformRemovedMessage)
+}
