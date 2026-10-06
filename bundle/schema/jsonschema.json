@@ -535,7 +535,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "libraries": {
-                        "description": "A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.",
+                        "description": "A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.Library"
                       },
                       "lifecycle": {
@@ -1580,7 +1580,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "started": {
-                        "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.",
+                        "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.",
                         "$ref": "#/$defs/bool"
                       }
                     },

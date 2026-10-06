@@ -1218,8 +1218,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
-		// gets deployed and saved. The terraform engine leaves the escape in place for
-		// Terraform itself to unescape; the direct engine has to do it here.
+		// gets deployed and saved.
 		//
 		// This runs on the typed state rather than the dynamic config so that
 		// extractReferences below still sees the escaped form and does not mistake

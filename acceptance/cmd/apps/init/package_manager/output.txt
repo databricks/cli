@@ -1,0 +1,501 @@
+
+=== Missing pnpm fails before creating files, and the same name can be retried
+>>> [CLI] apps init --name retry-app --template pnpm-template
+Error: pnpm is unavailable; use --package-manager npm, install pnpm with corepack enable pnpm or npx get-pnpm, or use --skip-install: exec: "pnpm": executable file not found in PATH
+
+>>> [CLI] apps init --name retry-app --template pnpm-template --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/retry-app
+  Files: 2
+
+  Next steps:
+
+    cd retry-app
+    pnpm install --frozen-lockfile && pnpm run dev
+
+"pnpm@10.17.1+sha224.abc"
+
+=== Missing npm also fails before creating files
+>>> [CLI] apps init --name missing-npm --template npm-only-template
+Error: npm is unavailable; install it and retry, or use --skip-install to scaffold without running setup: exec: "npm": executable file not found in PATH
+
+=== Explicit manager values must be nonempty and supported
+>>> [CLI] apps init --name invalid-manager --package-manager= --skip-install
+Error: --package-manager must be npm or pnpm
+
+>>> [CLI] apps init --name invalid-manager --package-manager yarn --skip-install
+Error: unknown package manager "yarn" (allowed: npm, pnpm)
+
+=== Python templates reject an explicit Node.js package manager
+>>> [CLI] apps init --name python-app --template python-template --package-manager npm --skip-install
+Error: --package-manager is only supported for Node.js templates; remove the flag for this template
+
+>>> [CLI] apps init --name python-app --template python-pip-template --package-manager npm --skip-install
+Error: --package-manager is only supported for Node.js templates; remove the flag for this template
+
+>>> [CLI] apps init --name python-app --template python-template --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/python-app
+  Files: 1
+
+  Next steps:
+
+    cd python-app
+    uv sync && uv run python app.py
+
+
+=== Pnpm includes development dependencies and preserves the template pin
+>>> NODE_ENV=production [CLI] apps init --name pnpm-installed --template pnpm-template
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/pnpm-installed
+  Files: 2
+
+  Next steps:
+
+    cd pnpm-installed
+    pnpm run dev
+
+pnpm@10.17.1+sha224.abc
+
+>>> NODE_ENV=production CLI_TEST_INSTALL_MODE=retry [CLI] apps init --name pnpm-retried --template pnpm-template
+Warn: Background install failed: exit status 1, will retry during project initialization
+✔ Creating project
+✔ Installing dependencies
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/pnpm-retried
+  Files: 2
+
+  Next steps:
+
+    cd pnpm-retried
+    pnpm run dev
+
+pnpm@10.17.1+sha224.abc
+
+=== Failed installs remove the project so the same name can be retried
+>>> CLI_TEST_INSTALL_MODE=fail [CLI] apps init --name install-failed --template pnpm-template
+Warn: Background install failed: exit status 1, will retry during project initialization
+✔ Creating project
+Error: Failed to install dependencies: exit status 1
+
+>>> [CLI] apps init --name install-failed --template pnpm-template
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/install-failed
+  Files: 2
+
+  Next steps:
+
+    cd install-failed
+    pnpm run dev
+
+
+=== Validation after background preparation cancels installation and removes files
+>>> CLI_TEST_INSTALL_MODE=wait [CLI] apps init --name validation-failed --template pnpm-template --run invalid
+Error: invalid --run value: "invalid" (must be none, dev, or dev-remote)
+
+=== Failed background preparation is cleaned up even without an installer channel
+>>> [CLI] apps init --name preparation-failed --template broken-template
+Warn: Failed to prepare package.json: package.json must contain a JSON object, skipping background install
+Error: load manifest: parse manifest: json: cannot unmarshal array into Go value of type manifest.Manifest
+
+=== Failed setup removes the project
+>>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name setup-failed --template setup-template
+✔ Installing dependencies
+✔ Creating project
+Error: Failed to run appkit setup: exit status 1
+
+=== In-place failures preserve the current directory and existing git metadata
+>>> CLI_TEST_INSTALL_MODE=fail [CLI] apps init --name . --template ../pnpm-template
+Warn: Background install failed: exit status 1, will retry during project initialization
+✔ Creating project
+Warn: scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)
+Error: Failed to install dependencies: exit status 1
+
+=== A failed dev command preserves the completed project
+>>> [CLI] apps init --name dev-failed --template pnpm-template --run dev
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/dev-failed
+  Files: 2
+
+
+Starting development server (pnpm run dev)...
+dev failed
+Error: exit status 1
+
+>>> [CLI] apps init --name test-app-pnpm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-pnpm
+  Files: 6
+
+  Next steps:
+
+    cd test-app-pnpm
+    pnpm install --frozen-lockfile && pnpm run dev
+
+=== test-app-pnpm/app.yaml ===
+display_name: "test-app-pnpm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+=== test-app-pnpm/package.json ===
+{
+  "build": "pnpm run build:server && pnpm run build:client",
+  "build:server": "node --version",
+  "build:client": "node --version",
+  "optional": "pnpm run --if-present missing",
+  "required": "pnpm run --if-present false missing",
+  "quoted": "pnpm run build:server '\"--label\"'",
+  "quiet": "pnpm run --silent build:server --silent",
+  "env-build": "env NODE_ENV=production pnpm run build:server",
+  "predev": "pnpm run sync && pnpm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+"pnpm@11.0.8"
+{
+  "lodash": "4.17.21"
+}
+
+>>> [CLI] apps init --name test-app-npm --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-npm
+  Files: 6
+
+  Next steps:
+
+    cd test-app-npm
+    npm ci && npm run dev
+
+=== test-app-npm/app.yaml ===
+display_name: "test-app-npm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+=== test-app-npm/package.json ===
+{
+  "build": "npm run build:server && npm run build:client",
+  "build:server": "node --version",
+  "build:client": "node --version",
+  "optional": "npm run missing --if-present",
+  "required": "npm run missing --if-present false",
+  "quoted": "npm run build:server '\"--label\"'",
+  "quiet": "npm run build:server --silent -- --silent",
+  "env-build": "env NODE_ENV=production npm run build:server",
+  "predev": "npm run sync && npm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+null
+{
+  "lodash": "4.17.21"
+}
+
+=== Standard template with pnpm
+>>> [CLI] apps init --name standard-app-pnpm --template standard-template --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/standard-app-pnpm
+  Files: 4
+
+  Next steps:
+
+    cd standard-app-pnpm
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "standard-app-pnpm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+{
+  "build": "pnpm run build:server && pnpm run build:client",
+  "build:server": "node --version",
+  "build:client": "node --version",
+  "predev": "pnpm run sync && pnpm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+"pnpm@11.0.8"
+{
+  "lodash": "4.17.21"
+}
+
+=== Standard template with npm
+>>> [CLI] apps init --name standard-app-npm --template standard-template --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/standard-app-npm
+  Files: 4
+
+  Next steps:
+
+    cd standard-app-npm
+    npm ci && npm run dev
+
+display_name: "standard-app-npm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+{
+  "build": "npm run build:server && npm run build:client",
+  "build:server": "node --version",
+  "build:client": "node --version",
+  "predev": "npm run sync && npm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+null
+{
+  "lodash": "4.17.21"
+}
+
+=== Lockless templates reject installation before creating the project
+>>> [CLI] apps init --name lockless-app-npm --template standard-template --package-manager npm
+Error: template has no npm-shrinkwrap.json or package-lock.json required by "npm ci"; add npm-shrinkwrap.json or package-lock.json to the template or use --skip-install to scaffold without installing dependencies
+
+>>> [CLI] apps init --name lockless-app-pnpm --template standard-template --package-manager pnpm
+Error: template has no pnpm-lock.yaml required by "pnpm install --frozen-lockfile"; add pnpm-lock.yaml to the template or use --skip-install to scaffold without installing dependencies
+
+=== Npm-only custom template rejects pnpm before copying
+>>> [CLI] apps init --name incompatible-app --template npm-only-template --package-manager pnpm --skip-install
+Error: template has package-lock.json but no pnpm-lock.yaml required by "pnpm install --frozen-lockfile"; use --package-manager npm or add pnpm-lock.yaml to the template
+
+=== Npm-only custom template selects npm quietly
+>>> [CLI] apps init --name compatible-app --template npm-only-template --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/compatible-app
+  Files: 2
+
+  Next steps:
+
+    cd compatible-app
+    npm ci && npm run dev
+
+"npm@9.9.4"
+
+=== Npm records the installed version in a plain template
+>>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-app --template npm-only-template --package-manager npm
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/installed-app
+  Files: 2
+
+  Next steps:
+
+    cd installed-app
+    npm run dev
+
+npm@11.4.1
+
+=== Npm records the installed version in a Go template
+>>> CLI_TEST_NPM_VERSION=10.8.3 [CLI] apps init --name rendered-app --template install-template --package-manager npm
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/rendered-app
+  Files: 2
+
+  Next steps:
+
+    cd rendered-app
+    npm run dev
+
+npm@10.8.3
+
+=== Npm version detection failure stops before creating the project
+>>> [CLI] apps init --name failed-app --template npm-only-template --package-manager npm
+Error: detect npm version; ensure npm is installed and working, or use --skip-install: exit status 1
+
+=== Npm invalid version stops before creating the project
+>>> CLI_TEST_NPM_VERSION=invalid [CLI] apps init --name invalid-app --template npm-only-template --package-manager npm
+Error: npm --version returned invalid version "invalid"; ensure npm is working, or use --skip-install
+
+=== Npm empty version stops before creating the project
+>>> CLI_TEST_NPM_VERSION= [CLI] apps init --name empty-app --template npm-only-template --package-manager npm
+Error: npm --version returned invalid version ""; ensure npm is working, or use --skip-install
+
+=== Version-like branch keeps pnpm
+>>> [CLI] apps init --name branch-app --branch 0.81-maintenance --skip-install
+✔ Cloning template (branch 0.81-maintenance)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/branch-app
+  Files: 6
+
+  Next steps:
+
+    cd branch-app
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "branch-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+"pnpm@11.0.8"
+
+=== First dual-manager template version keeps pnpm
+>>> [CLI] apps init --name dual-manager-app --version 0.82.0 --package-manager pnpm --skip-install
+✔ Cloning template (version 0.82.0)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/dual-manager-app
+  Files: 6
+
+  Next steps:
+
+    cd dual-manager-app
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "dual-manager-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+"pnpm run build:server && pnpm run build:client"
+"pnpm@11.0.8"
+
+=== Version downgrade uses npm throughout
+>>> [CLI] apps init --name older-app --version 0.81.0 --skip-install
+✔ Cloning template (version 0.81.0)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/older-app
+  Files: 6
+
+  Next steps:
+
+    cd older-app
+    npm ci && npm run dev
+
+display_name: "older-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+"npm run build:server && npm run build:client"
+null
+
+=== Explicit pnpm on an older template warns before selecting npm
+>>> [CLI] apps init --name explicit-older-app --version 0.81.0 --package-manager pnpm --skip-install
+✔ Cloning template (version 0.81.0)
+Warn: Package manager "pnpm" is not supported for AppKit version 0.81.0, using npm instead
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/explicit-older-app
+  Files: 6
+
+  Next steps:
+
+    cd explicit-older-app
+    npm ci && npm run dev
+
+null
+
+=== Missing version falls back to the embedded template and its package manager
+>>> DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false [CLI] apps init --name fallback-app --skip-install
+Warn: Template version not found, falling back to embedded version 0.57.0
+✔ Cloning template (version 0.57.0)
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/fallback-app
+  Files: 6
+
+  Next steps:
+
+    cd fallback-app
+    npm ci && npm run dev
+
+display_name: "fallback-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+"npm run build:server && npm run build:client"
+null
+
+=== Version downgrade resolves the installed npm pin
+>>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-older-app --version 0.81.0
+✔ Cloning template (version 0.81.0)
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/installed-older-app
+  Files: 6
+
+  Next steps:
+
+    cd installed-older-app
+    npm run dev
+
+"npm@11.4.1"
+npm@11.4.1

@@ -1207,7 +1207,7 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, successStyle.Render("✔ Project created successfully!"))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
+	cmdio.LogString(ctx, dimStyle.Render("  Location: "+filepath.ToSlash(outputDir)))
 	cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
 
 	if nextStepsCmd != "" {

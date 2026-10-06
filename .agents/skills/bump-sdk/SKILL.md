@@ -50,8 +50,8 @@ go test ./acceptance -run '^TestAccept$' -timeout=60m       # MUST pass on its o
 ```
 
 The verify pass is not optional.
-Bundle tests run under an `EnvMatrix` of both engines (`terraform`, `direct`).
-When a schema change makes one engine error while the other succeeds, the variants produce different output; `-update` runs both and each overwrites the other's `output.txt`, so it can silently settle on the passing variant and report `ok` while the golden is actually wrong.
+Many bundle tests run under an `EnvMatrix` (e.g. `DMS`, `READPLAN`).
+When a schema change makes one variant error while another succeeds, the variants produce different output; `-update` runs all of them and each overwrites the other's `output.txt`, so it can silently settle on the passing variant and report `ok` while the golden is actually wrong.
 Only the non-update run catches this.
 (Ignore `rejecting_proxy.go: blocking proxy` log lines, which are normal.
 A test that times out under full parallel load but passes when run alone is a flake, not a regression.)

@@ -18,7 +18,7 @@ const (
 )
 
 // Default is used when the user has not set the value, both for new bundles and
-// for existing terraform deployments (which are migrated to it after a deploy).
+// for existing terraform deployments (whose state is migrated to it before the command runs).
 const Default = EngineDirect
 
 // TerraformRemovedMessage is the error text shown when a bundle pins the removed
