@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"io"
 	"io/fs"
 	"os"
@@ -13,7 +14,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -91,8 +94,9 @@ func testVars() templateVars {
 			Content: "WH_ID=abc123",
 			Example: "WH_ID=your_sql_warehouse_id",
 		},
-		AppEnv:  "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
-		Plugins: map[string]*pluginVar{"analytics": {}},
+		AppEnv:         "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
+		PackageManager: "pnpm",
+		Plugins:        map[string]*pluginVar{"analytics": {}},
 	}
 }
 
@@ -242,6 +246,29 @@ func TestExecuteTemplateNewKeys(t *testing.T) {
 			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, string(result))
+		})
+	}
+}
+
+func TestPackageManagerTemplateVariable(t *testing.T) {
+	ctx := t.Context()
+	tests := []struct {
+		name           string
+		packageManager string
+	}{
+		{"pnpm", "pnpm"},
+		{"npm", "npm"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vars := testVars()
+			vars.PackageManager = tt.packageManager
+			input := "['{{.packageManager}}', 'run', 'start']"
+			result, err := executeTemplate(ctx, "test.yaml", []byte(input), vars)
+			require.NoError(t, err)
+			expected := "['" + tt.packageManager + "', 'run', 'start']"
+			assert.Equal(t, expected, string(result))
 		})
 	}
 }
@@ -980,29 +1007,31 @@ func skipIfNoNpm(t *testing.T) {
 	}
 }
 
-func TestStartBackgroundNpmInstall_NoLockFile(t *testing.T) {
+func TestStartBackgroundInstall_NoLockFile(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()
 
 	// Only package.json, no lock file
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
+	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	assert.Nil(t, ch)
 }
 
-func TestStartBackgroundNpmInstall_NoPackageJSON(t *testing.T) {
+func TestStartBackgroundInstall_NoPackageJSON(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()
 
 	// Only lock file, no package.json
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{}`), 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
+	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	assert.Nil(t, ch)
 }
 
-func TestStartBackgroundNpmInstall_CopiesFiles(t *testing.T) {
+func TestStartBackgroundInstall_CopiesFiles(t *testing.T) {
 	skipIfNoNpm(t)
 
 	srcDir := t.TempDir()
@@ -1013,7 +1042,8 @@ func TestStartBackgroundNpmInstall_CopiesFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "my-app")
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
+	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "my-app", m)
 	require.NotNil(t, ch)
 
 	// Drain the channel to avoid goroutine leak (npm ci will fail on fake data)
@@ -1031,7 +1061,7 @@ func TestStartBackgroundNpmInstall_CopiesFiles(t *testing.T) {
 	assert.Equal(t, lockJSON, gotLock)
 }
 
-func TestStartBackgroundNpmInstall_CopiesFileDeps(t *testing.T) {
+func TestStartBackgroundInstall_CopiesFileDeps(t *testing.T) {
 	skipIfNoNpm(t)
 
 	srcDir := t.TempDir()
@@ -1045,7 +1075,8 @@ func TestStartBackgroundNpmInstall_CopiesFileDeps(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
+	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	require.NotNil(t, ch)
 	<-ch
 
@@ -1055,7 +1086,7 @@ func TestStartBackgroundNpmInstall_CopiesFileDeps(t *testing.T) {
 	assert.Equal(t, tgzContent, copied)
 }
 
-func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
+func TestStartBackgroundInstall_TemplateSubstitution(t *testing.T) {
 	skipIfNoNpm(t)
 
 	srcDir := t.TempDir()
@@ -1066,7 +1097,8 @@ func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "cool-project")
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
+	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "cool-project", m)
 	require.NotNil(t, ch)
 	<-ch
 
@@ -1074,6 +1106,87 @@ func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(got), `"cool-project"`)
 	assert.NotContains(t, string(got), "{{.projectName}}")
+}
+
+const (
+	backgroundInstallHelperEnv   = "CLI_TEST_BACKGROUND_INSTALL_MANAGER"
+	backgroundInstallPinEnv      = "CLI_TEST_BACKGROUND_INSTALL_PIN"
+	backgroundInstallLockfileEnv = "CLI_TEST_BACKGROUND_INSTALL_LOCKFILE"
+	backgroundInstallNpmrc       = "enable-pre-post-scripts=true\n"
+	backgroundInstallWorkspace   = "packages:\n  - '.'\noverrides:\n  lodash: 4.17.21\nallowBuilds:\n  esbuild: true\n"
+)
+
+func TestStartBackgroundInstall_PreparesSelectedManager(t *testing.T) {
+	for _, tt := range []struct {
+		manager   string
+		lockfiles []string
+	}{
+		{"npm", []string{"package-lock.json"}},
+		{"npm", []string{"npm-shrinkwrap.json"}},
+		{"npm", []string{"npm-shrinkwrap.json", "package-lock.json"}},
+		{"pnpm", []string{"pnpm-lock.yaml"}},
+	} {
+		for _, configName := range []string{".npmrc", "_npmrc"} {
+			t.Run(tt.manager+"/"+strings.Join(tt.lockfiles, "+")+"/"+configName, func(t *testing.T) {
+				t.Setenv(backgroundInstallHelperEnv, tt.manager)
+				t.Setenv(backgroundInstallLockfileEnv, tt.lockfiles[0])
+				srcDir, destDir := t.TempDir(), t.TempDir()
+				m, err := pkgmanager.Resolve(tt.manager)
+				require.NoError(t, err)
+				if tt.manager == "npm" {
+					m.Pin = "npm@11.4.1"
+				}
+				t.Setenv(backgroundInstallPinEnv, m.Pin)
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"{{.projectName}}","packageManager":"yarn@1.22.22"}`), 0o644))
+				for _, name := range tt.lockfiles {
+					require.NoError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("lockfile"), 0o644))
+				}
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "pnpm-workspace.yaml"), []byte(backgroundInstallWorkspace), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, configName), []byte(backgroundInstallNpmrc), 0o644))
+				m.Name, err = os.Executable()
+				require.NoError(t, err)
+				m.InstallArgs = append([]string{"-test.run=^TestBackgroundInstallHelper$", "--"}, m.InstallArgs...)
+
+				ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
+				require.NotNil(t, ch)
+				require.NoError(t, <-ch)
+			})
+		}
+	}
+}
+
+// TestBackgroundInstallHelper checks the files visible to the installer process,
+// so the test does not depend on a locally installed package manager or shell.
+func TestBackgroundInstallHelper(t *testing.T) {
+	manager := os.Getenv(backgroundInstallHelperEnv)
+	if manager == "" {
+		return
+	}
+	m, err := pkgmanager.Resolve(manager)
+	require.NoError(t, err)
+	assert.Equal(t, m.InstallArgs, flag.Args())
+	data, err := os.ReadFile("package.json")
+	require.NoError(t, err)
+	var pkg map[string]any
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	assert.Equal(t, "test-app", pkg["name"])
+	assert.Equal(t, os.Getenv(backgroundInstallPinEnv), pkg["packageManager"])
+	lockfile, err := m.FindLockfile(".")
+	require.NoError(t, err)
+	assert.Equal(t, os.Getenv(backgroundInstallLockfileEnv), lockfile)
+	data, err = os.ReadFile(lockfile)
+	require.NoError(t, err)
+	assert.Equal(t, "lockfile", string(data))
+	data, err = os.ReadFile(".npmrc")
+	require.NoError(t, err)
+	assert.Equal(t, backgroundInstallNpmrc, string(data))
+	if m.WorkspaceConfigName != "" {
+		data, err = os.ReadFile(m.WorkspaceConfigName)
+		require.NoError(t, err)
+		assert.Equal(t, backgroundInstallWorkspace, string(data))
+	} else {
+		assert.NoFileExists(t, "pnpm-workspace.yaml")
+	}
 }
 
 // makeChildDir creates and returns an empty subdirectory of t.TempDir() with
@@ -1143,9 +1256,10 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 
 	ctx := cmdio.MockDiscard(t.Context())
 	err := runCreate(ctx, createOptions{
-		name:         prompt.InPlaceName,
-		nameProvided: true,
-		outputDir:    "elsewhere",
+		name:           prompt.InPlaceName,
+		nameProvided:   true,
+		outputDir:      "elsewhere",
+		packageManager: "pnpm",
 	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
@@ -1156,13 +1270,67 @@ func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
 	for _, runMode := range []string{"dev", "dev-remote"} {
 		t.Run(runMode, func(t *testing.T) {
 			err := runCreate(ctx, createOptions{
-				name:         "my-app",
-				nameProvided: true,
-				skipInstall:  true,
-				run:          runMode,
+				name:           "my-app",
+				nameProvided:   true,
+				skipInstall:    true,
+				run:            runMode,
+				packageManager: "pnpm",
 			})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
+		})
+	}
+}
+
+func TestRunCreateCleansUpPartialScaffold(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		files   map[string]string
+		manager string
+		wantErr string
+	}{
+		{
+			name:    "copy",
+			files:   map[string]string{"a.txt": "copied first", "z/child.txt": "directory", "z.tmpl": "conflicts with directory"},
+			wantErr: "open ",
+		},
+		{
+			name:    "prune",
+			files:   map[string]string{"package.json": `{}`, "package-lock.json": `{}`, "pnpm-lock.yaml/child.txt": "cannot remove nonempty directory"},
+			manager: "npm",
+			wantErr: "prune package manager artifacts",
+		},
+		{
+			name:    "package JSON",
+			files:   map[string]string{"package.json": `null`},
+			wantErr: "update package.json",
+		},
+		{
+			name:    "bundle YAML",
+			files:   map[string]string{"appkit.plugins.json": `{"plugins":{}}`, "databricks.yml": "bundle: ["},
+			wantErr: "update project name",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			src, output := t.TempDir(), t.TempDir()
+			for name, content := range tt.files {
+				path := filepath.Join(src, filepath.FromSlash(name))
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+				require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+			}
+			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), nil)
+			err := runCreate(ctx, createOptions{
+				templatePath:          src,
+				name:                  "test-app",
+				nameProvided:          true,
+				outputDir:             output,
+				skipInstall:           true,
+				packageManager:        tt.manager,
+				packageManagerChanged: tt.manager != "",
+			})
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.NoDirExists(t, filepath.Join(output, "test-app"))
+			assert.DirExists(t, src)
 		})
 	}
 }
@@ -1307,7 +1475,7 @@ func TestReplaceProjectName(t *testing.T) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(tt.pkgJSON), 0o644))
 			}
 
-			err := replaceProjectName(dir, tt.newName)
+			err := replaceProjectName(dir, tt.newName, pkgmanager.Default())
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -1349,14 +1517,14 @@ func TestReplaceProjectName(t *testing.T) {
 
 func TestReplaceProjectNameNoDatabricksYml(t *testing.T) {
 	dir := t.TempDir()
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	require.Error(t, err)
 }
 
 func TestReplaceProjectNameMalformedYAML(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("{{invalid yaml"), 0o644))
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "parse")
 }
 
@@ -1364,7 +1532,7 @@ func TestReplaceProjectNameMalformedPackageJSON(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: old\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte("{invalid json}"), 0o644))
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "parse package.json")
 }
 
@@ -1376,7 +1544,7 @@ func TestReplaceProjectNameSymlinkRefused(t *testing.T) {
 	require.NoError(t, os.WriteFile(realFile, []byte("bundle:\n  name: old\n"), 0o644))
 	require.NoError(t, os.Symlink(realFile, filepath.Join(dir, bundleConfigFile)))
 
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "symlink")
 }
 
@@ -1614,4 +1782,31 @@ func TestParseSetValuesAcceptsBindingField(t *testing.T) {
 
 	_, err = parseSetValues([]string{"genie.genie-space.other=x"}, m)
 	assert.ErrorContains(t, err, `no resource with key "genie-space" and field "other"`)
+}
+
+func TestPackageManagerValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		packageManager string
+		shouldError    bool
+		errorMsg       string
+	}{
+		{"pnpm valid", "pnpm", false, ""},
+		{"npm valid", "npm", false, ""},
+		{"unknown invalid", "unknown", true, "unknown package manager"},
+		{"empty defaults to pnpm", "", false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the package manager resolver directly
+			_, err := pkgmanager.Resolve(tt.packageManager)
+			if tt.shouldError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

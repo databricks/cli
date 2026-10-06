@@ -8,8 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-// reverseInterpolate reverses the terraform.Interpolate transformation.
-// It converts terraform-style resource references back to bundle-style.
+// reverseInterpolate converts terraform-style resource references to bundle-style.
 // Example: ${databricks_pipeline.my_etl.id} → ${resources.pipelines.my_etl.id}
 func reverseInterpolate(root dyn.Value) (dyn.Value, error) {
 	return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {

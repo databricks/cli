@@ -51,8 +51,8 @@ func newImportCommand() *cobra.Command {
 		Long: `(Experimental) Import an existing Databricks app and convert it to a bundle configuration.
 
 This command creates a new bundle directory with the app configuration, downloads
-the app source code, binds the bundle to the existing app, and deploys it using
-direct deployment mode. This allows you to manage the app as code going forward.
+the app source code, binds the bundle to the existing app, and deploys it. This
+allows you to manage the app as code going forward.
 
 The command will:
 1. Create an empty bundle folder with databricks.yml

@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/libs/apps/packagejson"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
@@ -69,7 +71,7 @@ type Validation interface {
 // Returns nil if no validator is applicable.
 func GetProjectValidator(workDir string) Validation {
 	// Check for Node.js project (package.json exists)
-	packageJSON := filepath.Join(workDir, "package.json")
+	packageJSON := filepath.Join(workDir, packagejson.FileName)
 	if _, err := os.Stat(packageJSON); err == nil {
 		return &ValidationNodeJs{}
 	}
