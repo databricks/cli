@@ -572,9 +572,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
-		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
+		return errors.New(`deployment history is enabled for an existing Direct deployment that has not been migrated
 
-Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
+Run "databricks bundle deployment migrate --enable-history" before deploying`)
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
@@ -882,6 +882,32 @@ func (db *DeploymentState) Persist() error {
 	return db.unlockedSave()
 }
 
+// PersistDeploymentHistoryMarker atomically replaces the local direct state with the tombstone a
+// DMS-backed deployment uses. It does not mutate the open in-memory state, so a failed remote push
+// can still be retried from the direct state during this process.
+func (db *DeploymentState) PersistDeploymentHistoryMarker() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.Path == "" {
+		return errors.New("internal error: DeploymentState must be opened first")
+	}
+
+	header := db.Data.Header
+	header.Features = maps.Clone(header.Features)
+	if header.Features == nil {
+		header.Features = make(map[string]struct{}, 1)
+	}
+	header.Features[FeatureDeploymentHistory] = struct{}{}
+	header.Serial = 0
+	header.CLIVersion = build.GetInfo().Version
+
+	return db.unlockedWrite(Database{
+		Header: header,
+		State:  map[string]ResourceEntry{},
+	})
+}
+
 // IsOpen reports whether the state has been opened (for read or write). It lets
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.
@@ -970,7 +996,12 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
-	data, err := json.MarshalIndent(db.dataForFile(), "", " ")
+	return db.unlockedWrite(db.dataForFile())
+}
+
+// unlockedWrite persists data at db.Path. Callers must hold db.mu.
+func (db *DeploymentState) unlockedWrite(state Database) error {
+	data, err := json.MarshalIndent(state, "", " ")
 	if err != nil {
 		return err
 	}

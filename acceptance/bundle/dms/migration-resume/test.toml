@@ -1,0 +1,2 @@
+# This test creates a direct state first and enables DMS only for the migration command.
+EnvMatrix.DMS = [""]

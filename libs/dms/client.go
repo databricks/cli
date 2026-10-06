@@ -17,6 +17,10 @@ import (
 // match DeploymentWhsClient.DEPLOYMENT_NODE_NAME on the service side.
 const DeploymentNodeName = "resources.deployment.json"
 
+// OperationActionTypeMigrate records the one-time transfer of an already-managed resource into
+// deployment history. Keep the literal until the generated SDK includes the newly added API enum.
+const OperationActionTypeMigrate bundledeployments.OperationActionType = "OPERATION_ACTION_TYPE_MIGRATE"
+
 // statePrefix is what a bundle state key carries and a DMS resource key does not: state calls a
 // job "resources.jobs.foo", DMS calls it "jobs.foo". Every exported name here takes the state
 // form; the prefix comes off where a request is built, and back on where a resource is read.

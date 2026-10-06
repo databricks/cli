@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/migrate"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -52,9 +55,10 @@ func getCommonArgs(cmd *cobra.Command) string {
 }
 
 func newMigrateCommand() *cobra.Command {
+	var enableHistory bool
 	cmd := &cobra.Command{
 		Use:   "migrate",
-		Short: "Migrate from Terraform to Direct deployment engine",
+		Short: "Migrate bundle deployment state",
 		Long: `This command converts your bundle from using Terraform for deployment to using
 the Direct deployment engine. It reads resource IDs from the existing Terraform
 state and creates a Direct deployment state file (resources.json) with the same
@@ -62,6 +66,10 @@ lineage and incremented serial number.
 
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
+
+With --enable-history, this command instead migrates an existing Direct deployment
+to the deployment metadata service. The migration completes before any later deploy,
+and resources.json is backed up before DMS becomes authoritative.
 `,
 		Args: root.NoArgs,
 	}
@@ -69,6 +77,7 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 	// --noplancheck kept for backward compatibility; the plan check was removed
 	// because the command no longer invokes the Terraform engine.
 	cmd.Flags().Bool("noplancheck", false, "No-op (kept for compatibility).")
+	cmd.Flags().BoolVar(&enableHistory, "enable-history", false, "Migrate an existing Direct deployment to deployment history.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		extraArgsStr := getCommonArgs(cmd)
@@ -78,10 +87,11 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 		cmd.SetContext(env.Set(cmd.Context(), engine.EnvVar, ""))
 
 		opts := utils.ProcessOptions{
-			AlwaysPull: true,
+			AlwaysPull:                            true,
+			SkipEnforcingDeploymentHistorySetting: enableHistory,
 			// Same options as regular deploy, to ensure bundle config is in the same state
 			FastValidate: true,
-			Build:        true,
+			Build:        !enableHistory,
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
@@ -89,6 +99,9 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 			return err
 		}
 		ctx := cmd.Context()
+		if enableHistory {
+			return migrateToDeploymentHistory(ctx, b, stateDesc)
+		}
 
 		if stateDesc.Lineage == "" {
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
@@ -202,4 +215,35 @@ To undo the migration, remove %s and rename %s to %s
 	}
 
 	return cmd
+}
+
+func migrateToDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+	if !utils.ConfiguresDeploymentHistory(ctx, b) {
+		return errors.New(`deployment history is not enabled for this target
+
+Set experimental.deployment_history: true, then rerun "databricks bundle deployment migrate --enable-history"`)
+	}
+	if stateDesc.SourcePath == "" {
+		return errors.New("no existing Direct deployment state was found; run bundle deploy to create a deployment with history enabled")
+	}
+	if !stateDesc.Engine.IsDirect() {
+		return errors.New(`migration to deployment history requires Direct deployment state
+
+First disable experimental.deployment_history and run "databricks bundle deploy" to migrate the Terraform state. Then re-enable deployment history and rerun this command`)
+	}
+	if stateDesc.IsDMS() {
+		cmdio.LogString(ctx, "Deployment already records deployment history.")
+		return nil
+	}
+
+	_, localPath := b.StateFilenameDirect(ctx)
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+		return err
+	}
+
+	phases.MigrateToDMS(ctx, b)
+	if logdiag.HasError(ctx) {
+		return root.ErrAlreadyPrinted
+	}
+	return nil
 }

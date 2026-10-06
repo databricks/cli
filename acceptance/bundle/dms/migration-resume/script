@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Create a direct deployment with two resources"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "A failed operation leaves resources.json authoritative"
+trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deployment migrate --enable-history
+trace jq '{serial, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
+
+title "Retry migrates only the resource missing from DMS"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deployment migrate --enable-history
+trace print_requests.py --dms --keep //api/2.0/bundle --oneline
+trace print_requests.py --keep --del-field raw_body //resources.json.backup --oneline
+trace jq '{serial, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
+
+rm -f "$OUT_REQUESTS"
