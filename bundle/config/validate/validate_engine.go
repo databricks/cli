@@ -12,7 +12,9 @@ import (
 
 type validateEngine struct{ bundle.RO }
 
-// ValidateEngine validates that the bundle.engine setting is valid.
+// ValidateEngine validates that the bundle.engine setting is valid and warns
+// about the bundle.terraform setting, which has no effect since the Terraform
+// deployment engine was removed.
 func ValidateEngine() bundle.ReadOnlyMutator {
 	return &validateEngine{}
 }
@@ -22,30 +24,40 @@ func (v *validateEngine) Name() string {
 }
 
 func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if tf := dyn.GetValue(b.Config.Value(), "bundle.terraform"); tf.IsValid() {
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   "bundle.terraform is deprecated and has no effect: " + engine.TerraformRemovedSummary,
+			Locations: tf.Locations(),
+			Paths:     []dyn.Path{dyn.MustPathFromString("bundle.terraform")},
+		})
+	}
+
 	configEngine := b.Config.Bundle.Engine
 	if configEngine == engine.EngineNotSet {
-		return nil
+		return diags
 	}
 
 	loc := dyn.GetValue(b.Config.Value(), "bundle.engine").Location()
 
 	parsed, ok := engine.Parse(string(configEngine))
 	if !ok {
-		return diag.Diagnostics{{
+		return diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
 			Locations: []dyn.Location{loc},
-		}}
+		})
 	}
 
 	if parsed == engine.EngineTerraform {
-		return diag.Diagnostics{{
+		return diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   engine.TerraformRemovedSummary,
 			Detail:    engine.TerraformRemovedDetail,
 			Locations: []dyn.Location{loc},
-		}}
+		})
 	}
 
-	return nil
+	return diags
 }
