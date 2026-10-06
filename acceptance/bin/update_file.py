@@ -32,8 +32,8 @@ new_bytes = new.encode()
 
 # Match the file's line endings so multi-line OLD/NEW work on CRLF checkouts.
 if b"\r\n" in data:
-    old_bytes = old_bytes.replace(b"\n", b"\r\n")
-    new_bytes = new_bytes.replace(b"\n", b"\r\n")
+    old_bytes = old_bytes.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+    new_bytes = new_bytes.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
 
 newdata = data.replace(old_bytes, new_bytes)
 if newdata == data:
