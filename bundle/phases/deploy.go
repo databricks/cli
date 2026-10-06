@@ -76,7 +76,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Apply resources and capture post-apply state. Finalize flushes the WAL to disk and
 	// returns the state; called even if Apply failed so partial progress is saved.
 	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
@@ -154,10 +154,9 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-// stateEngine is the engine the resolved state file uses; requestedEngine is
-// what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for and may differ (used
-// only by the post-deploy migration check).
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, stateEngine engine.EngineType, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
+// requestedEngine is what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for (used only
+// by the migration telemetry in CommitMigration).
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -183,10 +182,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}()
 
 	immutable := b.IsImmutableFolder()
-	if immutable && !stateEngine.IsDirect() {
-		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
-		return
-	}
 
 	if !immutable {
 		if plan != nil {
@@ -256,7 +251,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if plan == nil {
 		// State is already open for read by process.go (or by Migrate)
-		plan = RunPlan(ctx, b, stateEngine)
+		plan = RunPlan(ctx, b)
 	}
 
 	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
@@ -302,14 +297,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	if stateEngine.IsDirect() {
-		// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
-		// and the migration commit above, so a declined deploy never opens a WAL it must discard,
-		// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
+	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
+	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
+	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
+	if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if planFromFile {
@@ -330,8 +323,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
-	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
@@ -360,7 +352,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	deployCore(ctx, b, plan, stateEngine)
+	deployCore(ctx, b, plan)
 
 	if logdiag.HasError(ctx) {
 		return
@@ -379,7 +371,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
+func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		logdiag.LogError(ctx, err)

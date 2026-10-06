@@ -166,6 +166,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		cmd.SetContext(ctx)
 	}
 
+	// Reject an invalid or removed DATABRICKS_BUNDLE_ENGINE before initialization, so
+	// the removal error comes before any initialize-time validation (such as
+	// validate.TFOnlyReferences). A terraform bundle.engine is reported during
+	// initialization by validate.ValidateEngine, with its location.
+	if b.Config.Bundle.Engine == engine.EngineNotSet {
+		if _, err := ResolveEngineSetting(ctx, b); err != nil {
+			return b, nil, err
+		}
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -197,10 +207,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	// Resolve engine setting up front so a garbage DATABRICKS_BUNDLE_ENGINE
-	// value fails every bundle command instead of only the ones that read
-	// state. The resolver is cheap (config lookup + env var read); no reason
-	// to gate it on state-touching options.
+	// Resolve the engine used for state and telemetry. An invalid or removed
+	// DATABRICKS_BUNDLE_ENGINE was already rejected before initialization and a
+	// bad bundle.engine by validate.ValidateEngine, so this only fails for
+	// commands that skip initialization (bundle run -- <cmd>) with a bad
+	// bundle.engine.
 	requiredEngine, err := ResolveEngineSetting(ctx, b)
 	if err != nil {
 		return b, nil, err
@@ -454,7 +465,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
-		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
+		phases.PreDeployChecks(ctx, b, downgradeWarningToError)
 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
@@ -492,7 +503,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan, dmsDeployment)
+		phases.Deploy(ctx, b, outputHandler, requiredEngine, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

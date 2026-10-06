@@ -220,10 +220,9 @@ def main():
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        # Recording only applies to the direct engine, so a terraform run prints the file as-is.
+        # Recording only applies to direct-engine state, so a terraform state file prints as-is.
         recording = os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true"
-        terraform = os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform"
-        if recording and not terraform and not args.no_dms:
+        if recording and filename.endswith("resources.json") and not args.no_dms:
             print_recorded_state(filename, args.target)
         else:
             print_file(filename)
