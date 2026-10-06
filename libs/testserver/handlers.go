@@ -731,7 +731,7 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+	server.Handle("POST", "/api/2.0/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
 		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
@@ -739,7 +739,8 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
-		var bundleID, snapshotID string
+		var relativePath string
+		var acl, canManage []map[string]any
 		for {
 			p, err := mr.NextPart()
 			if err == io.EOF {
@@ -753,20 +754,68 @@ func AddDefaultHandlers(server *Server) {
 				return Response{StatusCode: http.StatusInternalServerError}
 			}
 			switch p.FormName() {
-			case "bundle_id":
-				bundleID = string(data)
-			case "snapshot_id":
-				snapshotID = string(data)
+			case "relative_path":
+				relativePath = string(data)
+			case "access_control_list":
+				_ = json.Unmarshal(data, &acl)
+			case "can_manage_principals":
+				_ = json.Unmarshal(data, &canManage)
 			}
 		}
 
-		// The real API uses the workspace user UUID (not email) in the snapshot path,
+		// The server stores content under a fixed "snapshot" subfolder of the caller's
+		// relative_path. The real API uses the workspace user UUID (not email) in the path,
 		// matching service-principal identities used in cloud acceptance tests.
-		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
-		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relativePath)
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
+		// Record after mkdirs so the snapshot's own creation write is not counted as tampering.
+		req.Workspace.RecordSnapshot(contentPath, relativePath, acl, canManage)
 		return map[string]any{
-			"snapshot": map[string]any{
-				"path": snapshotPath,
+			"name":     "workspaces/snapshotOperations/" + relativePath,
+			"done":     true,
+			"snapshot": map[string]any{"path": contentPath},
+		}
+	})
+
+	// Returns the create-request fields (ACL, can_manage_principals) stored for the snapshot
+	// at the given relative_path. Intended for acceptance test assertions.
+	server.Handle("GET", "/api/2.0/snapshots/info", func(req Request) any {
+		relPath := req.URL.Query().Get("relative_path")
+		// Build the content path the same way the create handler does.
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relPath)
+		rec, ok := req.Workspace.SnapshotInfo(contentPath)
+		if !ok {
+			return Response{
+				StatusCode: http.StatusNotFound,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "Snapshot not found: " + relPath,
+				},
+			}
+		}
+		return rec
+	})
+
+	// Reports whether a snapshot's content was modified out of band.
+	server.Handle("GET", "/api/2.0/snapshots:inspect", func(req Request) any {
+		contentPath := req.URL.Query().Get("snapshot_content_path")
+		dirty, ok := req.Workspace.SnapshotDirty(contentPath)
+		// A path that holds no snapshot is not inspectable, so the API reports NOT_FOUND
+		// rather than calling it clean.
+		if !ok {
+			return Response{
+				StatusCode: http.StatusNotFound,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "Snapshot not found: " + contentPath,
+				},
+			}
+		}
+		return map[string]any{
+			"status": map[string]any{
+				"snapshot_content_path": contentPath,
+				"dirty":                 dirty,
+				"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
 			},
 		}
 	})

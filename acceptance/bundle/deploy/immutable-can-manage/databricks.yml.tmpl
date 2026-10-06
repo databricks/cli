@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle-immutable-can-manage-$UNIQUE_NAME
+
+experimental:
+  immutable_folder: true
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: external-manager@databricks.com
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: spark_python_task
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"

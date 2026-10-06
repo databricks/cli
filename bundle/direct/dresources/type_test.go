@@ -56,7 +56,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
+		"can_manage",
 		"zip_path",
+		"generation",
 	},
 	"job_runs": {
 		// Local-only trigger fingerprints under lifecycle.

@@ -1,0 +1,33 @@
+
+=== Deploy an immutable snapshot
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rewrite the state the way a CLI without this feature wrote it
+=== Deploying on top of that state succeeds and moves to the current layout
+>>> [CLI] bundle deploy
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py
+OK: deployed to the current snapshot layout
+
+=== The check still applies to a deployment carried over from the older layout
+>>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/tampered
+
+>>> musterr [CLI] bundle deploy
+Error: the immutable snapshot of the last deployment was modified outside of the bundle (break glass):
+  /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot
+To deploy a new snapshot and point resources at it, use --force
+
+Files: 0 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-legacy-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

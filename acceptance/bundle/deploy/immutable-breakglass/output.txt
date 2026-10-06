@@ -1,0 +1,43 @@
+
+=== Deploy the immutable snapshot
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py
+
+=== Break the glass out of band
+>>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/tampered
+
+=== Deploy without --force fails
+>>> musterr [CLI] bundle deploy
+Error: the immutable snapshot of the last deployment was modified outside of the bundle (break glass):
+  /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot
+To deploy a new snapshot and point resources at it, use --force
+
+Files: 0 uploaded, 0 deleted
+
+=== Deploy with --force moves to a new snapshot
+>>> [CLI] bundle deploy --force
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-1/snapshot/files/src/main.py
+OK: --force created a new snapshot path
+
+=== Redeploy reuses the new snapshot
+>>> [CLI] bundle deploy
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Third snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-1/snapshot/files/src/main.py
+OK: new snapshot reused on redeploy
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-breakglass-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
