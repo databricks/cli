@@ -8,6 +8,6 @@ trace uv run $UV_ARGS -q $CLI bundle validate --output json | jq '.resources.pip
 trace uv run $UV_ARGS -q $CLI bundle deploy
 rm "$OUT_REQUESTS"
 
-title "Run does not send development, so the deployed false applies"
+title "Run sends development: true from mode: development, ignoring the deployed false"
 trace uv run $UV_ARGS -q $CLI bundle run my_pipeline
 trace print_requests.py //pipelines
