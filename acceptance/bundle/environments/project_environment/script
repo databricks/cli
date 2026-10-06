@@ -1,0 +1,8 @@
+trace $CLI bundle validate -o json | jq '.resources.jobs.notebook | {tasks, environments}'
+
+trace $CLI bundle deploy
+trace print_requests.py //api/2.2/jobs/create | jq '.body | {tasks, environments}'
+
+trace update_file.py resources/job.yml ../pyproject.toml ./pyproject.toml
+trace $CLI bundle deploy
+trace print_requests.py //api/2.2/jobs/reset | jq '.body.new_settings | {tasks, environments}'

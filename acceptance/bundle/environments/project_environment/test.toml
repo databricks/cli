@@ -1,0 +1,3 @@
+# The pinned Terraform provider does not support project_environment.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true

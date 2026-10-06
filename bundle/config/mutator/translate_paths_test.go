@@ -71,8 +71,8 @@ func TestTranslatePathsProjectEnvironment(t *testing.T) {
 			want: "/Workspace/bundle/files/resources/pyproject.toml",
 		},
 		{
-			name: "requirements file with spaces", path: "../env files/requirements.txt", localFile: "env files/requirements.txt",
-			want: "/Workspace/bundle/files/env files/requirements.txt",
+			name: "path with spaces", path: "../env files/pyproject.toml", localFile: "env files/pyproject.toml",
+			want: "/Workspace/bundle/files/env files/pyproject.toml",
 		},
 		{
 			name: "absolute workspace path", path: "/Workspace/shared/pyproject.toml",
@@ -100,19 +100,12 @@ func TestTranslatePathsProjectEnvironment(t *testing.T) {
 			if tc.localFile != "" {
 				touchEmptyFile(t, filepath.Join(dir, tc.localFile))
 			}
-			notebookPath := filepath.Join(dir, "src", "notebooks", "notebook.py")
-			require.NoError(t, os.MkdirAll(filepath.Dir(notebookPath), 0o700))
-			touchNotebookFile(t, notebookPath)
 			job := &resources.Job{
 				JobSettings: jobs.JobSettings{
-					Tasks: []jobs.Task{{
-						TaskKey: "notebook",
-						NotebookTask: &jobs.NotebookTask{
-							NotebookPath: "../src/notebooks/notebook.py",
-						},
+					Environments: []jobs.JobEnvironment{{
 						EnvironmentKey: "project",
+						Spec:           &compute.Environment{ProjectEnvironment: tc.path},
 					}},
-					Environments: []jobs.JobEnvironment{{EnvironmentKey: "project", Spec: &compute.Environment{}}},
 				},
 			}
 			if tc.gitSource {
@@ -130,36 +123,18 @@ func TestTranslatePathsProjectEnvironment(t *testing.T) {
 			}
 			locations := []dyn.Location{{File: filepath.Join(dir, "resources", "job.yml")}}
 			bundletest.SetLocation(b, ".", locations)
-			const field = "resources.jobs.job.environments[0].spec.project_environment"
-			// Until the SDK exposes this field, invoke the mutators directly so
-			// bundle.Apply does not discard it when converting from SDK types.
-			err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, field, dyn.NewValue(tc.path, locations))
-			})
-			require.NoError(t, err)
-			require.NoError(t, mutator.NormalizePaths().Apply(t.Context(), b).Error())
-			err = mutator.TranslatePaths().Apply(t.Context(), b).Error()
+			diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+			err := diags.Error()
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			actual, err := dyn.Get(b.Config.Value(), field)
-			require.NoError(t, err)
 			want := tc.want
 			if tc.sourceLinked {
 				want = filepath.ToSlash(filepath.Join(dir, want))
 			}
-			assert.Equal(t, want, actual.MustString())
-
-			wantNotebook := "/Workspace/bundle/files/src/notebooks/notebook"
-			switch {
-			case tc.gitSource:
-				wantNotebook = "../src/notebooks/notebook.py"
-			case tc.sourceLinked:
-				wantNotebook = filepath.ToSlash(filepath.Join(dir, "src", "notebooks", "notebook"))
-			}
-			assert.Equal(t, wantNotebook, b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+			assert.Equal(t, want, b.Config.Resources.Jobs["job"].Environments[0].Spec.ProjectEnvironment)
 		})
 	}
 }

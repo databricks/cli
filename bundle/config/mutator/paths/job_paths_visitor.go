@@ -58,23 +58,13 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 }
 
 func jobRewritePatterns() []jobRewritePattern {
-	// Base pattern to match all tasks in all jobs.
-	base := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-	)
+	job := dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey())
+	task := job.Append(dyn.Key("tasks"), dyn.AnyIndex())
 
-	taskPatterns := jobTaskRewritePatterns(base)
-	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	patterns := append(taskPatterns, forEachPatterns...)
+	patterns := jobTaskRewritePatterns(task)
+	patterns = append(patterns, jobTaskRewritePatterns(task.Append(dyn.Key("for_each_task"), dyn.Key("task")))...)
 	return append(patterns, jobRewritePattern{
-		dyn.NewPattern(
-			dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
-			dyn.Key("environments"), dyn.AnyIndex(), dyn.Key("spec"), dyn.Key("project_environment"),
-		),
+		job.Append(dyn.Key("environments"), dyn.AnyIndex(), dyn.Key("spec"), dyn.Key("project_environment")),
 		TranslateModeFile,
 		noSkipRewrite,
 	})
