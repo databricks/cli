@@ -173,3 +173,66 @@ func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
 	_, hasMlflowRun := task["mlflow_run"]
 	assert.False(t, hasMlflowRun)
 }
+
+func TestValidateConfigRetriesWithoutEnvironmentForExactCompatibilityError(t *testing.T) {
+	var requests []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != validateConfigPath {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		var body map[string]any
+		if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&body)) {
+			return
+		}
+		requests = append(requests, body)
+		if len(requests) == 1 {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error_code":"MALFORMED_REQUEST","message":"` + unsupportedEnvironmentMessage + `"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	apiClient, err := newDryRunValidationClient(validationTestWorkspaceClient(t, srv.URL))
+	require.NoError(t, err)
+	err = validateConfig(t.Context(), apiClient, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	require.Len(t, requests, 2)
+	assert.Contains(t, requests[0], "environment")
+	delete(requests[0], "environment")
+	assert.Equal(t, requests[0], requests[1])
+}
+
+func TestRejectsValidateConfigEnvironment(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"exact compatibility error", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "MALFORMED_REQUEST", Message: unsupportedEnvironmentMessage}, true},
+		{"wrong status", &apierr.APIError{StatusCode: http.StatusForbidden, ErrorCode: "MALFORMED_REQUEST", Message: unsupportedEnvironmentMessage}, false},
+		{"wrong code", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "INVALID_PARAMETER_VALUE", Message: unsupportedEnvironmentMessage}, false},
+		{"wrong message", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "MALFORMED_REQUEST", Message: "bad request"}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, rejectsValidateConfigEnvironment(tt.err))
+		})
+	}
+}
+
+func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
+	cfg := baseRunConfig()
+	cfg.Environment = &environmentConfig{
+		Version:      stringOrInt{set: true, raw: "databricks_ai_v6"},
+		Dependencies: dependencies{set: true, list: []string{"torch==2.3.0", "numpy"}},
+	}
+
+	request := validateConfigRequest(t.Context(), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+	raw, err := json.Marshal(request["environment"])
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"base_environment":"workspace-base-environments/databricks_ai_v6","dependencies":["torch==2.3.0","numpy"]}`, string(raw))
+}

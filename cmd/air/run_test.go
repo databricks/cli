@@ -200,9 +200,10 @@ func TestRunDryRunValidatesBackendWithoutMutation(t *testing.T) {
 	}
 	require.Len(t, validations, 1)
 	assert.Equal(t, http.MethodPost, validations[0].method)
-	assert.Len(t, validations[0].body, 2)
+	assert.Len(t, validations[0].body, 3)
 	assert.Contains(t, validations[0].body, "task")
 	assert.Contains(t, validations[0].body, "run_options")
+	assert.Equal(t, map[string]any{"environment_version": "6"}, validations[0].body["environment"])
 	task := validations[0].body["task"].(map[string]any)
 	commandPath := task["deployments"].([]any)[0].(map[string]any)["command_path"].(string)
 	assert.True(t, strings.HasPrefix(commandPath, "/Workspace/Users/tester@databricks.com/.air/cli_launch/my-run/my-run_"))

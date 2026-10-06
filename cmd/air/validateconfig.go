@@ -128,8 +128,14 @@ func validateDryRunConfig(ctx context.Context, w *databricks.WorkspaceClient, cf
 // availability fallbacks. The legacy response reports field errors only; it
 // cannot yet distinguish complete success from skipped backend dependencies.
 func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+	request := validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken)
 	var resp validateConfigResponse
-	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, validateConfigRequest(cfg, commandPath, containers, idempotencyToken), &resp)
+	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, request, &resp)
+	if rejectsValidateConfigEnvironment(err) {
+		delete(request, "environment")
+		resp = validateConfigResponse{}
+		err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, request, &resp)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
@@ -137,6 +143,18 @@ func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg
 		return nil
 	}
 	return errors.New(formatConfigErrors(resp.Errors))
+}
+
+const unsupportedEnvironmentMessage = "Cannot find field: environment in message databricks.aicomputemanager.ValidateConfigRequest"
+
+// rejectsValidateConfigEnvironment identifies the one old-backend response for
+// which retrying without the additive environment field is safe.
+func rejectsValidateConfigEnvironment(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok &&
+		apiErr.StatusCode == http.StatusBadRequest &&
+		apiErr.ErrorCode == "MALFORMED_REQUEST" &&
+		apiErr.Message == unsupportedEnvironmentMessage
 }
 
 // classifyValidationFailure separates service failures from caller errors and
@@ -168,11 +186,11 @@ func classifyValidationFailure(err error) (unavailable, retryable bool) {
 	return false, false
 }
 
-// validateConfigRequest builds the {task, run_options} body from the user's config. commandPath is
+// validateConfigRequest builds the {task, run_options, environment} body from the user's config. commandPath is
 // the workspace path where the command script will be uploaded; the caller computes it before this
 // call so the server can validate the real path. `parameters` is intentionally omitted: it is
 // free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
-func validateConfigRequest(cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) map[string]any {
+func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) map[string]any {
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
@@ -211,10 +229,13 @@ func validateConfigRequest(cfg *runConfig, commandPath string, containers []subm
 	if image := cfg.unityCatalogImagePath(); image != "" {
 		task["unity_catalog_image_path"] = image
 	}
+	runtimeVersion, _ := cfg.runtimeVersion()
+	dependencies, _ := cfg.inlineDependencies()
 
 	return map[string]any{
 		"task":        task,
 		"run_options": validateConfigRunOptions(cfg, idempotencyToken),
+		"environment": buildRunEnvironment(dlRuntimeImage(ctx, runtimeVersion), dependencies),
 	}
 }
 
