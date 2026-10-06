@@ -1,6 +1,8 @@
 package paths
 
 import (
+	"slices"
+
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -69,7 +71,23 @@ func jobRewritePatterns() []jobRewritePattern {
 
 	taskPatterns := jobTaskRewritePatterns(base)
 	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	return append(taskPatterns, forEachPatterns...)
+	jobPatterns := []jobRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environment_variables"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("files"),
+				dyn.AnyIndex(),
+			),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
+	}
+	return slices.Concat(taskPatterns, forEachPatterns, jobPatterns)
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
