@@ -37,6 +37,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -319,6 +320,25 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
+	// Download old CLI versions in parallel, overlapping with the builds below.
+	var cli293Path, cli18Path, cli1161Path string
+	var oldCLIs errgroup.Group
+	if !inprocessMode {
+		oldCLIs.Go(func() (err error) {
+			cli293Path, err = downloadCLI(buildDir, "0.293.0")
+			return err
+		})
+		oldCLIs.Go(func() (err error) {
+			cli18Path, err = downloadCLI(buildDir, "1.8.0")
+			return err
+		})
+		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
+		oldCLIs.Go(func() (err error) {
+			cli1161Path, err = downloadCLI(buildDir, "1.16.1")
+			return err
+		})
+	}
+
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
 	if !WorkspaceTmpDir && !skipToolBuilds {
 		setupTerraform(t, cwd, buildDir, &repls)
@@ -377,6 +397,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)
 			}
+			// Wait for the old CLI downloads so the same version isn't downloaded concurrently.
+			require.NoError(t, oldCLIs.Wait())
 			execPath = DownloadCLI(t, buildDir, version)
 			// For a downloaded release the version string is already known.
 			cliVersion = version
@@ -409,16 +431,14 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	repls.SetPath(selectionPath, "[SELECTION]")
 
 	if !inprocessMode {
-		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		require.NoError(t, oldCLIs.Wait())
+
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
 
-		cli18Path := DownloadCLI(t, buildDir, "1.8.0")
 		t.Setenv("CLI_1_8", cli18Path)
 		repls.SetPath(cli18Path, "[CLI_1_8]")
 
-		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
-		cli1161Path := DownloadCLI(t, buildDir, "1.16.1")
 		t.Setenv("CLI_1_16_1", cli1161Path)
 		repls.SetPath(cli1161Path, "[CLI_1_16_1]")
 	}
@@ -1541,9 +1561,19 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
+	execPath, err := downloadCLI(buildDir, version)
+	require.NoError(t, err)
+	return execPath
+}
+
+// downloadCLI is the error-returning version of [DownloadCLI], safe to call
+// from goroutines other than the test goroutine.
+func downloadCLI(buildDir, version string) (string, error) {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)
-	require.NoError(t, os.MkdirAll(versionDir, 0o755))
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
+		return "", err
+	}
 
 	execName := "databricks"
 	if runtime.GOOS == "windows" {
@@ -1553,7 +1583,7 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 
 	// If already downloaded, reuse
 	if _, err := os.Stat(execPath); err == nil {
-		return execPath
+		return execPath, nil
 	}
 
 	osName := runtime.GOOS
@@ -1564,55 +1594,70 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
 	zipPath := filepath.Join(versionDir, archiveName)
 
-	downloadToFile(t, url, zipPath)
-	extractFileFromZip(t, zipPath, execName, versionDir)
+	if err := downloadToFile(url, zipPath); err != nil {
+		return "", err
+	}
+	if err := extractFileFromZip(zipPath, execName, versionDir); err != nil {
+		return "", err
+	}
 
-	return execPath
+	return execPath, nil
 }
 
 // downloadToFile downloads contents from url into the given destination path
-func downloadToFile(t *testing.T, url, destPath string) {
-	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
+func downloadToFile(url, destPath string) error {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return err
+	}
 	out, err := os.Create(destPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to download %s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: %s", url, resp.Status)
+	}
 
 	_, err = io.Copy(out, resp.Body)
-	require.NoError(t, err)
+	return err
 }
 
 // extractFileFromZip finds a file by name inside a zip archive and writes it
-// into destDir using the file's base name. Fails the test if not found.
-func extractFileFromZip(t *testing.T, zipPath, fileName, destDir string) {
+// into destDir using the file's base name. Returns an error if not found.
+func extractFileFromZip(zipPath, fileName, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 
 	targetBase := filepath.Base(fileName)
 	destPath := filepath.Join(destDir, targetBase)
-	var found bool
 	for _, f := range r.File {
 		if filepath.Base(f.Name) != targetBase {
 			continue
 		}
 		rc, err := f.Open()
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		defer rc.Close()
 
 		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		_, err = io.Copy(out, rc)
 		_ = out.Close()
-		require.NoError(t, err)
-		found = true
-		break
+		return err
 	}
-	require.True(t, found, "file %s not found in archive %s", targetBase, zipPath)
+	return fmt.Errorf("file %s not found in archive %s", targetBase, zipPath)
 }
 
 func copyFile(src, dst string) error {
