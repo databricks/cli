@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -18,10 +17,7 @@ type tfOnlyReferences struct{}
 
 // TFOnlyReferences validates that no cross-resource references point to
 // Terraform-only fields (fields that exist in TF schema but have no DABs equivalent).
-//
-// In direct mode this is an error because the direct engine cannot resolve such
-// references at deploy time.  In Terraform mode it is a warning because the
-// reference will break if the bundle is later migrated to the direct engine.
+// The direct engine cannot resolve such references at deploy time.
 func TFOnlyReferences() bundle.Mutator {
 	return &tfOnlyReferences{}
 }
@@ -30,16 +26,7 @@ func (m *tfOnlyReferences) Name() string {
 	return "validate:tf_only_references"
 }
 
-func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Resolve effective engine: config takes precedence over env var.
-	effectiveEngine := b.Config.Bundle.Engine
-	if effectiveEngine == engine.EngineNotSet {
-		if envEngine, err := engine.FromEnv(ctx); err == nil {
-			effectiveEngine = envEngine
-		}
-	}
-	isDirect := effectiveEngine.IsDirect()
-
+func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Walk the entire config looking for ${resources.*} references.
@@ -52,7 +39,7 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			if !strings.HasPrefix(r, "resources.") {
 				continue
 			}
-			if d := checkTFOnlyReference(r, v.Location(), isDirect); d != nil {
+			if d := checkTFOnlyReference(r, v.Location()); d != nil {
 				diags = append(diags, *d)
 			}
 		}
@@ -69,7 +56,7 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 // checkTFOnlyReference checks a single reference string like
 // "resources.jobs.src.always_running" and returns a diagnostic when it refers
 // to a TF-only field, or nil otherwise.
-func checkTFOnlyReference(ref string, loc dyn.Location, isDirect bool) *diag.Diagnostic {
+func checkTFOnlyReference(ref string, loc dyn.Location) *diag.Diagnostic {
 	p, err := dyn.NewPathFromString(ref)
 	// Need at least resources.<group>.<name>.<field>
 	if err != nil || len(p) < 4 || p[0].Key() != "resources" {
@@ -92,17 +79,9 @@ func checkTFOnlyReference(ref string, loc dyn.Location, isDirect bool) *diag.Dia
 		return nil
 	}
 
-	if isDirect {
-		return &diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("%q: Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine", ref),
-			Locations: []dyn.Location{loc},
-		}
-	}
-
 	return &diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   fmt.Sprintf("%q: Terraform-only field; this reference will not work with the direct engine", ref),
+		Severity:  diag.Error,
+		Summary:   fmt.Sprintf("%q: Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine", ref),
 		Locations: []dyn.Location{loc},
 	}
 }
