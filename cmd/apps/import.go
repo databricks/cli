@@ -15,7 +15,6 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -331,15 +330,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Bind the resource
-		tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
-		if !ok {
-			tfName = resource.ResourceDescription().PluralName
-		}
-		phases.Bind(ctx, b, &terraform.BindOptions{
-			AutoApprove:  true,
-			ResourceType: tfName,
-			ResourceKey:  appKey,
-			ResourceId:   app.Name,
+		phases.Bind(ctx, b, &phases.BindOptions{
+			AutoApprove: true,
+			Group:       resource.ResourceDescription().PluralName,
+			ResourceKey: appKey,
+			ResourceId:  app.Name,
 		}, stateDesc)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")

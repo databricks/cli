@@ -64,3 +64,20 @@ func TestValidateEngineInvalid(t *testing.T) {
 	assert.Equal(t, diag.Error, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "invalid")
 }
+
+func TestValidateEngineTerraformConfigDeprecated(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Terraform: &config.Terraform{ExecPath: "/usr/bin/terraform"},
+			},
+		},
+	}
+	loc := dyn.Location{File: "databricks.yml", Line: 3, Column: 5}
+	bundletest.SetLocation(b, "bundle.terraform", []dyn.Location{loc})
+	diags := ValidateEngine().Apply(t.Context(), b)
+	assert.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "bundle.terraform is deprecated")
+	assert.Equal(t, []dyn.Location{loc}, diags[0].Locations)
+}

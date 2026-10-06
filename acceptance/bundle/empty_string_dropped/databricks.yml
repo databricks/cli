@@ -25,6 +25,9 @@ resources:
           kms_key: ''
           region: ''
       cluster_name: ''
+      driver_instance_pool_id: ''
+      driver_node_type_id: ''
+      instance_pool_id: ''
       node_type_id: ''
       num_workers: 1
       policy_id: ''
@@ -45,7 +48,9 @@ resources:
       description: ''
       git_source:
         git_branch: main
+        git_commit: ''
         git_provider: gitHub
+        git_tag: ''
         git_url: https://example.com/repo
       job_clusters:
         - job_cluster_key: main
@@ -63,11 +68,15 @@ resources:
                 kms_key: ''
                 region: ''
             cluster_name: ''
+            driver_instance_pool_id: ''
+            driver_node_type_id: ''
+            instance_pool_id: ''
             node_type_id: ''
             num_workers: 1
             policy_id: ''
             single_user_name: ''
             spark_version: 13.3.x-scala2.12
+          serverless_compute_id: ''
       max_concurrent_runs: 1
       name: ''
       parent_path: ''
@@ -79,6 +88,8 @@ resources:
   pipelines:
     my_pipeline:
       budget_policy_id: ''
+      catalog: ''
+      channel: ''
       clusters:
         - aws_attributes:
             availability: SPOT
@@ -90,6 +101,7 @@ resources:
           label: default
           node_type_id: ''
           policy_id: ''
+      edition: ''
       libraries:
         - file:
             path: pipeline.py
@@ -97,7 +109,10 @@ resources:
           whl: ''
       name: ''
       root_path: ''
+      schema: ''
       serverless_compute_id: ''
+      storage: ''
+      target: ''
       usage_policy_id: ''
   registered_models:
     my_registered_model:
@@ -121,6 +136,7 @@ resources:
     my_warehouse:
       auto_stop_mins: 10
       cluster_size: 2X-Small
+      creator_name: ''
       instance_profile_arn: ''
       max_num_clusters: 1
       min_num_clusters: 1

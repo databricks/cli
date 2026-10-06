@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -15,12 +14,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-type secretScopeFixups struct {
-	engine engine.EngineType
-}
+type secretScopeFixups struct{}
 
-func SecretScopeFixups(engine engine.EngineType) bundle.Mutator {
-	return &secretScopeFixups{engine: engine}
+func SecretScopeFixups() bundle.Mutator {
+	return &secretScopeFixups{}
 }
 
 func (m *secretScopeFixups) Name() string {
@@ -123,12 +120,6 @@ func collapsePermissions(scope *resources.SecretScope) error {
 func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Secret scopes by default have the current user as a MANAGE ACL. We need to add it to the client ACL list
 	// to prevent a phantom persistent diff.
-	// We do not need to do this in terraform because terraform naively always applies the config during ACL
-	// creation without checking if the ACL already exists.
-	// https://github.com/databricks/terraform-provider-databricks/blob/5cb5d3fa46bc4843be1a4c4bce89296eaa2e14fc/secrets/resource_secret_acl.go#L43
-	if !m.engine.IsDirect() {
-		return nil
-	}
 
 	// Secret scopes assigns the create MANAGE ACL on it by default. So we always add it to
 	// the client ACL list as a default.

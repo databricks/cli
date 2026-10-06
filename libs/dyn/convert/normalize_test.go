@@ -622,6 +622,10 @@ func TestNormalizeBoolFromString(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"True", true},
+		{"False", false},
+		{"TRUE", true},
+		{"FALSE", false},
 		{"Y", true},
 		{"N", false},
 		{"on", true},

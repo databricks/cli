@@ -271,7 +271,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
 	// the migrated state and config agree on .permissions entries.
-	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
+	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups())
 	if logdiag.HasError(ctx) {
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}
