@@ -208,10 +208,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	// Resolve engine setting up front so a garbage DATABRICKS_BUNDLE_ENGINE
-	// value fails every bundle command instead of only the ones that read
-	// state. The resolver is cheap (config lookup + env var read); no reason
-	// to gate it on state-touching options.
+	// Resolve the engine used for state and telemetry. An invalid or removed
+	// DATABRICKS_BUNDLE_ENGINE was already rejected before initialization and a
+	// bad bundle.engine by validate.ValidateEngine, so this only fails for
+	// commands that skip initialization (bundle run -- <cmd>) with a bad
+	// bundle.engine.
 	requiredEngine, err := ResolveEngineSetting(ctx, b)
 	if err != nil {
 		return b, nil, err
