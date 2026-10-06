@@ -60,13 +60,6 @@ func (*ResourcePostgresSyncedTable) PrepareState(input *resources.PostgresSynced
 	}
 }
 
-func (*ResourcePostgresSyncedTable) RemapState(remote *PostgresSyncedTableRemote) *PostgresSyncedTableState {
-	return &PostgresSyncedTableState{
-		SyncedTableId:              remote.SyncedTableId,
-		SyncedTableSyncedTableSpec: remote.SyncedTableSyncedTableSpec,
-	}
-}
-
 // makePostgresSyncedTableRemote converts the SDK SyncedTable into the embedded
 // remote shape. GET does not echo spec today (only status is returned); the
 // embedded spec fields stay at their zero values, and postgres_synced_tables.yml suppresses

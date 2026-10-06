@@ -32,16 +32,6 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 	}
 }
 
-func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
-		Name:             experiment.Name,
-		ArtifactLocation: experiment.ArtifactLocation,
-		Tags:             experiment.Tags,
-		TraceLocation:    experiment.TraceLocation,
-		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](experiment.ForceSendFields),
-	}
-}
-
 func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experiment, error) {
 	result, err := r.client.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
 		ExperimentId: id,

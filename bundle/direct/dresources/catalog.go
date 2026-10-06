@@ -22,22 +22,6 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 	return &input.CreateCatalog
 }
 
-func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
-	return &catalog.CreateCatalog{
-		Comment:                   info.Comment,
-		ConnectionName:            info.ConnectionName,
-		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,
-		ManagedEncryptionSettings: info.ManagedEncryptionSettings,
-		Name:                      info.Name,
-		Options:                   info.Options,
-		Properties:                info.Properties,
-		ProviderName:              info.ProviderName,
-		ShareName:                 info.ShareName,
-		StorageRoot:               info.StorageRoot,
-		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
-	}
-}
-
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
 	return r.client.Catalogs.GetByName(ctx, id)
 }

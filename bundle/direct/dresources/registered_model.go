@@ -24,30 +24,6 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 	return &input.CreateRegisteredModelRequest
 }
 
-func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	return &catalog.CreateRegisteredModelRequest{
-		CatalogName:     model.CatalogName,
-		Comment:         model.Comment,
-		Name:            model.Name,
-		SchemaName:      model.SchemaName,
-		StorageLocation: model.StorageLocation,
-		ForceSendFields: utils.FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
-
-		Aliases:     model.Aliases,
-		BrowseOnly:  model.BrowseOnly,
-		FullName:    model.FullName,
-		MetastoreId: model.MetastoreId,
-		Owner:       model.Owner,
-
-		// Output only fields. Remote changes to these are ignored via
-		// ignore_remote_changes in registered_models.yml rather than zeroed here.
-		CreatedAt: model.CreatedAt,
-		CreatedBy: model.CreatedBy,
-		UpdatedAt: model.UpdatedAt,
-		UpdatedBy: model.UpdatedBy,
-	}
-}
-
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
 		FullName:        id,

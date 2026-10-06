@@ -81,19 +81,6 @@ func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *Postgr
 	}
 }
 
-func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRoleState {
-	return &PostgresRoleState{
-		RoleId: remote.RoleId,
-		Parent: remote.Parent,
-
-		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
-
-		RoleRoleSpec: remote.RoleRoleSpec,
-	}
-}
-
 // makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_roles.yml suppresses phantom drift via

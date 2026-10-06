@@ -59,18 +59,6 @@ func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *
 	}
 }
 
-func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *PostgresProjectState {
-	return &PostgresProjectState{
-		ProjectId:   remote.ProjectId,
-		ProjectSpec: remote.ProjectSpec,
-
-		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
-	}
-}
-
 // makePostgresProjectRemote converts the SDK Project into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_projects.yml suppresses phantom drift via
