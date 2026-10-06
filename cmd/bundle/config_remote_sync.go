@@ -7,9 +7,11 @@ import (
 	"maps"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -112,6 +114,18 @@ Examples:
 					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
+					}
+					// A selected resource planned as a delete was renamed or removed in the
+					// config, so its remote changes have nowhere to be written back.
+					var missing []string
+					for _, key := range selected {
+						if plan.Plan[key].Action == deployplan.Delete {
+							missing = append(missing, key)
+						}
+					}
+					if len(missing) > 0 {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResourceNotInConfig
+						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
 					detected = configsync.FilterChanges(detected, selected)
 				}

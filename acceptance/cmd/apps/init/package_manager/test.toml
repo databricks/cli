@@ -1,0 +1,39 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Env.DATABRICKS_APPKIT_TEMPLATE_PATH = "template"
+Ignore = [
+    "empty-bin",
+    "in-place-failed",
+    "retry-app",
+    "python-app",
+    "pnpm-installed",
+    "pnpm-retried",
+    "install-failed",
+    "dev-failed",
+    "explicit-older-app",
+    "test-app-pnpm",
+    "test-app-npm",
+    "standard-app-pnpm",
+    "standard-app-npm",
+    "older-app",
+    "dual-manager-app",
+    "branch-app",
+    "fallback-app",
+    "compatible-app",
+    "installed-app",
+    "rendered-app",
+    "installed-older-app",
+    "fake-bin",
+    "final-pin",
+    ".git",
+    "databricks.yml",
+    "cache",
+]
+
+# Background completion can precede or follow the spinner starting.
+[[Repls]]
+Old = "✔ Dependencies installed"
+New = "✔ Installing dependencies"
+
+[[Repls]]
+Old = '\$PATH|%PATH%'
+New = "PATH"
