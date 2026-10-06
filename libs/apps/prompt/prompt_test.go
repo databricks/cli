@@ -508,7 +508,7 @@ func TestValidateProjectNameForPrompt(t *testing.T) {
 
 func TestPrintSuccessInPlace(t *testing.T) {
 	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
-	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", true)
+	PrintSuccess(ctx, "my-app", filepath.FromSlash("/abs/path/my-app"), 12, "npm run dev", true)
 	got := out.String()
 	assert.Contains(t, got, "Location: /abs/path/my-app")
 	assert.Contains(t, got, "Files: 12")
@@ -518,8 +518,9 @@ func TestPrintSuccessInPlace(t *testing.T) {
 
 func TestPrintSuccessNotInPlace(t *testing.T) {
 	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
-	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", false)
+	PrintSuccess(ctx, "my-app", filepath.FromSlash("/abs/path/my-app"), 12, "npm run dev", false)
 	got := out.String()
+	assert.Contains(t, got, "Location: /abs/path/my-app")
 	assert.Contains(t, got, "cd my-app")
 	assert.Contains(t, got, "npm run dev")
 }
