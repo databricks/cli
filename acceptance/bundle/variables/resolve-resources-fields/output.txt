@@ -11,7 +11,6 @@
 {
   "apps": {
     "baz": {
-      "description": "",
       "name": "myapp",
       "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
     }

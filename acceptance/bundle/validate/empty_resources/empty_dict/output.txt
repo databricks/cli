@@ -154,9 +154,7 @@ app resource 'rname' should have either source_code_path or git_source field
 
 {
   "apps": {
-    "rname": {
-      "description": ""
-    }
+    "rname": {}
   }
 }
 

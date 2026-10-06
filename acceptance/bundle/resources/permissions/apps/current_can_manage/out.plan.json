@@ -6,7 +6,6 @@
       "action": "create",
       "new_state": {
         "value": {
-          "description": "",
           "name": "foo",
           "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
         }
