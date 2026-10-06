@@ -7,11 +7,9 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -20,13 +18,13 @@ import (
 
 // PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
 // Note, it is not run in "bundle migrate" so it must not modify the config
-func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine engine.EngineType) {
+func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
-		terraform.CheckDashboardsModifiedRemotely(isPlan, engine),
-		resourcemutator.SecretScopeFixups(engine),
+		deploy.CheckDashboardsModifiedRemotely(isPlan),
+		resourcemutator.SecretScopeFixups(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
-		statemgmt.CheckRunningResource(engine),
+		statemgmt.CheckRunningResource(),
 	)
 }
 
@@ -34,14 +32,8 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 // also deletes its datasets (MVs, STs, Views). This is the server default (cascade) unless
 // cascade_on_destroy is explicitly set to false.
 //
-// Currently, this feature is only supported by the direct engine. We will read from the persisted
-// state to determine the value. For the Terraform engine, this parameter cannot be configured, so
-// there is no state to read from and we return the default of true.
-func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action, engine engine.EngineType) (bool, error) {
-	if !engine.IsDirect() {
-		return true, nil
-	}
-
+// The value is read from the persisted state.
+func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool, error) {
 	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(action.ResourceKey)
 	if !ok || len(entry.State) == 0 {
 		return true, nil

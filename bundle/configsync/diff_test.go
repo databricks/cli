@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -283,23 +282,19 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 		},
 	}}
 
-	for _, eng := range []engine.EngineType{engine.EngineDirect, engine.EngineTerraform} {
-		t.Run(string(eng), func(t *testing.T) {
-			changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan, eng)
-			require.NoError(t, err)
+	changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
+	require.NoError(t, err)
 
-			_, hasPerms := changes["resources.jobs.my_job.permissions"]
-			assert.False(t, hasPerms, "permissions sub-resource must be skipped")
-			_, hasGrants := changes["resources.schemas.my_schema.grants"]
-			assert.False(t, hasGrants, "grants sub-resource must be skipped")
+	_, hasPerms := changes["resources.jobs.my_job.permissions"]
+	assert.False(t, hasPerms, "permissions sub-resource must be skipped")
+	_, hasGrants := changes["resources.schemas.my_schema.grants"]
+	assert.False(t, hasGrants, "grants sub-resource must be skipped")
 
-			job, hasJob := changes["resources.jobs.my_job"]
-			require.True(t, hasJob, "regular resource changes must be kept")
-			assert.Contains(t, job, "description")
+	job, hasJob := changes["resources.jobs.my_job"]
+	require.True(t, hasJob, "regular resource changes must be kept")
+	assert.Contains(t, job, "description")
 
-			namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
-			require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
-			assert.Contains(t, namedPerms, "description")
-		})
-	}
+	namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
+	require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
+	assert.Contains(t, namedPerms, "description")
 }

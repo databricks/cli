@@ -11,7 +11,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -51,12 +50,12 @@ var destroyApprovalGroups = []approvalGroup{
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType, quiet bool) error {
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, quiet bool) error {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
 	for _, a := range pipelineDeletes {
-		cascade, err := pipelineDeletionCascades(b, a, engine)
+		cascade, err := pipelineDeletionCascades(b, a)
 		if err != nil {
 			return err
 		}
@@ -86,7 +85,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 	return nil
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	deleteActions := plan.GetActions()
 
 	// Deletes that only clean up the state (already gone remotely, or no delete
@@ -122,7 +121,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
 	}
 	// Called even when quiet: the cascade lookup can fail, and that error must surface.
-	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine, quiet); err != nil {
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, quiet); err != nil {
 		return false, err
 	}
 
@@ -138,7 +137,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Not reported per resource: destroy names them up front for consent and then
 	// reports only a count, so there is no per-resource output to report into.
 	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
@@ -270,7 +269,7 @@ func removeEmptyDirs(dir string, depth int) (bool, error) {
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
+func Destroy(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: destroy")
 
 	ok, err := assertRootPathExists(ctx, b)
@@ -313,7 +312,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
+	hasApproval, err := approvalForDestroy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -364,7 +363,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine)
+		destroyCore(ctx, b, plan)
 	} else {
 		// A prepared terraform→direct migration lives only in memory (nothing durable was
 		// written), so a declined destroy just drops it and leaves the terraform state on

@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -139,8 +138,8 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan. engine selects the LocalEdit comparison below.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+// plan.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
@@ -170,12 +169,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				if change.Operation == OperationSkip {
 					continue
 				}
-				// On the direct engine the state snapshot holds real per-field
-				// values, so New != Old means the local config diverged from the
-				// last deploy and this change overwrites that pending edit. The
-				// terraform sync snapshot stores empty per-resource state, so this
-				// comparison is meaningless there and is skipped.
-				if engine.IsDirect() && !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+				// The state snapshot holds real per-field values, so New != Old
+				// means the local config diverged from the last deploy and this
+				// change overwrites that pending edit.
+				if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
 					change.LocalEdit = true
 				}
 				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -37,7 +36,7 @@ func TestApprovalForDestroyQuietWhilePrompting(t *testing.T) {
 	b := &bundle.Bundle{Quiet: bundle.QuietAll}
 	b.Config.Workspace.RootPath = "/Workspace/Users/me/.bundle/x"
 
-	approved, err := approvalForDestroy(ctx, b, plan, engine.EngineTerraform)
+	approved, err := approvalForDestroy(ctx, b, plan)
 	require.NoError(t, err)
 	assert.True(t, approved)
 
