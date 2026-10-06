@@ -1,1 +1,1 @@
-* Fix `bundle deployment migrate` failing with "no such file or directory" when the Terraform state has no resources or the configuration no longer declares any of them.
+* Fix `bundle deployment migrate` failing with "no such file or directory" when the Terraform state has no resources or the configuration no longer declares any of them. ([#6958](https://github.com/databricks/cli/pull/6958))
