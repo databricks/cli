@@ -1,0 +1,1 @@
+`databricks clusters start` no longer errors when the cluster is already RUNNING (or PENDING/RESTARTING/RESIZING). It now prints a short message and exits 0, matching the command's own help text ("If the cluster is not currently in a TERMINATED state, nothing will happen").
