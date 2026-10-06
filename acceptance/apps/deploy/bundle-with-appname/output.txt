@@ -1,4 +1,5 @@
 
+=== API deploy with an explicit app name
 >>> [CLI] apps deploy test-app --no-wait
 {
   "deployment_id": "dep-123",
@@ -10,9 +11,110 @@
   }
 }
 
+=== API deploy with a workspace source path
+>>> [CLI] apps deploy test-app --source-code-path /Workspace/apps/test-app --no-wait
+{
+  "deployment_id": "dep-123",
+  "mode": "SNAPSHOT",
+  "source_code_path": "/Workspace/apps/test-app",
+  "status": {
+    "message": "Deployment pending",
+    "state": "PENDING"
+  }
+}
+
+=== API deploy with a Git source
+>>> [CLI] apps deploy test-app --git-branch release --no-wait
+{
+  "deployment_id": "dep-123",
+  "mode": "SNAPSHOT",
+  "source_code_path": "/Workspace/apps/test-app",
+  "status": {
+    "message": "Deployment pending",
+    "state": "PENDING"
+  }
+}
+
+=== API and bundle deploy flags cannot be mixed
+>>> musterr [CLI] apps deploy --source-code-path /Workspace/apps/test-app --force
+Error: API deploy flags --source-code-path cannot be combined with bundle deploy flags --force
+
+>>> musterr [CLI] apps deploy --git-branch release --skip-validation
+Error: API deploy flags --git-branch cannot be combined with bundle deploy flags --skip-validation
+
+>>> musterr [CLI] apps deploy test-app --no-wait --target prod
+Error: API deploy flags --no-wait cannot be combined with bundle deploy flags --target
+
+>>> musterr [CLI] apps deploy --no-wait --var app_name=my-app
+Error: API deploy flags --no-wait cannot be combined with bundle deploy flags --var
+
+=== Every API deploy flag requires APP_NAME
+>>> musterr [CLI] apps deploy --no-wait
+Error: API deploy flags --no-wait require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --timeout=1m
+Error: API deploy flags --timeout require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --source-code-path=/Workspace/apps/test-app
+Error: API deploy flags --source-code-path require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --git-branch=release
+Error: API deploy flags --git-branch require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --git-tag=v1
+Error: API deploy flags --git-tag require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --git-commit=abc
+Error: API deploy flags --git-commit require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --git-source-code-path=app
+Error: API deploy flags --git-source-code-path require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --deployment-id=dep-123
+Error: API deploy flags --deployment-id require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --mode=SNAPSHOT
+Error: API deploy flags --mode require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --json={}
+Error: API deploy flags --json require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+=== Bundle flags cannot be used with APP_NAME
+>>> musterr [CLI] apps deploy test-app --force
+Error: bundle deploy flags --force cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy
+
+>>> musterr [CLI] apps deploy test-app --target prod
+Error: bundle deploy flags --target cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy
+
+>>> musterr [CLI] apps deploy test-app -t prod
+Error: bundle deploy flags --target cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy
+
+>>> musterr [CLI] apps deploy test-app --environment prod
+Flag --environment has been deprecated, use --target flag instead
+Error: bundle deploy flags --environment cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy
+
+>>> musterr [CLI] apps deploy test-app --var app_name=my-app
+Error: bundle deploy flags --var cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy
+
 >>> print_requests.py //apps
 {
   "method": "POST",
   "path": "/api/2.0/apps/test-app/deployments",
   "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/test-app/deployments",
+  "body": {
+    "source_code_path": "/Workspace/apps/test-app"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/test-app/deployments",
+  "body": {
+    "git_source": {
+      "branch": "release"
+    }
+  }
 }
