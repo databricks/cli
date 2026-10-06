@@ -85,7 +85,7 @@ pnpm run --if-present build
 
 === Warn but continue on conflicting lockfiles
 >>> [CLI] apps validate --path conflicting
-Warn: found conflicting package manager lockfiles; using package-lock.json and ignoring pnpm-lock.yaml
+Warn: found conflicting package managers; using npm from package-lock.json and ignoring pnpm-lock.yaml
 Validating project using npm...
 ✅ Installing dependencies ([DURATION])
 ✅ Generating types ([DURATION])
@@ -119,6 +119,20 @@ validation failed (exit code 17)
 workspace build ran
 
 >>> grep -F validation failed - fix errors before deploying LOG.workspaces-deploy
+Error: validation failed - fix errors before deploying
+
+=== Use declared npm despite a pnpm lockfile
+>>> grep -x declared npm build ran LOG.metadata-npm
+declared npm build ran
+
+>>> grep -F validation failed (exit code 17) LOG.metadata-npm
+validation failed (exit code 17)
+
+=== Deploy honors the declared package manager
+>>> grep -x declared npm build ran LOG.metadata-npm-deploy
+declared npm build ran
+
+>>> grep -F validation failed - fix errors before deploying LOG.metadata-npm-deploy
 Error: validation failed - fix errors before deploying
 
 === Reject a missing package.json

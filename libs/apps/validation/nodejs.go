@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -12,12 +13,18 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+const (
+	packageManagerInstall   = "install"
+	packageManagerRun       = "run"
+	packageManagerIfPresent = "--if-present"
+)
+
 // ValidationNodeJs implements validation for Node.js-based projects.
 type ValidationNodeJs struct{}
 
 type validationStep struct {
 	name        string
-	script      string
+	args        []string
 	errorPrefix string
 	displayName string
 	skipIf      func(workDir string, opts ValidateOptions) bool // Optional: skip step if this returns true
@@ -35,40 +42,43 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	cmdio.LogString(ctx, "Validating project using "+manager+"...")
 
 	// TODO: these steps could be changed to npx appkit [command] instead if we can determine its an appkit project.
+	// Let the manager resolve scripts, including configured npm workspaces:
+	// https://docs.npmjs.com/cli/using-npm/workspaces#running-commands-in-the-context-of-workspaces
 	steps := []validationStep{
 		{
-			name:        "install",
+			name:        packageManagerInstall,
+			args:        []string{packageManagerInstall},
 			errorPrefix: "Failed to install dependencies",
 			displayName: "Installing dependencies",
 			skipIf:      func(workDir string, _ ValidateOptions) bool { return hasNodeModules(workDir) },
 		},
 		{
 			name:        "generate",
-			script:      "typegen",
+			args:        []string{packageManagerRun, packageManagerIfPresent, "typegen"},
 			errorPrefix: "Failed to generate types",
 			displayName: "Generating types",
 		},
 		{
 			name:        "ast-grep-lint",
-			script:      "lint:ast-grep",
+			args:        []string{packageManagerRun, packageManagerIfPresent, "lint:ast-grep"},
 			errorPrefix: "AST-grep lint found violations",
 			displayName: "Running AST-grep lint",
 		},
 		{
 			name:        "typecheck",
-			script:      "typecheck",
+			args:        []string{packageManagerRun, packageManagerIfPresent, "typecheck"},
 			errorPrefix: "Failed to run client typecheck",
 			displayName: "Type checking",
 		},
 		{
 			name:        "build",
-			script:      "build",
+			args:        []string{packageManagerRun, packageManagerIfPresent, "build"},
 			errorPrefix: "Failed to build",
 			displayName: "Building",
 		},
 		{
 			name:        "tests",
-			script:      "test",
+			args:        []string{packageManagerRun, packageManagerIfPresent, "test"},
 			errorPrefix: "Failed to run tests",
 			displayName: "Running tests",
 			skipIf:      func(_ string, opts ValidateOptions) bool { return opts.SkipTests },
@@ -82,12 +92,7 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
 		}
-		command := manager + " install"
-		if step.script != "" {
-			// Let the manager resolve scripts, including configured npm workspaces:
-			// https://docs.npmjs.com/cli/using-npm/workspaces#running-commands-in-the-context-of-workspaces
-			command = manager + " run --if-present " + step.script
-		}
+		command := manager + " " + strings.Join(step.args, " ")
 
 		log.Debugf(ctx, "running %s...", step.name)
 

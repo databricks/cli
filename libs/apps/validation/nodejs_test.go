@@ -18,6 +18,14 @@ import (
 
 var validationScripts = []string{"typegen", "lint:ast-grep", "typecheck", "build", "test"}
 
+// These values define the protocol shared with testdata/package-manager and .cmd.
+const (
+	validationTestFailEnv  = "VALIDATION_TEST_FAIL"
+	validationTestExitCode = 17
+	validationTestStdout   = "validation stdout"
+	validationTestStderr   = "validation stderr"
+)
+
 const npmValidationCommands = `npm install
 npm run --if-present typegen
 npm run --if-present lint:ast-grep
@@ -37,7 +45,7 @@ func stubPackageManagers(t *testing.T) {
 		}
 	}
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Setenv("VALIDATION_TEST_FAIL", "")
+	t.Setenv(validationTestFailEnv, "")
 }
 
 // writeValidationProject creates a manifest with the requested scripts.
@@ -74,17 +82,25 @@ func isolateValidationShell(t *testing.T) {
 func TestNodeJsValidatePackageManagers(t *testing.T) {
 	stubPackageManagers(t)
 	tests := []struct {
+		name     string
 		manager  string
 		lockfile string
+		manifest string
 	}{
-		{manager: "npm"},
-		{manager: "npm", lockfile: "package-lock.json"},
-		{manager: "pnpm", lockfile: "pnpm-lock.yaml"},
+		{name: "npm default", manager: "npm"},
+		{name: "npm lockfile", manager: "npm", lockfile: "package-lock.json"},
+		{name: "pnpm lockfile", manager: "pnpm", lockfile: "pnpm-lock.yaml"},
+		{name: "pnpm declaration", manager: "pnpm", manifest: `{"packageManager":"pnpm@10.30.3"}`},
+		{name: "npm declaration overrides lockfile", manager: "npm", lockfile: "pnpm-lock.yaml", manifest: `{"packageManager":"npm@10.9.2"}`},
+		{name: "pnpm declaration overrides lockfile", manager: "pnpm", lockfile: "package-lock.json", manifest: `{"packageManager":"pnpm@10.30.3"}`},
 	}
 	for _, tt := range tests {
-		t.Run(tt.manager+"/"+tt.lockfile, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			writeValidationProject(t, dir, validationScripts)
+			if tt.manifest != "" {
+				testutil.WriteFile(t, filepath.Join(dir, "package.json"), tt.manifest)
+			}
 			if tt.lockfile != "" {
 				testutil.Touch(t, dir, tt.lockfile)
 			}
@@ -139,15 +155,15 @@ func TestNodeJsValidateCommandFailure(t *testing.T) {
 			dir := t.TempDir()
 			writeValidationProject(t, dir, validationScripts)
 			testutil.Touch(t, dir, "pnpm-lock.yaml")
-			t.Setenv("VALIDATION_TEST_FAIL", command)
+			t.Setenv(validationTestFailEnv, command)
 			validator := validation.ValidationNodeJs{}
 			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
 			require.NoError(t, err)
 			require.False(t, result.Success)
 			require.NotNil(t, result.Details)
-			assert.Equal(t, 17, result.Details.ExitCode)
-			assert.Contains(t, result.Details.Stdout, "validation stdout")
-			assert.Contains(t, result.Details.Stderr, "validation stderr")
+			assert.Equal(t, validationTestExitCode, result.Details.ExitCode)
+			assert.Contains(t, result.Details.Stdout, validationTestStdout)
+			assert.Contains(t, result.Details.Stderr, validationTestStderr)
 			commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
 			assert.True(t, strings.HasSuffix(strings.ReplaceAll(commands, "\r\n", "\n"), "pnpm "+command+"\n"), commands)
 		})
@@ -173,7 +189,7 @@ func TestNodeJsValidateManagerFromRelativePath(t *testing.T) {
 
 			t.Chdir(dir)
 			t.Setenv("PATH", relBin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			t.Setenv("VALIDATION_TEST_FAIL", "")
+			t.Setenv(validationTestFailEnv, "")
 
 			validator := validation.ValidationNodeJs{}
 			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), workDir, validation.ValidateOptions{})

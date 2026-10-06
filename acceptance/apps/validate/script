@@ -34,6 +34,17 @@ trace withdir workspaces musterr $CLI apps deploy &> LOG.workspaces-deploy
 trace grep -x "workspace build ran" LOG.workspaces-deploy
 trace grep -F "validation failed - fix errors before deploying" LOG.workspaces-deploy
 
+title "Use declared npm despite a pnpm lockfile"
+mkdir -p metadata-npm/node_modules
+trace musterr $CLI apps validate --path metadata-npm &> LOG.metadata-npm
+trace grep -x "declared npm build ran" LOG.metadata-npm
+trace grep -F "validation failed (exit code 17)" LOG.metadata-npm
+
+title "Deploy honors the declared package manager"
+trace withdir metadata-npm musterr $CLI apps deploy &> LOG.metadata-npm-deploy
+trace grep -x "declared npm build ran" LOG.metadata-npm-deploy
+trace grep -F "validation failed - fix errors before deploying" LOG.metadata-npm-deploy
+
 title "Reject a missing package.json"
 mkdir missing
 trace musterr $CLI apps validate --path missing
