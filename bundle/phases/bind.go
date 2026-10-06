@@ -104,7 +104,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 		return
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	statemgmt.PushResourcesState(ctx, b)
 }
 
 func jsonDump(ctx context.Context, v any, field string) string {
@@ -147,5 +147,5 @@ func Unbind(ctx context.Context, b *bundle.Bundle, tfResourceType, resourceKey s
 		return
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	statemgmt.PushResourcesState(ctx, b)
 }

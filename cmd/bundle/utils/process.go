@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -339,15 +338,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			cmd.SetContext(ctx)
 		}
 
-		// --select is only supported by the direct engine, which tracks resource
-		// dependencies in the plan graph (used to expand the selection transitively).
-		// Validate once the engine is final (after any migration above), rather than
-		// silently planning/deploying every resource on terraform.
-		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && needsState
@@ -427,19 +417,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			var state statemgmt.ExportedResourcesMap
-			if stateDesc.Engine.IsDirect() {
-				state = b.DeploymentBundle.ExportState(ctx)
-			} else {
-				var err error
-				state, err = terraform.ParseResourcesState(ctx, b)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-			}
 			mutators := []bundle.Mutator{
-				statemgmt.Load(state, modes...),
+				statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
@@ -455,10 +434,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// precomputed plan. Artifact uploads are handled inside Deploy by extracting remote
 		// paths from the plan's new_state and finding the matching local files.
 		if opts.ReadPlanPath != "" {
-			if !stateDesc.Engine.IsDirect() {
-				logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
 			var err error
 			plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
 			if err != nil {
@@ -536,15 +511,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-		}
-
-		// The user opted out of the direct engine (engine: terraform), so no migration ran.
-		// Do a throwaway conversion of the just-deployed terraform state to record
-		// direct_drymigrate_* telemetry — the fleet-wide "could this bundle migrate?"
-		// signal. Runs after the deploy so mutating b.Config during the conversion is
-		// harmless, and only when the deploy succeeded on a terraform state.
-		if stateDesc != nil && requiredEngine.Type == engine.EngineTerraform && !stateDesc.Engine.IsDirect() {
-			statemgmt.DryRunMigrationTelemetry(ctx, b)
 		}
 	}
 

@@ -142,7 +142,7 @@ func CommitMigration(ctx context.Context, b *bundle.Bundle, requiredEngine engin
 		logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
 		return
 	}
-	PushResourcesState(ctx, b, engine.EngineDirect)
+	PushResourcesState(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -169,42 +169,6 @@ func recordAutoMigrateSource(b *bundle.Bundle, requiredEngine engine.EngineSetti
 	default:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
 	}
-}
-
-// DryRunMigrationTelemetry converts the terraform state to the direct engine WITHOUT
-// committing, purely to record direct_drymigrate_* telemetry for deploys that opted out
-// of the direct engine (engine: terraform). It mirrors the actual migration's conversion
-// (but never runs the plan check, and never touches any state) so the fleet-wide "could
-// this bundle migrate?" signal is preserved. It is called after a terraform deploy, so
-// mutating b.Config during the conversion is harmless, and it swallows failures because
-// the deploy already succeeded. DirectDryMigrateSuccess reflects only whether the state
-// conversion succeeded.
-func DryRunMigrationTelemetry(ctx context.Context, b *bundle.Bundle) {
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
-	if err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, false)
-		return
-	}
-	if tfState == nil {
-		return
-	}
-	// An empty terraform state has nothing to convert, so the dry run trivially succeeds.
-	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
-		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
-		return
-	}
-
-	tempStatePath, hasWarnings, _, err := convertTFStateToDirect(ctx, b, tfState)
-	if tempStatePath != "" {
-		defer func() {
-			_ = os.Remove(tempStatePath)
-			_ = os.Remove(tempStatePath + ".wal")
-		}()
-	}
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 }
 
 // checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
