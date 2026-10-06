@@ -63,7 +63,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
       development: true
 
 >>> [CLI] bundle deploy
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.bar.development
   in databricks.yml:18:20
 
@@ -159,7 +159,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 ]
 
 >>> [CLI] bundle summary -o json
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.bar.development
   in databricks.yml:18:20
 
@@ -170,7 +170,7 @@ Warning: The development property of pipelines is deprecated. Use the "mode: dev
 
 === The plan shows the updated pipeline at serial 2 with the deployment_history feature
 >>> [CLI] bundle plan -o json
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.bar.development
   in databricks.yml:18:20
 
@@ -185,7 +185,7 @@ Warning: The development property of pipelines is deprecated. Use the "mode: dev
 }
 
 >>> [CLI] bundle plan
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.bar.development
   in databricks.yml:18:20
 
@@ -205,7 +205,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Plan again: no residual drift, and the version stamps are ignored
 >>> [CLI] bundle plan
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.bar.development
   in databricks.yml:18:20
 

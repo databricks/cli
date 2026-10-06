@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.my.development
   in databricks.yml:11:20
 
