@@ -153,6 +153,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		// Must run after PythonMutator to see development values set by Python mutators.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
@@ -193,9 +197,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that deployment_id / version_id are not set on jobs or pipelines.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
-
-		// Warn when the deprecated pipeline-level development property is set by the user.
-		validate.PipelineDevelopmentDeprecated(),
 
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
