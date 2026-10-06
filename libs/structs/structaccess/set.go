@@ -3,6 +3,7 @@ package structaccess
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -280,6 +281,11 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 		return valueVal, nil
 	}
 
+	// Numeric conversions must not silently truncate, wrap or round.
+	if isNumericKind(valueType.Kind()) && isNumericKind(targetType.Kind()) {
+		return convertNumeric(valueVal, targetType)
+	}
+
 	// Convertibility check (handles typedefed types)
 	if valueType.ConvertibleTo(targetType) {
 		return valueVal.Convert(targetType), nil
@@ -292,6 +298,15 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 			// Create a new pointer and set the value
 			ptr := reflect.New(elemType)
 			ptr.Elem().Set(valueVal)
+			return ptr, nil
+		}
+		if isNumericKind(valueType.Kind()) && isNumericKind(elemType.Kind()) {
+			converted, err := convertNumeric(valueVal, elemType)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(converted)
 			return ptr, nil
 		}
 		if valueType.ConvertibleTo(elemType) {
@@ -308,6 +323,78 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 	}
 
 	return reflect.Value{}, fmt.Errorf("cannot convert %s to %s", valueType, targetType)
+}
+
+func isNumericKind(k reflect.Kind) bool {
+	switch k {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
+}
+
+// convertNumeric converts between numeric kinds and fails instead of losing data,
+// following the rules of libs/dyn/convert (normalizeInt). Unlike normalizeFloat,
+// any conversion to a float kind is allowed, even when it rounds or overflows.
+func convertNumeric(valueVal reflect.Value, targetType reflect.Type) (reflect.Value, error) {
+	dstKind := targetType.Kind()
+	zero := reflect.New(targetType).Elem()
+
+	switch {
+	case valueVal.CanInt():
+		v := valueVal.Int()
+		switch {
+		case zero.CanInt():
+			if zero.OverflowInt(v) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		case zero.CanUint():
+			if v < 0 || zero.OverflowUint(uint64(v)) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		default:
+			// Int to float: allowed even with a loss.
+		}
+
+	case valueVal.CanUint():
+		v := valueVal.Uint()
+		switch {
+		case zero.CanInt():
+			if v > math.MaxInt64 || zero.OverflowInt(int64(v)) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		case zero.CanUint():
+			if zero.OverflowUint(v) {
+				return reflect.Value{}, fmt.Errorf("value %d overflows %s", v, dstKind)
+			}
+		default:
+			// Uint to float: allowed even with a loss.
+		}
+
+	default:
+		f := valueVal.Float()
+		if !zero.CanInt() && !zero.CanUint() {
+			// Float to float: allowed even with a loss.
+			break
+		}
+		if math.IsNaN(f) || f != math.Trunc(f) {
+			return reflect.Value{}, fmt.Errorf("cannot set %v to %s: precision loss", f, dstKind)
+		}
+		// Bounds are powers of two, so they are exact in float64.
+		bits := float64(targetType.Bits())
+		lo, hi := 0.0, math.Exp2(bits)
+		if zero.CanInt() {
+			lo, hi = -math.Exp2(bits-1), math.Exp2(bits-1)
+		}
+		if f < lo || f >= hi {
+			return reflect.Value{}, fmt.Errorf("value %v overflows %s", f, dstKind)
+		}
+	}
+
+	return valueVal.Convert(targetType), nil
 }
 
 // updateForceSendFields handles ForceSendFields when setting values:
