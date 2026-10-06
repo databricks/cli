@@ -69,14 +69,17 @@ func isolateValidationShell(t *testing.T) {
 	}
 	path, err := osexec.LookPath(shell)
 	require.NoError(t, err)
-	binDir := t.TempDir()
-	if runtime.GOOS == "windows" {
-		// Creating symlinks requires elevated privileges on Windows.
-		testutil.CopyFile(t, path, filepath.Join(binDir, shell))
-	} else {
+	// Keep cmd.exe beside its localized message resources on Windows.
+	binDir := filepath.Dir(path)
+	if runtime.GOOS != "windows" {
+		binDir = t.TempDir()
 		require.NoError(t, os.Symlink(path, filepath.Join(binDir, shell)))
 	}
 	t.Setenv("PATH", binDir)
+	for _, manager := range []string{"npm", "pnpm"} {
+		_, err := osexec.LookPath(manager)
+		require.ErrorIs(t, err, osexec.ErrNotFound)
+	}
 }
 
 func TestNodeJsValidatePackageManagers(t *testing.T) {
