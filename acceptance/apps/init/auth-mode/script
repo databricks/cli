@@ -2,7 +2,7 @@ init() {
   name=$1; shift
   trace $CLI apps init --template ./template --skip-install --name $name \
     --features analytics,genie,jobs \
-    --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 \
+    --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs \
     --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k "$@"
   cat $name/app.yaml $name/databricks.yml
   rm -rf $name

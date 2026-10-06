@@ -444,6 +444,20 @@ func resourceSpec(r manifest.Resource) (appResourceSpec, bool) {
 	}, true
 }
 
+// BindingVarFields returns the yamlKey of the resource's databricks.yml binding and the
+// manifest fields whose values the binding references through ${var.*}. These can include
+// fields the manifest does not declare. ok is false when the resource type has no binding.
+func BindingVarFields(r manifest.Resource) (yamlKey string, fields []string, ok bool) {
+	spec, ok := resourceSpec(r)
+	if !ok {
+		return "", nil, false
+	}
+	for _, f := range spec.varFields {
+		fields = append(fields, f[0])
+	}
+	return spec.yamlKey, fields, true
+}
+
 // varNameForField returns the bundle variable name for a specific field of a resource.
 // Uses VarPrefix (resource_key with hyphens replaced by underscores).
 func varNameForField(r manifest.Resource, fieldName string) string {

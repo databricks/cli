@@ -1,6 +1,6 @@
 
 === Default: every resource bound to the service principal
->>> [CLI] apps init --template ./template --skip-install --name app-sp --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k
+>>> [CLI] apps init --template ./template --skip-install --name app-sp --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -29,7 +29,7 @@ variables:
   genie_space_id:
     description: Genie Space ID
   genie_space_name:
-    description: Genie Space
+    description: Genie Space name
   job_id:
     description: Job ID
   secret_key:
@@ -80,12 +80,13 @@ targets:
     variables:
       sql_warehouse_id: wh1
       genie_space_id: g1
+      genie_space_name: gs
       job_id: 42
       secret_key: k
       secret_scope: s
 
 === App-wide OBO, job kept on the service principal
->>> [CLI] apps init --template ./template --skip-install --name app-obo --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo --set jobs.job.authMode=sp
+>>> [CLI] apps init --template ./template --skip-install --name app-obo --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo --set jobs.job.authMode=sp
 Note: these resources cannot be accessed on behalf of the user and use the service principal: secret
 ✔ Creating project
 
@@ -156,7 +157,7 @@ targets:
       secret_scope: s
 
 === Mixed: warehouse both, genie OBO
->>> [CLI] apps init --template ./template --skip-install --name app-mixed --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --set analytics.sql-warehouse.authMode=both --set genie.genie-space.authMode=obo
+>>> [CLI] apps init --template ./template --skip-install --name app-mixed --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --set analytics.sql-warehouse.authMode=both --set genie.genie-space.authMode=obo
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -233,7 +234,7 @@ targets:
       secret_scope: s
 
 === App-wide OBO: resources without a scope stay on the service principal
->>> [CLI] apps init --template ./template --skip-install --name app-obo-lenient --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo
+>>> [CLI] apps init --template ./template --skip-install --name app-obo-lenient --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo
 Note: these resources cannot be accessed on behalf of the user and use the service principal: job, secret
 ✔ Creating project
 
@@ -304,7 +305,7 @@ targets:
       secret_scope: s
 
 === Analytics OBO, genie space on the service principal: plugin scopes still emitted
->>> [CLI] apps init --template ./template --skip-install --name app-genie-sp --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --set analytics.sql-warehouse.authMode=obo --set genie.genie-space.authMode=sp
+>>> [CLI] apps init --template ./template --skip-install --name app-genie-sp --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set genie.genie-space.name=gs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --set analytics.sql-warehouse.authMode=obo --set genie.genie-space.authMode=sp
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -331,7 +332,7 @@ variables:
   genie_space_id:
     description: Genie Space ID
   genie_space_name:
-    description: Genie Space
+    description: Genie Space name
   job_id:
     description: Job ID
   secret_key:
@@ -379,6 +380,7 @@ targets:
 
     variables:
       genie_space_id: g1
+      genie_space_name: gs
       job_id: 42
       secret_key: k
       secret_scope: s

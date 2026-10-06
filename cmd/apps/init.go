@@ -380,16 +380,82 @@ func resourceConfigured(r manifest.Resource, values map[string]string) bool {
 	return false
 }
 
-// pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
+// pluginHasResourceField checks whether a plugin has a resource with the given key whose
+// fields, or the fields its databricks.yml binding references, include fieldName.
 func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) bool {
 	for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 		if r.Key() == resourceKey {
 			if _, ok := r.Fields[fieldName]; ok {
 				return true
 			}
+			if _, fields, ok := generator.BindingVarFields(r); ok && slices.Contains(fields, fieldName) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// missingBindingValue is a field referenced by a resource's databricks.yml binding that has no value.
+type missingBindingValue struct {
+	resource manifest.Resource
+	yamlKey  string
+	field    string
+}
+
+// setKey returns the --set key for the missing value (plugin.resourceKey.field).
+func (mv missingBindingValue) setKey() string {
+	return mv.resource.PluginName + "." + mv.resource.Key() + "." + mv.field
+}
+
+func (mv missingBindingValue) Error() string {
+	return fmt.Sprintf("missing value for %s (needed by the %s binding); use --set %s=value", mv.setKey(), mv.yamlKey, mv.setKey())
+}
+
+// findMissingBindingValues returns the binding fields without a value for configured resources
+// that are bound to the service principal (auth mode sp or both). Resources accessed only on
+// behalf of the user have no binding, and resources without any value are left to
+// validateRequiredResources.
+func findMissingBindingValues(resources []manifest.Resource, values, authModes map[string]string) []missingBindingValue {
+	var missing []missingBindingValue
+	for _, r := range resources {
+		if authModes[r.AuthKey()] == generator.AuthModeOBO || !resourceConfigured(r, values) {
+			continue
+		}
+		yamlKey, fields, ok := generator.BindingVarFields(r)
+		if !ok {
+			continue
+		}
+		for _, f := range fields {
+			if values[r.Key()+"."+f] == "" {
+				missing = append(missing, missingBindingValue{resource: r, yamlKey: yamlKey, field: f})
+			}
+		}
+	}
+	return missing
+}
+
+// promptForBindingValue asks for a value of a binding field and stores it in values.
+func promptForBindingValue(ctx context.Context, mv missingBindingValue, values map[string]string) error {
+	var value string
+	err := huh.NewInput().
+		Title(fmt.Sprintf("%s %s", mv.resource.Alias, mv.field)).
+		Description(fmt.Sprintf("Needed by the %s binding in databricks.yml", mv.yamlKey)).
+		Value(&value).
+		Validate(func(s string) error {
+			if s == "" {
+				return errors.New("this field is required")
+			}
+			return nil
+		}).
+		WithTheme(prompt.AppkitTheme()).
+		Run()
+	if err != nil {
+		return err
+	}
+	prompt.PrintAnswered(ctx, fmt.Sprintf("%s %s", mv.resource.Alias, mv.field), value)
+	values[mv.resource.Key()+"."+mv.field] = value
+	return nil
 }
 
 // validateRequiredResources checks that all required resources have at least one
@@ -1540,6 +1606,27 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		// Validate that all required resources are provided.
 		if err := validateRequiredResources(resources, resourceValues); err != nil {
 			return err
+		}
+	}
+
+	// A resource bound to the service principal needs a value for every field its binding
+	// references, including fields the manifest does not declare. Prompt on a terminal
+	// (outside flags mode), otherwise fail before any project files are written.
+	if !agenticMode {
+		missing := findMissingBindingValues(authResources, resourceValues, authModes)
+		if len(missing) > 0 && isInteractive && !flagsMode {
+			if resourceValues == nil {
+				resourceValues = make(map[string]string)
+			}
+			for _, mv := range missing {
+				if err := promptForBindingValue(ctx, mv, resourceValues); err != nil {
+					return err
+				}
+			}
+			missing = nil
+		}
+		if len(missing) > 0 {
+			return missing[0]
 		}
 	}
 

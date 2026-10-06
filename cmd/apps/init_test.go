@@ -1548,3 +1548,70 @@ func TestResourceConfigured(t *testing.T) {
 	assert.False(t, resourceConfigured(r, map[string]string{"other.id": "x"}))
 	assert.True(t, resourceConfigured(r, map[string]string{"wh.id": "x"}))
 }
+
+func TestFindMissingBindingValues(t *testing.T) {
+	genieIDOnly := manifest.Resource{Type: "genie_space", ResourceKey: "genie-space", PluginName: "genie", Scope: "genie", Fields: map[string]manifest.ResourceField{"id": {}}}
+	warehouse := manifest.Resource{Type: "sql_warehouse", ResourceKey: "sql-warehouse", PluginName: "analytics", Scope: "sql", Fields: map[string]manifest.ResourceField{"id": {}}}
+	resources := []manifest.Resource{warehouse, genieIDOnly}
+	values := map[string]string{"sql-warehouse.id": "wh", "genie-space.id": "g123"}
+
+	tests := []struct {
+		name    string
+		modes   map[string]string
+		values  map[string]string
+		wantErr []string
+	}{
+		{
+			name:    "sp: undeclared binding field without a value",
+			values:  values,
+			wantErr: []string{"missing value for genie.genie-space.name (needed by the genie_space binding); use --set genie.genie-space.name=value"},
+		},
+		{
+			name:    "both: still bound",
+			modes:   map[string]string{genieIDOnly.AuthKey(): "both"},
+			values:  values,
+			wantErr: []string{"missing value for genie.genie-space.name (needed by the genie_space binding); use --set genie.genie-space.name=value"},
+		},
+		{
+			name:   "sp with the value set",
+			values: map[string]string{"sql-warehouse.id": "wh", "genie-space.id": "g123", "genie-space.name": "space"},
+		},
+		{
+			name:   "obo: no binding",
+			modes:  map[string]string{genieIDOnly.AuthKey(): "obo", warehouse.AuthKey(): "obo"},
+			values: values,
+		},
+		{
+			name:   "mixed: only the sp resource is checked",
+			modes:  map[string]string{genieIDOnly.AuthKey(): "obo"},
+			values: values,
+		},
+		{
+			name:   "resources without any value are left to validateRequiredResources",
+			values: map[string]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []string
+			for _, mv := range findMissingBindingValues(resources, tt.values, tt.modes) {
+				got = append(got, mv.Error())
+			}
+			assert.Equal(t, tt.wantErr, got)
+		})
+	}
+}
+
+func TestParseSetValuesAcceptsBindingField(t *testing.T) {
+	m := &manifest.Manifest{Plugins: map[string]manifest.Plugin{
+		"genie": {Name: "genie", Resources: manifest.Resources{Required: []manifest.Resource{
+			{Type: "genie_space", ResourceKey: "genie-space", Fields: map[string]manifest.ResourceField{"id": {}}},
+		}}},
+	}}
+	rv, err := parseSetValues([]string{"genie.genie-space.id=g123", "genie.genie-space.name=space"}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"genie-space.id": "g123", "genie-space.name": "space"}, rv)
+
+	_, err = parseSetValues([]string{"genie.genie-space.other=x"}, m)
+	assert.ErrorContains(t, err, `no resource with key "genie-space" and field "other"`)
+}
