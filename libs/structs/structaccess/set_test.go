@@ -910,3 +910,73 @@ func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
 	assert.Equal(t, "set", target.Named, "Set must write to Named")
 	assert.Equal(t, "s", target.Skipped, "json:\"-\" field must stay out of reach")
 }
+
+func TestSet_AllocatesNilParents(t *testing.T) {
+	type Leaf struct {
+		N int `json:"n,omitempty"`
+	}
+	type Mid struct {
+		C  *Leaf           `json:"c,omitempty"`
+		LM map[string]Leaf `json:"lm,omitempty"`
+	}
+	type T struct {
+		M  map[string]string            `json:"m,omitempty"`
+		P  *Leaf                        `json:"p,omitempty"`
+		A  *Mid                         `json:"a,omitempty"`
+		S  []string                     `json:"s,omitempty"`
+		SL []Leaf                       `json:"sl,omitempty"`
+		NM map[string]string            `json:"nm"`
+		NP *Leaf                        `json:"np"`
+		MM map[string]map[string]string `json:"mm,omitempty"`
+	}
+
+	tests := []struct {
+		path     string
+		value    any
+		expected T
+	}{
+		{"m.k", "x", T{M: map[string]string{"k": "x"}}},
+		{"nm.k", "x", T{NM: map[string]string{"k": "x"}}},
+		{"p.n", 5, T{P: &Leaf{N: 5}}},
+		{"np.n", 5, T{NP: &Leaf{N: 5}}},
+		{"a.c.n", 5, T{A: &Mid{C: &Leaf{N: 5}}}},
+		{"a.lm.k.n", 5, T{A: &Mid{LM: map[string]Leaf{"k": {N: 5}}}}},
+		{"mm.a.b", "x", T{MM: map[string]map[string]string{"a": {"b": "x"}}}},
+		{"s[0]", "x", T{S: []string{"x"}}},
+		{"s[2]", "x", T{S: []string{"", "", "x"}}},
+		{"sl[0].n", 5, T{SL: []Leaf{{N: 5}}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			target := &T{}
+			require.NoError(t, structaccess.SetByString(target, tt.path, tt.value))
+			assert.Equal(t, tt.expected, *target)
+		})
+	}
+}
+
+func TestSet_NilParentNotAllocatable(t *testing.T) {
+	type T struct {
+		I any `json:"i,omitempty"`
+	}
+	err := structaccess.SetByString(&T{}, "i.k", "x")
+	assert.EqualError(t, err, "cannot set i.k: parent i is nil")
+}
+
+func TestSet_AllocationWithExistingParents(t *testing.T) {
+	type T struct {
+		M  map[string]map[string]string `json:"m,omitempty"`
+		SL []map[string]string          `json:"sl,omitempty"`
+	}
+	target := &T{M: map[string]map[string]string{"a": {"b": "1"}}, SL: []map[string]string{nil}}
+	require.NoError(t, structaccess.SetByString(target, "m.a.c", "2"))
+	require.NoError(t, structaccess.SetByString(target, "sl[0].k", "3"))
+	assert.Equal(t, T{
+		M:  map[string]map[string]string{"a": {"b": "1", "c": "2"}},
+		SL: []map[string]string{{"k": "3"}},
+	}, *target)
+
+	err := structaccess.SetByString(target, "sl[1].k", "3")
+	assert.EqualError(t, err, "failed to navigate to parent sl[1]: sl[1]: index out of range, length is 1") //nolint:dupword
+}
