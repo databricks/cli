@@ -153,6 +153,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		// Must run after PythonMutator to see development values set by Python mutators.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).

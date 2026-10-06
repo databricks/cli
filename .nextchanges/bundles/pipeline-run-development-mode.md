@@ -1,0 +1,1 @@
+* `bundle run` and `pipelines run` now send the per-update `development` parameter for pipelines in development mode targets. Setting `development` on a pipeline is deprecated and now emits a warning; use `mode: development` instead. ([#6863](https://github.com/databricks/cli/pull/6863))
