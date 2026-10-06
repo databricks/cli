@@ -1,0 +1,56 @@
+
+=== Create a direct deployment with two resources
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Created jobs.two
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A failed operation leaves resources.json authoritative
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deployment migrate --enable-history
+Error: recording migration resources: recording operation for resources.jobs.one: Fault injected by test. (500 INJECTED)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.one?update_mask=state%2Cerror_message%2Cresource_id%2Cstatus
+HTTP Status: 500 Internal Server Error
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+>>> jq {serial, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "serial": 1,
+  "features": null,
+  "resources": [
+    "resources.jobs.one",
+    "resources.jobs.two"
+  ]
+}
+
+=== Retry migrates only the resource missing from DMS
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deployment migrate --enable-history
+Migrate: 2 resources moved to deployment history
+
+>>> print_requests.py --dms --keep //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-migration-resume-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "operations": [{"resource_key": "jobs.one", "action_type": "OPERATION_ACTION_TYPE_MIGRATE"}, {"resource_key": "jobs.two", "action_type": "OPERATION_ACTION_TYPE_MIGRATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "3"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "previous_version_id": "2", "operations": [{"resource_key": "jobs.one", "action_type": "OPERATION_ACTION_TYPE_MIGRATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+>>> print_requests.py --keep --del-field raw_body //resources.json.backup --oneline
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/resources.json.backup", "q": {"overwrite": "true"}, "body": {"state_version": 3, "cli_version": "[CLI_VERSION]", "lineage": "[UUID]", "serial": 1, "state": {"resources.jobs.one": {"__id__": "[NUMID]", "state": {"deployment": {"kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/metadata.json"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "one", "queue": {"enabled": true}}}, "resources.jobs.two": {"__id__": "[NUMID]", "state": {"deployment": {"kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-migration-resume-[UNIQUE_NAME]/default/state/metadata.json"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "two", "queue": {"enabled": true}}}}}}
+
+>>> jq {serial, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "serial": null,
+  "features": {
+    "deployment_history": {}
+  },
+  "resources": []
+}

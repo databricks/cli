@@ -70,27 +70,37 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
 	dmsClient := db.StateDB.DmsClient()
-	metadata := deploymentMetadata(b)
-	deploymentID := db.StateDB.DeploymentID
-	if deploymentID == "" {
-		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
-			return
-		}
-		deploymentID = id
-		db.StateDB.DeploymentID = deploymentID
-	} else if mask := metadata.StaleFields(current); mask != "" {
-		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
-			return
-		}
+	deploymentID, err := ensureDeployment(ctx, b, db.StateDB.DeploymentID, current, dmsClient)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
+	db.StateDB.DeploymentID = deploymentID
 
 	// A first deploy had no deployment to read at startup, so its id enters the history here.
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
+}
+
+// ensureDeployment creates the DMS deployment when absent and otherwise synchronizes its metadata.
+// It returns the server-owned deployment ID used by the version and operation APIs.
+func ensureDeployment(ctx context.Context, b *bundle.Bundle, deploymentID string, current *bundledeployments.Deployment, dmsClient *dms.Client) (string, error) {
+	metadata := deploymentMetadata(b)
+	if deploymentID == "" {
+		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
+		if err != nil {
+			return "", fmt.Errorf("failed to create deployment: %w", err)
+		}
+		return id, nil
+	}
+
+	if mask := metadata.StaleFields(current); mask != "" {
+		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
+			return "", fmt.Errorf("failed to update deployment: %w", err)
+		}
+	}
+	return deploymentID, nil
 }
 
 // startVersion claims the version the run settled on and opens the buffer that records
@@ -116,20 +126,12 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	// The server rejects this unless the version number exceeds last_version_id and
 	// previous_version_id matches it, which is what makes claiming the number up front
 	// safe: a deploy that took it in the meantime is reported, not overwritten.
-	var gitInfo *bundledeployments.GitInfo
-	if git := b.Config.Bundle.Git; git.Branch != "" || git.Commit != "" || git.OriginURL != "" {
-		gitInfo = &bundledeployments.GitInfo{
-			Branch:    git.Branch,
-			Commit:    git.Commit,
-			OriginUrl: git.OriginURL,
-		}
-	}
 	version, err := dmsClient.CreateVersion(ctx, deploymentID, versionID, dms.CreateVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       versionType,
 		PreviousVersionId: previousVersionID,
 		Operations:        staged,
-		GitInfo:           gitInfo,
+		GitInfo:           versionGitInfo(b),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create deployment version: %w", err)
@@ -138,6 +140,19 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 
 	db.StateDB.InitializeOperationBuffer(ctx, deploymentID, versionID)
 	return nil
+}
+
+// versionGitInfo returns source-control provenance when the bundle resolved any of it.
+func versionGitInfo(b *bundle.Bundle) *bundledeployments.GitInfo {
+	git := b.Config.Bundle.Git
+	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
+		return nil
+	}
+	return &bundledeployments.GitInfo{
+		Branch:    git.Branch,
+		Commit:    git.Commit,
+		OriginUrl: git.OriginURL,
+	}
 }
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted

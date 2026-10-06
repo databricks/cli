@@ -8,12 +8,17 @@ lineage and incremented serial number.
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
 
+With --enable-history, this command instead migrates an existing Direct deployment
+to the deployment metadata service. The migration completes before any later deploy,
+and resources.json is backed up before DMS becomes authoritative.
+
 Usage:
   databricks bundle deployment migrate [flags]
 
 Flags:
-  -h, --help          help for migrate
-      --noplancheck   No-op (kept for compatibility).
+      --enable-history   Migrate an existing Direct deployment to deployment history.
+  -h, --help             help for migrate
+      --noplancheck      No-op (kept for compatibility).
 
 Global Flags:
       --debug            enable debug logging

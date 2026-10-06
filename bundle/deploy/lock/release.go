@@ -14,6 +14,7 @@ type Goal string
 const (
 	GoalBind    = Goal("bind")
 	GoalUnbind  = Goal("unbind")
+	GoalMigrate = Goal("migrate")
 	GoalDeploy  = Goal("deploy")
 	GoalDestroy = Goal("destroy")
 )
@@ -48,7 +49,7 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	switch m.goal {
 	case GoalDeploy:
 		return diag.FromErr(b.Locker.Unlock(ctx))
-	case GoalBind, GoalUnbind:
+	case GoalBind, GoalUnbind, GoalMigrate:
 		return diag.FromErr(b.Locker.Unlock(ctx))
 	case GoalDestroy:
 		// Destroy may have proceeded without acquiring a lock (see lock.Acquire:

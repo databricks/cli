@@ -248,6 +248,32 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	mustFinalize(t, &reopened)
 }
 
+func TestPersistDeploymentHistoryMarker(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	state := NewDatabase("test-lineage", 7)
+	state.State["resources.jobs.my_job"] = ResourceEntry{
+		ID:    "123",
+		State: json.RawMessage(`{"name":"my job"}`),
+	}
+
+	var db DeploymentState
+	db.OpenWithData(path, state)
+	require.NoError(t, db.PersistDeploymentHistoryMarker())
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var persisted Database
+	require.NoError(t, json.Unmarshal(data, &persisted))
+	assert.Equal(t, "test-lineage", persisted.Lineage)
+	assert.Zero(t, persisted.Serial)
+	assert.Contains(t, persisted.Features, FeatureDeploymentHistory)
+	assert.Empty(t, persisted.State)
+
+	// The command can still retry from its open direct state when the remote tombstone upload fails.
+	assert.Equal(t, 7, db.Data.Serial)
+	assert.Contains(t, db.Data.State, "resources.jobs.my_job")
+}
+
 // TestOpenFailureLeavesStateClosed pins that a failed Open leaves the receiver
 // closed. Open assigns db.Path before the steps that can fail, so an unreadable
 // state file used to leave Path set: the next Open on the same value panicked

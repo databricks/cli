@@ -3,6 +3,7 @@ package statemgmt
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 
@@ -41,6 +42,29 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
+}
+
+// BackupRemoteResourcesState writes the selected direct state to resources.json.backup without
+// changing the active state. Migration treats any failure as fatal because this is its rollback
+// point once DMS has a complete copy.
+func BackupRemoteResourcesState(ctx context.Context, b *bundle.Bundle) error {
+	f, err := deploy.StateFiler(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	remotePath, localPath := b.StateFilenameDirect(ctx)
+	local, err := os.Open(localPath)
+	if err != nil {
+		return fmt.Errorf("opening resources state for backup: %w", err)
+	}
+	defer local.Close()
+
+	backupPath := remotePath + ".backup"
+	if err := f.Write(ctx, backupPath, local, filer.CreateParentDirectories, filer.OverwriteIfExists); err != nil {
+		return fmt.Errorf("writing resources state backup to %s: %w", backupPath, err)
+	}
+	return nil
 }
 
 func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
