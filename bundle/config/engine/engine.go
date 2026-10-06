@@ -21,23 +21,23 @@ const (
 // for existing terraform deployments (whose state is migrated to it before the command runs).
 const Default = EngineDirect
 
-// TerraformRemovedMessage is the error text shown when a bundle pins the removed
-// Terraform deployment engine via bundle.engine. TerraformRemovedEnvMessage is
-// the same for DATABRICKS_BUNDLE_ENGINE. "terraform" is still recognized as a
-// value so we can point at this specific removal rather than reporting it as an
-// unrecognized setting.
+// TerraformRemovedConfigMessage and TerraformRemovedEnvMessage are the error text
+// shown when a bundle pins the removed Terraform deployment engine via
+// bundle.engine or DATABRICKS_BUNDLE_ENGINE respectively. "terraform" is still
+// recognized as a value so we can point at this specific removal rather than
+// reporting it as an unrecognized setting.
 const (
-	TerraformRemovedMessage    = TerraformRemovedSummary + "\n\n" + TerraformRemovedDetail
-	TerraformRemovedEnvMessage = TerraformRemovedSummary + "\n\n" + TerraformRemovedEnvDetail
+	TerraformRemovedConfigMessage = TerraformRemovedSummary + "\n\n" + TerraformRemovedConfigDetail
+	TerraformRemovedEnvMessage    = TerraformRemovedSummary + "\n\n" + TerraformRemovedEnvDetail
 )
 
-// TerraformRemovedSummary and TerraformRemovedDetail are the two parts of
-// TerraformRemovedMessage, for callers that report it as a diagnostic.
+// TerraformRemovedSummary and TerraformRemovedConfigDetail are the two parts of
+// TerraformRemovedConfigMessage, for callers that report it as a diagnostic.
 const TerraformRemovedSummary = `the Terraform deployment engine has been removed in Databricks CLI v1.20.0`
 
 const (
-	TerraformRemovedDetail    = `Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
-	TerraformRemovedEnvDetail = `Unset the ` + EnvVar + ` environment variable (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
+	TerraformRemovedConfigDetail = `Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
+	TerraformRemovedEnvDetail    = `Unset the ` + EnvVar + ` environment variable (or set it to "direct") to deploy with the direct engine; ` + terraformRemovedHint
 )
 
 const terraformRemovedHint = `existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.

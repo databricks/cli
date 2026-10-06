@@ -563,7 +563,7 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
 		}
 		if parsed == engine.EngineTerraform {
-			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedConfigMessage)
 		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")

@@ -65,5 +65,5 @@ func TestResolveEngineSettingTerraformConfig(t *testing.T) {
 	ctx := env.Set(t.Context(), engine.EnvVar, "terraform")
 	b := &bundle.Bundle{Config: config.Root{Bundle: config.Bundle{Engine: engine.EngineTerraform}}}
 	_, err := ResolveEngineSetting(ctx, b)
-	assert.EqualError(t, err, engine.TerraformRemovedMessage)
+	assert.EqualError(t, err, engine.TerraformRemovedConfigMessage)
 }
