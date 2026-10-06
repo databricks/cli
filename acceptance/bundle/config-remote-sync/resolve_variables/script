@@ -10,6 +10,7 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle deploy
+read_lineage.py
 job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
 

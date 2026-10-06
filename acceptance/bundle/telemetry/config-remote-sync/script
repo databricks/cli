@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+read_lineage.py
 
 job_id="$(read_id.py foo)"
 edit_resource.py jobs $job_id <<EOF

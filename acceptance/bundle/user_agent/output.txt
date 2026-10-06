@@ -1,6 +1,6 @@
-MISS	deploy	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	deploy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	deploy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	deploy	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	deploy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	deploy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 OK  	deploy	/api/2.0/workspace/export	engine/direct
 OK  	deploy	/api/2.0/workspace/export	engine/direct
 OK  	deploy	/api/2.0/workspace/get-status	engine/direct
@@ -20,10 +20,10 @@ OK  	deploy	/api/2.0/workspace/mkdirs	engine/direct
 OK  	deploy	/api/2.0/workspace/mkdirs	engine/direct
 OK  	deploy	/api/2.1/unity-catalog/schemas	engine/direct
 MISS	deploy	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	destroy	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	destroy	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	destroy	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	destroy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	destroy	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 OK  	destroy	/api/2.1/unity-catalog/schemas/mycatalog.myschema	engine/direct
 OK  	destroy	/api/2.0/workspace/export	engine/direct
 OK  	destroy	/api/2.0/workspace/get-status	engine/direct
@@ -34,31 +34,31 @@ OK  	destroy	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bu
 OK  	destroy	/api/2.0/workspace/delete	engine/direct
 OK  	destroy	/api/2.0/workspace/delete	engine/direct
 MISS	destroy	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	plan	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	plan	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	plan	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	plan	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	plan	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	plan	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 OK  	plan	/api/2.0/workspace/get-status	engine/direct
 MISS	plan	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	plan2	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	plan2	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	plan2	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	plan2	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	plan2	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	plan2	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	plan2	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	plan2	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 OK  	plan2	/api/2.0/workspace/export	engine/direct
 OK  	plan2	/api/2.0/workspace/get-status	engine/direct
 OK  	plan2	/api/2.1/unity-catalog/schemas/mycatalog.myschema	engine/direct
 MISS	plan2	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	run	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	run	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	run	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	run	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	run	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	run	/api/2.0/workspace/export	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	run	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	run	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 MISS	run	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	summary	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	summary	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	summary	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	summary	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	summary	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	summary	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 OK  	summary	/api/2.0/preview/scim/v2/Me	engine/direct
 MISS	summary	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	validate	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	validate	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	validate	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	validate	/api/2.0/workspace/mkdirs	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'
+MISS	validate	/api/2.0/preview/scim/v2/Me	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	validate	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	validate	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
+MISS	validate	/api/2.0/workspace/mkdirs	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat'
 MISS	validate	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
