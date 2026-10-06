@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
@@ -20,7 +19,15 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, stateDesc *statemgmt.StateDesc) {
+type BindOptions struct {
+	AutoApprove bool
+	// Group is the bundle resource group, e.g. "jobs".
+	Group       string
+	ResourceKey string
+	ResourceId  string
+}
+
+func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *statemgmt.StateDesc) {
 	log.Info(ctx, "Phase: bind")
 	engine := stateDesc.Engine
 
@@ -46,11 +53,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 	}
 
 	// Direct engine: import into temp state, run plan, check for changes.
-	groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
-	if !ok {
-		groupName = opts.ResourceType
-	}
-	resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
+	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
 
 	result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
@@ -116,7 +119,7 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, tfResourceType, resourceKey string, engine engine.EngineType) {
+func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalUnbind))
@@ -135,11 +138,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, tfResourceType, resourceKey s
 		return
 	}
 
-	groupName, ok := terraform.TerraformToGroupName[tfResourceType]
-	if !ok {
-		groupName = tfResourceType
-	}
-	fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
+	fullResourceKey := fmt.Sprintf("resources.%s.%s", group, resourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
 	err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
 	if err != nil {

@@ -2,7 +2,6 @@ package deployment
 
 import (
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -68,12 +67,7 @@ To re-bind the resource later, use:
 			return err
 		}
 
-		rd := resource.ResourceDescription()
-		tfName, ok := terraform.GroupToTerraformName[rd.PluralName]
-		if !ok {
-			tfName = rd.PluralName
-		}
-		phases.Unbind(ctx, b, tfName, args[0], stateDesc.Engine)
+		phases.Unbind(ctx, b, resource.ResourceDescription().PluralName, args[0], stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
