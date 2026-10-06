@@ -363,9 +363,9 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 	case dyn.KindString:
 		// See https://github.com/go-yaml/yaml/blob/f6f7691b1fdeb513f56608cd2c32c51f8194bf51/decode.go#L684-L693.
 		switch src.MustString() {
-		case "true", "y", "Y", "yes", "Yes", "YES", "on", "On", "ON":
+		case "true", "True", "TRUE", "y", "Y", "yes", "Yes", "YES", "on", "On", "ON":
 			return dyn.NewValue(true, src.Locations()), nil
-		case "false", "n", "N", "no", "No", "NO", "off", "Off", "OFF":
+		case "false", "False", "FALSE", "n", "N", "no", "No", "NO", "off", "Off", "OFF":
 			return dyn.NewValue(false, src.Locations()), nil
 		default:
 			// Return verbatim if it's a pure variable reference.

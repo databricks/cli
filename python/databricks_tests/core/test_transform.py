@@ -54,6 +54,20 @@ def test_transform_bool():
     assert out == Fake(field=False)
 
 
+@pytest.mark.parametrize(
+    "value,expected",
+    [("True", True), ("False", False), ("TRUE", True), ("FALSE", False)],
+)
+def test_transform_bool_title_case(value, expected):
+    @dataclass
+    class Fake:
+        field: Optional[bool] = None
+
+    out = _transform(Fake, {"field": value})
+
+    assert out == Fake(field=expected)
+
+
 def test_transform_str():
     @dataclass
     class Fake:

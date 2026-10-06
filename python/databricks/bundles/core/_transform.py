@@ -207,8 +207,9 @@ def _transform(cls: Type[_T], value: Any) -> _T:
         if isinstance(value, bool):
             return value  # type:ignore
 
-        if value in ["true", "false"]:
-            return value == "true"  # type:ignore
+        # Accept any casing, e.g. "True" from Azure Pipelines.
+        if isinstance(value, str) and value.lower() in ["true", "false"]:
+            return value.lower() == "true"  # type:ignore
 
         raise ValueError(f"Unexpected type: {cls} for '{value}'")
     elif issubclass(origin or cls, Enum):
