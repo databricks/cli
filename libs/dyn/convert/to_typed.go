@@ -252,7 +252,7 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 		dst.SetBool(src.MustBool())
 		return nil
 	case dyn.KindString:
-		// See https://github.com/go-yaml/yaml/blob/f6f7691b1fdeb513f56608cd2c32c51f8194bf51/decode.go#L684-L693.
+		// See https://yaml.org/type/bool.html.
 		switch src.MustString() {
 		case "y", "Y", "yes", "Yes", "YES", "on", "On", "ON", "true", "True", "TRUE":
 			dst.SetBool(true)

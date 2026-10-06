@@ -361,7 +361,7 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 	case dyn.KindBool:
 		return dyn.NewValue(src.MustBool(), src.Locations()), nil
 	case dyn.KindString:
-		// See https://github.com/go-yaml/yaml/blob/f6f7691b1fdeb513f56608cd2c32c51f8194bf51/decode.go#L684-L693.
+		// See https://yaml.org/type/bool.html.
 		switch src.MustString() {
 		case "true", "True", "TRUE", "y", "Y", "yes", "Yes", "YES", "on", "On", "ON":
 			return dyn.NewValue(true, src.Locations()), nil

@@ -56,9 +56,16 @@ def test_transform_bool():
 
 @pytest.mark.parametrize(
     "value,expected",
-    [("True", True), ("False", False), ("TRUE", True), ("FALSE", False)],
+    [
+        ("True", True),
+        ("FALSE", False),
+        ("yes", True),
+        ("N", False),
+        ("On", True),
+        ("off", False),
+    ],
 )
-def test_transform_bool_title_case(value, expected):
+def test_transform_bool_from_string(value, expected):
     @dataclass
     class Fake:
         field: Optional[bool] = None
@@ -66,6 +73,16 @@ def test_transform_bool_title_case(value, expected):
     out = _transform(Fake, {"field": value})
 
     assert out == Fake(field=expected)
+
+
+@pytest.mark.parametrize("value", ["tRuE", "1", ""])
+def test_transform_bool_invalid(value):
+    @dataclass
+    class Fake:
+        field: Optional[bool] = None
+
+    with pytest.raises(ValueError, match="Unexpected type"):
+        _transform(Fake, {"field": value})
 
 
 def test_transform_str():
