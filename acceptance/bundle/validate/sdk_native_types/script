@@ -1,0 +1,5 @@
+errcode trace $CLI bundle validate
+
+cd var_ref
+errcode trace $CLI bundle validate
+trace $CLI bundle validate --var expire_time=2030-01-01T00:00:00Z -o json | jq .resources.postgres_branches.dev.expire_time
