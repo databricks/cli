@@ -1,6 +1,0 @@
-# Use string anchor to extend a mapping.
-str: &str "Hello world!"
-
-map:
-  <<: *str
-  key: value

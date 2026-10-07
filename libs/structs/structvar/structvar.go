@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -20,6 +19,9 @@ type StructVar struct {
 	// Refs holds unresolved references. Key is serialized PathNode pointing inside a struct (e.g. "name")
 	// and value is either pure or multiple references string: "${resources.foo.jobs.id}" or "${a} ${b}"
 	Refs map[string]string `json:"vars,omitempty"`
+
+	// Locations holds the source locations of the values, if known (configuration loaded from files).
+	Locations *Locations `json:"-"`
 }
 
 // StructVarJSON is the serialized form of StructVar for persisting in plan files.
@@ -103,18 +105,18 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 				return fmt.Errorf("cannot set %s to %T (%#v): %w", pathNode.String(), value, value, err)
 			}
 
-			newValue := dynvar.ReplaceRef(refValue, reference, valueStr)
+			newValue := ReplaceRef(refValue, reference, valueStr)
 
 			// The struct gets the unescaped form ("$${x}" -> "${x}"), since that is what
 			// is sent to the API. sv.Refs keeps the escaped form so the still-pending
 			// check below can tell a literal apart from a real reference.
-			err = structaccess.Set(sv.Value, pathNode, dynvar.Unescape(newValue))
+			err = structaccess.Set(sv.Value, pathNode, Unescape(newValue))
 			if err != nil {
 				return fmt.Errorf("cannot update %s to string: %w", pathNode.String(), err)
 			}
 
 			// Check if fully resolved (no unescaped ${} patterns left)
-			if !dynvar.ContainsVariableReference(newValue) {
+			if !ContainsVariableReference(newValue) {
 				delete(sv.Refs, pathKey)
 			} else {
 				sv.Refs[pathKey] = newValue

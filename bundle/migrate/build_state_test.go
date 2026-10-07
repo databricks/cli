@@ -1,7 +1,6 @@
 package migrate_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -12,24 +11,18 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/migrate"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // rootFromYAML builds a config.Root from a YAML snippet.
 // Template strings like "${resources.jobs.src.name}" are preserved in the
-// internal dyn.Value so BuildStateFromTF can find them via ExtractReferences.
+// configuration so BuildStateFromTF can find them via ExtractReferences.
 func rootFromYAML(t *testing.T, yaml string) config.Root {
 	t.Helper()
-	v, err := yamlloader.LoadYAML("test", bytes.NewBufferString(yaml))
-	require.NoError(t, err)
-	var root config.Root
-	require.NoError(t, convert.ToTyped(&root, v))
-	require.NoError(t, root.Mutate(func(_ dyn.Value) (dyn.Value, error) { return v, nil }))
-	return root
+	root, diags := config.LoadFromBytes("test", []byte(yaml))
+	require.NoError(t, diags.Error())
+	return *root
 }
 
 func runBuildStateFromTF(

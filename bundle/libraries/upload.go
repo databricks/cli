@@ -12,10 +12,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-
+	"github.com/databricks/cli/libs/structs/structpath"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -36,7 +35,7 @@ type upload struct {
 }
 
 type LocationToUpdate struct {
-	configPath dyn.Path
+	configPath *structpath.PathNode
 	location   diag.Location
 	// extras is the pip extras suffix (e.g. "[train]") to re-append to the
 	// rewritten remote path. Empty for libraries that carry no extras.

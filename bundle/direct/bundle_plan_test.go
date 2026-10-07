@@ -1,15 +1,13 @@
 package direct
 
 import (
-	"bytes"
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -19,35 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestDynPathToStructPath(t *testing.T) {
-	tests := []struct {
-		path     dyn.Path
-		expected string
-	}{
-		{
-			path:     dyn.NewPath(dyn.Key("foo"), dyn.Key("bar")),
-			expected: "foo.bar",
-		},
-		{
-			path:     dyn.NewPath(dyn.Key("foo"), dyn.Index(1), dyn.Key("bar")),
-			expected: "foo[1].bar",
-		},
-		{
-			path:     dyn.NewPath(dyn.Key("configuration"), dyn.Key("europris.swipe.egress_streaming_schema")),
-			expected: "configuration['europris.swipe.egress_streaming_schema']",
-		},
-		{
-			path:     dyn.NewPath(dyn.Key("tags"), dyn.Key("it's.here")),
-			expected: "tags['it''s.here']",
-		},
-	}
-
-	for _, tc := range tests {
-		node := dynPathToStructPath(tc.path)
-		assert.Equal(t, tc.expected, node.String())
-	}
-}
 
 // extractReferences gates references on the state type: a reference in an input-only field
 // (e.g. a bundle:"readonly" field like volumes' volume_path) must not become a dependency,
@@ -69,10 +38,10 @@ resources:
       comment: "${resources.schemas.kept.name}"
       volume_path: "/Volumes/main/${resources.schemas.dropped.name}/myvol"
 `
-	root, err := yamlloader.LoadYAML("test", bytes.NewBufferString(yml))
-	require.NoError(t, err)
+	root, diags := config.LoadFromBytes("test", []byte(yml))
+	require.NoError(t, diags.Error())
 
-	refs, err := extractReferences(root, "resources.volumes.v", stateType)
+	refs, err := extractReferences(root.View(), "resources.volumes.v", stateType)
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

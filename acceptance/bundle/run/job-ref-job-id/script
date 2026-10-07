@@ -1,0 +1,4 @@
+trace $CLI bundle deploy
+
+title "run resolves the referenced job id into the int job_id field"
+trace $CLI bundle run foo

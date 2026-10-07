@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -58,7 +57,7 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 		}
 		var paths []*structpath.PathNode
 		if path != nil {
-			paths = dyn.ToStructPaths(path)
+			paths = []*structpath.PathNode{path}
 		}
 
 		var locations []diag.Location
@@ -81,12 +80,12 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 	return diags, nil
 }
 
-func convertPythonPath(path string) (dyn.Path, error) {
+func convertPythonPath(path string) (*structpath.PathNode, error) {
 	if path == "" {
 		return nil, nil
 	}
 
-	return dyn.NewPathFromString(path)
+	return structpath.ParsePath(path)
 }
 
 func convertPythonSeverity(severity pythonSeverity) (diag.Severity, error) {

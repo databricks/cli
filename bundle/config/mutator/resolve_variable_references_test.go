@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
@@ -106,7 +106,7 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 }
 
 func TestIsVolumePathReferencePath(t *testing.T) {
-	require.True(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.volume_path")))
-	require.False(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.name")))
-	require.False(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.jobs.foo.name")))
+	require.True(t, isVolumePathReferencePath(structpath.MustParsePath("resources.volumes.foo.volume_path")))
+	require.False(t, isVolumePathReferencePath(structpath.MustParsePath("resources.volumes.foo.name")))
+	require.False(t, isVolumePathReferencePath(structpath.MustParsePath("resources.jobs.foo.name")))
 }

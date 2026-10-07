@@ -10,11 +10,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
+func validateFileFormat(configRoot structvar.View, filePath string) diag.Diagnostics {
 	for _, resourceDescription := range config.SupportedResources() {
 		singularName := resourceDescription.SingularName
 
@@ -29,10 +29,10 @@ func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics 
 	return nil
 }
 
-func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.Diagnostics {
+func validateSingleResourceDefined(configRoot structvar.View, ext, typ string) diag.Diagnostics {
 	type resource struct {
-		path  dyn.Path
-		value dyn.Value
+		path  *structpath.PathNode
+		value structvar.View
 		typ   string
 		key   string
 	}
@@ -41,34 +41,34 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 	supportedResources := config.SupportedResources()
 
 	// Gather all resources defined in the resources block.
-	_, err := dyn.MapByPattern(
+	err := structvar.ForEach(
 		configRoot,
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		structpath.MustParsePattern("resources.*.*"),
+		func(np *structpath.PathNode, v structvar.View) error {
 			// The key for the resource, e.g. "my_job" for jobs.my_job.
-			k := p[2].Key()
+			k := np.KeyAt(2)
 			// The type of the resource, e.g. "job" for jobs.my_job.
-			typ := supportedResources[p[1].Key()].SingularName
+			typ := supportedResources[np.KeyAt(1)].SingularName
 
-			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
-			return v, nil
+			resources = append(resources, resource{path: np, value: v, typ: typ, key: k})
+			return nil
 		})
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Gather all resources defined in a target block.
-	_, err = dyn.MapByPattern(
+	err = structvar.ForEach(
 		configRoot,
-		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey(), dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		structpath.MustParsePattern("targets.*.resources.*.*"),
+		func(np *structpath.PathNode, v structvar.View) error {
 			// The key for the resource, e.g. "my_job" for jobs.my_job.
-			k := p[4].Key()
+			k := np.KeyAt(4)
 			// The type of the resource, e.g. "job" for jobs.my_job.
-			typ := supportedResources[p[3].Key()].SingularName
+			typ := supportedResources[np.KeyAt(3)].SingularName
 
-			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
-			return v, nil
+			resources = append(resources, resource{path: np, value: v, typ: typ, key: k})
+			return nil
 		})
 	if err != nil {
 		return diag.FromErr(err)
@@ -112,7 +112,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 	var paths []*structpath.PathNode
 	for _, rr := range resources {
 		locations = append(locations, rr.value.Locations()...)
-		paths = append(paths, dyn.ToStructPath(rr.path))
+		paths = append(paths, rr.path)
 	}
 	// Sort the locations and paths to make the output deterministic.
 	slices.SortFunc(locations, func(a, b diag.Location) int {
@@ -151,15 +151,29 @@ func (m *processInclude) Name() string {
 }
 
 func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	this, diags := config.Load(m.fullPath)
+	this, diags := m.load()
 	if diags.HasError() {
 		return diags
 	}
 
-	// Add any diagnostics associated with the file format.
-	diags = append(diags, validateFileFormat(this.Value(), m.relPath)...)
+	err := b.Config.Merge(this)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return diags
+}
+
+// load loads and validates the included file.
+func (m *processInclude) load() (*config.Root, diag.Diagnostics) {
+	this, diags := config.Load(m.fullPath)
 	if diags.HasError() {
-		return diags
+		return nil, diags
+	}
+
+	// Add any diagnostics associated with the file format.
+	diags = append(diags, validateFileFormat(this.View(), m.relPath)...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	if len(this.Include) > 0 {
@@ -173,9 +187,5 @@ Only includes defined in databricks.yml are applied.`,
 		})
 	}
 
-	err := b.Config.Merge(this)
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
-	return diags
+	return this, diags
 }

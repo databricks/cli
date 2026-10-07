@@ -1,11 +1,12 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type jobRewritePattern struct {
-	pattern     dyn.Pattern
+	pattern     *structpath.PatternNode
 	mode        TranslateMode
 	skipRewrite func(string) bool
 }
@@ -14,35 +15,35 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
+func jobTaskRewritePatterns(base string) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			structpath.MustParsePattern(base + ".notebook_task.notebook_path"),
 			TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			structpath.MustParsePattern(base + ".spark_python_task.python_file"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			structpath.MustParsePattern(base + ".dbt_task.project_directory"),
 			TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			structpath.MustParsePattern(base + ".sql_task.file.path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
+			structpath.MustParsePattern(base + ".alert_task.workspace_path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			structpath.MustParsePattern(base + ".libraries[*].requirements"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -50,7 +51,7 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			// The AI Runtime task runs this bash script on each node; the backend
 			// reads it as a workspace file, so translate the local path to its
 			// remote (or immutable-snapshot) location like any other file.
-			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
+			structpath.MustParsePattern(base + ".ai_runtime_task.deployments[*].command_path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -59,16 +60,10 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 
 func jobRewritePatterns() []jobRewritePattern {
 	// Base pattern to match all tasks in all jobs.
-	base := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-	)
+	base := "resources.jobs.*.tasks[*]"
 
 	taskPatterns := jobTaskRewritePatterns(base)
-	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	forEachPatterns := jobTaskRewritePatterns(base + ".for_each_task.task")
 	patterns := append(taskPatterns, forEachPatterns...)
 	return append(patterns,
 		jobRewritePattern{
@@ -89,22 +84,13 @@ func jobRewritePatterns() []jobRewritePattern {
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
-func VisitJobPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	var err error
-	newValue := value
-
+func VisitJobPaths(root structvar.View, fn VisitFunc) error {
 	for _, rewritePattern := range jobRewritePatterns() {
-		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if rewritePattern.skipRewrite(v.MustString()) {
-				return v, nil
-			}
-
-			return fn(p, rewritePattern.mode, v)
-		})
+		err := visitString(root, rewritePattern.pattern, rewritePattern.mode, rewritePattern.skipRewrite, fn)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return err
 		}
 	}
 
-	return newValue, nil
+	return nil
 }

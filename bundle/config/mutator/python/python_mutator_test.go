@@ -12,19 +12,24 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn/convert"
-
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
 
-	"github.com/databricks/cli/libs/dyn"
-
 	"github.com/databricks/cli/bundle"
+
 	"github.com/databricks/cli/bundle/config"
+
 	"github.com/databricks/cli/internal/testutil"
+
 	"github.com/databricks/cli/libs/cmdio"
+
 	"github.com/databricks/cli/libs/process"
+
 	"github.com/stretchr/testify/assert"
+
+	"strings"
+
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {
@@ -120,11 +125,11 @@ workspace: { current_user: { userName: test }}`)
 		assert.Equal(t, "pipeline_0", pipeline0.Name)
 	}
 
-	// output of locations.json should be applied to underlying dyn.Value
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	// output of locations.json should be applied to underlying configuration
+	{
 		// location is databricks.yml, because output contains resource as-is
-		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
-		require.NoError(t, err)
+		jobName0 := b.Config.View().Lookup(structpath.MustParsePath("resources.jobs.job0.name"))
+		require.True(t, jobName0.IsValid())
 		assert.Equal(t, []diag.Location{
 			{
 				File:   "databricks.yml",
@@ -133,8 +138,8 @@ workspace: { current_user: { userName: test }}`)
 			},
 		}, jobName0.Locations())
 
-		jobName1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
-		require.NoError(t, err)
+		jobName1 := b.Config.View().Lookup(structpath.MustParsePath("resources.jobs.job1.name"))
+		require.True(t, jobName1.IsValid())
 		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/job1.py"),
@@ -143,8 +148,8 @@ workspace: { current_user: { userName: test }}`)
 			},
 		}, jobName1.Locations())
 
-		pipelineName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.pipelines.pipeline0.name"))
-		require.NoError(t, err)
+		pipelineName0 := b.Config.View().Lookup(structpath.MustParsePath("resources.pipelines.pipeline0.name"))
+		require.True(t, pipelineName0.IsValid())
 		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/pipeline0.py"),
@@ -153,9 +158,7 @@ workspace: { current_user: { userName: test }}`)
 			},
 		}, pipelineName0.Locations())
 
-		return v, nil
-	})
-	assert.NoError(t, err)
+	}
 
 	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
 	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
@@ -219,24 +222,22 @@ resources:
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	{
 		// 'name' wasn't changed, so it keeps its location
-		name, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
-		require.NoError(t, err)
+		name := b.Config.View().Lookup(structpath.MustParsePath("resources.jobs.job0.name"))
+		require.True(t, name.IsValid())
 		assert.Equal(t, "databricks.yml", name.Location().File)
 
 		// 'description' was updated by Python code and has location of generated file until
 		// we implement source maps
-		description, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.description"))
-		require.NoError(t, err)
+		description := b.Config.View().Lookup(structpath.MustParsePath("resources.jobs.job0.description"))
+		require.True(t, description.IsValid())
 
 		expectedVirtualPath, err := filepath.Abs(generatedFileName)
 		require.NoError(t, err)
 		assert.Equal(t, expectedVirtualPath, description.Location().File)
 
-		return v, nil
-	})
-	assert.NoError(t, err)
+	}
 
 	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
 	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
@@ -457,20 +458,14 @@ func TestInterpreterPath(t *testing.T) {
 	}
 }
 
-func TestStrictNormalize(t *testing.T) {
-	// NB: there is no way to trigger diag.Error, so we don't test it
+func TestLoadOutputStrict(t *testing.T) {
+	// Warnings when decoding the output are a bug in the Python code and are errors.
+	output := `{"resources": {"jobs": {"my_job": {"max_concurrent_runs": "abc"}}}}`
 
-	type TestStruct struct {
-		A int `json:"a"`
-	}
+	_, diags := loadOutput(t.TempDir(), strings.NewReader(output), newPythonLocations())
 
-	value := dyn.NewValue(map[string]dyn.Value{"A": dyn.NewValue("abc", nil)}, nil)
-
-	_, diags := convert.Normalize(TestStruct{}, value)
-	_, strictDiags := strictNormalize(TestStruct{}, value)
-
-	assert.False(t, diags.HasError())
-	assert.True(t, strictDiags.HasError())
+	require.True(t, diags.HasError())
+	assert.Equal(t, `cannot parse "abc" as an integer`, diags[0].Summary)
 }
 
 func TestCreateCacheDir(t *testing.T) {

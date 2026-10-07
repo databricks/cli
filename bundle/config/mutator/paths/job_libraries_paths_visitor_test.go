@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -73,10 +73,10 @@ func TestVisitJobLibrariesPaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.tasks[4].libraries[0].whl"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[5].libraries[0].jar"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.tasks[4].libraries[0].whl",
+		"resources.jobs.job0.tasks[5].libraries[0].jar",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }
@@ -107,10 +107,10 @@ func TestVisitJobLibrariesPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[0]"),
-		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[1]"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.environments[0].spec.dependencies[0]",
+		"resources.jobs.job0.environments[0].spec.dependencies[1]",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }

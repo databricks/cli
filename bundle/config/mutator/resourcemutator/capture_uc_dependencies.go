@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type captureUCDependencies struct{}
@@ -159,7 +159,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		// A name that already contains a reference is left as is: we only rewrite a
 		// fully literal name and do not support a mix of references and literals.
-		if dynvar.ContainsVariableReference(qm.OutputSchemaName) {
+		if structvar.ContainsVariableReference(qm.OutputSchemaName) {
 			continue
 		}
 		// OutputSchemaName is a compound "catalog.schema" string.
@@ -179,7 +179,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		// A name that already contains a reference is left as is; a mix of
 		// references and literals is not supported.
-		if dynvar.ContainsVariableReference(idx.Name) {
+		if structvar.ContainsVariableReference(idx.Name) {
 			continue
 		}
 		// Name is a three-part "catalog.schema.index" UC identifier.
@@ -212,7 +212,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		// A parent that already contains a reference is left as is; a mix of
 		// references and literals is not supported.
-		if dynvar.ContainsVariableReference(ms.Parent) {
+		if structvar.ContainsVariableReference(ms.Parent) {
 			continue
 		}
 		ms.Parent = resolveAiGatewayParent(b, ms.Parent)

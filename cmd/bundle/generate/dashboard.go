@@ -22,9 +22,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -215,13 +214,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		return err
 	}
 
-	result := map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"dashboards": dyn.V(map[string]dyn.Value{
-				key: v,
-			}),
-		}),
-	}
+	result := structyaml.M("resources", structyaml.M("dashboards", structyaml.M(key, v)))
 
 	// Make sure the output directory exists.
 	if err := os.MkdirAll(d.resourceDir, 0o755); err != nil {
@@ -230,9 +223,9 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 
 	// Save the configuration to the resource directory.
 	resourcePath := filepath.Join(d.resourceDir, key+".dashboard.yml")
-	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+	styles := map[string]yaml.Style{
 		"display_name": yaml.DoubleQuotedStyle,
-	})
+	}
 
 	// Attempt to make the path relative to the bundle root.
 	rel, err := filepath.Rel(b.BundleRootPath, resourcePath)
@@ -241,7 +234,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
-	err = saver.SaveAsYAML(result, resourcePath, d.force)
+	err = structyaml.Save(resourcePath, result, d.force, styles)
 	if err != nil {
 		return err
 	}

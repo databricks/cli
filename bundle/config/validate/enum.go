@@ -4,13 +4,14 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type enum struct{}
@@ -27,23 +28,15 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	// Generate prefix tree for all enum fields.
-	trie := &dyn.TrieNode{}
-	for k := range generated.EnumFields {
-		pattern, err := dyn.NewPatternFromString(k)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for enum field validation: %w", k, err))
-		}
-
-		err = trie.Insert(pattern)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
-		}
+	patterns, err := newPatternSet(slices.Collect(maps.Keys(generated.EnumFields)))
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("enum field validation: %w", err))
 	}
 
-	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
-		// If the path is not found in the prefix tree, we do not need to validate any enum
+	err = structvar.Walk(b.Config.View(), func(np *structpath.PathNode, v structvar.View) error {
+		// If the path matches no pattern, we do not need to validate any enum
 		// fields in it.
-		pattern, ok := trie.SearchPath(p)
+		pattern, ok := patterns.find(np)
 		if !ok {
 			return nil
 		}
@@ -56,25 +49,22 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Skip validation for values containing variable references (e.g.
 		// ${resources.jobs.my_job.id}) since they are not yet resolved.
-		if dynvar.ContainsVariableReference(strValue) {
+		if structvar.ContainsVariableReference(strValue) {
 			return nil
 		}
 
 		// Get valid values for this pattern
-		validValues := generated.EnumFields[pattern.String()]
+		validValues := generated.EnumFields[pattern]
 
 		// Check if the value is in the list of valid enum values
 		validValue := slices.Contains(validValues, strValue)
 
 		if !validValue {
-			// p is a slice of path components. We need to clone it before using it in diagnostics
-			// since the WalkReadOnly function will mutate it while walking the config tree.
-
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
 				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{np},
 			})
 		}
 

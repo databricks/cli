@@ -11,9 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -112,13 +111,7 @@ like catalogs, schemas, and compute configurations per target.`,
 			pipelineKey = textutil.NormalizeString(pipeline.Name)
 		}
 
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"pipelines": dyn.V(map[string]dyn.Value{
-					pipelineKey: v,
-				}),
-			}),
-		}
+		result := structyaml.M("resources", structyaml.M("pipelines", structyaml.M(pipelineKey, v)))
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
@@ -136,15 +129,13 @@ like catalogs, schemas, and compute configurations per target.`,
 			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
 		}
 
-		saver := yamlsaver.NewSaverWithStyle(
-			// Including all CreatePipeline and nested fields which are map[string]string type
-			map[string]yaml.Style{
-				"spark_conf":    yaml.DoubleQuotedStyle,
-				"custom_tags":   yaml.DoubleQuotedStyle,
-				"configuration": yaml.DoubleQuotedStyle,
-			},
-		)
-		err = saver.SaveAsYAML(result, filename, force)
+		// Including all CreatePipeline and nested fields which are map[string]string type
+		styles := map[string]yaml.Style{
+			"spark_conf":    yaml.DoubleQuotedStyle,
+			"custom_tags":   yaml.DoubleQuotedStyle,
+			"configuration": yaml.DoubleQuotedStyle,
+		}
+		err = structyaml.Save(filename, result, force, styles)
 		if err != nil {
 			return err
 		}

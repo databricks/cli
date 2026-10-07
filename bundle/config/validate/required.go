@@ -4,14 +4,15 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type required struct{}
@@ -29,36 +30,28 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	diags := diag.Diagnostics{}
 
 	// Generate prefix tree for all required fields.
-	trie := &dyn.TrieNode{}
-	for k := range generated.RequiredFields {
-		pattern, err := dyn.NewPatternFromString(k)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
-		}
-
-		err = trie.Insert(pattern)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
-		}
+	patterns, err := newPatternSet(slices.Collect(maps.Keys(generated.RequiredFields)))
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("required field validation: %w", err))
 	}
 
-	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
-		// If the path is not found in the prefix tree, we do not need to validate any required
+	err = structvar.Walk(b.Config.View(), func(np *structpath.PathNode, v structvar.View) error {
+		// If the path matches no pattern, we do not need to validate any required
 		// fields in it.
-		pattern, ok := trie.SearchPath(p)
+		pattern, ok := patterns.find(np)
 		if !ok {
 			return nil
 		}
 
-		fields := generated.RequiredFields[pattern.String()]
+		fields := generated.RequiredFields[pattern]
 		for _, field := range fields {
 			vv := v.Get(field)
-			if vv.Kind() == dyn.KindInvalid || vv.Kind() == dyn.KindNil {
+			if vv.Kind() == structvar.KindInvalid || vv.Kind() == structvar.KindNil {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("required field %q is not set", field),
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
+					Paths:     []*structpath.PathNode{np},
 				})
 			}
 		}
@@ -103,14 +96,12 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
-			path := structpath.NewPath(nil, "resources", "dashboards", key)
-			nameLocations = append(nameLocations, b.Config.GetLocationsOf(path)...)
-			namePaths = append(namePaths, path)
+			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
+			namePaths = append(namePaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
 		}
 		if dashboard.WarehouseId == "" {
-			path := structpath.NewPath(nil, "resources", "dashboards", key)
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocationsOf(path)...)
-			warehouseIdPaths = append(warehouseIdPaths, path)
+			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
+			warehouseIdPaths = append(warehouseIdPaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
 		}
 	}
 
@@ -135,11 +126,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
 	for key, warehouse := range b.Config.Resources.SqlWarehouses {
 		if strings.TrimSpace(warehouse.Name) == "" {
-			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
+			path := structpath.NewStringKeys(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocationsOf(path),
+				Locations: b.Config.GetLocations(path.String()),
 				Paths:     []*structpath.PathNode{path},
 			})
 		}
@@ -158,16 +149,16 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants"), dyn.AnyIndex()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	err := structvar.ForEach(
+		b.Config.View(),
+		structpath.MustParsePattern("resources.*.*.grants[*]"),
+		func(np *structpath.PathNode, v structvar.View) error {
 			if isMissingOrEmptyString(v.Get("principal")) {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "grant principal is required",
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
+					Paths:     []*structpath.PathNode{np},
 				})
 			}
 			if isMissingOrEmptySequence(v.Get("privileges")) {
@@ -175,10 +166,10 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 					Severity:  diag.Error,
 					Summary:   "grant privileges is required",
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(p),
+					Paths:     []*structpath.PathNode{np},
 				})
 			}
-			return v, nil
+			return nil
 		},
 	)
 	if err != nil {
@@ -200,14 +191,16 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 			if perm.UserName != "" || perm.GroupName != "" || perm.ServicePrincipalName != "" {
 				continue
 			}
+			scopePath := structpath.NewStringKeys(nil, "resources", "secret_scopes", key)
+			path := structpath.NewIndex(structpath.NewStringKeys(scopePath, "permissions"), i)
 			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
 			// per-entry locations, so point at the scope.
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "secret_scopes", key)),
-				Paths:     structpath.NewPathSlice("resources", "secret_scopes", key, "permissions", i),
+				Locations: b.Config.GetLocations(scopePath.String()),
+				Paths:     []*structpath.PathNode{path},
 			})
 		}
 	}
@@ -218,24 +211,28 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 }
 
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
-func isMissingOrEmptyString(v dyn.Value) bool {
+func isMissingOrEmptyString(v structvar.View) bool {
 	switch v.Kind() {
-	case dyn.KindInvalid, dyn.KindNil:
+	case structvar.KindInvalid, structvar.KindNil:
 		return true
-	case dyn.KindString:
-		return v.MustString() == ""
+	case structvar.KindString:
+		s, _ := v.AsString()
+		return s == ""
 	default:
 		return false
 	}
 }
 
 // isMissingOrEmptySequence reports whether v is unset, null, or an empty sequence.
-func isMissingOrEmptySequence(v dyn.Value) bool {
+func isMissingOrEmptySequence(v structvar.View) bool {
 	switch v.Kind() {
-	case dyn.KindInvalid, dyn.KindNil:
+	case structvar.KindInvalid, structvar.KindNil:
 		return true
-	case dyn.KindSequence:
-		return len(v.MustSequence()) == 0
+	case structvar.KindSequence:
+		for range v.Sequence() {
+			return false
+		}
+		return true
 	default:
 		return false
 	}

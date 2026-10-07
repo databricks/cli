@@ -3,20 +3,19 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResourcesTypesMap(t *testing.T) {
@@ -32,14 +31,14 @@ func TestResourcesTypesMap(t *testing.T) {
 }
 
 // TestResourceTypesZeroValueFieldsSerialize guards against the ForceSendFields
-// routing bug fixed in libs/dyn/convert: a field declared in a struct embedded
+// routing bug: a field declared in a struct embedded
 // more than one level deep (e.g. PostgresProject -> PostgresProjectConfig ->
 // ProjectSpec) had its zero value recorded in the wrong struct's ForceSendFields,
 // which the SDK marshaler rejects with "field X cannot be found in struct Y".
 // The direct engine hits this path when it serializes planned state to JSON.
 //
 // For every registered resource type it sets every omitempty scalar field (at any
-// depth) to its zero value, converts via ToTyped, and marshals - the same round
+// depth) to its zero value, decodes it into the typed value, and marshals - the same round
 // trip the direct engine performs. Any newly added resource whose wrapper embeds
 // an SDK spec is covered automatically.
 func TestResourceTypesZeroValueFieldsSerialize(t *testing.T) {
@@ -53,41 +52,38 @@ func TestResourceTypesZeroValueFieldsSerialize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			typ := ResourcesTypes[name]
 			zeros := zeroValueScalars(typ, 0, map[reflect.Type]bool{})
-			if zeros.Kind() != dyn.KindMap {
+			if zeros == nil {
 				return
 			}
 
 			ptr := reflect.New(typ)
-			require.NoError(t, convert.ToTyped(ptr.Interface(), zeros))
+			_, err := (&structvar.StructVar{Value: ptr.Interface()}).Assign(nil, structvar.NewView(&zeros, nil, nil))
+			require.NoError(t, err)
 
-			_, err := json.Marshal(ptr.Interface())
+			_, err = json.Marshal(ptr.Interface())
 			require.NoError(t, err)
 		})
 	}
 }
 
-// zeroValueScalars builds a [dyn.Value] map that sets every omitempty scalar field
+// zeroValueScalars builds a map that sets every omitempty scalar field
 // reachable through embedded anonymous structs to its zero value. Those are exactly
 // the fields the convert layer records in ForceSendFields, so they exercise the
 // routing logic. depth and seen bound recursion against deep or recursive types.
-func zeroValueScalars(t reflect.Type, depth int, seen map[reflect.Type]bool) dyn.Value {
+func zeroValueScalars(t reflect.Type, depth int, seen map[reflect.Type]bool) map[string]any {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct || depth > 6 || seen[t] {
-		return dyn.NilValue
+		return nil
 	}
 	seen[t] = true
 	defer delete(seen, t)
 
-	m := dyn.NewMapping()
+	m := map[string]any{}
 	for f := range t.Fields() {
 		if f.Anonymous {
-			if sub := zeroValueScalars(f.Type, depth+1, seen); sub.Kind() == dyn.KindMap {
-				for _, p := range sub.MustMap().Pairs() {
-					m.SetLoc(p.Key.MustString(), nil, p.Value)
-				}
-			}
+			maps.Copy(m, zeroValueScalars(f.Type, depth+1, seen))
 			continue
 		}
 
@@ -99,18 +95,18 @@ func zeroValueScalars(t reflect.Type, depth int, seen map[reflect.Type]bool) dyn
 
 		switch f.Type.Kind() {
 		case reflect.Bool:
-			m.SetLoc(name, nil, dyn.V(false))
+			m[name] = false
 		case reflect.String:
-			m.SetLoc(name, nil, dyn.V(""))
+			m[name] = ""
 		case reflect.Int, reflect.Int32, reflect.Int64:
-			m.SetLoc(name, nil, dyn.V(int64(0)))
+			m[name] = int64(0)
 		case reflect.Float32, reflect.Float64:
-			m.SetLoc(name, nil, dyn.V(float64(0)))
+			m[name] = float64(0)
 		default:
 			// Only basic types are eligible for ForceSendFields; skip the rest.
 		}
 	}
-	return dyn.V(m)
+	return m
 }
 
 // TestNoSameDepthJSONShadows uses structwalk.WalkType — the dumb walker that

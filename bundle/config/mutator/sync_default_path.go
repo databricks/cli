@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 type syncDefaultPath struct{}
@@ -20,24 +19,9 @@ func (m *syncDefaultPath) Name() string {
 }
 
 func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	isset := false
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		pv, _ := dyn.Get(v, "sync.paths")
-
-		// If the sync paths field is already set, do nothing.
-		// We know it is set if its value is either a nil or a sequence (empty or not).
-		if pv.Kind() == dyn.KindNil || pv.Kind() == dyn.KindSequence {
-			isset = true
-		}
-
-		return v, nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	// If the sync paths field is already set, do nothing.
-	if isset {
+	// We know it is set if it is a sequence (empty or not) or a reference.
+	if b.Config.Sync.Paths != nil || b.Config.IsReference("sync.paths") {
 		return nil
 	}
 

@@ -8,9 +8,8 @@ import (
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
@@ -107,13 +106,7 @@ per target environment.`,
 			appKey = textutil.NormalizeString(app.Name)
 		}
 
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"apps": dyn.V(map[string]dyn.Value{
-					appKey: v,
-				}),
-			}),
-		}
+		result := structyaml.M("resources", structyaml.M("apps", structyaml.M(appKey, v)))
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
@@ -122,8 +115,7 @@ per target environment.`,
 
 		filename := filepath.Join(configDir, appKey+".app.yml")
 
-		saver := yamlsaver.NewSaver()
-		err = saver.SaveAsYAML(result, filename, force)
+		err = structyaml.Save(filename, result, force, nil)
 		if err != nil {
 			return err
 		}

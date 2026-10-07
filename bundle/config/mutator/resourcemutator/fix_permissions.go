@@ -2,13 +2,16 @@ package resourcemutator
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 const (
@@ -52,165 +55,132 @@ func (m *fixPermissions) Name() string {
 	return "FixPermissions"
 }
 
-func processPermissions(currentUser string) dyn.MapFunc {
-	return func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
-		if len(p) != 4 || p[0].Key() != "resources" || p[3].Key() != "permissions" {
-			return v, nil
-		}
-
-		resourceType := p[1].Key()
-		if ignoredResources[resourceType] {
-			return v, nil
-		}
-
-		v, err := ensureCurrentUserMgmtPermissions(v, currentUser, resourceType)
-		if err != nil {
-			return v, err
-		}
-
-		return useMaximumLevel(v, resourceType)
-	}
+// permission is a permission entry: a level and the principal it is granted to.
+type permission struct {
+	level                string
+	userName             string
+	servicePrincipalName string
+	groupName            string
 }
 
-func readUser(v dyn.Value) string {
-	userName, _ := dyn.GetValue(v, "user_name").AsString()
-	if userName != "" {
-		return userName
+func (p permission) user() string {
+	if p.userName != "" {
+		return p.userName
 	}
-	servicePrincipalName, _ := dyn.GetValue(v, "service_principal_name").AsString()
-	return servicePrincipalName
+	return p.servicePrincipalName
 }
 
-func readPrincipal(v dyn.Value) string {
-	value, _ := dyn.GetValue(v, "user_name").AsString()
-	if value != "" {
-		return "user_name:" + value
-	}
-	value, _ = dyn.GetValue(v, "service_principal_name").AsString()
-	if value != "" {
-		return "service_principal_name:" + value
-	}
-	value, _ = dyn.GetValue(v, "group_name").AsString()
-	if value != "" {
-		return "group_name:" + value
+// principal returns the principal in the form "<field>:<name>", or "" if there is none.
+func (p permission) principal() string {
+	switch {
+	case p.userName != "":
+		return "user_name:" + p.userName
+	case p.servicePrincipalName != "":
+		return "service_principal_name:" + p.servicePrincipalName
+	case p.groupName != "":
+		return "group_name:" + p.groupName
 	}
 	return ""
 }
 
-func ensureCurrentUserMgmtPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
+func processPermissions(currentUser, resourceType string, permissions []permission) []permission {
+	return useMaximumLevel(ensureCurrentUserMgmtPermissions(permissions, currentUser, resourceType))
+}
+
+func ensureCurrentUserMgmtPermissions(permissions []permission, currentUser, resourceType string) []permission {
 	currentUserHasIsOwner := false
 	currentUserIndCanManage := -1
 	canAddIsOwner := hasIsOwner[resourceType]
 
-	permissionArray, ok := permissions.AsSequence()
-	if !ok {
-		return permissions, nil
-	}
-
-	for ind, permission := range permissionArray {
-		level, ok := dyn.GetValue(permission, "level").AsString()
-		if !ok {
+	for ind, p := range permissions {
+		if p.level == "" {
 			continue
 		}
-		user := readUser(permission)
-		if level == isOwner {
+		user := p.user()
+		if p.level == isOwner {
 			canAddIsOwner = false
 			if user == currentUser {
 				currentUserHasIsOwner = true
 			}
 		}
-		if user == currentUser && level == canManage {
+		if user == currentUser && p.level == canManage {
 			currentUserIndCanManage = ind
 		}
 	}
 
 	if currentUserHasIsOwner {
-		return dyn.V(permissionArray), nil
+		return permissions
 	}
 
 	if canAddIsOwner {
 		if currentUserIndCanManage >= 0 {
 			// Upgrade current user's CAN_MANAGE to IS_OWNER. We do this because terraform will add IS_OWNER if it does not see one
 			// and that may confuse backend. We can stop doing it when removed terraform.
-			v, _ := dyn.Set(permissionArray[currentUserIndCanManage], "level", dyn.V(isOwner))
-			permissionArray[currentUserIndCanManage] = v
+			permissions[currentUserIndCanManage].level = isOwner
 		} else {
-			permissionArray = append(permissionArray, createPermission(currentUser, isOwner))
+			permissions = append(permissions, createPermission(currentUser, isOwner))
 		}
-		return dyn.V(permissionArray), nil
+		return permissions
 	}
 
 	if currentUserIndCanManage < 0 {
-		permissionArray = append(permissionArray, createPermission(currentUser, canManage))
+		permissions = append(permissions, createPermission(currentUser, canManage))
 	}
 
-	return dyn.V(permissionArray), nil
+	return permissions
 }
 
-func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, error) {
-	permissionArray, ok := permissions.AsSequence()
-	if !ok {
-		return permissions, nil
-	}
-
+func useMaximumLevel(permissions []permission) []permission {
 	levelPerPrincipal := make(map[string]string)
-	principalIndex := make(map[string]int)
+	seen := make(map[string]bool)
 	var principals []string
 
-	for _, permission := range permissionArray {
-		level, _ := dyn.GetValue(permission, "level").AsString()
-		if level == "" {
+	for _, p := range permissions {
+		if p.level == "" {
 			continue
 		}
 
-		principal := readPrincipal(permission)
+		principal := p.principal()
 		if principal == "" {
 			continue
 		}
-		_, ok = principalIndex[principal]
-		if !ok {
-			ind := len(principalIndex)
-			principalIndex[principal] = ind
+		if !seen[principal] {
+			seen[principal] = true
 			principals = append(principals, principal)
 		}
-		levelPerPrincipal[principal] = resources.GetMaxLevel(levelPerPrincipal[principal], level)
+		levelPerPrincipal[principal] = resources.GetMaxLevel(levelPerPrincipal[principal], p.level)
 	}
 
-	var newPermissions []dyn.Value
-
+	var newPermissions []permission
 	for _, principal := range principals {
 		newPermissions = append(newPermissions, createPermissionFromPrincipal(principal, levelPerPrincipal[principal]))
 	}
 
-	return dyn.V(newPermissions), nil
+	return newPermissions
 }
 
-func createPermission(user, level string) dyn.Value {
-	permission := map[string]dyn.Value{
-		"level": dyn.V(level),
-	}
-
+func createPermission(user, level string) permission {
 	// Determine if currentUser is a service principal or user
 	if iamutil.IsServicePrincipalName(user) {
-		permission["service_principal_name"] = dyn.V(user)
-	} else {
-		permission["user_name"] = dyn.V(user)
+		return permission{level: level, servicePrincipalName: user}
 	}
-
-	return dyn.V(permission)
+	return permission{level: level, userName: user}
 }
 
-func createPermissionFromPrincipal(principal, level string) dyn.Value {
-	permission := map[string]dyn.Value{
-		"level": dyn.V(level),
-	}
-
+func createPermissionFromPrincipal(principal, level string) permission {
 	items := strings.SplitN(principal, ":", 2)
 	field := items[0]
 	value := items[1]
-	permission[field] = dyn.V(value)
-	return dyn.V(permission)
+	p := permission{level: level}
+	switch field {
+	case "user_name":
+		p.userName = value
+	case "service_principal_name":
+		p.servicePrincipalName = value
+	case "group_name":
+		p.groupName = value
+	}
+	return p
 }
 
 func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -222,15 +192,55 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		// Use MapByPattern to directly process permissions arrays
-		return dyn.MapByPattern(v, dyn.NewPattern(
-			dyn.Key("resources"),
-			dyn.AnyKey(),
-			dyn.AnyKey(),
-			dyn.Key("permissions"),
-		), processPermissions(currentUser))
+	err := structvar.ForEach(b.Config.View(), structpath.MustParsePattern("resources.*.*.permissions"), func(p *structpath.PathNode, v structvar.View) error {
+		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
+		resourceType := p.KeyAt(1)
+		if ignoredResources[resourceType] || v.Kind() != structvar.KindSequence {
+			return nil
+		}
+
+		var permissions []permission
+		for _, pv := range v.Sequence() {
+			var perm permission
+			perm.level, _ = pv.Get("level").AsString()
+			perm.userName, _ = pv.Get("user_name").AsString()
+			perm.servicePrincipalName, _ = pv.Get("service_principal_name").AsString()
+			perm.groupName, _ = pv.Get("group_name").AsString()
+			permissions = append(permissions, perm)
+		}
+
+		err := setPermissions(v, processPermissions(currentUser, resourceType, permissions))
+		if err != nil {
+			return err
+		}
+
+		// The permissions are rebuilt without locations.
+		b.Config.SetLocations(p, nil)
+		return nil
 	})
 
 	return diag.FromErr(err)
+}
+
+// setPermissions replaces the permissions described by v. The type of the permissions
+// differs between resources, but all have the same fields.
+func setPermissions(v structvar.View, permissions []permission) error {
+	field := v.Reflect()
+	for field.Kind() == reflect.Pointer || field.Kind() == reflect.Interface {
+		field = field.Elem()
+	}
+	if !field.CanSet() || field.Kind() != reflect.Slice {
+		return fmt.Errorf("cannot set permissions of type %s", field.Type())
+	}
+
+	out := reflect.MakeSlice(field.Type(), len(permissions), len(permissions))
+	for i, p := range permissions {
+		elem := out.Index(i)
+		elem.FieldByName("Level").SetString(p.level)
+		elem.FieldByName("UserName").SetString(p.userName)
+		elem.FieldByName("ServicePrincipalName").SetString(p.servicePrincipalName)
+		elem.FieldByName("GroupName").SetString(p.groupName)
+	}
+	field.Set(out)
+	return nil
 }

@@ -13,9 +13,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/spf13/cobra"
 )
 
@@ -112,10 +110,10 @@ does not contact the workspace.`,
 // convertToDabs builds the DABs bundle value and the loose launch artifacts for a
 // run config. It reads only what the run path's buildArtifacts reads, so the
 // mapping is unit-testable in isolation. Returns the bundle root as a
-// map[string]dyn.Value (ready for yamlsaver) and the loose artifacts (command.sh +
+// structyaml.Map (ready for structyaml.Save) and the loose artifacts (command.sh +
 // env/secret/param sidecars) to write under generated_artifacts/. It does not touch the
 // code_source; the emitted `tgz` artifact packages it at deploy.
-func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (map[string]dyn.Value, []uploadItem, error) {
+func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (structyaml.Map, []uploadItem, error) {
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
 	//
@@ -259,14 +257,6 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
 
-// nv builds a dyn.Value at "position" n: yamlsaver orders a map's keys by their
-// Location line, so assigning ascending n values fixes the emitted key order.
-// It routes through dyn.V so nested Go maps/slices are converted recursively,
-// then stamps the ordering location.
-func nv(v any, n int) dyn.Value {
-	return dyn.V(v).WithLocations([]diag.Location{{Line: n}})
-}
-
 // localBundlePath renders a bundle-relative path with a leading "./" so bundle
 // deploy classifies it as a local artifact to upload (see IsLibraryLocal). It is
 // built from path.Join (forward slashes) so the emitted YAML is identical across
@@ -275,10 +265,10 @@ func localBundlePath(p string) string {
 	return "./" + p
 }
 
-// buildBundleValue assembles the bundle root as an ordered map[string]dyn.Value.
+// buildBundleValue assembles the bundle root as an ordered structyaml.Map.
 // codeSourcePath is the "./"-prefixed code_source dir relative to the bundle (empty
 // when the config has no code_source); command.sh is a bundle-local artifact.
-func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourcePath string, art *codeArtifact) map[string]dyn.Value {
+func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourcePath string, art *codeArtifact) structyaml.Map {
 	name := cfg.ExperimentName
 
 	// ai_runtime_task: experiment + one deployment (command_path + compute) +
@@ -288,67 +278,57 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// command_path is "./"-prefixed so bundle deploy treats it as LOCAL and uploads
 	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
 	// package name, which would deploy a path the backend can't resolve.
-	compute := map[string]dyn.Value{
-		"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
-		"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
-	}
+	compute := structyaml.M(
+		"accelerator_type", cfg.Compute.AcceleratorType,
+		"accelerator_count", cfg.Compute.NumAccelerators,
+	)
 	if cfg.Compute.PoolID != nil {
-		compute["provisioned_capacity_id"] = nv(*cfg.Compute.PoolID, 3)
+		compute.Add("provisioned_capacity_id", *cfg.Compute.PoolID)
 	}
-	deployment := map[string]dyn.Value{
-		"command_path": nv(localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)), 1),
-		"compute":      nv(compute, 2),
-	}
+	deployment := structyaml.M(
+		"command_path", localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)),
+		"compute", compute,
+	)
 
-	aiRuntimeTask := map[string]dyn.Value{
-		"experiment":  nv(name, 1),
-		"deployments": nv([]dyn.Value{dyn.V(deployment)}, 2),
-	}
-	line := 3
+	aiRuntimeTask := structyaml.M(
+		"experiment", name,
+		"deployments", []any{deployment},
+	)
 	if codeSourcePath != "" {
 		// Points at the `tgz` artifact's built tarball; deploy uploads it and rewrites
 		// this to the uploaded workspace path.
-		aiRuntimeTask["code_source_path"] = nv(codeSourcePath, line)
-		line++
+		aiRuntimeTask.Add("code_source_path", codeSourcePath)
 	}
 	if cfg.MLflowRunName != nil {
-		aiRuntimeTask["mlflow_run"] = nv(*cfg.MLflowRunName, line)
-		line++
+		aiRuntimeTask.Add("mlflow_run", *cfg.MLflowRunName)
 	}
 	if cfg.MLflowExperimentDirectory != nil {
-		aiRuntimeTask["mlflow_experiment_directory"] = nv(*cfg.MLflowExperimentDirectory, line)
-		line++
+		aiRuntimeTask.Add("mlflow_experiment_directory", *cfg.MLflowExperimentDirectory)
 	}
 	if cfg.MLflowArtifactLocation != nil {
-		aiRuntimeTask["mlflow_artifact_location"] = nv(*cfg.MLflowArtifactLocation, line)
-		line++
+		aiRuntimeTask.Add("mlflow_artifact_location", *cfg.MLflowArtifactLocation)
 	}
 	if cfg.Compute.PriorityClass != nil {
-		aiRuntimeTask["priority_class"] = nv(*cfg.Compute.PriorityClass, line)
-		line++
+		aiRuntimeTask.Add("priority_class", *cfg.Compute.PriorityClass)
 	}
 	if cfg.Environment != nil && cfg.Environment.UnityCatalogImage != "" {
-		aiRuntimeTask["unity_catalog_image_path"] = nv(cfg.Environment.UnityCatalogImage, line)
+		aiRuntimeTask.Add("unity_catalog_image_path", cfg.Environment.UnityCatalogImage)
 	}
 
 	// Task wrapper: task_key + framework fields (retries/timeout) + env key +
 	// the ai_runtime_task. Framework fields live here per the schema, not inside
 	// ai_runtime_task.
-	task := map[string]dyn.Value{
-		"task_key":        nv(name, 1),
-		"environment_key": nv(aiRuntimeEnvironmentKey, 2),
-	}
-	taskLine := 3
 	maxRetries := cfg.maxRetries()
-	task["max_retries"] = nv(maxRetries, taskLine)
-	taskLine++
-	task["retry_on_timeout"] = nv(maxRetries > 0, taskLine)
-	taskLine++
+	task := structyaml.M(
+		"task_key", name,
+		"environment_key", aiRuntimeEnvironmentKey,
+		"max_retries", maxRetries,
+		"retry_on_timeout", maxRetries > 0,
+	)
 	if cfg.TimeoutMinutes != nil {
-		task["timeout_seconds"] = nv(cfg.timeoutSeconds(), taskLine)
-		taskLine++
+		task.Add("timeout_seconds", cfg.timeoutSeconds())
 	}
-	task["ai_runtime_task"] = nv(aiRuntimeTask, taskLine)
+	task.Add("ai_runtime_task", aiRuntimeTask)
 
 	// environments[]: version + the dependency set. The runtime installs deps from this
 	// spec directly, so the full dependency set (whether authored inline or in a
@@ -358,65 +338,57 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// default channel) so a config without an explicit version still pins the version
 	// the workload would have run with — not an empty spec.
 	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
-	envSpec := map[string]dyn.Value{}
+	var envSpec structyaml.Map
 	if strings.HasPrefix(envVersion, databricksAIPrefix) {
-		envSpec["base_environment"] = nv("workspace-base-environments/"+envVersion, 1)
+		envSpec.Add("base_environment", "workspace-base-environments/"+envVersion)
 	} else {
-		envSpec["environment_version"] = nv(envVersion, 1)
+		envSpec.Add("environment_version", envVersion)
 	}
 	if len(deps) > 0 {
-		depVals := make([]dyn.Value, len(deps))
-		for i, d := range deps {
-			depVals[i] = dyn.V(d)
-		}
-		envSpec["dependencies"] = nv(depVals, 2)
+		envSpec.Add("dependencies", deps)
 	}
-	environment := map[string]dyn.Value{
-		"environment_key": nv(aiRuntimeEnvironmentKey, 1),
-		"spec":            nv(envSpec, 2),
-	}
+	environment := structyaml.M(
+		"environment_key", aiRuntimeEnvironmentKey,
+		"spec", envSpec,
+	)
 
-	job := map[string]dyn.Value{
-		"name":         nv(name, 1),
-		"tasks":        nv([]dyn.Value{dyn.V(task)}, 2),
-		"environments": nv([]dyn.Value{dyn.V(environment)}, 3),
-	}
+	job := structyaml.M(
+		"name", name,
+		"tasks", []any{task},
+		"environments", []any{environment},
+	)
 	// usage_policy_id is an already-resolved budget policy id, so it maps directly
 	// to the job's budget_policy_id. (usage_policy_name needs server-side resolution
 	// and is rejected in convertToDabs.)
 	if cfg.UsagePolicyID != nil {
-		job["budget_policy_id"] = nv(*cfg.UsagePolicyID, 4)
+		job.Add("budget_policy_id", *cfg.UsagePolicyID)
 	}
-	if perms := buildPermissionsValue(cfg.Permissions); perms.Kind() != dyn.KindInvalid {
-		job["permissions"] = nv(perms.MustSequence(), 5)
+	if perms := buildPermissionsValue(cfg.Permissions); perms != nil {
+		job.Add("permissions", perms)
 	}
 
-	rootValue := map[string]dyn.Value{
-		"bundle": nv(map[string]dyn.Value{
-			"name": nv(name, 1),
-		}, 1),
+	rootValue := structyaml.M(
+		"bundle", structyaml.M("name", name),
 		// sync.paths replaces the default of syncing the whole bundle root. The code
 		// directory is omitted deliberately: the `tgz` artifact packages it, so syncing
 		// it too would upload the tree twice.
-		"sync": nv(map[string]dyn.Value{
-			"paths": nv([]dyn.Value{nv(generatedArtifactsDir, 1)}, 1),
-		}, 2),
-		"targets": nv(map[string]dyn.Value{
-			dabsTargetName: nv(map[string]dyn.Value{
-				"mode":    nv("development", 1),
-				"default": nv(true, 2),
-			}, 1),
-		}, 4),
-		"resources": nv(map[string]dyn.Value{
-			"jobs": nv(map[string]dyn.Value{
-				bundleResourceKey(name): nv(job, 1),
-			}, 1),
-		}, 5),
-	}
+		"sync", structyaml.M("paths", []any{generatedArtifactsDir}),
+	)
 	// The `tgz` artifact that packages the code_source (nil only when there is none).
 	if art != nil {
-		rootValue["artifacts"] = nv(buildArtifactsValue(art), 3)
+		rootValue.Add("artifacts", buildArtifactsValue(art))
 	}
+	rootValue.Add("targets", structyaml.M(
+		dabsTargetName, structyaml.M(
+			"mode", "development",
+			"default", true,
+		),
+	))
+	rootValue.Add("resources", structyaml.M(
+		"jobs", structyaml.M(
+			bundleResourceKey(name), job,
+		),
+	))
 	return rootValue
 }
 
@@ -424,34 +396,23 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 // single `tgz` artifact whose `path` is the code-source root, carrying the git ref
 // and/or include subpaths, and whose `files` output is the tarball code_source_path
 // points at.
-func buildArtifactsValue(art *codeArtifact) map[string]dyn.Value {
-	a := map[string]dyn.Value{
-		"type": nv("tgz", 1),
-		"path": nv(art.path, 2),
-	}
-	fileLine := 3
+func buildArtifactsValue(art *codeArtifact) structyaml.Map {
+	a := structyaml.M(
+		"type", "tgz",
+		"path", art.path,
+	)
 	if art.gitCommit != nil || art.gitBranch != nil {
-		g := map[string]dyn.Value{}
 		// commit wins over branch, matching the artifact builder.
 		if art.gitCommit != nil {
-			g["commit"] = nv(*art.gitCommit, 1)
+			a.Add("git", structyaml.M("commit", *art.gitCommit))
 		} else {
-			g["branch"] = nv(*art.gitBranch, 1)
+			a.Add("git", structyaml.M("branch", *art.gitBranch))
 		}
-		a["git"] = nv(g, fileLine)
-		fileLine++
 	}
 	// include is always set: the basename (whole dir) or basename-prefixed subpaths.
-	vals := make([]dyn.Value, len(art.include))
-	for i, p := range art.include {
-		vals[i] = dyn.V(p)
-	}
-	a["include"] = nv(vals, fileLine)
-	fileLine++
-	a["files"] = nv([]dyn.Value{
-		dyn.V(map[string]dyn.Value{"source": nv(art.tgzPath, 1)}),
-	}, fileLine)
-	return map[string]dyn.Value{codeSourceArtifactKey: nv(a, 1)}
+	a.Add("include", art.include)
+	a.Add("files", []any{structyaml.M("source", art.tgzPath)})
+	return structyaml.M(codeSourceArtifactKey, a)
 }
 
 // bundleEnvironmentDeps resolves the runtime version and the inline dependency
@@ -476,7 +437,7 @@ func bundleResourceKey(name string) string {
 }
 
 // quoteJobKey rewrites the emitted job resource key as a quoted YAML key when the
-// name would otherwise load as a non-string scalar. yamlsaver emits map keys
+// name would otherwise load as a non-string scalar. structyaml emits map keys
 // unquoted, and the bundle loader rejects a key that types as something other than
 // a string ("12345" -> !!int, "true" -> !!bool) with "invalid key tag". Only the
 // job key needs this: every other key convert emits is a fixed schema field name.
@@ -516,25 +477,22 @@ func yamlKeyNeedsQuoting(key string) bool {
 }
 
 // buildPermissionsValue maps run-config permissions to DABs job permissions
-// (level → principal). Returns an invalid value when there are none.
-func buildPermissionsValue(perms []permission) dyn.Value {
-	if len(perms) == 0 {
-		return dyn.InvalidValue
-	}
-	out := make([]dyn.Value, 0, len(perms))
+// (level → principal). Returns nil when there are none.
+func buildPermissionsValue(perms []permission) []any {
+	var out []any
 	for _, p := range perms {
-		m := map[string]dyn.Value{"level": nv(p.Level, 1)}
+		m := structyaml.M("level", p.Level)
 		switch {
 		case p.UserName != nil:
-			m["user_name"] = nv(*p.UserName, 2)
+			m.Add("user_name", *p.UserName)
 		case p.GroupName != nil:
-			m["group_name"] = nv(*p.GroupName, 2)
+			m.Add("group_name", *p.GroupName)
 		case p.ServicePrincipalName != nil:
-			m["service_principal_name"] = nv(*p.ServicePrincipalName, 2)
+			m.Add("service_principal_name", *p.ServicePrincipalName)
 		}
-		out = append(out, dyn.V(m))
+		out = append(out, m)
 	}
-	return dyn.V(out)
+	return out
 }
 
 // writeBundle writes the bundle into dir: databricks.yml plus the loose launch
@@ -580,9 +538,9 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 			return nil, fmt.Errorf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
 		}
 	}
-	// SaveAsYAML's force arg is passed true unconditionally: the collision check
+	// Save's force arg is passed true unconditionally: the collision check
 	// above already decided whether overwriting is allowed.
-	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
+	if err := structyaml.Save(bundlePath, root, true, nil); err != nil {
 		return nil, err
 	}
 	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {

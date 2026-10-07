@@ -13,6 +13,11 @@ import (
 
 type applySourceLinkedDeploymentPreset struct{}
 
+func targetPresetPath(target string) *structpath.PathNode {
+	p := structpath.NewStringKeys(nil, "targets", target)
+	return structpath.NewStringKeys(p, "presets", "source_linked_deployment")
+}
+
 // Apply source-linked deployment preset
 func ApplySourceLinkedDeploymentPreset() *applySourceLinkedDeploymentPreset {
 	return &applySourceLinkedDeploymentPreset{}
@@ -33,13 +38,13 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		if !isDatabricksWorkspace {
-			path := structpath.NewPath(nil, "targets", target, "presets", "source_linked_deployment")
+			path := targetPresetPath(target)
 			diags = diags.Append(
 				diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   "source-linked deployment is available only in the Databricks Workspace",
 					Paths:     []*structpath.PathNode{path},
-					Locations: b.Config.GetLocationsOf(path.SkipPrefix(2)),
+					Locations: b.Config.GetLocations("presets.source_linked_deployment"),
 				},
 			)
 
@@ -51,13 +56,13 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 		b.Metrics.AddBoolValue("source_linked_set_for_non_development", b.Config.Bundle.Mode != config.Development)
 
 		if b.Config.Bundle.Mode != config.Development {
-			path := structpath.NewPath(nil, "targets", target, "presets", "source_linked_deployment")
+			path := targetPresetPath(target)
 			diags = diags.Append(
 				diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   "source-linked deployment in non-development mode is deprecated and will not be supported in a future release",
 					Paths:     []*structpath.PathNode{path},
-					Locations: b.Config.GetLocationsOf(path.SkipPrefix(2)),
+					Locations: b.Config.GetLocations("presets.source_linked_deployment"),
 				},
 			)
 		}
@@ -70,14 +75,14 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 
 	// This mutator runs before workspace paths are defaulted so it's safe to check for the user-defined value
 	if b.Config.Workspace.FilePath != "" && config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		path := structpath.NewPath(nil, "workspace", "file_path")
+		path := structpath.MustParsePath("workspace.file_path")
 		diags = diags.Append(
 			diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   "workspace.file_path setting will be ignored in source-linked deployment mode",
 				Detail:    "In source-linked deployment files are not copied to the destination and resources use source files instead",
 				Paths:     []*structpath.PathNode{path},
-				Locations: b.Config.GetLocationsOf(path),
+				Locations: b.Config.GetLocations(path.String()),
 			},
 		)
 	}
