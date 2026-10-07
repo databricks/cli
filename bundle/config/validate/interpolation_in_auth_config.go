@@ -51,7 +51,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 	diags := diag.Diagnostics{}
 
 	for _, fieldName := range authFields {
-		p := structpath.NewStringKeys(nil, "workspace", fieldName)
+		p := structpath.NewPath(nil, "workspace", fieldName)
 		v := b.Config.View().Lookup(p)
 		if !v.IsValid() {
 			continue

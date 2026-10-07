@@ -66,7 +66,7 @@ func mergeGrantsOf[R any](b *bundle.Bundle, resourceType string, rs map[string]*
 
 		// Merge grant entries by principal. This concatenates privileges
 		// for entries with the same principal via the standard merge semantics.
-		path := structpath.NewStringKeys(nil, "resources", resourceType, name, "grants")
+		path := structpath.NewPath(nil, "resources", resourceType, name, "grants")
 		err := b.Config.MergeElementsByKey(path, "principal", func(v structvar.View) string {
 			s, _ := v.AsString()
 			return s
@@ -83,7 +83,7 @@ func mergeGrantsOf[R any](b *bundle.Bundle, resourceType string, rs map[string]*
 				continue
 			}
 			gs[i].Privileges = privileges
-			b.Config.UpdateSequence(structpath.NewStringKey(structpath.NewIndex(path, i), "privileges"), sources)
+			b.Config.UpdateSequence(structpath.NewPath(path, i, "privileges"), sources)
 		}
 	}
 	return nil

@@ -217,7 +217,7 @@ func resolveReferencePath(refStr string) (*structpath.PathNode, bool) {
 	}
 
 	if p.HasPrefix(varPrefix) && p.Len() >= 2 {
-		newPath := structpath.NewStringKeys(nil, "variables", p.KeyAt(1), "value")
+		newPath := structpath.NewPath(nil, "variables", p.KeyAt(1), "value")
 		return structpath.Join(newPath, p.AsSlice()[2:]...), true
 	}
 
