@@ -1,0 +1,19 @@
+
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+>>> [CLI] bundle deployment migrate
+Error: resources.jobs.job_b: cannot resolve field "tasks[0].python_wheel_task.package_name" (template "${resources.jobs.ghost.id}"): jobs.job_b field tasks[0].python_wheel_task.package_name: method A: index 0 out of range (len 0); method B: cannot look up "resources.jobs.ghost.id": databricks_job.ghost not found in TF state
+
+>>> ls .databricks/bundle/default
+sync-snapshots
+terraform
+
+>>> [CLI] bundle deployment migrate
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+

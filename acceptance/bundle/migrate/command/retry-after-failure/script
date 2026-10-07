@@ -1,0 +1,13 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+
+# The reference cannot be converted, so the first migration fails after the WAL is created
+musterr trace $CLI bundle deployment migrate
+
+# Nothing of the failed attempt may be left behind
+trace ls .databricks/bundle/default
+
+update_file.py databricks.yml '${resources.jobs.ghost.id}' 'test_pkg'
+
+trace $CLI bundle deployment migrate

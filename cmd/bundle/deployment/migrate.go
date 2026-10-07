@@ -133,6 +133,8 @@ New bundles use the direct engine automatically, no migration is needed.`)
 		defer func() {
 			if tempStatePathAutoRemove {
 				_ = os.Remove(tempStatePath)
+				// UpgradeToWrite creates the WAL with O_EXCL; a leftover one fails every retry.
+				_ = os.Remove(tempStatePath + ".wal")
 			}
 		}()
 

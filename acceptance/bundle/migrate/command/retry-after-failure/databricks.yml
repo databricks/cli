@@ -1,0 +1,14 @@
+bundle:
+  name: migrate-removed-test
+
+resources:
+  jobs:
+    job_a: {name: "Job A"}
+    job_b:
+      name: "Job B"
+      tasks:
+        - task_key: main
+          existing_cluster_id: "1234-567890-abcde123"
+          python_wheel_task:
+            package_name: "${resources.jobs.ghost.id}"
+            entry_point: main
