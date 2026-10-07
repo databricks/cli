@@ -286,7 +286,14 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			}
 			deployedVal, err := LookupTFField(tfAttrs, group, name, path)
 			if err != nil {
-				continue
+				// For secret_scopes, the direct state field "scope" maps to Terraform attribute "name".
+				// Try a fallback lookup for this specific case.
+				if group == "secret_scopes" && rule.Field.String() == "scope" {
+					deployedVal, err = LookupTFField(tfAttrs, group, name, structpath.NewStringKey(nil, "name"))
+				}
+				if err != nil {
+					continue
+				}
 			}
 
 			// Every id-composing field is a string (a name, catalog_name, storage path, ...).
