@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -23,13 +24,18 @@ type targetInfo struct {
 	Default bool        `json:"default,omitempty"`
 	Mode    config.Mode `json:"mode,omitempty"`
 	Host    string      `json:"host,omitempty"`
+
+	// Engine is only reported for targets that use the removed Terraform engine.
+	Engine engine.EngineType `json:"engine,omitempty"`
 }
 
 type listTargetsOutput struct {
 	Targets []targetInfo `json:"targets"`
 }
 
-func collectTargets(targets map[string]*config.Target) []targetInfo {
+// collectTargets returns the targets sorted by name. The engine of a target is
+// its own bundle.engine if set, otherwise the top-level bundle.engine.
+func collectTargets(targets map[string]*config.Target, rootEngine engine.EngineType) []targetInfo {
 	names := slices.Sorted(maps.Keys(targets))
 
 	result := make([]targetInfo, 0, len(names))
@@ -38,7 +44,7 @@ func collectTargets(targets map[string]*config.Target) []targetInfo {
 		// YAML decoding can leave a nil entry in the map when a target is
 		// declared with a null value. Skip rather than dereference and panic.
 		if t == nil {
-			result = append(result, targetInfo{Name: name})
+			result = append(result, targetInfo{Name: name, Engine: terraformOnly(rootEngine)})
 			continue
 		}
 		info := targetInfo{
@@ -49,13 +55,25 @@ func collectTargets(targets map[string]*config.Target) []targetInfo {
 		if t.Workspace != nil {
 			info.Host = t.Workspace.Host
 		}
+		targetEngine := rootEngine
+		if t.Bundle != nil && t.Bundle.Engine != engine.EngineNotSet {
+			targetEngine = t.Bundle.Engine
+		}
+		info.Engine = terraformOnly(targetEngine)
 		result = append(result, info)
 	}
 	return result
 }
 
+func terraformOnly(e engine.EngineType) engine.EngineType {
+	if e == engine.EngineTerraform {
+		return e
+	}
+	return engine.EngineNotSet
+}
+
 // NewListTargetsCommand returns a command that lists all bundle targets
-// with their name, default, mode, and workspace host fields.
+// with their name, default, mode, workspace host, and (if terraform) engine fields.
 func NewListTargetsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "list-targets",
@@ -79,7 +97,7 @@ func NewListTargetsCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		targets := collectTargets(b.Config.Targets)
+		targets := collectTargets(b.Config.Targets, b.Config.Bundle.Engine)
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
@@ -93,6 +111,9 @@ func NewListTargetsCommand() *cobra.Command {
 				}
 				if t.Host != "" {
 					parts = append(parts, t.Host)
+				}
+				if t.Engine != "" {
+					parts = append(parts, "engine:"+string(t.Engine))
 				}
 				cmdio.LogString(ctx, strings.Join(parts, " "))
 			}

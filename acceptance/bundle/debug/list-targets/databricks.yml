@@ -20,6 +20,12 @@ targets:
     mode: production
     workspace:
       host: https://prod.example.com
+  uses_terraform:
+    bundle:
+      engine: terraform
+  uses_direct:
+    bundle:
+      engine: direct
   with_vars:
     default: ${var.is_default}
     mode: ${var.target_mode}
