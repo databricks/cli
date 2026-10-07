@@ -138,6 +138,7 @@ Example usage:
 		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
 			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 				SkipInitialize: true,
+				InitFunc:       allowTerraformEngineConfig,
 			})
 			if err != nil {
 				return err
@@ -154,6 +155,7 @@ Example usage:
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			AlwaysPull:        true,
 			ErrorOnEmptyState: true,
+			InitFunc:          allowTerraformEngineConfig,
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, runArgs, err = resolveRunArgument(ctx, b, args)
@@ -315,4 +317,9 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
 	})
+}
+
+// allowTerraformEngineConfig lets users run resources of a bundle that pins the removed Terraform engine.
+func allowTerraformEngineConfig(b *bundle.Bundle) {
+	b.AllowTerraformEngineConfig = true
 }
