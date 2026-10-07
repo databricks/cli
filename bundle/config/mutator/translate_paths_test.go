@@ -96,7 +96,8 @@ func TestTranslatePathsProjectEnvironment(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
+			// Source-linked deployments reuse the sync root as a POSIX workspace path.
+			dir := filepath.ToSlash(t.TempDir())
 			if tc.localFile != "" {
 				touchEmptyFile(t, filepath.Join(dir, tc.localFile))
 			}
