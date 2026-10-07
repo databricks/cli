@@ -3,17 +3,17 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
-	"maps"
 	"reflect"
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/bundle/permissions"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -108,63 +108,85 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
-	for _, group := range b.Config.Resources.AllResources() {
-		key := group.Description.PluralName
-		lm, ok := levelsMap[key]
-		if !ok {
-			continue
-		}
+	keys := make([]string, 0, len(levelsMap))
+	for key := range levelsMap {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
 
-		for _, name := range slices.Sorted(maps.Keys(group.Resources)) {
-			field := reflect.ValueOf(group.Resources[name]).Elem().FieldByName("Permissions")
-			permissions := readPermissions(field)
-			permissions = append(permissions, convertPermissions(
+	for _, key := range keys {
+		pattern := structpath.MustParsePattern("resources." + key + ".*")
+
+		err = structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
+			had := v.Get("permissions").IsValid()
+			var permissions []resources.Permission
+			for _, pv := range v.Get("permissions").Sequence() {
+				level, _ := pv.Get("level").AsString()
+				userName, _ := pv.Get("user_name").AsString()
+				groupName, _ := pv.Get("group_name").AsString()
+				servicePrincipalName, _ := pv.Get("service_principal_name").AsString()
+				permissions = append(permissions, resources.Permission{
+					Level:                iam.PermissionLevel(level),
+					UserName:             userName,
+					GroupName:            groupName,
+					ServicePrincipalName: servicePrincipalName,
+				})
+			}
+
+			added := convertPermissions(
 				ctx,
 				b.Config.Permissions,
 				permissions,
 				key,
-				lm,
-			)...)
-			writePermissions(field, permissions)
+				levelsMap[key],
+			)
+			if len(added) > 0 {
+				if err := appendPermissions(v, added); err != nil {
+					return err
+				}
+			}
+
+			if !had {
+				return nil
+			}
+
+			// Empty permissions are dropped. Otherwise they are rebuilt without locations.
+			permissionsPath := structpath.NewStringKey(p, "permissions")
+			if len(permissions) == 0 && len(added) == 0 {
+				return b.Config.Delete(permissionsPath)
+			}
+			b.Config.SetLocations(permissionsPath, nil)
+			return nil
+		})
+		if err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
 	return nil
 }
 
-// readPermissions converts the permissions field of a resource to []resources.Permission.
-// The element type of the field differs between resources, but all have the same fields.
-func readPermissions(field reflect.Value) []resources.Permission {
-	var permissions []resources.Permission
-	for i := range field.Len() {
-		p := field.Index(i)
-		permissions = append(permissions, resources.Permission{
-			Level:                iam.PermissionLevel(p.FieldByName("Level").String()),
-			UserName:             p.FieldByName("UserName").String(),
-			ServicePrincipalName: p.FieldByName("ServicePrincipalName").String(),
-			GroupName:            p.FieldByName("GroupName").String(),
-		})
+// appendPermissions appends permissions to the permissions field of the resource described by v.
+// The type of the permissions differs between resources, but all have the same fields.
+func appendPermissions(v structvar.View, permissions []resources.Permission) error {
+	r := v.Reflect()
+	for r.Kind() == reflect.Pointer || r.Kind() == reflect.Interface {
+		r = r.Elem()
 	}
-	return permissions
-}
-
-// writePermissions sets the permissions field of a resource to permissions.
-// An empty list is stored as nil, so that the field is absent from the configuration.
-func writePermissions(field reflect.Value, permissions []resources.Permission) {
-	if len(permissions) == 0 {
-		field.SetZero()
-		return
+	field := r.FieldByName("Permissions")
+	if !field.IsValid() || !field.CanSet() || field.Kind() != reflect.Slice {
+		return fmt.Errorf("cannot set permissions of %s", r.Type())
 	}
 
-	out := reflect.MakeSlice(field.Type(), len(permissions), len(permissions))
-	for i, p := range permissions {
-		e := out.Index(i)
-		e.FieldByName("Level").SetString(string(p.Level))
-		e.FieldByName("UserName").SetString(p.UserName)
-		e.FieldByName("ServicePrincipalName").SetString(p.ServicePrincipalName)
-		e.FieldByName("GroupName").SetString(p.GroupName)
+	for _, p := range permissions {
+		elem := reflect.New(field.Type().Elem()).Elem()
+		elem.FieldByName("Level").SetString(string(p.Level))
+		elem.FieldByName("UserName").SetString(p.UserName)
+		elem.FieldByName("GroupName").SetString(p.GroupName)
+		elem.FieldByName("ServicePrincipalName").SetString(p.ServicePrincipalName)
+		field.Set(reflect.Append(field, elem))
 	}
-	field.Set(out)
+	return nil
 }
 
 func validatePermissions(b *bundle.Bundle) error {

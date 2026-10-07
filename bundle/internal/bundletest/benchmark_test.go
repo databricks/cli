@@ -3,29 +3,17 @@ package bundletest
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
 )
 
-// This took 40ms to run on 18th June 2025.
 func BenchmarkWalkReadOnly(b *testing.B) {
-	input := BundleV(b, 10000)
+	input := Bundle(b, 10000).Config.View()
 
 	for b.Loop() {
-		err := dyn.WalkReadOnly(input, func(p dyn.Path, v dyn.Value) error {
+		err := structvar.Walk(input, func(p *structpath.PathNode, v structvar.View) error {
 			return nil
-		})
-		assert.NoError(b, err)
-	}
-}
-
-// This took 160ms to run on 18th June 2025.
-func BenchmarkWalk(b *testing.B) {
-	input := BundleV(b, 10000)
-
-	for b.Loop() {
-		_, err := dyn.Walk(input, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return v, nil
 		})
 		assert.NoError(b, err)
 	}

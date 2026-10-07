@@ -1,14 +1,15 @@
 package direct
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/dyn/jsonloader"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-var resourcesPrefix = dyn.MustPathFromString("resources")
+var resourcesPrefix = structpath.MustParsePath("resources")
 
 // ResolveConfigAgainstState resolves ${resources.*} references within the resource at
 // target so its runner ("bundle run") sees concrete values rather than references. For a
@@ -24,48 +25,97 @@ var resourcesPrefix = dyn.MustPathFromString("resources")
 //
 // The state DB holds fields like the immutable snapshot's full_path that never reach the
 // config, so it must be open.
-func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target dyn.Path) error {
-	return cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		// Fall back to the fully-normalized config so references to fields that are
-		// implied (not explicitly set) still resolve.
-		normalized, _ := convert.Normalize(cfg, root, convert.IncludeMissingFields)
+func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *structpath.PathNode) error {
+	view := cfg.View()
+	resource := view.Lookup(target)
+	if !resource.IsValid() {
+		return fmt.Errorf("resource %s not found in configuration", target)
+	}
 
-		return dyn.MapByPath(root, target, func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
-			return dynvar.Resolve(resource, func(path dyn.Path) (dyn.Value, error) {
-				if !path.HasPrefix(resourcesPrefix) {
-					return dyn.InvalidValue, dynvar.ErrSkipResolution
-				}
-				if v, ok := b.lookupStateField(path); ok {
-					return v, nil
-				}
-				v, err := dyn.GetByPath(normalized, path)
-				if err != nil {
-					return dyn.InvalidValue, dynvar.ErrSkipResolution
-				}
-				return v, nil
-			})
-		})
+	// Each string is resolved on its own (references only point at other paths), then
+	// written back; collect first because writing changes the view.
+	type update struct {
+		path  *structpath.PathNode
+		value any
+	}
+	var updates []update
+
+	lookup := func(path *structpath.PathNode) (structvar.View, error) {
+		if !path.HasPrefix(resourcesPrefix) {
+			return structvar.View{}, structvar.ErrSkipResolution
+		}
+		if v, ok := b.lookupStateField(path); ok {
+			return v, nil
+		}
+		// Fall back to the config, including fields that are implied (not explicitly set).
+		if v := view.Lookup(path); v.IsValid() {
+			return v, nil
+		}
+		got, err := structaccess.Get(cfg, path)
+		if err != nil {
+			return structvar.View{}, structvar.ErrSkipResolution
+		}
+		return structvar.NewView(&got, nil, nil), nil
+	}
+
+	err := structvar.Walk(resource, func(p *structpath.PathNode, v structvar.View) error {
+		s, ok := v.AsString()
+		if !ok {
+			return nil
+		}
+		if _, ok := structvar.NewRef(s); !ok {
+			return nil
+		}
+		key := p.String()
+		out, err := structvar.Resolve(map[string]structvar.Template{key: {Value: s}}, lookup)
+		if err != nil {
+			return err
+		}
+		if resolved, ok := out[key]; ok {
+			updates = append(updates, update{structpath.Join(target, p.AsSlice()...), resolved.AsAny()})
+		}
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	for _, u := range updates {
+		// Decode converts like loading did, e.g. a string id into an int job_id.
+		diags, err := cfg.Decode(u.path, structvar.NewView(&u.value, nil, nil))
+		if err != nil {
+			return err
+		}
+		if diags.HasError() {
+			return diags.Error()
+		}
+	}
+	return nil
 }
 
 // lookupStateField returns the value at resources.<group>.<name>.<field...> from the
 // resource's persisted state, if that resource is in state and holds the field.
-func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
-	if len(path) < 4 || path[0].Key() != "resources" {
-		return dyn.InvalidValue, false
+func (b *DeploymentBundle) lookupStateField(path *structpath.PathNode) (structvar.View, bool) {
+	if path.Len() < 4 || path.KeyAt(0) != "resources" {
+		return structvar.View{}, false
 	}
-	resourceKey := "resources." + path[1].Key() + "." + path[2].Key()
+	resourceKey := "resources." + path.KeyAt(1) + "." + path.KeyAt(2)
 	entry, ok := b.StateDB.GetResourceEntry(resourceKey)
 	if !ok || len(entry.State) == 0 {
-		return dyn.InvalidValue, false
+		return structvar.View{}, false
 	}
-	stateVal, err := jsonloader.LoadJSON(entry.State, resourceKey)
+	// ParseJSON keeps large ids exact.
+	node, err := structvar.ParseJSON(resourceKey, entry.State)
 	if err != nil {
-		return dyn.InvalidValue, false
+		return structvar.View{}, false
 	}
-	fieldVal, err := dyn.GetByPath(stateVal, path[3:])
-	if err != nil || !fieldVal.IsValid() {
-		return dyn.InvalidValue, false
+	var state any
+	if _, _, err := structvar.DecodeYAMLNode(resourceKey, node, &state, nil); err != nil {
+		return structvar.View{}, false
 	}
-	return fieldVal, true
+	v := structvar.NewView(&state, nil, nil).Lookup(path.SkipPrefix(3))
+	if !v.IsValid() {
+		return structvar.View{}, false
+	}
+	return v, true
 }

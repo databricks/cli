@@ -5,17 +5,17 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
-
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type (
-	visitFunc     func(dyn.Value, paths.VisitFunc) (dyn.Value, error)
-	translateFunc func(ctx context.Context, v dyn.Value) (dyn.Value, error)
+	visitFunc     func(structvar.View, paths.VisitFunc) error
+	translateFunc func(ctx context.Context, v structvar.View) error
 )
 
 func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideSyncRoot bool) translateFunc {
-	return func(ctx context.Context, v dyn.Value) (dyn.Value, error) {
+	return func(ctx context.Context, v structvar.View) error {
 		// Do not translate job task paths if using Git source
 		var ignore []string
 		for key, job := range t.b.Config.Resources.Jobs {
@@ -24,12 +24,13 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			}
 		}
 
-		return visitor(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
-			key := p[2].Key()
+		return visitor(v, func(p *structpath.PathNode, mode paths.TranslateMode, v structvar.View) error {
+			key := p.KeyAt(2)
+			input, _ := v.AsString()
 
 			// Skip path translation if the job is using git source.
 			if slices.Contains(ignore, key) {
-				return v, nil
+				return nil
 			}
 
 			opts := translateOptions{
@@ -38,12 +39,12 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			}
 
 			// Handle path as if it's relative to the bundle root
-			nv, err := t.rewriteValue(ctx, p, v, t.b.BundleRootPath, opts)
+			nv, err := t.rewriteValue(ctx, p, input, t.b.BundleRootPath, opts)
 			if err == nil {
-				return nv, nil
+				return t.setRewritten(p, nv)
 			}
 
-			return dyn.InvalidValue, err
+			return err
 		})
 	}
 }
