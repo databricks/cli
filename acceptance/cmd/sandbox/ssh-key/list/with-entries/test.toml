@@ -24,9 +24,7 @@ Response.Body = '''
 [[Repls]]
 Old = '98b3b2bce82049769b4ba03990460d09'
 New = '[KEY_HASH_1]'
-Order = 5
 
 [[Repls]]
 Old = '9e0fc7c899aeee6a462e3153aeae8f30'
 New = '[KEY_HASH_2]'
-Order = 5

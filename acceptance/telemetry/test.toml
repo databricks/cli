@@ -41,4 +41,3 @@ New = "(N more bytes)"
 [[Repls]]
 Old = '[a-f0-9]{64}'
 New = "[SHA256_HASH]"
-Order = 1
