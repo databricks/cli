@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 
 	"github.com/databricks/cli/bundle"
