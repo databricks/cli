@@ -19,8 +19,9 @@ title "Nothing durable written: still on terraform (local state files + remote),
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
-title "bundle run rejects engine: terraform"
+title "bundle run works with engine: terraform: warns and runs the job from the terraform state"
 # Set after the replay: replay_tfstate.py runs bundle validate, which rejects engine: terraform.
 trace update_file.py databricks.yml "{name: test-bundle}" "{name: test-bundle, engine: terraform}"
-trace musterr $CLI bundle run test_job --no-wait
+trace $CLI bundle run test_job --no-wait
 trace print_requests.py //jobs
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
