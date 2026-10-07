@@ -115,9 +115,9 @@ type BundleDeployExperimental struct {
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
 // and state-size metadata for one bundle deployment.
 //
-// Counts cover both engines. Sizes are direct-only: the direct engine stores each
+// Counts cover all resources. Sizes are only reported for the direct engine: the direct engine stores each
 // resource's state as a JSON blob in resources.json, so a size is len(state) and
-// nothing is serialized at telemetry time. Terraform entries carry counts only.
+// nothing is serialized at telemetry time. Entries from the removed Terraform engine (older CLI versions) carry counts only.
 type BundleResourcesMetadata struct {
 	// Engine that ran the deploy: "direct" or "terraform".
 	StateEngine string `json:"state_engine,omitempty"`

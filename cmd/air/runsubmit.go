@@ -45,6 +45,19 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
+func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
+	environment := &compute.Environment{}
+	if strings.HasPrefix(dlImage, databricksAIPrefix) {
+		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+	} else {
+		environment.EnvironmentVersion = dlImage
+	}
+	if len(deps) > 0 {
+		environment.Dependencies = deps
+	}
+	return environment
+}
+
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
 // workspace path of the uploaded command.sh; dlImage is the runtime channel;
 // usagePolicyID is the already-resolved policy id ("" when the run has none);
@@ -98,15 +111,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
 	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
 	// slices, so a no-deps run omits the key.
-	envSpec := &compute.Environment{}
-	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		envSpec.BaseEnvironment = "workspace-base-environments/" + dlImage
-	} else {
-		envSpec.EnvironmentVersion = dlImage
-	}
-	if len(deps) > 0 {
-		envSpec.Dependencies = deps
-	}
+	envSpec := buildRunEnvironment(dlImage, deps)
 
 	return jobs.SubmitRun{
 		RunName: cfg.ExperimentName,
@@ -261,10 +266,9 @@ func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
 	return aiRuntimeTask, nil
 }
 
-// submitToken resolves the idempotency token: the --idempotency-key flag wins,
-// then the config's token, else a generated one. Over-long tokens error rather
-// than truncate, since truncation could make two distinct tokens collide.
-func submitToken(flag string, cfg *runConfig) (string, error) {
+// effectiveIdempotencyToken resolves the token sent to validation and submit:
+// the --idempotency-key flag wins, then the config's token, else a generated one.
+func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
 	token := flag
 	if token == "" && cfg.IdempotencyToken != nil {
 		token = *cfg.IdempotencyToken
@@ -272,10 +276,16 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	if token == "" {
 		token = uuid.NewString()
 	}
+	return token
+}
+
+// validateIdempotencyToken keeps the CLI's submission guard as a fallback when
+// backend validation is unavailable or does not yet enforce the same rule.
+func validateIdempotencyToken(token string) error {
 	if len(token) > 64 {
-		return "", fmt.Errorf("idempotency token must be 64 characters or less, got %d", len(token))
+		return fmt.Errorf("idempotency token must be 64 characters or less, got %d", len(token))
 	}
-	return token, nil
+	return nil
 }
 
 // withSpinner runs fn, showing an stderr spinner labeled msg when show is true.
@@ -322,32 +332,22 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
-	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
-	// local path build, no writes yet — so the pre-flight validates the real command_path. The
-	// same path is reused for the upload and submit below, so the validated path is the submitted
-	// one.
-	base, err := userWorkspaceDir(ctx, w)
+	// Compute and validate the actual submission path before creating artifacts.
+	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
 	if err != nil {
 		return 0, "", err
 	}
-	runName := ""
-	if cfg.MLflowRunName != nil {
-		runName = *cfg.MLflowRunName
-	}
-	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
-	commandPath := path.Join(funcDir, commandScriptName)
 	containers := submittedContainers(cfg, funcDir)
+	token := effectiveIdempotencyToken(idempotencyKey, cfg)
 
-	// Pre-flight the config server-side before any upload, so a bad config fails with the
-	// backend's field-level errors and no orphaned artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath, containers); err != nil {
+	// Validate server-side before uploading, so invalid configs leave no artifacts.
+	if err := preflightValidate(ctx, w, cfg, commandPath, containers, token); err != nil {
 		return 0, "", err
 	}
 
-	// Resolve the idempotency token first so a bad key fails before any upload,
-	// and before the policy lookup below spends a round trip on it.
-	token, err := submitToken(idempotencyKey, cfg)
-	if err != nil {
+	// Retain the local guard after backend validation so an unavailable endpoint
+	// cannot let a bad key reach upload or submission.
+	if err := validateIdempotencyToken(token); err != nil {
 		return 0, "", err
 	}
 

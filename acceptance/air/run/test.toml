@@ -1,0 +1,3 @@
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
