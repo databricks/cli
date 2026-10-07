@@ -309,20 +309,40 @@ func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) b
 // value in resourceValues. Returns an error with a --set hint if any are missing.
 func validateRequiredResources(resources []manifest.Resource, resourceValues map[string]string) error {
 	for _, r := range resources {
-		found := false
-		for k := range resourceValues {
-			if strings.HasPrefix(k, r.Key()+".") {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !hasResourceValue(r, resourceValues) {
 			fieldHint := "id"
 			if names := r.FieldNames(); len(names) > 0 {
 				fieldHint = names[0]
 			}
 			return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s.%s=value)", r.Alias, r.PluginName, r.Key(), fieldHint)
 		}
+	}
+	return nil
+}
+
+// hasResourceValue reports whether resourceValues holds any value for the resource.
+func hasResourceValue(r manifest.Resource, resourceValues map[string]string) bool {
+	for k := range resourceValues {
+		if strings.HasPrefix(k, r.Key()+".") {
+			return true
+		}
+	}
+	return false
+}
+
+// promptForMissingResources prompts for each required resource that has no value yet
+// (for example from --set) and adds the answers to resourceValues.
+func promptForMissingResources(ctx context.Context, resources []manifest.Resource, resourceValues map[string]string) error {
+	theme := prompt.AppkitTheme()
+	for _, r := range resources {
+		if hasResourceValue(r, resourceValues) {
+			continue
+		}
+		values, err := promptForResource(ctx, r, theme, true)
+		if err != nil {
+			return err
+		}
+		maps.Copy(resourceValues, values)
 	}
 	return nil
 }
@@ -1343,14 +1363,6 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 				return err
 			}
 		}
-		// Prompt for deploy/run in interactive mode when no flags were set
-		if isInteractive && !skipDeployRunPrompt {
-			var err error
-			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	// Expand deprecated --warehouse-id into --set values for each plugin that has a sql-warehouse resource.
@@ -1396,15 +1408,26 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 		}
 	}
 
-	// In flags/non-interactive mode, resolve derived values and validate resources.
+	// With --features on a terminal (and no --name), plugin selection and the resource
+	// prompts above are skipped, so required resources are prompted for here instead.
+	featuresOnTTY := isInteractive && opts.pluginsChanged && !flagsMode && !skipPluginSelection
+
+	// In flags/non-interactive mode and for --features on a terminal, resolve derived values
+	// and validate resources before any project files are written.
 	// Agentic mode skips validation — resources are filled in later.
-	if !agenticMode && (flagsMode || !isInteractive) {
+	if !agenticMode && (flagsMode || !isInteractive || featuresOnTTY) {
 		resources := m.CollectResources(selectedPlugins)
 
-		// Resolve derived values for resources that support it.
 		if resourceValues == nil {
 			resourceValues = make(map[string]string)
 		}
+		if featuresOnTTY {
+			if err := promptForMissingResources(ctx, resources, resourceValues); err != nil {
+				return err
+			}
+		}
+
+		// Resolve derived values for resources that support it.
 		for _, r := range resources {
 			resolveFn, ok := prompt.GetResolveFunc(r.Type)
 			if !ok {
@@ -1424,6 +1447,16 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 
 		// Validate that all required resources are provided.
 		if err := validateRequiredResources(resources, resourceValues); err != nil {
+			return err
+		}
+	}
+
+	// Prompt for deploy/run on a terminal when no deploy/run flags were set. The fully
+	// interactive and pre-rendered template paths already asked above.
+	if isInteractive && opts.pluginsChanged && !skipPluginSelection && !skipDeployRunPrompt {
+		var err error
+		shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+		if err != nil {
 			return err
 		}
 	}
