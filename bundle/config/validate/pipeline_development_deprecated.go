@@ -42,7 +42,7 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 			continue
 		}
 
-		p := structpath.NewStringKeys(nil, "resources", "pipelines", key, "development")
+		p := structpath.NewPath(nil, "resources", "pipelines", key, "development")
 
 		// Only user-written values have a location; the value set by "mode: development" does not.
 		locs := b.Config.LocationsAt(p)

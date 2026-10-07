@@ -326,7 +326,7 @@ func selectResources(b *bundle.Bundle, resourceKeys ResourceKeySet) func() error
 					continue
 				}
 
-				path := structpath.NewStringKeys(nil, "resources", resourceType, name)
+				path := structpath.NewPath(nil, "resources", resourceType, name)
 				err := b.Config.Assign(path, updatedView.Lookup(path))
 				if err != nil {
 					return err

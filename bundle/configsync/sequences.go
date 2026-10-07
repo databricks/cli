@@ -155,7 +155,7 @@ func (r *blockResolver) regionPath(block sourceBlock, path *structpath.PathNode)
 	if !block.override {
 		return path
 	}
-	return structpath.Join(structpath.NewStringKeys(nil, "targets", r.target), path.AsSlice()...)
+	return structpath.Join(structpath.NewPath(nil, "targets", r.target), path.AsSlice()...)
 }
 
 // candidatePath renders a resolved path the way the patch layer addresses it,

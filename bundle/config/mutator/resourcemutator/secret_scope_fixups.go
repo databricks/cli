@@ -131,7 +131,7 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		currentUser := b.Config.Workspace.CurrentUser.User
 
 		addManageForCurrentUser(scope, currentUser)
-		path := structpath.NewStringKeys(nil, "resources", "secret_scopes", key)
+		path := structpath.NewPath(nil, "resources", "secret_scopes", key)
 		err := collapsePermissions(scope)
 		if err != nil {
 			return diag.Diagnostics{

@@ -121,7 +121,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []diag.Location{{File: "a.yml", Line: 1, Column: 1}},
-					Paths:     structpath.NewStringKeysSlice("resources", "clusters", "foo"),
+					Paths:     structpath.NewPathSlice("resources", "clusters", "foo"),
 				},
 			}, diags)
 		})

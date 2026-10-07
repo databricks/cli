@@ -37,7 +37,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 			// singular.
 			rType := strings.TrimSuffix(group.Description.PluralName, "s")
 
-			p := structpath.NewStringKeys(nil, "resources", group.Description.PluralName, rName)
+			p := structpath.NewPath(nil, "resources", group.Description.PluralName, rName)
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),

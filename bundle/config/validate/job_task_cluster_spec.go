@@ -26,13 +26,13 @@ func (v *jobTaskClusterSpec) Name() string {
 func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	jobsPath := structpath.NewStringKeys(nil, "resources", "jobs")
+	jobsPath := structpath.NewPath(nil, "resources", "jobs")
 
 	for resourceName, job := range b.Config.Resources.Jobs {
-		resourcePath := structpath.NewStringKeys(jobsPath, resourceName)
+		resourcePath := structpath.NewPath(jobsPath, resourceName)
 
 		for taskIndex, task := range job.Tasks {
-			taskPath := structpath.NewIndex(structpath.NewStringKeys(resourcePath, "tasks"), taskIndex)
+			taskPath := structpath.NewPath(resourcePath, "tasks", taskIndex)
 
 			diags = diags.Extend(validateJobTask(b, task, taskPath))
 		}
@@ -72,7 +72,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.Path
 	}
 
 	if task.ForEachTask != nil {
-		forEachTaskPath := structpath.NewStringKeys(taskPath, "for_each_task", "task")
+		forEachTaskPath := structpath.NewPath(taskPath, "for_each_task", "task")
 
 		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
 	}

@@ -56,7 +56,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			continue
 		}
 
-		alertPath := structpath.NewStringKeys(nil, "resources", "alerts", alertKey)
+		alertPath := structpath.NewPath(nil, "resources", "alerts", alertKey)
 		alertV := b.Config.View().Lookup(alertPath)
 
 		// No other fields other than allowedInYAML should be set in the bundle YAML.

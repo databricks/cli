@@ -34,7 +34,7 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 				if !structvar.ContainsVariableReference(key) {
 					continue
 				}
-				p := structpath.NewStringKeys(prefix, group.Description.PluralName, key)
+				p := structpath.NewPath(prefix, group.Description.PluralName, key)
 				diags = append(diags, diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
@@ -45,10 +45,10 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 		}
 	}
 
-	check(structpath.NewStringKeys(nil, "resources"), &b.Config.Resources)
+	check(structpath.NewPath(nil, "resources"), &b.Config.Resources)
 	for _, name := range slices.Sorted(maps.Keys(b.Config.Targets)) {
 		if t := b.Config.Targets[name]; t != nil && t.Resources != nil {
-			check(structpath.NewStringKeys(nil, "targets", name, "resources"), t.Resources)
+			check(structpath.NewPath(nil, "targets", name, "resources"), t.Resources)
 		}
 	}
 

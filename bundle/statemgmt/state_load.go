@@ -120,7 +120,7 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.
 			continue
 		}
 
-		path := structpath.NewStringKeys(resourcesPath, groupName, resourceName)
+		path := structpath.NewPath(resourcesPath, groupName, resourceName)
 		if !cfg.View().Lookup(path).IsValid() {
 			if err := cfg.Set(structpath.NewStringKey(path, "modified_status"), resources.ModifiedStatusDeleted); err != nil {
 				return err

@@ -25,7 +25,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 
 	// Iterate over all secrets in the bundle
 	for key := range b.Config.Resources.Secrets {
-		p := structpath.NewStringKeys(nil, "resources", "secrets", key, "value")
+		p := structpath.NewPath(nil, "resources", "secrets", key, "value")
 		val := b.Config.View().Lookup(p)
 		if !val.IsValid() {
 			diags = append(diags, diag.Diagnostic{
@@ -89,7 +89,7 @@ func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, s
 	}
 
 	// The default path in the dynamic config for the variable's default field.
-	defaultPath := structpath.NewStringKeys(nil, "variables", varName, "default")
+	defaultPath := structpath.NewPath(nil, "variables", varName, "default")
 	locations := append(b.Config.LocationsAt(defaultPath), val.Locations()...)
 
 	return diag.Diagnostics{{
