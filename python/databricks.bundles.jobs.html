@@ -1093,7 +1093,13 @@ Up to 10 keys can be specified.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Compute">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Compute</span></span><a class="headerlink" href="#databricks.bundles.jobs.Compute" title="Link to this definition">¶</a></dt>
-<dd><dl class="py method">
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Compute.hardware_accelerator">
+<span class="sig-name descname"><span class="pre">hardware_accelerator</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.HardwareAcceleratorType" title="databricks.bundles.jobs._models.hardware_accelerator_type.HardwareAcceleratorType"><span class="pre">HardwareAcceleratorType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Compute.hardware_accelerator" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Hardware accelerator configuration for Serverless GPU workloads.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Compute.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
 
@@ -1299,6 +1305,12 @@ accelerator count is encoded in the value name (e.g. <cite>GPU_8xH100</cite> mea
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Continuous">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Continuous</span></span><a class="headerlink" href="#databricks.bundles.jobs.Continuous" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Continuous.maintenance_window">
+<span class="sig-name descname"><span class="pre">maintenance_window</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.MaintenanceWindow" title="databricks.bundles.jobs._models.maintenance_window.MaintenanceWindow"><span class="pre">MaintenanceWindow</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Continuous.maintenance_window" title="Link to this definition">¶</a></dt>
+<dd><p>Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Continuous.pause_status">
 <span class="sig-name descname"><span class="pre">pause_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.PauseStatus" title="databricks.bundles.jobs._models.pause_status.PauseStatus"><span class="pre">PauseStatus</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Continuous.pause_status" title="Link to this definition">¶</a></dt>
 <dd><p>Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.</p>
@@ -1571,6 +1583,47 @@ will be removed for future Databricks Runtime versions:</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DayOfWeek</span></span><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek" title="Link to this definition">¶</a></dt>
+<dd><p>Days of week that can be referenced by Jobs scheduling settings.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.MONDAY">
+<span class="sig-name descname"><span class="pre">MONDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MONDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.MONDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.TUESDAY">
+<span class="sig-name descname"><span class="pre">TUESDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TUESDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.TUESDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.WEDNESDAY">
+<span class="sig-name descname"><span class="pre">WEDNESDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WEDNESDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.WEDNESDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.THURSDAY">
+<span class="sig-name descname"><span class="pre">THURSDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'THURSDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.THURSDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.FRIDAY">
+<span class="sig-name descname"><span class="pre">FRIDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FRIDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.FRIDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.SATURDAY">
+<span class="sig-name descname"><span class="pre">SATURDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SATURDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.SATURDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DayOfWeek.SUNDAY">
+<span class="sig-name descname"><span class="pre">SUNDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SUNDAY'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DayOfWeek.SUNDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DbfsStorageInfo">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DbfsStorageInfo</span></span><a class="headerlink" href="#databricks.bundles.jobs.DbfsStorageInfo" title="Link to this definition">¶</a></dt>
 <dd><p>A storage location in DBFS</p>
@@ -1716,26 +1769,15 @@ algorithms use a single entry where every node runs the same command;
 role-split workloads (driver + worker, parameter server, separate eval
 node, etc.) use multiple entries.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.command_path">
-<span class="sig-name descname"><span class="pre">command_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.command_path" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Workspace path of the script to run on each node in this deployment.
-Upload the script to this path and supply the path here. When the task
-runs, the file at this path is run on each node; if it fails, the task
-fails with its exit code.</p>
-<p>Example script contents:</p>
-<p># Plain Python:
-python train.py –epochs 10</p>
-<p># Multi-GPU via accelerate:
-accelerate launch train.py –config config.yaml</p>
-<p># Distributed via torchrun:
-torchrun –nproc_per_node=8 train.py</p>
-</dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.compute">
 <span class="sig-name descname"><span class="pre">compute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ComputeSpec" title="databricks.bundles.jobs._models.compute_spec.ComputeSpec"><span class="pre">ComputeSpec</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.compute" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] Compute resources allocated to each node in this deployment.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.command_path">
+<span class="sig-name descname"><span class="pre">command_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.command_path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.name">
@@ -2642,6 +2684,18 @@ This field is <cite>deprecated</cite>. Please use the <cite>notification_setting
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEmailNotifications.on_maintenance_complete">
+<span class="sig-name descname"><span class="pre">on_maintenance_complete</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEmailNotifications.on_maintenance_complete" title="Link to this definition">¶</a></dt>
+<dd><p>A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEmailNotifications.on_maintenance_start">
+<span class="sig-name descname"><span class="pre">on_maintenance_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEmailNotifications.on_maintenance_start" title="Link to this definition">¶</a></dt>
+<dd><p>A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobEmailNotifications.on_start">
 <span class="sig-name descname"><span class="pre">on_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEmailNotifications.on_start" title="Link to this definition">¶</a></dt>
 <dd><p>A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.</p>
@@ -2721,6 +2775,67 @@ In this minimal environment spec, only pip and java dependencies are supported.<
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariables">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobEnvironmentVariables</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariables" title="Link to this definition">¶</a></dt>
+<dd><p>A named environment-variable entry, defined once at the job level and
+referenced by key from one or more tasks. Entries live on
+<cite>JobSettings.environment_variables</cite>, and tasks select one via
+<cite>TaskSettings.environment_variables_key</cite>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariables.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariables.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariables.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariables.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariablesSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobEnvironmentVariablesSpec</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariablesSpec" title="Link to this definition">¶</a></dt>
+<dd><p>The environment variables and files associated with a job environment
+variable entry. Runtime environment variables override inline <cite>variables</cite>,
+which override values from <cite>files</cite>, on duplicate keys.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariablesSpec.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariablesSpec.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironmentVariablesSpec.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironmentVariablesSpec.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -3258,6 +3373,55 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.LogAnalyticsInfo.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MaintenanceWindow</span></span><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow" title="Link to this definition">¶</a></dt>
+<dd><p>A recurring weekly time window during which platform-initiated maintenance is
+allowed to run for a continuous job.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow.day_of_week">
+<span class="sig-name descname"><span class="pre">day_of_week</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.DayOfWeek" title="databricks.bundles.jobs._models.day_of_week.DayOfWeek"><span class="pre">DayOfWeek</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow.day_of_week" title="Link to this definition">¶</a></dt>
+<dd><p>The day of week on which maintenance is allowed to happen. This field is required.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow.start_hour">
+<span class="sig-name descname"><span class="pre">start_hour</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow.start_hour" title="Link to this definition">¶</a></dt>
+<dd><p>An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.
+Platform-initiated maintenance is triggered only within a one-hour window starting at this hour.
+This field is required.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow.timezone_id">
+<span class="sig-name descname"><span class="pre">timezone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow.timezone_id" title="Link to this definition">¶</a></dt>
+<dd><p>A Java timezone ID. The maintenance window is resolved with respect to this timezone. See <a class="reference external" href="https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html">Java TimeZone</a> for details. This field is required.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.MaintenanceWindow.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.MaintenanceWindow.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -4766,6 +4930,12 @@ when the <cite>clean_rooms_notebook_task</cite> field is present.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Task.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Compute" title="databricks.bundles.jobs._models.compute.Compute"><span class="pre">Compute</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.compute" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Task level compute configuration.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.condition_task">
 <span class="sig-name descname"><span class="pre">condition_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ConditionTask" title="databricks.bundles.jobs._models.condition_task.ConditionTask"><span class="pre">ConditionTask</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.condition_task" title="Link to this definition">¶</a></dt>
 <dd><p>The task evaluates a condition that can be used to control the execution of other tasks when the <cite>condition_task</cite> field is present.
@@ -5052,6 +5222,18 @@ This field is <cite>deprecated</cite>. Please use the <cite>notification_setting
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.TaskEmailNotifications.on_maintenance_complete">
+<span class="sig-name descname"><span class="pre">on_maintenance_complete</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.TaskEmailNotifications.on_maintenance_complete" title="Link to this definition">¶</a></dt>
+<dd><p>A list of email addresses to notify when platform-initiated maintenance completes for a continuous job.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.TaskEmailNotifications.on_maintenance_start">
+<span class="sig-name descname"><span class="pre">on_maintenance_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.TaskEmailNotifications.on_maintenance_start" title="Link to this definition">¶</a></dt>
+<dd><p>A list of email addresses to notify when platform-initiated maintenance starts for a continuous job.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.TaskEmailNotifications.on_start">
 <span class="sig-name descname"><span class="pre">on_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.TaskEmailNotifications.on_start" title="Link to this definition">¶</a></dt>
 <dd><p>A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.</p>
@@ -5320,6 +5502,20 @@ or <cite>dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh</cite><
 <dt class="sig sig-object py" id="databricks.bundles.jobs.WebhookNotifications.on_failure">
 <span class="sig-name descname"><span class="pre">on_failure</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.Webhook" title="databricks.bundles.jobs._models.webhook.Webhook"><span class="pre">Webhook</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.WebhookNotifications.on_failure" title="Link to this definition">¶</a></dt>
 <dd><p>An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the <cite>on_failure</cite> property.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.WebhookNotifications.on_maintenance_complete">
+<span class="sig-name descname"><span class="pre">on_maintenance_complete</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.Webhook" title="databricks.bundles.jobs._models.webhook.Webhook"><span class="pre">Webhook</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.WebhookNotifications.on_maintenance_complete" title="Link to this definition">¶</a></dt>
+<dd><p>An optional list of system notification IDs to call when platform-initiated maintenance completes for a continuous job.
+A maximum of 3 destinations can be specified for the <cite>on_maintenance_complete</cite> property.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.WebhookNotifications.on_maintenance_start">
+<span class="sig-name descname"><span class="pre">on_maintenance_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.Webhook" title="databricks.bundles.jobs._models.webhook.Webhook"><span class="pre">Webhook</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.WebhookNotifications.on_maintenance_start" title="Link to this definition">¶</a></dt>
+<dd><p>An optional list of system notification IDs to call when platform-initiated maintenance starts for a continuous job.
+A maximum of 3 destinations can be specified for the <cite>on_maintenance_start</cite> property.</p>
 </dd></dl>
 
 <dl class="py attribute">

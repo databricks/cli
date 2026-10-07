@@ -145,6 +145,18 @@ It must be unique within the workspace.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.App.compute_max_instances">
+<span class="sig-name descname"><span class="pre">compute_max_instances</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.compute_max_instances" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum number of app instances the app is configured to run. Must be set together with <cite>compute_min_instances</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.App.compute_min_instances">
+<span class="sig-name descname"><span class="pre">compute_min_instances</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.compute_min_instances" title="Link to this definition">¶</a></dt>
+<dd><p>Minimum number of app instances the app is configured to run. Must be set together with <cite>compute_max_instances</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.compute_size">
 <span class="sig-name descname"><span class="pre">compute_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.ComputeSize" title="databricks.bundles.apps._models.compute_size.ComputeSize"><span class="pre">ComputeSize</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.compute_size" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1239,7 +1251,7 @@ of the repository is used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.LifecycleWithStarted.started">
 <span class="sig-name descname"><span class="pre">started</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.LifecycleWithStarted.started" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.</p>
+<dd><p>Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.</p>
 </dd></dl>
 
 <dl class="py method">

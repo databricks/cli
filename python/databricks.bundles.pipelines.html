@@ -205,6 +205,33 @@ If unspecified and autoFullRefresh is enabled then by default min_interval_hours
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AvroTransformerOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AvroTransformerOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.AvroTransformerOptions" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AvroTransformerOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.AvroTransformerOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AvroTransformerOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.AvroTransformerOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AwsAttributes</span></span><a class="headerlink" href="#databricks.bundles.pipelines.AwsAttributes" title="Link to this definition">¶</a></dt>
 <dd><p>Attributes set during cluster creation which are related to Amazon Web Services.</p>
@@ -535,6 +562,33 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluentSchemaRegistryOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConfluentSchemaRegistryOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluentSchemaRegistryOptions" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluentSchemaRegistryOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluentSchemaRegistryOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluentSchemaRegistryOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluentSchemaRegistryOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1729,6 +1783,22 @@ If not specified, UTC will be used.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ParseMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ParseMode</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ParseMode" title="Link to this definition">¶</a></dt>
+<dd><p>Determines how errors encountered while deserializing records are handled.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ParseMode.FAILFAST">
+<span class="sig-name descname"><span class="pre">FAILFAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FAILFAST'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ParseMode.FAILFAST" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ParseMode.PERMISSIVE">
+<span class="sig-name descname"><span class="pre">PERMISSIVE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PERMISSIVE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ParseMode.PERMISSIVE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PathPattern">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PathPattern</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PathPattern" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1818,7 +1888,8 @@ job, the job’s setting takes precedence and this field is ignored.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.development">
 <span class="sig-name descname"><span class="pre">development</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.development" title="Link to this definition">¶</a></dt>
-<dd><p>Whether the pipeline is in Development mode. Defaults to false.</p>
+<dd><p>[DEPRECATED] Whether the pipeline is in Development mode. Defaults to false.</p>
+<p>Deprecated: set development mode for each update instead.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2461,6 +2532,33 @@ For available versions and their included packages, see
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ProtobufTransformerOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ProtobufTransformerOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ProtobufTransformerOptions" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ProtobufTransformerOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ProtobufTransformerOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ProtobufTransformerOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ProtobufTransformerOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.RabbitmqOptions">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RabbitmqOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.RabbitmqOptions" title="Link to this definition">¶</a></dt>
 <dd><p>RabbitMQ specific options for ingestion.
@@ -2671,6 +2769,33 @@ endpoint will be used.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaRegistryConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SchemaRegistryConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SchemaRegistryConfig" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaRegistryConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SchemaRegistryConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaRegistryConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SchemaRegistryConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SchemaSpec</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -2731,6 +2856,34 @@ Clients that assume it is always present should handle its absence.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SmartsheetOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SmartsheetOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Smartsheet specific options for ingestion</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SmartsheetOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SmartsheetOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2996,6 +3149,96 @@ It must be in DBSQL format.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfigScdType.APPEND_ONLY">
 <span class="sig-name descname"><span class="pre">APPEND_ONLY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPEND_ONLY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfigScdType.APPEND_ONLY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TikTokAdsOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions" title="Link to this definition">¶</a></dt>
+<dd><p>TikTok Ads specific options for ingestion</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TikTokAdsOptionsTikTokDataLevel</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Data level for TikTok Ads report aggregation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_ADVERTISER">
+<span class="sig-name descname"><span class="pre">AUCTION_ADVERTISER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUCTION_ADVERTISER'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_ADVERTISER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_CAMPAIGN">
+<span class="sig-name descname"><span class="pre">AUCTION_CAMPAIGN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUCTION_CAMPAIGN'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_CAMPAIGN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_ADGROUP">
+<span class="sig-name descname"><span class="pre">AUCTION_ADGROUP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUCTION_ADGROUP'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_ADGROUP" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_AD">
+<span class="sig-name descname"><span class="pre">AUCTION_AD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUCTION_AD'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel.AUCTION_AD" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TikTokAdsOptionsTikTokReportType</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType" title="Link to this definition">¶</a></dt>
+<dd><p>Report type for TikTok Ads API.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.BASIC">
+<span class="sig-name descname"><span class="pre">BASIC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BASIC'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.BASIC" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.AUDIENCE">
+<span class="sig-name descname"><span class="pre">AUDIENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUDIENCE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.AUDIENCE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.PLAYABLE_AD">
+<span class="sig-name descname"><span class="pre">PLAYABLE_AD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PLAYABLE_AD'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.PLAYABLE_AD" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.DSA">
+<span class="sig-name descname"><span class="pre">DSA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DSA'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.DSA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.BUSINESS_CENTER">
+<span class="sig-name descname"><span class="pre">BUSINESS_CENTER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BUSINESS_CENTER'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.BUSINESS_CENTER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.GMV_MAX">
+<span class="sig-name descname"><span class="pre">GMV_MAX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GMV_MAX'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType.GMV_MAX" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

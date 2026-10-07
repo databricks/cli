@@ -292,7 +292,7 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.LifecycleWithStarted.started">
 <span class="sig-name descname"><span class="pre">started</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.LifecycleWithStarted.started" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.</p>
+<dd><p>Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -322,26 +322,16 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SpotInstancePolicy">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SpotInstancePolicy</span></span><a class="headerlink" href="#databricks.bundles.sql_warehouses.SpotInstancePolicy" title="Link to this definition">¶</a></dt>
-<dd><p>EndpointSpotInstancePolicy configures whether the endpoint should use spot instances.</p>
-<p>The breakdown of how the EndpointSpotInstancePolicy converts to per cloud configurations is:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Cloud</p></th>
-<th class="head"><p>COST_OPTIMIZED</p></th>
-<th class="head"><p>RELIABILITY_OPTIMIZED</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>AWS</p></td>
-<td><p>On Demand Driver with Spot Executors</p></td>
-<td><p>On Demand Driver and Executors</p></td>
-</tr>
-<tr class="row-odd"><td><p>AZURE</p></td>
-<td><p>On Demand Driver and Executors</p></td>
-<td><p>On Demand Driver and Executors</p></td>
-</tr>
-</tbody>
-</table>
+<dd><p>EndpointSpotInstancePolicy configures whether the endpoint should use spot
+instances.</p>
+<p>The breakdown of how the EndpointSpotInstancePolicy converts to per cloud
+configurations is:</p>
+<ul class="simple">
+<li><p>AWS, COST_OPTIMIZED: On Demand Driver with Spot Executors.</p></li>
+<li><p>AWS, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.</p></li>
+<li><p>AZURE, COST_OPTIMIZED: On Demand Driver and Executors.</p></li>
+<li><p>AZURE, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.</p></li>
+</ul>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SpotInstancePolicy.POLICY_UNSPECIFIED">
 <span class="sig-name descname"><span class="pre">POLICY_UNSPECIFIED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'POLICY_UNSPECIFIED'</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SpotInstancePolicy.POLICY_UNSPECIFIED" title="Link to this definition">¶</a></dt>

@@ -768,6 +768,51 @@ is not carried here. Only supported on Azure-hosted workspaces.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth</span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth" title="Link to this definition">¶</a></dt>
+<dd><p>Header-based API-key authentication for a custom provider: the secret is
+forwarded on outbound requests under a caller-chosen HTTP header, as
+<cite>&lt;api_key_name&gt;: &lt;api_key_value&gt;</cite>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_name">
+<span class="sig-name descname"><span class="pre">api_key_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_name" title="Link to this definition">¶</a></dt>
+<dd><p>HTTP header name that carries the API key on outbound requests (e.g.,
+<cite>Ocp-Apim-Subscription-Key</cite>). The value forwarded under this header is
+supplied via <cite>api_key_value</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_value">
+<span class="sig-name descname"><span class="pre">api_key_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret" title="databricks.bundles.model_provider_services._models.model_provider_service_config_provider_secret.ModelProviderServiceConfigProviderSecret"><span class="pre">ModelProviderServiceConfigProviderSecret</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_value" title="Link to this definition">¶</a></dt>
+<dd><p>Secret value forwarded under the <cite>api_key_name</cite> header on outbound
+requests. Supplied as inline plaintext via <cite>ProviderSecret.plaintext</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigCustomProviderConfig</span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderConfig" title="Link to this definition">¶</a></dt>
 <dd><p>Custom OpenAI-compatible provider configuration with bearer-token
@@ -820,6 +865,14 @@ in <cite>api_key.plaintext</cite>.</p>
 <span class="sig-name descname"><span class="pre">base_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig.base_url" title="Link to this definition">¶</a></dt>
 <dd><p>Endpoint URL of the OpenAI-compatible service (e.g.,
 <cite>https://api.example.com/v1</cite>). Required on Create.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig.header_auth">
+<span class="sig-name descname"><span class="pre">header_auth</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth" title="databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_api_key_header_auth.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth"><span class="pre">ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig.header_auth" title="Link to this definition">¶</a></dt>
+<dd><p>Header-based API-key auth: the secret is forwarded on outbound requests
+under a caller-chosen HTTP header rather than as an <cite>Authorization</cite>
+bearer token. Set this instead of <cite>api_key</cite> for header auth.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -993,6 +1046,18 @@ Supply the value in <cite>api_key.plaintext</cite>.</p>
 <span class="sig-name descname"><span class="pre">region</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig.region" title="Link to this definition">¶</a></dt>
 <dd><p>GCP region of the Gemini Enterprise endpoint (e.g., <cite>us-central1</cite>).
 Required on Create.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig.service_credential">
+<span class="sig-name descname"><span class="pre">service_credential</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigServiceCredential" title="databricks.bundles.model_provider_services._models.model_provider_service_config_service_credential.ModelProviderServiceConfigServiceCredential"><span class="pre">ModelProviderServiceConfigServiceCredential</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig.service_credential" title="Link to this definition">¶</a></dt>
+<dd><p>Reference to a Unity Catalog service credential authorizing Gemini
+Enterprise requests. On Create, supply <cite>service_credential.name</cite> as
+<cite>credentials/{name}</cite>; required when using service-credential
+authentication and mutually exclusive with <cite>api_key</cite>. The credential is
+referenced by name; its value is not carried here. On read, the resolved
+<cite>id</cite> and <cite>is_deleted</cite> are also populated. Supported only on GCP-hosted
+workspaces.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1271,6 +1336,17 @@ reads. Get and List responses omit <cite>plaintext</cite>; the enclosing secret
 object remains present to indicate that a secret is configured.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.secret_reference">
+<span class="sig-name descname"><span class="pre">secret_reference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference" title="databricks.bundles.model_provider_services._models.model_provider_service_config_secret_reference.ModelProviderServiceConfigSecretReference"><span class="pre">ModelProviderServiceConfigSecretReference</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.secret_reference" title="Link to this definition">¶</a></dt>
+<dd><p>Reference to a customer-owned UC Secret that carries this secret value.
+The value is read at invoke time under the model provider service
+owner’s access and is never copied onto the model provider service, so
+rotating the UC Secret takes effect with no change to the model provider
+service. On Create, supply <cite>secret_reference.name</cite> as
+<cite>secrets/{catalog}.{schema}.{secret}</cite>.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -1291,6 +1367,43 @@ object remains present to indicate that a secret is configured.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigSecretReference</span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference" title="Link to this definition">¶</a></dt>
+<dd><p>Reference to a customer-owned UC Secret backing a secret-bearing provider
+field, in the <cite>ProviderSecret.secret_reference</cite> arm.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.name" title="Link to this definition">¶</a></dt>
+<dd><p>Resource name of the bound UC Secret, in the form
+<cite>secrets/{catalog}.{schema}.{secret}</cite>. On Create the caller supplies the
+name here. On read it reflects the secret’s current name at read time.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigSecretReference.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
