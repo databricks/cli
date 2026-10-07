@@ -128,14 +128,8 @@ func validateDryRunConfig(ctx context.Context, w *databricks.WorkspaceClient, cf
 // availability fallbacks. The legacy response reports field errors only; it
 // cannot yet distinguish complete success from skipped backend dependencies.
 func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
-	request := validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken)
 	var resp validateConfigResponse
-	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, request, &resp)
-	if rejectsValidateConfigEnvironment(err) {
-		delete(request, "environment")
-		resp = validateConfigResponse{}
-		err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, request, &resp)
-	}
+	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken), &resp)
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
@@ -143,18 +137,6 @@ func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg
 		return nil
 	}
 	return errors.New(formatConfigErrors(resp.Errors))
-}
-
-const unsupportedEnvironmentMessage = "Cannot find field: environment in message databricks.aicomputemanager.ValidateConfigRequest"
-
-// rejectsValidateConfigEnvironment identifies the one old-backend response for
-// which retrying without the additive environment field is safe.
-func rejectsValidateConfigEnvironment(err error) bool {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok &&
-		apiErr.StatusCode == http.StatusBadRequest &&
-		apiErr.ErrorCode == "MALFORMED_REQUEST" &&
-		apiErr.Message == unsupportedEnvironmentMessage
 }
 
 // classifyValidationFailure separates service failures from caller errors and
