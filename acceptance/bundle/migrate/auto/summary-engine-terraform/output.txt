@@ -2,13 +2,12 @@
 === Replay a prior terraform deployment
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
->>> update_file.py databricks.yml   name: test-bundle   name: test-bundle
-  engine: terraform
+>>> update_file.py databricks.yml {name: test-bundle} {name: test-bundle, engine: terraform}
 
 === Summary works with engine: terraform and shows the deployed job's ID and URL
 >>> [CLI] bundle summary
 Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
-  in databricks.yml:3:11
+  in databricks.yml:1:37
 
 Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
 See https://docs.databricks.com/dev-tools/bundles/direct for details
@@ -27,7 +26,7 @@ Resources:
 
 >>> [CLI] bundle summary -o json
 Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
-  in databricks.yml:3:11
+  in databricks.yml:1:37
 
 Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
 See https://docs.databricks.com/dev-tools/bundles/direct for details

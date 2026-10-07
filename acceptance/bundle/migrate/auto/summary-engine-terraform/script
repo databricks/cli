@@ -5,8 +5,7 @@ trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 # Set after the replay: replay_tfstate.py runs bundle validate, which rejects engine: terraform.
-trace update_file.py databricks.yml "  name: test-bundle" "  name: test-bundle
-  engine: terraform"
+trace update_file.py databricks.yml "{name: test-bundle}" "{name: test-bundle, engine: terraform}"
 
 title "Summary works with engine: terraform and shows the deployed job's ID and URL"
 trace $CLI bundle summary
