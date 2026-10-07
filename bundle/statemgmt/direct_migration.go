@@ -67,10 +67,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if tempStatePath != "" {
 		// Always remove the temp state and its WAL. The converted state is loaded into memory
 		// below and never renamed into place, so these are the only on-disk copies to clean up.
-		defer func() {
-			_ = os.Remove(tempStatePath)
-			_ = os.Remove(tempStatePath + ".wal")
-		}()
+		defer dstate.RemoveFiles(tempStatePath)
 	}
 	if hasWarnings {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
@@ -233,8 +230,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	tempStatePath := filepath.Join(filepath.Dir(localDirectPath), "resources.migrating.json")
 	// Clean up any leftovers from a crashed previous run so UpgradeToWrite
 	// (which opens the .wal with O_EXCL) succeeds.
-	_ = os.Remove(tempStatePath)
-	_ = os.Remove(tempStatePath + ".wal")
+	dstate.RemoveFiles(tempStatePath)
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
 	// logdiag. Run them in an isolated + collecting context so their diagnostics
@@ -258,6 +254,9 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// stays at tf+1. Either way it outranks the terraform state, which is all engine selection needs.
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
+	// On a failed conversion, close the WAL so the caller can remove the files (Windows refuses to
+	// remove an open file). After the successful Finalize below this is a no-op.
+	defer stateDB.Discard()
 
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring

@@ -45,6 +45,27 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
+func TestDiscardRemovesStateAndWAL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	db.OpenWithData(path, NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	db.Discard()
+
+	_, err := os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+	_, err = os.Stat(path + walSuffix)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+
+	// The WAL is opened with O_EXCL, so a leftover one would fail a fresh write at the same path.
+	var db2 DeploymentState
+	db2.OpenWithData(path, NewDatabase("lineage", 1))
+	require.NoError(t, db2.UpgradeToWrite())
+	db2.Discard()
+}
+
 func TestExportStateFromDataJobRunJobID(t *testing.T) {
 	data := Database{
 		State: map[string]ResourceEntry{
