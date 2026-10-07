@@ -68,7 +68,7 @@ Error: The specified pipeline [UUID] was not found.
 Exit code: 1
 
 === Assert job is deleted:
-Error: Job [JOB_ID] does not exist.
+Error: Job [FOO_ID] does not exist.
 
 Exit code: 1
 

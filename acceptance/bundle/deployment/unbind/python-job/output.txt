@@ -5,8 +5,6 @@ Created jobs.job_1
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle summary --var job_name=My Job --output json
-
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deployment unbind job_1 --var job_name=My Job
 
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy --var job_name=Updated Job
@@ -15,11 +13,11 @@ Created jobs.job_1
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] jobs get [JOB_ID] --output json
+>>> [CLI] jobs get [JOB_1_ID] --output json
 {
   "created_time": [UNIX_TIME_MILLIS],
   "creator_user_name": "[USERNAME]",
-  "job_id": [JOB_ID],
+  "job_id": [JOB_1_ID],
   "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {

@@ -1,6 +1,5 @@
 trace $CLI bundle plan
 trace $CLI bundle deploy
-job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
-add_repl "$job_id" FOO_ID
+job_id=$(read_id.py foo)
 trace $CLI jobs delete $job_id
 trace errcode $CLI bundle destroy --auto-approve

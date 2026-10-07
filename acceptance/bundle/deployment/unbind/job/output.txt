@@ -5,8 +5,6 @@ Created jobs.job_1
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] bundle summary --var job_name=My Job --output json
-
 >>> [CLI] bundle deployment unbind job_1 --var job_name=My Job
 
 >>> [CLI] bundle deploy --var job_name=Updated Job

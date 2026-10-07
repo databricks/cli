@@ -1,7 +1,6 @@
 trace $CLI bundle deploy --var "job_name=My Job"
 
-job_id=$(trace $CLI bundle summary --var "job_name=My Job" --output json | jq -r '.resources.jobs.job_1.id')
-add_repl "$job_id" JOB_1_ID
+job_id=$(read_id.py job_1)
 
 trace $CLI bundle deployment unbind job_1 --var "job_name=My Job"
 
