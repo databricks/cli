@@ -26,6 +26,16 @@ type ResourceField struct {
 	Resolve      string `json:"resolve,omitempty"`
 }
 
+// ResourceBinding maps a resource to a DABs app resource entry.
+type ResourceBinding struct {
+	// YamlKey is the key under the app resource entry (e.g., "sql_warehouse", "uc_securable").
+	YamlKey string `json:"yamlKey"`
+	// VarFields are {manifestFieldName, dabsFieldName} pairs that become ${var.xxx} references.
+	VarFields [][2]string `json:"varFields"`
+	// StaticFields are {dabsFieldName, value} pairs emitted as literals.
+	StaticFields [][2]string `json:"staticFields,omitempty"`
+}
+
 // Resource defines a Databricks resource required or optional for a plugin.
 type Resource struct {
 	Type        string                   `json:"type"`        // e.g., "sql_warehouse"
@@ -41,6 +51,10 @@ type Resource struct {
 
 	// AppOnly resources (e.g., secret, database) are always bound to the service principal.
 	AppOnly bool `json:"appOnly,omitempty"`
+
+	// Binding describes how the resource is bound to the app in databricks.yml.
+	// When nil, the CLI falls back to its built-in mapping for the resource type.
+	Binding *ResourceBinding `json:"binding,omitempty"`
 
 	// PluginName is the machine name of the plugin (e.g., "lakebase").
 	// Set during resource collection. Not part of the JSON manifest.

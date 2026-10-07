@@ -6,7 +6,6 @@
       "displayName": "Analytics",
       "description": "SQL analytics",
       "package": "@databricks/appkit",
-      "scopes": ["ai-gateway"],
       "resources": {
         "required": [
           {
@@ -16,7 +15,6 @@
             "description": "SQL Warehouse for analytics queries",
             "permission": "CAN_USE",
             "scope": "sql",
-            "binding": {"yamlKey": "sql_warehouse", "varFields": [["id", "id"]]},
             "fields": {"id": {"env": "DATABRICKS_WAREHOUSE_ID", "description": "SQL Warehouse ID"}}
           }
         ],
@@ -28,7 +26,6 @@
       "displayName": "Genie",
       "description": "Genie spaces",
       "package": "@databricks/appkit",
-      "scopes": ["genie"],
       "resources": {
         "required": [
           {
@@ -38,35 +35,7 @@
             "description": "Genie Space",
             "permission": "CAN_RUN",
             "scope": "genie",
-            "fields": {"id": {"env": "DATABRICKS_GENIE_SPACE_ID", "description": "Genie Space ID"}, "name": {"description": "Genie Space name"}}
-          }
-        ],
-        "optional": []
-      }
-    },
-    "jobs": {
-      "name": "jobs",
-      "displayName": "Jobs",
-      "description": "Lakeflow jobs",
-      "package": "@databricks/appkit",
-      "resources": {
-        "required": [
-          {
-            "type": "job",
-            "alias": "Job",
-            "resourceKey": "job",
-            "description": "Job to trigger",
-            "permission": "CAN_MANAGE_RUN",
-            "fields": {"id": {"env": "DATABRICKS_JOB_ID", "description": "Job ID"}}
-          },
-          {
-            "type": "secret",
-            "alias": "Secret",
-            "resourceKey": "secret",
-            "description": "Job token",
-            "permission": "READ",
-            "appOnly": true,
-            "fields": {"scope": {"env": "SECRET_SCOPE"}, "key": {"env": "SECRET_KEY"}}
+            "fields": {"id": {"env": "DATABRICKS_GENIE_SPACE_ID", "description": "Genie Space ID"}}
           }
         ],
         "optional": []

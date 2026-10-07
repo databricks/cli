@@ -404,7 +404,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: exp",
 				"experiment:",
-				"experiment_id: ${var.exp_id}",
+				"experiment_id: ${var.exp_experimentId}",
 				"permission: CAN_READ",
 			},
 		},
@@ -449,7 +449,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: vol",
 				"uc_securable:",
-				"securable_full_name: ${var.vol_id}",
+				"securable_full_name: ${var.vol_path}",
 				"securable_type: VOLUME",
 				"permission: READ_VOLUME",
 			},
@@ -1043,7 +1043,7 @@ func TestBundleIgnoreFieldSkippedInVariablesAndTargets(t *testing.T) {
 	assert.Contains(t, example, "DB_NAME=your_database_database_name")
 }
 
-func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
+func TestVolumeManifestPathFieldBindsSecurable(t *testing.T) {
 	plugins := []manifest.Plugin{
 		{
 			Name: "files",
@@ -1065,24 +1065,47 @@ func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
 	}
 
 	cfg := generator.Config{
-		ResourceValues: map[string]string{
-			"files.path": "/Volumes/catalog/schema/vol",
-			"files.id":   "catalog.schema.vol",
-		},
+		ResourceValues: map[string]string{"files.path": "/Volumes/catalog/schema/vol"},
 	}
 
+	// The binding must reference the declared "path" field, so the variable it uses is set.
 	vars := generator.GenerateBundleVariables(plugins, cfg)
-	assert.Contains(t, vars, "files_path:")
-	assert.Contains(t, vars, "files_id:")
+	assert.Equal(t, "  files_path:\n    description: Volume path", vars)
 
 	target := generator.GenerateTargetVariables(plugins, cfg)
-	assert.Contains(t, target, "files_path: /Volumes/catalog/schema/vol")
-	assert.Contains(t, target, "files_id: catalog.schema.vol")
+	assert.Equal(t, "      files_path: /Volumes/catalog/schema/vol", target)
 
 	res := generator.GenerateBundleResources(plugins, cfg)
-	assert.Contains(t, res, "securable_full_name: ${var.files_id}")
+	assert.Contains(t, res, "securable_full_name: ${var.files_path}")
 	assert.Contains(t, res, "securable_type: VOLUME")
 	assert.Contains(t, res, "permission: WRITE_VOLUME")
+}
+
+func TestExperimentManifestFieldBindsExperimentID(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "agents",
+			Resources: manifest.Resources{
+				Optional: []manifest.Resource{
+					{
+						Type:        "experiment",
+						ResourceKey: "agents-mlflow-experiment",
+						Permission:  "CAN_EDIT",
+						Fields: map[string]manifest.ResourceField{
+							"experimentId": {Env: "MLFLOW_EXPERIMENT_ID", Description: "Experiment ID"},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{
+		ResourceValues: map[string]string{"agents-mlflow-experiment.experimentId": "123"},
+	}
+
+	assert.Equal(t, "  agents_mlflow_experiment_experimentId:\n    description: Experiment ID", generator.GenerateBundleVariables(plugins, cfg))
+	assert.Equal(t, "      agents_mlflow_experiment_experimentId: 123", generator.GenerateTargetVariables(plugins, cfg))
+	assert.Contains(t, generator.GenerateBundleResources(plugins, cfg), "experiment_id: ${var.agents_mlflow_experiment_experimentId}")
 }
 
 // postgresResource is the shared resource that "database" and "lakebase" both declare.
@@ -1230,4 +1253,37 @@ func TestAuthModeKeyDoesNotCollideAcrossTypes(t *testing.T) {
 	assert.Contains(t, env, "  - name: WAREHOUSE_ID\n    value: wh1") // warehouse: OBO literal
 	assert.Contains(t, env, "  - name: TOKEN\n    valueFrom: data")   // secret: still SP-bound
 	assert.Equal(t, "        - sql", generator.GenerateUserAPIScopes(plugins, cfg))
+}
+
+func TestGenerateBundleResourcesFromManifestBinding(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "tables",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type:        "uc_table",
+						ResourceKey: "table",
+						Description: "Table to read",
+						Permission:  "SELECT",
+						Fields:      map[string]manifest.ResourceField{"name": {Env: "TABLE_NAME", Description: "Table name"}},
+						Binding: &manifest.ResourceBinding{
+							YamlKey:      "uc_securable",
+							VarFields:    [][2]string{{"name", "securable_full_name"}},
+							StaticFields: [][2]string{{"securable_type", "TABLE"}},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{"table.name": "main.default.t"}}
+
+	assert.Equal(t, `        - name: table
+          uc_securable:
+            securable_full_name: ${var.table_name}
+            securable_type: TABLE
+            permission: SELECT`, generator.GenerateBundleResources(plugins, cfg))
+	assert.Equal(t, "  table_name:\n    description: Table name", generator.GenerateBundleVariables(plugins, cfg))
+	assert.Equal(t, "      table_name: main.default.t", generator.GenerateTargetVariables(plugins, cfg))
 }
