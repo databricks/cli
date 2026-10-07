@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // BaseVarDef matches a single dot-separated path segment in ${...} references.
@@ -147,19 +149,14 @@ func ContainsVariableReference(s string) bool {
 	return false
 }
 
-// If s is a pure variable reference, this function returns the corresponding
-// dyn.Path. Otherwise, it returns false.
-func PureReferenceToPath(s string) (dyn.Path, bool) {
-	ref, ok := NewRef(dyn.V(s))
-	if !ok {
+// PureReferenceToPath returns the path s refers to if s is a pure variable reference.
+func PureReferenceToPath(s string) (*structpath.PathNode, bool) {
+	ref, ok := NewRef(s)
+	if !ok || !ref.IsPure() {
 		return nil, false
 	}
 
-	if !ref.IsPure() {
-		return nil, false
-	}
-
-	p, err := dyn.NewPathFromString(ref.References()[0])
+	p, err := structpath.ParsePath(ref.References()[0])
 	if err != nil {
 		return nil, false
 	}
