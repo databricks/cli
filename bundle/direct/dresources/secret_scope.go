@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -94,7 +95,7 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretSco
 		}
 	}
 
-	return nil, fmt.Errorf("secret scope %q not found", id)
+	return nil, fmt.Errorf("secret scope %q not found: %w", id, apierr.ErrNotFound)
 }
 
 func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *SecretScopeRemote, error) {
