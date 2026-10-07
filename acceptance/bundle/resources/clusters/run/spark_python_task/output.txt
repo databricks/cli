@@ -11,7 +11,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[NUMID]?o=[WORKSPACE_ID]
+Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" TERMINATED SUCCESS
