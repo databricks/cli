@@ -171,7 +171,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// validate.TFOnlyReferences). A terraform bundle.engine is reported during
 	// initialization by validate.ValidateEngine, with its location.
 	if b.Config.Bundle.Engine == engine.EngineNotSet {
-		if _, err := ResolveEngineSetting(ctx, b); err != nil {
+		if err := ValidateEngineSetting(ctx, b); err != nil {
 			return b, nil, err
 		}
 	}
@@ -207,21 +207,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	// Resolve the engine used for state and telemetry. An invalid or removed
-	// DATABRICKS_BUNDLE_ENGINE was already rejected before initialization and a
-	// bad bundle.engine by validate.ValidateEngine, so this only fails for
-	// commands that skip initialization (bundle run -- <cmd>) with a bad
-	// bundle.engine.
-	requiredEngine, err := ResolveEngineSetting(ctx, b)
-	if err != nil {
+	// An invalid or removed DATABRICKS_BUNDLE_ENGINE was already rejected before
+	// initialization and a bad bundle.engine by validate.ValidateEngine, so this
+	// only fails for commands that skip initialization (bundle run -- <cmd>) with
+	// a bad bundle.engine.
+	if err := ValidateEngineSetting(ctx, b); err != nil {
 		return b, nil, err
 	}
 
-	// Record the requested engine up front so deploy telemetry reports it even when
+	// Record the engine up front so deploy telemetry reports it even when
 	// the deploy fails before the state is pulled (e.g. PullResourcesState itself
 	// errors). Refined to the state's engine below once it is known; the two differ
 	// only mid-migration, when the deploy runs on the existing state's engine.
-	b.Metrics.StateEngine = requiredEngine.Type.ThisOrDefault()
+	b.Metrics.StateEngine = engine.EngineDirect
 
 	// The current deployment read from the service (nil, id "" if there is none yet). Used for the
 	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
@@ -232,12 +230,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
+		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
+		b.MigratingToDirect = !stateDesc.Engine.IsDirect()
 
 		// Tag the user agent with the engine this run actually uses. On the auto-migration
 		// path the engine is only final after the migration runs (below), so leave it unset
@@ -503,7 +501,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, requiredEngine, libs, plan, dmsDeployment)
+		phases.Deploy(ctx, b, outputHandler, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
@@ -516,7 +514,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// A migrating deploy already backed up terraform.tfstate when it committed the
 		// converted state above; this handles a plain direct deploy that still finds a
 		// lingering remote terraform state.
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
+		if b != nil && stateDesc != nil && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
 			statemgmt.BackupRemoteTerraformState(ctx, b)
 
 			if logdiag.HasError(ctx) {
@@ -552,40 +550,32 @@ func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *
 	return nil
 }
 
-// ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
-// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var > engine.Default.
-func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
+// ValidateEngineSetting rejects an invalid or removed engine setting. The direct
+// engine is the only one, so a valid setting needs no further resolution.
+// bundle.engine takes priority over DATABRICKS_BUNDLE_ENGINE: when it is set, the
+// env var is not checked.
+func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
 		parsed, ok := engine.Parse(string(configEngine))
 		if !ok {
-			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+			return fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
 		}
 		if parsed == engine.EngineTerraform {
-			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedConfigMessage)
+			return errors.New(engine.TerraformRemovedConfigMessage)
 		}
-		source := "bundle.engine setting"
-		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
-		if locs := v.Locations(); len(locs) > 0 {
-			loc := locs[0]
-			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
-		}
-		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
+		return nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
-		return engine.EngineSetting{}, err
+		return err
 	}
 	if envEngine == engine.EngineTerraform {
-		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedEnvMessage)
+		return errors.New(engine.TerraformRemovedEnvMessage)
 	}
-	if envEngine != engine.EngineNotSet {
-		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
-	}
-
-	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+	return nil
 }
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json

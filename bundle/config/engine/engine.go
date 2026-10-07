@@ -43,10 +43,6 @@ const (
 const terraformRemovedHint = `existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
 See https://docs.databricks.com/dev-tools/bundles/direct for details`
 
-// SourceDefault is the Source of an EngineSetting that neither the bundle config
-// nor the env var requested.
-const SourceDefault = "default"
-
 // Parse returns EngineType from string
 func Parse(engine string) (EngineType, bool) {
 	switch engine {
@@ -69,19 +65,6 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'direct')", EnvVar, value)
 	}
 	return engine, nil
-}
-
-// EngineSetting represents a requested engine type along with the source of the request.
-type EngineSetting struct {
-	Type       EngineType // effective resolved engine
-	Source     string     // human-readable source of Type
-	ConfigType EngineType // from bundle config (EngineNotSet if not configured)
-
-	// IsDefault is true when neither the bundle config nor the env var picked an
-	// engine, so Type comes from Default. Callers distinguish this from an
-	// explicit opt-in: telemetry slices the fleet by it, and user-facing messages
-	// must not claim the user asked for anything.
-	IsDefault bool
 }
 
 func (e EngineType) ThisOrDefault() EngineType {
