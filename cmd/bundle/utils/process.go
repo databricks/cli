@@ -562,9 +562,13 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 		if !ok {
 			return fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
 		}
-		if parsed == engine.EngineTerraform {
+		if parsed == engine.EngineTerraform && !b.AllowTerraformEngineConfig {
 			return errors.New(engine.TerraformRemovedConfigMessage)
 		}
+		return nil
+	}
+
+	if b.AllowTerraformEngineConfig {
 		return nil
 	}
 
