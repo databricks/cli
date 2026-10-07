@@ -1,0 +1,9 @@
+title "bundle.engine: terraform"
+trace musterr $CLI bundle summary -t terraform-target
+trace musterr $CLI bundle summary -t terraform-target -o json
+trace musterr $CLI bundle validate -t terraform-target -o json
+
+title "DATABRICKS_BUNDLE_ENGINE=terraform"
+DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle summary
+DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle summary -o json
+DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle validate -o json
