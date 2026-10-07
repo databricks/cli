@@ -65,9 +65,7 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 		return ctx, asValidationUnavailable(err, retryable)
 	}
 
-	validationCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	return ctx, validateConfig(validationCtx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken)
+	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
 }
 
 func newRunCommand() *cobra.Command {
@@ -170,7 +168,6 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		warnExperimentalContainers(ctx, cfg)
 
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
-		w := cmdctx.WorkspaceClient(ctx)
 
 		// Announce the experiment before uploading; skipped in JSON mode to keep
 		// stdout a clean envelope stream.
@@ -178,6 +175,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
 		}
 
+		w := cmdctx.WorkspaceClient(ctx)
 		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err

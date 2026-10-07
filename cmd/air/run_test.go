@@ -172,7 +172,7 @@ func runDryRunCmd(t *testing.T, timeout time.Duration, output flags.Output, srvU
 	var stdout, stderr bytes.Buffer
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &stdout, &stderr, "", ""))
 	w := newTestWorkspaceClient(t, srvURL)
-	w.Config.RetryTimeoutSeconds = 1
+	w.Config.RetryTimeoutSeconds = 5
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	cmd.SetOut(&stdout)
@@ -234,21 +234,35 @@ func TestRunDryRunConfigValidationHasDeadline(t *testing.T) {
 	}
 }
 
-func TestRunDryRunUnavailableUsesJSONErrorEnvelope(t *testing.T) {
-	srv := dryRunServer(t, testserver.Response{
-		StatusCode: http.StatusInternalServerError,
-		Body:       map[string]string{"error_code": "INTERNAL_ERROR", "message": "backend failed"},
-	}, nil)
-	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, minimalConfig, "--dry-run")
-	require.ErrorIs(t, result.err, root.ErrAlreadyPrinted)
-	var got errorEnvelope
-	require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
-	assert.Equal(t, "VALIDATION_UNAVAILABLE", got.Error.Code)
-	assert.Equal(t, "TRANSIENT", got.Error.Kind)
-	assert.True(t, got.Error.Retryable)
-	assert.Contains(t, got.Error.Message, "config validation unavailable")
-	assert.NotContains(t, result.stdout, "DRY_RUN_OK")
-	assert.Empty(t, result.stderr)
+func TestRunDryRunRetriesUnavailableResponseOnce(t *testing.T) {
+	for _, status := range []int{http.StatusTooManyRequests, http.StatusServiceUnavailable} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var requests []dryRunRequest
+			srv := dryRunServer(t, testserver.Response{
+				StatusCode: status,
+				Body:       map[string]string{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "try again"},
+			}, &requests)
+
+			result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, minimalConfig, "--dry-run")
+			require.ErrorIs(t, result.err, root.ErrAlreadyPrinted)
+			var got errorEnvelope
+			require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
+			assert.Equal(t, "VALIDATION_UNAVAILABLE", got.Error.Code)
+			assert.Equal(t, "TRANSIENT", got.Error.Kind)
+			assert.True(t, got.Error.Retryable)
+			assert.Contains(t, got.Error.Message, "config validation unavailable")
+			assert.NotContains(t, result.stdout, "DRY_RUN_OK")
+			assert.Empty(t, result.stderr)
+
+			validationRequests := 0
+			for _, request := range requests {
+				if request.path == validateConfigPath {
+					validationRequests++
+				}
+			}
+			assert.Equal(t, dryRunValidationMaxAttempts, validationRequests)
+		})
+	}
 }
 
 func TestRunDryRunValidatesIdempotencyTokenAfterWorkspaceValidation(t *testing.T) {

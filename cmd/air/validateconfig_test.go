@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -66,13 +67,25 @@ func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 	}
 }
 
-func TestPreflightValidateBlocksOnClientError(t *testing.T) {
-	// A 4xx other than the fail-open cases means the request itself was rejected
-	// (e.g. the proto hook flagged a missing required field); surface it.
-	srv := validateServer(t, http.StatusBadRequest,
-		`{"error_code":"INVALID_PARAMETER_VALUE","message":"command_path is required"}`, nil)
-	err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-	require.Error(t, err)
+func TestPreflightValidateBlocksOnCallerError(t *testing.T) {
+	for _, status := range []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			srv := validateServer(t, status, `{"error_code":"INVALID_PARAMETER_VALUE","message":"request rejected"}`, nil)
+			err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestPreflightValidateBlocksOnRequestVisitorError(t *testing.T) {
+	srv := validateServer(t, http.StatusOK, `{}`, nil)
+	w := validationTestWorkspaceClient(t, srv.URL)
+	w.Config.Headers = func(*http.Request) error {
+		return errors.New("failed to add request headers")
+	}
+
+	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorContains(t, err, "failed to add request headers")
 }
 
 func TestClassifyValidationFailure(t *testing.T) {
@@ -84,7 +97,8 @@ func TestClassifyValidationFailure(t *testing.T) {
 	}{
 		{"canceled", context.Canceled, false, false},
 		{"deadline", context.DeadlineExceeded, true, true},
-		{"transport", errors.New("connection failed"), true, true},
+		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
+		{"unknown", errors.New("authentication visitor failed"), false, false},
 		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
 		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
 		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false, false},
