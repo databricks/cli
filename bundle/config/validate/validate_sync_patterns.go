@@ -7,9 +7,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,16 +26,16 @@ func (v *validateSyncPatterns) Name() string {
 func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	s := b.Config.Sync
 
-	checkPatterns(ctx, s.Exclude, "sync.exclude", b)
+	checkPatterns(ctx, s.Exclude, "exclude", b)
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	checkPatterns(ctx, s.Include, "sync.include", b)
+	checkPatterns(ctx, s.Include, "include", b)
 	return nil
 }
 
-func checkPatterns(ctx context.Context, patterns []string, path string, b *bundle.Bundle) {
+func checkPatterns(ctx context.Context, patterns []string, field string, b *bundle.Bundle) {
 	var errs errgroup.Group
 
 	for index, pattern := range patterns {
@@ -57,12 +57,12 @@ func checkPatterns(ctx context.Context, patterns []string, path string, b *bundl
 			}
 
 			if len(all) == 0 {
-				path := fmt.Sprintf("%s[%d]", path, index)
+				path := fmt.Sprintf("sync.%s[%d]", field, index)
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
 					Locations: b.Config.GetLocations(path),
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
+					Paths:     []*structpath.PathNode{structpath.NewIndex(structpath.NewStringKeys(nil, "sync", field), index)},
 				})
 			}
 			return nil

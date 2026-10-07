@@ -160,6 +160,20 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return NewBracketString(prev, fieldName)
 }
 
+// NewStringKeys appends the keys to prev, each like [NewStringKey].
+func NewStringKeys(prev *PathNode, keys ...string) *PathNode {
+	for _, k := range keys {
+		prev = NewStringKey(prev, k)
+	}
+	return prev
+}
+
+// NewStringKeysSlice returns the path of keys from the root as a one-element slice,
+// e.g. for diag.Diagnostic.Paths.
+func NewStringKeysSlice(keys ...string) []*PathNode {
+	return []*PathNode{NewStringKeys(nil, keys...)}
+}
+
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
 		prev:  prev,

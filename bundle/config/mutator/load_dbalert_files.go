@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -85,7 +86,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
 					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))),
+					Paths:     structpath.NewStringKeysSlice("resources", "alerts", alertKey, k),
 					Locations: v.Locations(),
 				},
 			}
@@ -107,7 +108,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
+					Paths:     structpath.NewStringKeysSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -122,7 +123,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
+					Paths:     structpath.NewStringKeysSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -136,7 +137,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
 					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
+					Paths:     structpath.NewStringKeysSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}

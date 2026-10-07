@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/sync"
 )
 
@@ -63,7 +63,7 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
 			Locations: b.Config.GetLocations(path),
-			Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
+			Paths:     structpath.NewStringKeysSlice("sync", "exclude"),
 		})
 	}
 

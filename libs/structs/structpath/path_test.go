@@ -1233,3 +1233,15 @@ func TestMustParsePaths(t *testing.T) {
 	assert.Equal(t, "resources.jobs.foo.tasks[0]", paths[1].String())
 	assert.Empty(t, MustParsePaths())
 }
+
+func TestNewStringKeys(t *testing.T) {
+	assert.Equal(t, "a.b['c d']", NewStringKeys(NewStringKey(nil, "a"), "b", "c d").String())
+	assert.Nil(t, NewStringKeys(nil))
+	assert.Equal(t, "a", NewStringKeys(NewStringKey(nil, "a")).String())
+}
+
+func TestNewStringKeysSlice(t *testing.T) {
+	paths := NewStringKeysSlice("resources", "jobs", "${var.env}_job")
+	require.Len(t, paths, 1)
+	assert.Equal(t, "resources.jobs['${var.env}_job']", paths[0].String())
+}

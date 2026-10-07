@@ -6,7 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func JobClusterKeyDefined() bundle.ReadOnlyMutator {
@@ -32,12 +32,14 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 		for index, task := range job.Tasks {
 			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
-				fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)))
+				fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index),
+				[]*structpath.PathNode{structpath.NewStringKey(structpath.NewIndex(structpath.NewStringKeys(nil, "resources", "jobs", k, "tasks"), index), "job_cluster_key")}))
 
 			// The Jobs API rejects nested for_each_task, so one level is sufficient.
 			if task.ForEachTask != nil {
 				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
-					fmt.Sprintf("resources.jobs.%s.tasks[%d].for_each_task.task.job_cluster_key", k, index)))
+					fmt.Sprintf("resources.jobs.%s.tasks[%d].for_each_task.task.job_cluster_key", k, index),
+					[]*structpath.PathNode{structpath.NewStringKeys(structpath.NewIndex(structpath.NewStringKeys(nil, "resources", "jobs", k, "tasks"), index), "for_each_task", "task", "job_cluster_key")}))
 			}
 		}
 	}
@@ -46,7 +48,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 }
 
 // checkJobClusterKey warns if jobClusterKey is set but not defined in the job's job_clusters.
-func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClusterKey, path string) diag.Diagnostics {
+func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClusterKey, path string, paths []*structpath.PathNode) diag.Diagnostics {
 	if jobClusterKey == "" {
 		return nil
 	}
@@ -61,6 +63,6 @@ func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClu
 		// Other associated locations are not relevant since they are
 		// overridden during merging.
 		Locations: b.Config.GetLocations(path),
-		Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
+		Paths:     paths,
 	}}
 }

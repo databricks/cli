@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func ValidateJobRunIdempotencyToken() bundle.ReadOnlyMutator {
@@ -36,7 +36,7 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "idempotency_token must not be set in bundle configuration; the CLI sets it on each run-now request",
-			Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
+			Paths:     structpath.NewStringKeysSlice("resources", "job_runs", name, "idempotency_token"),
 			Locations: b.Config.GetLocations(path),
 		})
 	}

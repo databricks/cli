@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -138,7 +139,7 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					Severity:  diag.Error,
 					Summary:   "Failed to collapse permissions for secret scope",
 					Detail:    err.Error(),
-					Paths:     dyn.ToStructPaths(dyn.MustPathFromString("resources.secret_scopes." + key)),
+					Paths:     structpath.NewStringKeysSlice("resources", "secret_scopes", key),
 					Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
 				},
 			}

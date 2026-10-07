@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -172,7 +173,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				ref.permission,
 				appKey,
 			),
-			Paths:     dyn.ToStructPaths(dyn.MustPathFromString(appPath)),
+			Paths:     structpath.NewStringKeysSlice("resources", "apps", appKey),
 			Locations: b.Config.GetLocations(appPath),
 		})
 	}
