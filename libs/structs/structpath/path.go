@@ -3,9 +3,18 @@ package structpath
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+// baseVarDef matches a path segment of a ${...} reference. It is the grammar of
+// dynvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesDynvar
+// keeps them in agreement.
+const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
+
+// pureReference matches a string that is a single ${...} reference.
+var pureReference = regexp.MustCompile(`^\$\{(` + baseVarDef + `(\.` + baseVarDef + `(\[[0-9]+\])*)*(\[[0-9]+\])*)\}$`)
 
 const (
 	// Encodes wildcard after a dot: foo.*
@@ -692,6 +701,22 @@ func isValidField(s string) bool {
 		}
 	}
 	return len(s) > 0
+}
+
+// PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
+// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
+func PureReferenceToPath(s string) (*PathNode, bool) {
+	m := pureReference.FindStringSubmatch(s)
+	if m == nil {
+		return nil, false
+	}
+
+	pattern, err := parse(m[1], false)
+	if err != nil {
+		return nil, false
+	}
+
+	return (*PathNode)(pattern), true
 }
 
 // SkipPrefix returns a new PathNode that skips the first n components of the path.

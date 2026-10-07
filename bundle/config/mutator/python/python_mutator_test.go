@@ -11,16 +11,19 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn/convert"
+
+	"github.com/databricks/cli/bundle/env"
+	"github.com/stretchr/testify/require"
+
+	"github.com/databricks/cli/libs/dyn"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {
