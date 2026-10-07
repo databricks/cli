@@ -250,6 +250,13 @@ func BuildStateFromTF(
 	return warningsSeen, nil
 }
 
+// stateIDFieldToTF maps an id-composing direct state field to its Terraform attribute where the
+// two names differ and terraform_dabs_map (which maps bundle config fields) does not cover it:
+// the secret scope state stores the CreateScope request field "scope", Terraform calls it "name".
+var stateIDFieldToTF = map[string]map[string]string{
+	"secret_scopes": {"scope": "name"},
+}
+
 // reconcileIDFields aligns each id-composing field (provided_id_fields, updatable_id_fields)
 // in the migrated state with the deployed terraform state. The state is otherwise seeded from
 // config; for id fields, recording the current config would snapshot a pending change as
@@ -284,16 +291,13 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			if err != nil {
 				continue
 			}
-			deployedVal, err := LookupTFField(tfAttrs, group, name, path)
+			tfPath := path
+			if tfField, ok := stateIDFieldToTF[group][rule.Field.String()]; ok {
+				tfPath = structpath.NewStringKey(nil, tfField)
+			}
+			deployedVal, err := LookupTFField(tfAttrs, group, name, tfPath)
 			if err != nil {
-				// For secret_scopes, the direct state field "scope" maps to Terraform attribute "name".
-				// Try a fallback lookup for this specific case.
-				if group == "secret_scopes" && rule.Field.String() == "scope" {
-					deployedVal, err = LookupTFField(tfAttrs, group, name, structpath.NewStringKey(nil, "name"))
-				}
-				if err != nil {
-					continue
-				}
+				continue
 			}
 
 			// Every id-composing field is a string (a name, catalog_name, storage path, ...).
