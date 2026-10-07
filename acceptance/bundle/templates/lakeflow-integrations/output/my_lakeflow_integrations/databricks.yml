@@ -17,7 +17,7 @@ artifacts:
     build: >
       uv run python -c "import shutil;
       shutil.rmtree('__generated__', ignore_errors=True);
-      from databricks.lakeflow.integrations.generate import main;
+      from databricks.lakeflow.integrations.generator.generate import main;
       main([
         '--package-module', 'my_lakeflow_integrations',
         '--output-dir', '__generated__',
@@ -26,7 +26,7 @@ artifacts:
         '--dependency', '${workspace.artifact_path}/.internal/my_lakeflow_integrations-0.0.1-py3-none-any.whl',
       ])"
     files:
-      - {"source": "__generated__/*.yml",}
+      - {"source": "__generated__/*.yaml",}
 
 targets:
   dev:
