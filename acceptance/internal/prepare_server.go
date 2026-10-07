@@ -67,16 +67,13 @@ func isTruePtr(value *bool) bool {
 
 // staleOnceEnabled reports whether the testserver should simulate eventual
 // consistency (the first GET after a create returns 404). It is opt-in via
-// INJECT_STALE_ON_DIRECT=1 and only applies to the direct engine.
+// INJECT_STALE_ON_DIRECT=1.
 //
 // testEnv carries the per-variant EnvMatrix values, which are not visible via
 // os/env because matrix variants run in parallel and only reach the CLI subprocess.
 func staleOnceEnabled(testEnv []string) bool {
-	if v, _ := lookupEnv(testEnv, "INJECT_STALE_ON_DIRECT"); v != "1" {
-		return false
-	}
-	engine, _ := lookupEnv(testEnv, "DATABRICKS_BUNDLE_ENGINE")
-	return engine == "direct"
+	v, _ := lookupEnv(testEnv, "INJECT_STALE_ON_DIRECT")
+	return v == "1"
 }
 
 func lookupEnv(testEnv []string, key string) (string, bool) {
