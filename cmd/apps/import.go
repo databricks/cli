@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"go.yaml.in/yaml/v3"
-	"github.com/databricks/cli/libs/diag"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
@@ -26,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
