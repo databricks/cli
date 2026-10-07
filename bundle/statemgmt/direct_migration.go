@@ -259,16 +259,6 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
 
-	// An empty terraform state seeds and builds no WAL entries below, so Finalize would persist
-	// no file. Write the base file now so the migration always yields one; the deferred commit
-	// builds on it and a crash mid-apply stays recoverable. The header-only Finalize leaves it
-	// intact.
-	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		if err := stateDB.Persist(); err != nil {
-			return tempStatePath, false, nil, fmt.Errorf("persisting empty migrated state: %w", err)
-		}
-	}
-
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
 	// the migrated state and config agree on .permissions entries.
@@ -301,17 +291,8 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	// Seed every terraform-state resource into the WAL so the migrated state persists
-	// all deployed resources, including ones the current config no longer declares.
-	// BuildStateFromTF overwrites the config-declared entries below with their full
-	// state (the later WAL entry wins on replay); the rest keep this minimal entry,
-	// which is enough for the first direct plan to delete them. Without this, a config
-	// that dropped every resource would record no WAL entries at all, so Finalize would
-	// persist no state file and the migration would fail with a missing resources.json.
-	for key, id := range tfState.IDs {
-		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
-			return tempStatePath, false, nil, fmt.Errorf("seeding migrated state for %s: %w", key, err)
-		}
+	if err := migrate.SeedState(ctx, &stateDB, tfState); err != nil {
+		return tempStatePath, false, nil, err
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
