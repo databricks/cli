@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -205,7 +206,7 @@ func renderResponse(ctx context.Context, raw json.RawMessage) error {
 // this sentinel and would otherwise send the literal "none" as a routing
 // identifier.
 func normalizeWorkspaceID(workspaceID string) string {
-	if workspaceID == auth.WorkspaceIDNone {
+	if workspaceID == profile.WorkspaceIDNone {
 		return ""
 	}
 	return workspaceID

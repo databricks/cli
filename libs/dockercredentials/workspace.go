@@ -14,7 +14,7 @@ import (
 // WorkspaceID uses the selected profile's ID, resolving it only when absent.
 // The client is only needed for profiles without an ID.
 func WorkspaceID(ctx context.Context, p profile.Profile, w *databricks.WorkspaceClient) (string, error) {
-	if p.WorkspaceID != "" && p.WorkspaceID != auth.WorkspaceIDNone {
+	if p.WorkspaceID != "" && p.WorkspaceID != profile.WorkspaceIDNone {
 		return p.WorkspaceID, nil
 	}
 	// Neither an ambient ID nor the CLI-only "none" sentinel may become a routing header.

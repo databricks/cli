@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	authlib "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -74,7 +73,7 @@ func configureDockerTarget(cmd *cobra.Command, args []string, region string) (*d
 }
 
 func (t *dockerTarget) configure(ctx context.Context) (dockercredentials.Configuration, error) {
-	if t.profile.WorkspaceID == "" || t.profile.WorkspaceID == authlib.WorkspaceIDNone {
+	if t.profile.WorkspaceID == "" || t.profile.WorkspaceID == profile.WorkspaceIDNone {
 		err := databrickscfg.SaveToProfile(ctx, &config.Config{
 			ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 			Profile:     t.profile.Name,

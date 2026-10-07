@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +32,7 @@ func TestWorkspaceIDHeaders(t *testing.T) {
 		},
 		{
 			name: `"none" sentinel returns nil`,
-			cfg:  &sdkconfig.Config{WorkspaceID: auth.WorkspaceIDNone},
+			cfg:  &sdkconfig.Config{WorkspaceID: profile.WorkspaceIDNone},
 			want: nil,
 		},
 		{
