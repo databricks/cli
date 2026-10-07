@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle debug list-targets
+direct
+inherited (default) engine:terraform
+null_target engine:terraform
+
+>>> [CLI] bundle debug list-targets --output json
+{
+  "targets": [
+    {
+      "name": "direct"
+    },
+    {
+      "name": "inherited",
+      "default": true,
+      "engine": "terraform"
+    },
+    {
+      "name": "null_target",
+      "engine": "terraform"
+    }
+  ]
+}

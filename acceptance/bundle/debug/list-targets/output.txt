@@ -1,8 +1,10 @@
 
 >>> [CLI] bundle debug list-targets
 dev (default) development https://dev.example.com
+direct
 prod production https://prod.example.com
 staging
+tf engine:terraform
 with_vars ${var.target_mode} ${var.target_host}
 
 >>> [CLI] bundle debug list-targets --output json
@@ -15,12 +17,19 @@ with_vars ${var.target_mode} ${var.target_host}
       "host": "https://dev.example.com"
     },
     {
+      "name": "direct"
+    },
+    {
       "name": "prod",
       "mode": "production",
       "host": "https://prod.example.com"
     },
     {
       "name": "staging"
+    },
+    {
+      "name": "tf",
+      "engine": "terraform"
     },
     {
       "name": "with_vars",
