@@ -72,6 +72,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_branches": {
 		"spec": {Unwrap: true},
 	},
+	"secret_scopes": {
+		"name": {NewName: "scope"},
+	},
 	"postgres_catalogs": {
 		"spec": {Unwrap: true},
 	},
@@ -641,6 +644,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 		"clusters":      {NewName: "cluster"},
 		"libraries":     {NewName: "library"},
 		"notifications": {NewName: "notification"},
+	},
+	"secret_scopes": {
+		"scope": {NewName: "name"},
 	},
 }
 
