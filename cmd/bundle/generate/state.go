@@ -23,8 +23,7 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		return ctx
 	}
 
-	_, err := utils.ResolveEngineSetting(ctx, b)
-	if err != nil {
+	if err := utils.ValidateEngineSetting(ctx, b); err != nil {
 		logdiag.LogError(ctx, err)
 		return ctx
 	}
@@ -43,6 +42,7 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		}
 		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
+		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)

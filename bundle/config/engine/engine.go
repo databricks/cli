@@ -67,18 +67,6 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	return engine, nil
 }
 
-// EngineSetting represents a requested engine type along with the source of the request.
-type EngineSetting struct {
-	Type       EngineType // effective resolved engine
-	ConfigType EngineType // from bundle config (EngineNotSet if not configured)
-
-	// IsDefault is true when neither the bundle config nor the env var picked an
-	// engine, so Type comes from Default. Callers distinguish this from an
-	// explicit opt-in: telemetry slices the fleet by it, and user-facing messages
-	// must not claim the user asked for anything.
-	IsDefault bool
-}
-
 func (e EngineType) ThisOrDefault() EngineType {
 	if e == EngineNotSet {
 		return Default

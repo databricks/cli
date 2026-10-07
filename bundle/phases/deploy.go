@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -154,9 +153,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-// requestedEngine is what bundle.engine / DATABRICKS_BUNDLE_ENGINE asked for (used only
-// by the migration telemetry in CommitMigration).
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, requestedEngine engine.EngineSetting, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -291,7 +288,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// terraform engine is gone, so there is nothing to fall back to), so reaching here with
 	// MigratingToDirect set means the in-memory migration is ready to commit.
 	if b.MigratingToDirect {
-		statemgmt.CommitMigration(ctx, b, requestedEngine)
+		statemgmt.CommitMigration(ctx, b)
 		if logdiag.HasError(ctx) {
 			return
 		}
