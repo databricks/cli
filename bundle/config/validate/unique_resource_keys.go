@@ -59,13 +59,13 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	// Gather the paths and locations of all resources
 	for _, group := range b.Config.Resources.AllResources() {
 		for k := range group.Resources {
-			addLocationToMetadata(k, structpath.NewStringKeys(nil, "resources", group.Description.PluralName, k))
+			addLocationToMetadata(k, structpath.NewPath(nil, "resources", group.Description.PluralName, k))
 		}
 	}
 
 	// track locations for all scripts.
 	for k := range b.Config.Scripts {
-		addLocationToMetadata(k, structpath.NewStringKeys(nil, "scripts", k))
+		addLocationToMetadata(k, structpath.NewPath(nil, "scripts", k))
 	}
 
 	// If duplicate keys are found, report an error.

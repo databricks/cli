@@ -76,7 +76,7 @@ func collectGitSourcePaths(b *bundle.Bundle) []*structpath.PathNode {
 			continue
 		}
 		if job.GitSource != nil {
-			jobs = append(jobs, structpath.NewStringKeys(nil, "resources", "jobs", name))
+			jobs = append(jobs, structpath.NewPath(nil, "resources", "jobs", name))
 		}
 	}
 

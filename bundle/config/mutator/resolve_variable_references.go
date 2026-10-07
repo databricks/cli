@@ -285,7 +285,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*st
 		path := sp
 		// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
 		if path.HasPrefix(varPath) {
-			path = structpath.Join(structpath.NewStringKeys(nil, "variables", path.KeyAt(1), "value"), path.SkipPrefix(2).AsSlice()...)
+			path = structpath.Join(structpath.NewPath(nil, "variables", path.KeyAt(1), "value"), path.SkipPrefix(2).AsSlice()...)
 		}
 
 		// If the path starts with "artifacts", we need to add a metric to track if this reference is used.

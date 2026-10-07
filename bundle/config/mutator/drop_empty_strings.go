@@ -50,7 +50,7 @@ func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		}
 	}
 	for _, name := range apps {
-		err := b.Config.Set(structpath.NewStringKeys(appsPath, name, "description"), "")
+		err := b.Config.Set(structpath.NewPath(appsPath, name, "description"), "")
 		if err != nil {
 			return diag.FromErr(err)
 		}

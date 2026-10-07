@@ -32,7 +32,7 @@ func (m *mergeApps) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		if app == nil {
 			continue
 		}
-		path := structpath.NewStringKeys(nil, "resources", "apps", name, "resources")
+		path := structpath.NewPath(nil, "resources", "apps", name, "resources")
 		if keyedMergeIsNoop(b, "resources.apps."+name+".resources", app.Resources, func(r apps.AppResource) string { return r.Name }, false) {
 			continue
 		}
@@ -62,7 +62,7 @@ func (m *mergeApps) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			if r.Name != "" {
 				continue
 			}
-			if err := b.Config.Set(structpath.NewStringKey(structpath.NewIndex(path, i), "name"), ""); err != nil {
+			if err := b.Config.Set(structpath.NewPath(path, i, "name"), ""); err != nil {
 				return diag.FromErr(err)
 			}
 		}

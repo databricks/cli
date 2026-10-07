@@ -97,11 +97,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
 			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
+			namePaths = append(namePaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 		if dashboard.WarehouseId == "" {
 			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
+			warehouseIdPaths = append(warehouseIdPaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 	}
 
@@ -126,7 +126,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
 	for key, warehouse := range b.Config.Resources.SqlWarehouses {
 		if strings.TrimSpace(warehouse.Name) == "" {
-			path := structpath.NewStringKeys(nil, "resources", "sql_warehouses", key)
+			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
@@ -191,8 +191,8 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 			if perm.UserName != "" || perm.GroupName != "" || perm.ServicePrincipalName != "" {
 				continue
 			}
-			scopePath := structpath.NewStringKeys(nil, "resources", "secret_scopes", key)
-			path := structpath.NewIndex(structpath.NewStringKeys(scopePath, "permissions"), i)
+			scopePath := structpath.NewPath(nil, "resources", "secret_scopes", key)
+			path := structpath.NewPath(scopePath, "permissions", i)
 			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
 			// per-entry locations, so point at the scope.
 			diags = diags.Append(diag.Diagnostic{

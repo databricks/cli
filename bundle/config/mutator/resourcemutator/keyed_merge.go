@@ -35,7 +35,7 @@ func mergeByKey[R, E any](
 		if keyedMergeIsNoop(b, "resources."+resourceType+"."+name+"."+field, elems(r), noopKey, sortKeys) {
 			continue
 		}
-		path := structpath.NewStringKeys(nil, "resources", resourceType, name, field)
+		path := structpath.NewPath(nil, "resources", resourceType, name, field)
 		if err := b.Config.MergeElementsByKey(path, keyField, keyFn, sortKeys); err != nil {
 			return err
 		}

@@ -30,7 +30,7 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 		if value == "" {
 			return
 		}
-		path := structpath.NewStringKeys(resource, "deployment", field)
+		path := structpath.NewPath(resource, "deployment", field)
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
@@ -41,14 +41,14 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 
 	for name, job := range b.Config.Resources.Jobs {
 		if d := job.Deployment; d != nil {
-			reject(structpath.NewStringKeys(nil, "resources", "jobs", name), "deployment_id", d.DeploymentId)
-			reject(structpath.NewStringKeys(nil, "resources", "jobs", name), "version_id", d.VersionId)
+			reject(structpath.NewPath(nil, "resources", "jobs", name), "deployment_id", d.DeploymentId)
+			reject(structpath.NewPath(nil, "resources", "jobs", name), "version_id", d.VersionId)
 		}
 	}
 	for name, pipeline := range b.Config.Resources.Pipelines {
 		if d := pipeline.Deployment; d != nil {
-			reject(structpath.NewStringKeys(nil, "resources", "pipelines", name), "deployment_id", d.DeploymentId)
-			reject(structpath.NewStringKeys(nil, "resources", "pipelines", name), "version_id", d.VersionId)
+			reject(structpath.NewPath(nil, "resources", "pipelines", name), "deployment_id", d.DeploymentId)
+			reject(structpath.NewPath(nil, "resources", "pipelines", name), "version_id", d.VersionId)
 		}
 	}
 
