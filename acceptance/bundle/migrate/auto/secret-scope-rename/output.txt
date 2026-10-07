@@ -1,0 +1,33 @@
+
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Rename the secret scope (an updatable id field). With the fix, the migration detects it.
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
+Warn: migration to direct: secret_scopes.my_scope: scope differs between config ("my-scope-[UNIQUE_NAME]-renamed") and terraform state ("my-scope-[UNIQUE_NAME]"); this resource will be recreated.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/files...
+Migrated 2 resources to direct deployment engine.
+Recreated secret_scopes.my_scope
+Updated secret_scopes.my_scope.permissions
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+
+=== Redeploy on direct: the scope now matches config, so the plan should be a clean no-op
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== Verify the scope exists with the new name
+>>> [CLI] secrets list-scopes
+my-scope-[UNIQUE_NAME]-renamed  DATABRICKS
+
+=== Cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.secret_scopes.my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle
+
+Destroy: 1 deleted
