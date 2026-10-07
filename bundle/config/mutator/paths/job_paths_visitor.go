@@ -16,35 +16,35 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func jobTaskRewritePatterns(taskBase dyn.Pattern) []jobRewritePattern {
+func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			taskBase.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
 			TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
-			taskBase.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			taskBase.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
 			TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
-			taskBase.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			taskBase.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
+			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			taskBase.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -52,7 +52,7 @@ func jobTaskRewritePatterns(taskBase dyn.Pattern) []jobRewritePattern {
 			// The AI Runtime task runs this bash script on each node; the backend
 			// reads it as a workspace file, so translate the local path to its
 			// remote (or immutable-snapshot) location like any other file.
-			taskBase.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
+			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -70,8 +70,8 @@ func jobEnvironmentRewritePatterns(environmentBase dyn.Pattern) []jobRewritePatt
 }
 
 func jobRewritePatterns() []jobRewritePattern {
-	// Base pattern to match all tasks in all jobs.
-	taskBase := dyn.NewPattern(
+	// Task-level base pattern for all jobs.
+	base := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("jobs"),
 		dyn.AnyKey(),
@@ -80,10 +80,11 @@ func jobRewritePatterns() []jobRewritePattern {
 	)
 
 	taskPatterns := slices.Concat(
-		jobTaskRewritePatterns(taskBase),
-		jobTaskRewritePatterns(taskBase.Append(dyn.Key("for_each_task"), dyn.Key("task"))),
+		jobTaskRewritePatterns(base),
+		jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task"))),
 	)
 
+	// Environment-level base pattern for all jobs.
 	environmentBase := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("jobs"),
