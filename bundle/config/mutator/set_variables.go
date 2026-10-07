@@ -37,7 +37,7 @@ func setVariable(ctx context.Context, cfg *config.Root, variable *variable.Varia
 		return nil
 	}
 
-	variablePath := structpath.NewStringKeys(nil, "variables", name)
+	variablePath := structpath.NewPath(nil, "variables", name)
 	valuePath := structpath.NewStringKey(variablePath, "value")
 
 	// case: read and set variable value from process environment

@@ -189,7 +189,7 @@ Example usage:
 				// runner sees concrete values (e.g. an app's env vars referencing another
 				// resource, or its source_code_path pointing at the immutable snapshot's
 				// full_path, which lives only in the deployed state).
-				target := structpath.NewStringKeys(nil, "resources", ref.Description.PluralName, ref.Key)
+				target := structpath.NewPath(nil, "resources", ref.Description.PluralName, ref.Key)
 				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config, target); err != nil {
 					return err
 				}
