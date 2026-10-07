@@ -86,7 +86,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 				Summary:   s,
 				Severity:  diag.Error,
 				Locations: b.Config.GetLocations("workspace.artifact_path"),
-				Paths:     structpath.MustParsePaths("workspace.artifact_path"),
+				Paths:     structpath.NewStringKeysSlice("workspace", "artifact_path"),
 			},
 		}
 	}
