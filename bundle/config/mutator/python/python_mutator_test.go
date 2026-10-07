@@ -12,7 +12,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
+
 	"github.com/databricks/cli/bundle/env"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/bundle"
