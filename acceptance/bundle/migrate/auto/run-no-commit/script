@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
 rm -f "$OUT_REQUESTS"
 
 title "bundle run on direct migrates the terraform state IN MEMORY (no commit) to resolve the job"
@@ -17,3 +18,9 @@ title "Nothing durable written: still on terraform (local state files + remote),
 # cache under .terraform/ is excluded by matching only state files (tfstate/.backup, resources*.json, WAL).
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+title "bundle run rejects engine: terraform"
+# Set after the replay: replay_tfstate.py runs bundle validate, which rejects engine: terraform.
+trace update_file.py databricks.yml "{name: test-bundle}" "{name: test-bundle, engine: terraform}"
+trace musterr $CLI bundle run test_job --no-wait
+trace print_requests.py //jobs
