@@ -1,4 +1,3 @@
-Badness = "In terraform, local_ssd_count field is not sent to backend"
 Cloud = true
 RecordRequests = true
 
