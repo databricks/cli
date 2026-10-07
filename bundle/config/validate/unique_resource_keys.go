@@ -36,7 +36,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	diags := diag.Diagnostics{}
 
 	type metadata struct {
-		locations []dyn.Location
+		locations []diag.Location
 		paths     []*structpath.PathNode
 	}
 
@@ -101,7 +101,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 		// Sort the locations and paths for consistent error messages. This helps
 		// with unit testing.
-		slices.SortFunc(v.locations, func(a, b dyn.Location) int {
+		slices.SortFunc(v.locations, func(a, b diag.Location) int {
 			if n := cmp.Compare(a.File, b.File); n != 0 {
 				return n
 			}

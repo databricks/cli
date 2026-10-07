@@ -1,4 +1,4 @@
-package dyn
+package diag
 
 import (
 	"fmt"

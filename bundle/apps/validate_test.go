@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/require"
@@ -48,7 +47,7 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)
@@ -205,7 +204,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+			bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 			diags := bundle.ApplySeq(t.Context(), b, Validate())
 			warnings := diags.Filter(diag.Warning)
@@ -249,7 +248,7 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+	bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)

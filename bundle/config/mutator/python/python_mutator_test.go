@@ -14,9 +14,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/libs/dyn"
+
+	"github.com/databricks/cli/libs/diag"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -54,7 +57,7 @@ resources:
       name: job_0
 workspace: { current_user: { userName: test }}`)
 
-	// set rootPath so that we can make absolute paths in dyn.Location
+	// set rootPath so that we can make absolute paths in diag.Location
 	b.BundleRootPath = rootPath
 
 	ctx := withProcessStub(
@@ -124,7 +127,7 @@ workspace: { current_user: { userName: test }}`)
 		// location is databricks.yml, because output contains resource as-is
 		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   "databricks.yml",
 				Line:   9,
@@ -134,7 +137,7 @@ workspace: { current_user: { userName: test }}`)
 
 		jobName1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/job1.py"),
 				Line:   5,
@@ -144,7 +147,7 @@ workspace: { current_user: { userName: test }}`)
 
 		pipelineName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.pipelines.pipeline0.name"))
 		require.NoError(t, err)
-		assert.Equal(t, []dyn.Location{
+		assert.Equal(t, []diag.Location{
 			{
 				File:   filepath.Join(rootPath, "src/examples/pipeline0.py"),
 				Line:   7,
@@ -161,7 +164,7 @@ workspace: { current_user: { userName: test }}`)
 
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
-	assert.Equal(t, []dyn.Location{
+	assert.Equal(t, []diag.Location{
 		{
 			File:   "src/examples/file.py",
 			Line:   10,

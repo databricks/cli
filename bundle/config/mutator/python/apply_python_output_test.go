@@ -8,6 +8,8 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/libs/dyn"
+
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -196,7 +198,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 	// there is no semantic difference between empty and missing, so we keep them as they were before
 	// Python code deleted them.
 
-	location := dyn.Location{
+	location := diag.Location{
 		File:   "databricks.yml",
 		Line:   10,
 		Column: 20,
@@ -206,38 +208,38 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "undo delete of empty variables",
 			path:        dyn.MustPathFromString("variables"),
-			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
+			left:        dyn.NewValue([]dyn.Value{}, []diag.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 		},
 		{
 			name:        "undo delete of empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
+			left:        dyn.NewValue([]dyn.Value{}, []diag.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 		},
 		{
 			name:        "allow delete of non-empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []dyn.Location{location})}, []dyn.Location{location}),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []diag.Location{location})}, []diag.Location{location}),
 			expectedErr: nil,
 		},
 		{
 			name:        "undo delete of empty tags",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{location}),
+			left:        dyn.NewValue(map[string]dyn.Value{}, []diag.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 		},
 		{
 			name: "allow delete of non-empty tags",
 			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []dyn.Location{location})}, []dyn.Location{location}),
+			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []diag.Location{location})}, []diag.Location{location}),
 
 			expectedErr: nil,
 		},
 		{
 			name:        "undo delete of nil",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NilValue.WithLocations([]dyn.Location{location}),
+			left:        dyn.NilValue.WithLocations([]diag.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 		},
 	}

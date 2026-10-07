@@ -14,7 +14,7 @@ import (
 
 type expand struct{}
 
-func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
+func matchError(p dyn.Path, l []diag.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   message,
