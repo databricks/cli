@@ -206,7 +206,7 @@ func (r *Root) Merge(others ...*Root) error {
 var bundleGitPath = structpath.MustParsePath("bundle.git")
 
 func (r *Root) MergeTargetOverrides(name string) error {
-	targetPath := structpath.NewStringKeys(nil, "targets", name)
+	targetPath := structpath.NewPath(nil, "targets", name)
 	target := r.View().Lookup(targetPath)
 	if !target.IsValid() {
 		return fmt.Errorf("target %s not found", name)
@@ -245,7 +245,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Merge `variables`. This field must be overwritten if set, not merged.
 	for varName, variable := range target.Get("variables").MapItems() {
-		varPath := structpath.NewStringKeys(nil, "variables", varName)
+		varPath := structpath.NewPath(nil, "variables", varName)
 
 		if vDefault := variable.Get("default"); vDefault.IsValid() {
 			if err := r.Assign(structpath.NewStringKey(varPath, "default"), vDefault); err != nil {

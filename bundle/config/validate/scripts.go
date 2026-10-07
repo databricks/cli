@@ -38,7 +38,7 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 	for _, k := range scriptKeys {
 		script := b.Config.Scripts[k]
-		contentPath := structpath.NewStringKeys(nil, "scripts", k, "content")
+		contentPath := structpath.NewPath(nil, "scripts", k, "content")
 
 		if script.Content == "" {
 			diags = append(diags, diag.Diagnostic{
@@ -92,7 +92,7 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 			continue
 		}
 
-		envValuePath := structpath.NewStringKeys(nil, "scripts", key, "env", name)
+		envValuePath := structpath.NewPath(nil, "scripts", key, "env", name)
 
 		for _, refPath := range ref.References() {
 			prefix, _, _ := strings.Cut(refPath, ".")
