@@ -24,7 +24,7 @@ func TestAppPathsVisitor(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitAppPaths)
-	expected := structpath.MustParsePaths("resources.apps.app0.source_code_path")
+	expected := structpath.NewStringKeysSlice("resources", "apps", "app0", "source_code_path")
 
 	assert.ElementsMatch(t, expected, actual)
 }
