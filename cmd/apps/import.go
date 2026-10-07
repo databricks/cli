@@ -12,8 +12,6 @@ import (
 	"slices"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
@@ -27,13 +25,14 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
-	"github.com/databricks/cli/libs/structs/structyaml"
+	"go.yaml.in/yaml/v3"
 )
 
 func newImportCommand() *cobra.Command {

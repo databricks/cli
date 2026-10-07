@@ -9,7 +9,7 @@ import (
 )
 
 // baseVarDef matches a path segment of a ${...} reference. It is the grammar of
-// dynvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesDynvar
+// structvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesStructvar
 // keeps them in agreement.
 const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
@@ -730,7 +730,6 @@ func isValidField(s string) bool {
 }
 
 // PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
-// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
 func PureReferenceToPath(s string) (*PathNode, bool) {
 	m := pureReference.FindStringSubmatch(s)
 	if m == nil {
