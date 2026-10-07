@@ -259,7 +259,7 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 				Column: 15,
 			},
 		},
-		Paths: structpath.MustParsePaths("job_id"),
+		Paths: structpath.NewStringKeysSlice("job_id"),
 	})
 }
 
@@ -284,7 +284,7 @@ func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 				Column: 40,
 			},
 		},
-		Paths: structpath.MustParsePaths("new_settings.timeout_seconds"),
+		Paths: structpath.NewStringKeysSlice("new_settings", "timeout_seconds"),
 	})
 }
 

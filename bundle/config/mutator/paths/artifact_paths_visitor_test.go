@@ -18,7 +18,7 @@ func TestArtifactPathsVisitor(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitArtifactPaths)
-	expected := structpath.MustParsePaths("artifacts.artifact0.path")
+	expected := structpath.NewStringKeysSlice("artifacts", "artifact0", "path")
 
 	assert.ElementsMatch(t, expected, actual)
 }
