@@ -535,7 +535,13 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 			// reattachment to recover bytes the close-frame exchange did not drain.
 			if handover := pc.handoverState.Load(); handover != nil {
 				var closeConnSignal error
-				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				switch {
+				case ctx.Err() != nil:
+					// The session is ending and teardown closed the connection under the handover
+					// (see the ctx.Err() check below). Pass the cancellation on, so the handover
+					// initiator does not report a failed handover for an ordinary exit.
+					closeConnSignal = ctx.Err()
+				case !websocket.IsCloseError(err, websocket.CloseNormalClosure):
 					closeConnSignal = errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket during handover: %w", err))
 				}
 				// Signal the current connection is closed to the handover initiator (initiateHandover or acceptHandover).

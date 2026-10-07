@@ -316,6 +316,70 @@ func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
 	assert.Equal(t, int32(2), dials.Load(), "expected the initial dial plus exactly one handover dial")
 }
 
+// A session that ends while a handover is still waiting for the old connection to close must end
+// cleanly. Teardown closes that connection itself, and the handover used to report the resulting
+// read error as ErrHandoverFailed, which could win the race against the session's real outcome -
+// the TestQuickHandover flake.
+func TestSessionEndDuringHandoverIsNotAHandoverFailure(t *testing.T) {
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	// The handover dial lands here instead of on the proxy server, so nobody ever closes the old
+	// connection and the handover stays in progress until the session ends.
+	silentServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	defer silentServer.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	silentURL := "ws" + silentServer.URL[4:]
+	var dials atomic.Int32
+	handoverDialed := make(chan struct{}, 1)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
+		if dials.Add(1) > 1 {
+			url = silentURL
+			defer func() { handoverDialed <- struct{}{} }()
+		}
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		return conn, err
+	}
+
+	handoverChan := make(chan time.Time)
+	errChan := make(chan error, 1)
+	client := createTestClientWithDialer(t, createConn, func() <-chan time.Time {
+		return handoverChan
+	}, time.Hour, false, errChan)
+
+	msg := []byte("before handover\n")
+	_, err := client.InputWriter.Write(msg)
+	require.NoError(t, err)
+	require.NoError(t, client.Output.AssertWrite(msg))
+
+	handoverChan <- time.Now()
+	select {
+	case <-handoverDialed:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the handover never dialed its replacement connection")
+	}
+
+	client.Cleanup()
+	select {
+	case err := <-errChan:
+		t.Fatalf("session ended with an error: %v", err)
+	default:
+	}
+}
+
 // TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
 // websocket but can't launch its command, so it closes the connection immediately. The client
 // proxy must exit promptly instead of hanging on the handover goroutine (which would leave the

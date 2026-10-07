@@ -96,6 +96,12 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 					return nil
 				case <-requestHandoverTick():
 					if err := proxy.initiateHandover(gCtx); err != nil {
+						// The session ended while the handover was in progress. proxy.start
+						// decides the session's outcome; an error here could be recorded first
+						// and mask it.
+						if errors.Is(err, context.Canceled) {
+							return nil
+						}
 						// A handover that never got past its dial leaves the current connection
 						// untouched and still carrying traffic, so ending the session over it
 						// would throw away a working tunnel - the failure mode customers see as
