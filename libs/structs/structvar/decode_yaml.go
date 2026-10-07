@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -34,6 +35,10 @@ type yamlSource struct {
 	// Aliases followed on the way from the document root to this value, to detect
 	// cyclic anchors.
 	aliases *aliasChain
+
+	// If set, mapLocations is applied to the locations of the value at path.
+	mapLocations LocationMapper
+	path         *structpath.PathNode
 
 	// Resolved scalar.
 	k Kind
@@ -198,7 +203,11 @@ func (s *yamlSource) kind() Kind {
 
 func (s *yamlSource) locations() []diag.Location {
 	// An alias has the location of the anchored value.
-	return []diag.Location{s.loc(s.target)}
+	locs := []diag.Location{s.loc(s.target)}
+	if s.mapLocations != nil {
+		return s.mapLocations(s.path, locs)
+	}
+	return locs
 }
 
 func (s *yamlSource) anchor() bool {
@@ -209,8 +218,18 @@ func (s *yamlSource) scalar() any {
 	return s.v
 }
 
-func (s *yamlSource) child(n *yaml.Node) (source, error) {
-	return newYAMLSource(s.file, n, s.aliases)
+// child returns the source of n, the value at path below this one (computed by path,
+// only when locations are mapped).
+func (s *yamlSource) child(n *yaml.Node, path func() *structpath.PathNode) (*yamlSource, error) {
+	c, err := newYAMLSource(s.file, n, s.aliases)
+	if err != nil {
+		return nil, err
+	}
+	if s.mapLocations != nil {
+		c.mapLocations = s.mapLocations
+		c.path = path()
+	}
+	return c, nil
 }
 
 func (s *yamlSource) pairs() ([]sourcePair, error) {
@@ -245,7 +264,7 @@ func (s *yamlSource) pairs() ([]sourcePair, error) {
 			return nil, yamlErrorf(loc, "invalid key tag: %v", st)
 		}
 
-		v, err := s.child(val)
+		v, err := s.child(val, func() *structpath.PathNode { return structpath.NewStringKey(s.path, key.Value) })
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +291,8 @@ func (s *yamlSource) pairs() ([]sourcePair, error) {
 	// Merged maps come first; the entries of this mapping take precedence.
 	var out pairSet
 	for _, n := range mnodes {
-		ms, err := s.child(n)
+		// The merged mapping's values are at the paths of this mapping's.
+		ms, err := s.child(n, func() *structpath.PathNode { return s.path })
 		if err != nil {
 			return nil, err
 		}
@@ -316,8 +336,8 @@ func (s *pairSet) set(p sourcePair) {
 
 func (s *yamlSource) elems() ([]source, error) {
 	var out []source
-	for _, n := range s.target.Content {
-		v, err := s.child(n)
+	for i, n := range s.target.Content {
+		v, err := s.child(n, func() *structpath.PathNode { return structpath.NewIndex(s.path, i) })
 		if err != nil {
 			return nil, err
 		}

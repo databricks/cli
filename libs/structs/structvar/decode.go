@@ -69,12 +69,9 @@ func DecodeYAMLNode(file string, node *yaml.Node, dst any, mapLocations Location
 	if err := validate(src); err != nil {
 		return nil, nil, err
 	}
+	src.mapLocations = mapLocations
 	var d decoder
-	var s source = src
-	if mapLocations != nil {
-		s = mappedSource{source: src, fn: mapLocations}
-	}
-	n, ok, err := d.decode(v, s, nil)
+	n, ok, err := d.decode(v, src, nil)
 	if err == nil && !ok {
 		// The value could not be converted to dst at all (e.g. a list for a struct).
 		err = fmt.Errorf("expected a %s, found a %s", kindOf(v.Type()), src.kind())
@@ -725,33 +722,6 @@ func (s viewSource) elems() ([]source, error) {
 		out = append(out, viewSource{c})
 	}
 	return out, nil
-}
-
-// mappedSource is a [source] whose locations are mapped by fn.
-type mappedSource struct {
-	source
-	path *structpath.PathNode
-	fn   LocationMapper
-}
-
-func (s mappedSource) locations() []diag.Location {
-	return s.fn(s.path, s.source.locations())
-}
-
-func (s mappedSource) pairs() ([]sourcePair, error) {
-	pairs, err := s.source.pairs()
-	for i := range pairs {
-		pairs[i].value = mappedSource{source: pairs[i].value, path: structpath.NewStringKey(s.path, pairs[i].key), fn: s.fn}
-	}
-	return pairs, err
-}
-
-func (s mappedSource) elems() ([]source, error) {
-	elems, err := s.source.elems()
-	for i := range elems {
-		elems[i] = mappedSource{source: elems[i], path: structpath.NewIndex(s.path, i), fn: s.fn}
-	}
-	return elems, err
 }
 
 // kindOf returns the kind of configuration tree values of type t.
