@@ -5,7 +5,7 @@ bundle:
 targets:
   inherited:
     default: true
-  direct:
+  uses_direct:
     bundle:
       engine: direct
   null_target:

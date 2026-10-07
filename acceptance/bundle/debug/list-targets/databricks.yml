@@ -20,10 +20,10 @@ targets:
     mode: production
     workspace:
       host: https://prod.example.com
-  tf:
+  uses_terraform:
     bundle:
       engine: terraform
-  direct:
+  uses_direct:
     bundle:
       engine: direct
   with_vars:
