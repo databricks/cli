@@ -12,8 +12,7 @@ has_manage_run() {
     | jq 'any(.access_control_list[].all_permissions[]; .permission_level == "CAN_MANAGE_RUN")'
 }
 
-# The permissions after the first deploy are not checked. This is flaky on direct,
-# because there are (at least) two ways to complete deployment:
+# This is flaky on direct, because there are (at least) two ways to complete deployment:
 # sequence 1:
 #  job is deployed
 #  job permissions are deployed
