@@ -4,6 +4,7 @@ RecordRequests = false
 # npm install writes package-lock.json even with nothing to install, and older npm versions
 # also create node_modules for their own copy of the lockfile.
 Ignore = [
+    'commands.log',
     'node_modules',
     'package-lock.json'
 ]

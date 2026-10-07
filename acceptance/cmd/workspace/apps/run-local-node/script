@@ -1,7 +1,7 @@
 cd app
 
 # Ports are allocated per run so that tests in parallel worktrees do not collide.
-read -r APP_PORT PROXY_PORT DEBUG_PORT PREPARE_PORT <<< "$(free_port.py 4)"
+read -r APP_PORT PROXY_PORT DEBUG_PORT PREPARE_PORT PNPM_PORT <<< "$(free_port.py 5)"
 add_repl "$PROXY_PORT" PROXY_PORT
 add_repl "$DEBUG_PORT" DEBUG_PORT
 
@@ -43,3 +43,11 @@ trace grep "Debugger listening on ws://127.0.0.1:$DEBUG_PORT/" LOG.run
 title "Shutting the app down\n"
 trace curl -sS -o /dev/null "http://127.0.0.1:$PROXY_PORT/shutdown"
 wait $PID
+
+title "A pnpm lockfile selects pnpm to install, build, and start the app\n"
+# bin/pnpm only records its arguments, so no real pnpm is needed and the start command exits at once.
+export PATH="$PWD/bin:$PATH"
+cd app-pnpm
+trace $CLI apps run-local --prepare-environment --port "$PNPM_PORT" &> ../LOG.pnpm
+trace grep -x "Running command: pnpm run start" ../LOG.pnpm
+trace cat commands.log

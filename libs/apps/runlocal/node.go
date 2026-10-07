@@ -16,33 +16,35 @@ type PackageJson struct {
 }
 
 type NodeApp struct {
-	config      *Config
-	spec        *AppSpec
-	packageJson *PackageJson
+	config         *Config
+	spec           *AppSpec
+	packageJson    *PackageJson
+	packageManager string
 }
 
-func NewNodeApp(config *Config, spec *AppSpec, packageJson *PackageJson) *NodeApp {
+func NewNodeApp(config *Config, spec *AppSpec, packageJson *PackageJson, packageManager string) *NodeApp {
 	if config.DebugPort == "" {
 		config.DebugPort = NODE_DEBUG_PORT
 	}
 
 	return &NodeApp{
-		config:      config,
-		spec:        spec,
-		packageJson: packageJson,
+		config:         config,
+		spec:           spec,
+		packageJson:    packageJson,
+		packageManager: packageManager,
 	}
 }
 
 func (n *NodeApp) PrepareEnvironment(ctx context.Context) error {
 	// Install dependencies
-	installArgs := []string{"npm", "install"}
+	installArgs := []string{n.packageManager, "install"}
 	if err := runCommand(ctx, n.config.AppPath, installArgs); err != nil {
 		return err
 	}
 
 	// Run build script if it exists
 	if _, ok := n.packageJson.Scripts["build"]; ok {
-		buildArgs := []string{"npm", "run", "build"}
+		buildArgs := []string{n.packageManager, "run", "build"}
 		if err := runCommand(ctx, n.config.AppPath, buildArgs); err != nil {
 			return err
 		}
@@ -58,7 +60,7 @@ func (n *NodeApp) GetCommand(ctx context.Context, debug bool) ([]string, []strin
 	}
 
 	if n.spec.Command == nil {
-		return []string{"npm", "run", "start"}, cmdEnv, nil
+		return []string{n.packageManager, "run", "start"}, cmdEnv, nil
 	}
 
 	return n.spec.Command, cmdEnv, nil
