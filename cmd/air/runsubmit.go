@@ -45,6 +45,19 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
+func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
+	environment := &compute.Environment{}
+	if strings.HasPrefix(dlImage, databricksAIPrefix) {
+		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+	} else {
+		environment.EnvironmentVersion = dlImage
+	}
+	if len(deps) > 0 {
+		environment.Dependencies = deps
+	}
+	return environment
+}
+
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
 // workspace path of the uploaded command.sh; dlImage is the runtime channel;
 // usagePolicyID is the already-resolved policy id ("" when the run has none);
@@ -98,15 +111,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
 	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
 	// slices, so a no-deps run omits the key.
-	envSpec := &compute.Environment{}
-	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		envSpec.BaseEnvironment = "workspace-base-environments/" + dlImage
-	} else {
-		envSpec.EnvironmentVersion = dlImage
-	}
-	if len(deps) > 0 {
-		envSpec.Dependencies = deps
-	}
+	envSpec := buildRunEnvironment(dlImage, deps)
 
 	return jobs.SubmitRun{
 		RunName: cfg.ExperimentName,

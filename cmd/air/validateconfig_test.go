@@ -173,3 +173,16 @@ func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
 	_, hasMlflowRun := task["mlflow_run"]
 	assert.False(t, hasMlflowRun)
 }
+
+func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
+	cfg := baseRunConfig()
+	cfg.Environment = &environmentConfig{
+		Version:      stringOrInt{set: true, raw: "databricks_ai_v6"},
+		Dependencies: dependencies{set: true, list: []string{"torch==2.3.0", "numpy"}},
+	}
+
+	request := validateConfigRequest(t.Context(), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+	raw, err := json.Marshal(request["environment"])
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"base_environment":"workspace-base-environments/databricks_ai_v6","dependencies":["torch==2.3.0","numpy"]}`, string(raw))
+}
