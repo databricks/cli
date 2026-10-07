@@ -1,14 +1,17 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-type VisitFunc func(path dyn.Path, mode TranslateMode, value dyn.Value) (dyn.Value, error)
+// VisitFunc is called for every matching value. It may change the configuration
+// at path (e.g. with [config.Root.Set]).
+type VisitFunc func(path *structpath.PathNode, mode TranslateMode, value structvar.View) error
 
 // VisitPaths visits all paths in bundle configuration
-func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	visitors := []func(dyn.Value, VisitFunc) (dyn.Value, error){
+func VisitPaths(root structvar.View, fn VisitFunc) error {
+	visitors := []func(structvar.View, VisitFunc) error{
 		VisitJobPaths,
 		VisitJobRunPaths,
 		VisitJobLibrariesPaths,
@@ -21,14 +24,23 @@ func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
 		VisitPipelineLibrariesPaths,
 	}
 
-	newRoot := root
 	for _, visitor := range visitors {
-		updatedRoot, err := visitor(newRoot, fn)
-		if err != nil {
-			return dyn.InvalidValue, err
+		if err := visitor(root, fn); err != nil {
+			return err
 		}
-		newRoot = updatedRoot
 	}
 
-	return newRoot, nil
+	return nil
+}
+
+// visitString calls fn for every string value matching pattern unless skip reports true for it.
+// Values that are not strings are not visited.
+func visitString(root structvar.View, pattern *structpath.PatternNode, mode TranslateMode, skip func(string) bool, fn VisitFunc) error {
+	return structvar.ForEach(root, pattern, func(p *structpath.PathNode, v structvar.View) error {
+		s, ok := v.AsString()
+		if !ok || skip(s) {
+			return nil
+		}
+		return fn(p, mode, v)
+	})
 }

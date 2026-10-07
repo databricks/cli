@@ -6,9 +6,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
@@ -36,7 +36,27 @@ are correctly set in the cluster specification:
 
 const singleNodeWarningSummary = `Single node cluster is not correctly configured`
 
-func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
+// stringMap reads a view of a map of strings. It returns false if v is not a map.
+func stringMap(v structvar.View) (map[string]string, bool) {
+	switch v.Kind() {
+	case structvar.KindInvalid, structvar.KindNil:
+		return nil, true
+	case structvar.KindMap:
+	default:
+		return nil, false
+	}
+	out := map[string]string{}
+	for k, c := range v.MapItems() {
+		s, ok := c.AsString()
+		if !ok {
+			return nil, false
+		}
+		out[k] = s
+	}
+	return out, true
+}
+
+func showSingleNodeClusterWarning(ctx context.Context, v structvar.View) bool {
 	// Check if the user has explicitly set the num_workers to 0. Skip the warning
 	// if that's not the case.
 	numWorkers, ok := v.Get("num_workers").AsInt()
@@ -51,28 +71,26 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return false
 	}
 
-	// Convenient type that contains the common fields from compute.ClusterSpec and
-	// pipelines.PipelineCluster that we are interested in.
-	type ClusterConf struct {
-		SparkConf  map[string]string `json:"spark_conf"`
-		CustomTags map[string]string `json:"custom_tags"`
-		PolicyId   string            `json:"policy_id"`
-	}
-
-	conf := &ClusterConf{}
-	err := convert.ToTyped(conf, v)
-	if err != nil {
+	// Read the common fields from compute.ClusterSpec and pipelines.PipelineCluster
+	// that we are interested in.
+	sparkConf, ok := stringMap(v.Get("spark_conf"))
+	if !ok {
 		return false
 	}
+	customTags, ok := stringMap(v.Get("custom_tags"))
+	if !ok {
+		return false
+	}
+	policyId, _ := v.Get("policy_id").AsString()
 
 	// If the policy id is set, we don't want to show the warning. This is because
 	// the user might have configured `spark_conf` and `custom_tags` correctly
 	// in their cluster policy.
-	if conf.PolicyId != "" {
+	if policyId != "" {
 		return false
 	}
 
-	profile, ok := conf.SparkConf["spark.databricks.cluster.profile"]
+	profile, ok := sparkConf["spark.databricks.cluster.profile"]
 	if !ok {
 		log.Debugf(ctx, "spark_conf spark.databricks.cluster.profile not found in single-node cluster spec")
 		return true
@@ -82,7 +100,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return true
 	}
 
-	master, ok := conf.SparkConf["spark.master"]
+	master, ok := sparkConf["spark.master"]
 	if !ok {
 		log.Debugf(ctx, "spark_conf spark.master not found in single-node cluster spec")
 		return true
@@ -92,7 +110,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return true
 	}
 
-	resourceClass, ok := conf.CustomTags["ResourceClass"]
+	resourceClass, ok := customTags["ResourceClass"]
 	if !ok {
 		log.Debugf(ctx, "custom_tag ResourceClass not found in single-node cluster spec")
 		return true
@@ -108,33 +126,34 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	patterns := []dyn.Pattern{
+	patterns := []*structpath.PatternNode{
 		// Interactive clusters
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("clusters"), dyn.AnyKey()),
+		structpath.MustParsePattern("resources.clusters.*"),
 		// Job clusters
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("job_clusters"), dyn.AnyIndex(), dyn.Key("new_cluster")),
+		structpath.MustParsePattern("resources.jobs.*.job_clusters[*].new_cluster"),
 		// Job task clusters
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("new_cluster")),
+		structpath.MustParsePattern("resources.jobs.*.tasks[*].new_cluster"),
 		// Job for each task clusters
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("for_each_task"), dyn.Key("task"), dyn.Key("new_cluster")),
+		structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.new_cluster"),
 		// Pipeline clusters
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.AnyKey(), dyn.Key("clusters"), dyn.AnyIndex()),
+		structpath.MustParsePattern("resources.pipelines.*.clusters[*]"),
 	}
 
+	root := b.Config.View()
 	for _, p := range patterns {
-		_, err := dyn.MapByPattern(b.Config.Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		err := structvar.ForEach(root, p, func(np *structpath.PathNode, v structvar.View) error {
 			warning := diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   singleNodeWarningSummary,
 				Detail:    singleNodeWarningDetail,
 				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{np},
 			}
 
 			if showSingleNodeClusterWarning(ctx, v) {
 				diags = append(diags, warning)
 			}
-			return v, nil
+			return nil
 		})
 		if err != nil {
 			log.Debugf(ctx, "Error while applying single node cluster validation: %s", err)

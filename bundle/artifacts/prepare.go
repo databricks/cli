@@ -61,7 +61,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			logdiag.LogError(ctx, fmt.Errorf("artifact %q: a tgz artifact needs a `files` entry naming the output path", artifactName))
 		}
 
-		l := b.Config.GetLocation("artifacts." + artifactName)
+		l := b.Config.DefinitionLocation("artifacts." + artifactName)
 		dirPath := filepath.Dir(l.File)
 
 		// Check if source paths are absolute, if not, make them absolute
