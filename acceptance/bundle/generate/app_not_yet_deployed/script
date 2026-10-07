@@ -1,2 +1,3 @@
 trace $CLI apps create my-app --no-compute --no-wait
+add_repl "$($CLI apps get my-app | jq -r .service_principal_id)" SERVICE_PRINCIPAL_ID
 trace $CLI bundle generate app --existing-app-name my-app --config-dir . --key out

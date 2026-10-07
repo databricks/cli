@@ -18,3 +18,4 @@ $CLI bundle $COMMAND &> LOG.COMMAND.txt
 
 trace assert_exists.py .databricks/bundle/default/resources.json
 trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+replace_ids.py

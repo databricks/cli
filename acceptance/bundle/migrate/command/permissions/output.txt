@@ -27,7 +27,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 {
@@ -39,7 +39,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 

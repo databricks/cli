@@ -1,3 +1,4 @@
 trace uv run --quiet --with $DATABRICKS_BUNDLES_WHEEL -- $CLI bundle deploy
+uv run --quiet --with $DATABRICKS_BUNDLES_WHEEL -- replace_ids.py
 
 trace $CLI jobs list --output json | nostamp

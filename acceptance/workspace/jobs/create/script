@@ -1,3 +1,4 @@
 trace $CLI jobs create --json '{"name":"abc"}'
+add_repl "$($CLI jobs list --name abc -o json | jq -r '.[0].job_id')" JOB_ID
 
 trace print_requests.py //jobs

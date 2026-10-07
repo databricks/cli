@@ -34,7 +34,7 @@ Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_A_ID]
   }
 }
 {
@@ -46,6 +46,6 @@ Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_B_ID]
   }
 }

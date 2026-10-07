@@ -1,6 +1,6 @@
 
 >>> databricks auth docker host --profile docker-test
-Registry host: [NUMID].container.us-west-2.localhost
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
 Credential helper configured: NO
 
 >>> print_requests.py --get //api
@@ -14,7 +14,7 @@ Credential helper configured: NO
 {
   "headers": {
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",
@@ -22,7 +22,7 @@ Credential helper configured: NO
 }
 
 >>> databricks auth docker configure docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 
@@ -37,7 +37,7 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
 {
   "headers": {
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",
@@ -52,7 +52,7 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
     }
   },
   "credHelpers": {
-    "[NUMID].container.us-west-2.localhost": "databricks"
+    "[WORKSPACE_ID].container.us-west-2.localhost": "databricks"
   }
 }
 
@@ -63,11 +63,11 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
 [docker-test]
 host         = [DATABRICKS_URL]
 auth_type    = databricks-cli
-workspace_id = [NUMID]
+workspace_id = [WORKSPACE_ID]
 
 >>> databricks auth docker host --profile docker-test --output json
 {
-  "host": "[NUMID].container.us-west-2.localhost",
+  "host": "[WORKSPACE_ID].container.us-west-2.localhost",
   "configured": true
 }
 
@@ -75,7 +75,7 @@ workspace_id = [NUMID]
 {
   "headers": {
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",
@@ -103,7 +103,7 @@ Docker config unchanged
 {
   "headers": {
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",
@@ -114,7 +114,7 @@ Docker config unchanged
 
 >>> databricks auth docker configure docker-test --region us-west-2
 Flag --region has been deprecated, --region will be fully removed in the next release
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 No requests sent
@@ -123,7 +123,7 @@ No requests sent
 
 >>> databricks auth docker configure docker-test --region us-west-2
 Flag --region has been deprecated, --region will be fully removed in the next release
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 
@@ -139,7 +139,7 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
 === Configure with the installation directory absent from PATH
 
 >>> command [TEST_TMP_DIR]/home/bin/databricks auth docker configure docker-test
-Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Warning: ensure [TEST_TMP_DIR]/home/bin is on PATH before any other docker-credential-databricks helper, and that .CMD is in PATHEXT on Windows
@@ -148,7 +148,7 @@ Warning: ensure [TEST_TMP_DIR]/home/bin is on PATH before any other docker-crede
 {
   "headers": {
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",

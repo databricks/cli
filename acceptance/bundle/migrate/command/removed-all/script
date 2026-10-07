@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 # Replay a prior terraform deployment (job_a and job_b)
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
 
 # Remove every resource from config without deploying the deletion
 cat > databricks.yml <<'YAML'

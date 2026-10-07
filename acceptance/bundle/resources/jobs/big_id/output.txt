@@ -74,6 +74,6 @@ Destroy: 1 deleted
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [FOO_ID]
   }
 }

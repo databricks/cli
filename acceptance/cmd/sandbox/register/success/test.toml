@@ -9,8 +9,7 @@ Response.Body = '''
 }
 '''
 
-# Pin the synthetic test hash so the framework's generic 3+-digit-run →
-# [NUMID] regex doesn't mangle it.
+# Pin the synthetic test hash to a stable placeholder.
 [[Repls]]
 Old = 'a0b1c2d3e4f5a0b1c2d3e4f5a0b1c2d3'
 New = '[KEY_HASH]'

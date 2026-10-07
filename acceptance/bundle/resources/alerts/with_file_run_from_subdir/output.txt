@@ -29,7 +29,7 @@
     "quartz_cron_schedule": "44 19 */1 * * ?",
     "timezone_id": "Europe/Amsterdam"
   },
-  "warehouse_id": "[NUMID]"
+  "warehouse_id": "0123456789012345"
 }
 
 === validate from a subdirectory of the bundle
@@ -62,5 +62,5 @@
     "quartz_cron_schedule": "44 19 */1 * * ?",
     "timezone_id": "Europe/Amsterdam"
   },
-  "warehouse_id": "[NUMID]"
+  "warehouse_id": "0123456789012345"
 }

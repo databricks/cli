@@ -2,6 +2,7 @@ trace $CLI bundle deploy
 trace $CLI bundle plan | contains.py "2 unchanged"
 
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.foo.id')
+add_repl "$job_id" FOO_ID
 
 trace $CLI permissions set jobs $job_id --json @reorder.json > /dev/null
 

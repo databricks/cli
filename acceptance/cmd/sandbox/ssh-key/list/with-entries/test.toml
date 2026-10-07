@@ -20,8 +20,7 @@ Response.Body = '''
 }
 '''
 
-# Pin our test hashes to stable placeholders so the framework's
-# generic 3+-digit-run → [NUMID] regex doesn't mangle them.
+# Pin our test hashes to stable placeholders.
 [[Repls]]
 Old = '98b3b2bce82049769b4ba03990460d09'
 New = '[KEY_HASH_1]'
