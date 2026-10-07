@@ -1,0 +1,7 @@
+trace $CLI bundle summary
+trace $CLI bundle summary -o json | jq .bundle.engine
+# Other commands still reject engine: terraform.
+trace musterr $CLI bundle validate
+
+# The env var is not checked by summary.
+DATABRICKS_BUNDLE_ENGINE=terraform trace $CLI bundle summary

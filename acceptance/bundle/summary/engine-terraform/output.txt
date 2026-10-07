@@ -1,0 +1,57 @@
+
+>>> [CLI] bundle summary
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:3:11
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    my_job:
+      Name: my job
+      URL:  (not deployed)
+
+>>> [CLI] bundle summary -o json
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:3:11
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+"terraform"
+
+>>> musterr [CLI] bundle validate
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:3:11
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Name: test-bundle
+Target: default
+
+Found 1 error
+
+>>> [CLI] bundle summary
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:3:11
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    my_job:
+      Name: my job
+      URL:  (not deployed)

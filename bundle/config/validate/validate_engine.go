@@ -51,8 +51,12 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if parsed == engine.EngineTerraform {
+		severity := diag.Error
+		if b.AllowTerraformEngineConfig {
+			severity = diag.Warning
+		}
 		return diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
+			Severity:  severity,
 			Summary:   engine.TerraformRemovedSummary,
 			Detail:    engine.TerraformRemovedConfigDetail,
 			Locations: []dyn.Location{loc},

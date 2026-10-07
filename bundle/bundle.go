@@ -194,6 +194,11 @@ type Bundle struct {
 	// leave the terraform state untouched.
 	MigratingToDirect bool
 
+	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
+	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
+	// (bundle summary) so users can still inspect a bundle that pins the removed engine.
+	AllowTerraformEngineConfig bool
+
 	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
 	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
 	// drops the summary and progress lines, leaving warnings and errors.
