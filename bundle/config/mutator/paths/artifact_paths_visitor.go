@@ -1,42 +1,37 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type artifactRewritePattern struct {
-	pattern dyn.Pattern
+	pattern *structpath.PatternNode
 	mode    TranslateMode
 }
 
 func artifactRewritePatterns() []artifactRewritePattern {
 	// Base pattern to match all artifacts.
-	base := dyn.NewPattern(
-		dyn.Key("artifacts"),
-		dyn.AnyKey(),
-	)
+	base := "artifacts.*"
 
 	// Compile list of configuration paths to rewrite.
 	return []artifactRewritePattern{
 		{
-			pattern: base.Append(dyn.Key("path")),
+			pattern: structpath.MustParsePattern(base + ".path"),
 			mode:    TranslateModeLocalAbsoluteDirectory,
 		},
 	}
 }
 
-func VisitArtifactPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	var err error
-	newValue := value
-
+func VisitArtifactPaths(root structvar.View, fn VisitFunc) error {
 	for _, rewritePattern := range artifactRewritePatterns() {
-		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		err := structvar.ForEach(root, rewritePattern.pattern, func(p *structpath.PathNode, v structvar.View) error {
 			return fn(p, rewritePattern.mode, v)
 		})
 		if err != nil {
-			return dyn.InvalidValue, err
+			return err
 		}
 	}
 
-	return newValue, nil
+	return nil
 }

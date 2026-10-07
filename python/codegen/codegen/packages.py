@@ -63,7 +63,7 @@ RENAMES = {
     # pass through untyped. The Go config mutators validate the value.
     "interface": "Any",
     # time.Time is a scalar serialized as an RFC3339 string; the Go side models
-    # it as a string too (see libs/dyn/convert/sdk_native_types.go).
+    # it as a string too (see libs/structs/structvar/struct_info.go).
     "time.Time": "str",
     # duration.Duration is a scalar serialized as a seconds string (e.g. "3600s").
     "duration.Duration": "str",

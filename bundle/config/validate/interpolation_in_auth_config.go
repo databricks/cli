@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type noInterpolationInAuthConfig struct{}
@@ -51,13 +51,10 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 	diags := diag.Diagnostics{}
 
 	for _, fieldName := range authFields {
-		p := dyn.NewPath(dyn.Key("workspace"), dyn.Key(fieldName))
-		v, err := dyn.GetByPath(b.Config.Value(), p)
-		if dyn.IsNoSuchKeyError(err) {
+		p := structpath.NewStringKeys(nil, "workspace", fieldName)
+		v := b.Config.View().Lookup(p)
+		if !v.IsValid() {
 			continue
-		}
-		if err != nil {
-			return diag.FromErr(err)
 		}
 
 		vv, ok := v.AsString()
@@ -66,7 +63,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 		}
 
 		// Check if the field contains interpolation.
-		if dynvar.ContainsVariableReference(vv) {
+		if structvar.ContainsVariableReference(vv) {
 			envVar, ok := auth.GetEnvFor(fieldName)
 			if !ok {
 				continue
@@ -78,7 +75,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 				Detail: fmt.Sprintf(`Interpolation is not supported for the field %s. Please set
 the %s environment variable if you wish to configure this field at runtime.`, p.String(), envVar),
 				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{p},
 			})
 		}
 	}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,13 +47,13 @@ func TestVisitPipelinePaths(t *testing.T) {
 
 	actual := collectVisitedPaths(t, root, VisitPipelinePaths)
 	actual = append(actual, collectVisitedPaths(t, root, VisitPipelineLibrariesPaths)...)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[0].file.path"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[1].notebook.path"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[2].glob.include"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.root_path"),
-		dyn.MustPathFromString("resources.pipelines.pipeline0.environment.dependencies[0]"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.pipelines.pipeline0.libraries[0].file.path",
+		"resources.pipelines.pipeline0.libraries[1].notebook.path",
+		"resources.pipelines.pipeline0.libraries[2].glob.include",
+		"resources.pipelines.pipeline0.root_path",
+		"resources.pipelines.pipeline0.environment.dependencies[0]",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }

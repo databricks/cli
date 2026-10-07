@@ -7,9 +7,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,20 +78,14 @@ func TestPipelineDeletionCascades(t *testing.T) {
 
 func TestCheckPreventDestroyForAllResources(t *testing.T) {
 	for resourceType := range config.SupportedResources() {
+		// Snapshots are internal and their lifecycle is not part of the configuration (json:"-").
+		if resourceType == "internal_immutable_snapshots" {
+			continue
+		}
 		t.Run(resourceType, func(t *testing.T) {
 			b := &bundle.Bundle{}
 
-			err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-					resourceType: dyn.NewValue(map[string]dyn.Value{
-						"test_resource": dyn.NewValue(map[string]dyn.Value{
-							"lifecycle": dyn.NewValue(map[string]dyn.Value{
-								"prevent_destroy": dyn.NewValue(true, nil),
-							}, nil),
-						}, nil),
-					}, nil),
-				}, nil))
-			})
+			err := b.Config.Set(structpath.MustParsePath("resources."+resourceType+".test_resource.lifecycle.prevent_destroy"), true)
 			require.NoError(t, err)
 
 			actions := []deployplan.Action{
@@ -111,17 +106,7 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 
 func TestCheckPreventDestroyForJob(t *testing.T) {
 	b := &bundle.Bundle{}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-			"jobs": dyn.NewValue(map[string]dyn.Value{
-				"test_resource": dyn.NewValue(map[string]dyn.Value{
-					"lifecycle": dyn.NewValue(map[string]dyn.Value{
-						"prevent_destroy": dyn.NewValue(true, nil),
-					}, nil),
-				}, nil),
-			}, nil),
-		}, nil))
-	})
+	err := b.Config.Set(structpath.MustParsePath("resources.jobs.test_resource.lifecycle.prevent_destroy"), true)
 	require.NoError(t, err)
 
 	actions := []deployplan.Action{
@@ -140,17 +125,7 @@ func TestCheckPreventDestroyForJob(t *testing.T) {
 
 func TestCheckPreventDestroyForApp(t *testing.T) {
 	b := &bundle.Bundle{}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-			"apps": dyn.NewValue(map[string]dyn.Value{
-				"test_resource": dyn.NewValue(map[string]dyn.Value{
-					"lifecycle": dyn.NewValue(map[string]dyn.Value{
-						"prevent_destroy": dyn.NewValue(true, nil),
-					}, nil),
-				}, nil),
-			}, nil),
-		}, nil))
-	})
+	err := b.Config.Set(structpath.MustParsePath("resources.apps.test_resource.lifecycle.prevent_destroy"), true)
 	require.NoError(t, err)
 
 	actions := []deployplan.Action{
@@ -167,14 +142,7 @@ func TestCheckPreventDestroyForApp(t *testing.T) {
 
 func TestCheckPreventDestroyNoError(t *testing.T) {
 	b := &bundle.Bundle{}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-			"jobs": dyn.NewValue(map[string]dyn.Value{
-				"test_resource": dyn.NewValue(map[string]dyn.Value{}, nil),
-			}, nil),
-		}, nil))
-	})
-	require.NoError(t, err)
+	b.Config.Resources.Jobs = map[string]*resources.Job{"test_resource": {}}
 
 	actions := []deployplan.Action{
 		{
@@ -183,26 +151,14 @@ func TestCheckPreventDestroyNoError(t *testing.T) {
 		},
 	}
 
-	err = checkForPreventDestroy(b, actions)
+	err := checkForPreventDestroy(b, actions)
 	require.NoError(t, err)
 }
 
 func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 	b := &bundle.Bundle{}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
-			"jobs": dyn.NewValue(map[string]dyn.Value{
-				"test_job": dyn.NewValue(map[string]dyn.Value{}, nil),
-			}, nil),
-			"apps": dyn.NewValue(map[string]dyn.Value{
-				"test_app": dyn.NewValue(map[string]dyn.Value{
-					"lifecycle": dyn.NewValue(map[string]dyn.Value{
-						"prevent_destroy": dyn.NewValue(true, nil),
-					}, nil),
-				}, nil),
-			}, nil),
-		}, nil))
-	})
+	b.Config.Resources.Jobs = map[string]*resources.Job{"test_job": {}}
+	err := b.Config.Set(structpath.MustParsePath("resources.apps.test_app.lifecycle.prevent_destroy"), true)
 	require.NoError(t, err)
 
 	actions := []deployplan.Action{

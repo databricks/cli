@@ -2,12 +2,15 @@ package resourcemutator
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -17,31 +20,18 @@ func ExpandPipelineGlobPaths() bundle.Mutator {
 	return &expandPipelineGlobPaths{}
 }
 
-// expandLibrary returns the libraries that replace lib: one per match of its glob path.
+// expandLibrary returns the libraries lib is replaced with.
 func (m *expandPipelineGlobPaths) expandLibrary(ctx context.Context, dir string, lib pipelines.PipelineLibrary) ([]pipelines.PipelineLibrary, error) {
 	// Probe for the path field in the library.
 	var path string
-	var withPath func(path string) pipelines.PipelineLibrary
 	switch {
 	case lib.Notebook != nil && lib.Notebook.Path != "":
 		path = lib.Notebook.Path
-		withPath = func(path string) pipelines.PipelineLibrary {
-			nl, notebook := lib, *lib.Notebook
-			notebook.Path = path
-			nl.Notebook = &notebook
-			return nl
-		}
 	case lib.File != nil && lib.File.Path != "":
 		path = lib.File.Path
-		withPath = func(path string) pipelines.PipelineLibrary {
-			nl, file := lib, *lib.File
-			file.Path = path
-			nl.File = &file
-			return nl
-		}
 	default:
-		// Neither of the library paths were found (or the path is empty). This is likely
-		// an invalid node, but it isn't this mutator's job to enforce that. Return the original value.
+		// Neither of the library paths were found (or the path is empty). This is likely an invalid node,
+		// but it isn't this mutator's job to enforce that. Return the original value.
 		return []pipelines.PipelineLibrary{lib}, nil
 	}
 
@@ -69,31 +59,56 @@ func (m *expandPipelineGlobPaths) expandLibrary(ctx context.Context, dir string,
 		if err != nil {
 			return nil, err
 		}
-		expanded = append(expanded, withPath(filepath.ToSlash(m)))
+		nl := lib
+		if lib.Notebook != nil {
+			notebook := *lib.Notebook
+			notebook.Path = filepath.ToSlash(m)
+			nl.Notebook = &notebook
+		} else {
+			file := *lib.File
+			file.Path = filepath.ToSlash(m)
+			nl.File = &file
+		}
+		expanded = append(expanded, nl)
 	}
 
 	return expanded, nil
 }
 
 func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	p := structpath.MustParsePattern("resources.pipelines.*.libraries")
+
 	// Visit each pipeline's "libraries" field and expand any glob patterns.
-	for _, pipeline := range b.Config.Resources.Pipelines {
+	err := structvar.ForEach(b.Config.View(), p, func(path *structpath.PathNode, value structvar.View) error {
+		if value.Kind() != structvar.KindSequence {
+			return fmt.Errorf("expected sequence, got %s", value.Kind())
+		}
+
+		pipeline := b.Config.Resources.Pipelines[path.KeyAt(2)]
 		if len(pipeline.Libraries) == 0 {
-			continue
+			return nil
 		}
 
 		var expanded []pipelines.PipelineLibrary
-		for _, lib := range pipeline.Libraries {
+		var sources [][]int
+		for i, lib := range pipeline.Libraries {
 			libs, err := m.expandLibrary(ctx, b.BundleRootPath, lib)
 			if err != nil {
-				return diag.FromErr(err)
+				return err
 			}
-			expanded = append(expanded, libs...)
-		}
-		pipeline.Libraries = expanded
-	}
 
-	return nil
+			expanded = append(expanded, libs...)
+			for range libs {
+				sources = append(sources, []int{i})
+			}
+		}
+
+		pipeline.Libraries = expanded
+		b.Config.UpdateSequence(path, sources)
+		return nil
+	})
+
+	return diag.FromErr(err)
 }
 
 func (*expandPipelineGlobPaths) Name() string {

@@ -1,22 +1,24 @@
 package python
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn/merge"
-
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type applyPythonOutputTestCase struct {
 	name string
 
-	input  dyn.Value
-	output dyn.Value
+	input  any
+	output any
 
 	added   []resourcemutator.ResourceKey
 	updated []resourcemutator.ResourceKey
@@ -24,8 +26,8 @@ type applyPythonOutputTestCase struct {
 }
 
 func TestApplyPythonOutput(t *testing.T) {
-	job1 := mapOf("name", dyn.V("job 1"))
-	job2 := mapOf("name", dyn.V("job 2"))
+	job1 := mapOf("name", "job 1")
+	job2 := mapOf("name", "job 2")
 
 	testCases := []applyPythonOutputTestCase{
 		{
@@ -130,10 +132,10 @@ func TestApplyPythonOutput(t *testing.T) {
 		{
 			name: "update job through 'description' insert",
 			input: mapOf("resources", mapOf("jobs",
-				mapOf("job_1", mapOf("name", dyn.V("name"))),
+				mapOf("job_1", mapOf("name", "name")),
 			)),
 			output: mapOf("resources", mapOf("jobs",
-				mapOf("job_1", mapOf2("name", dyn.V("name"), "description", dyn.V("description"))),
+				mapOf("job_1", mapOf2("name", "name", "description", "description")),
 			)),
 			updated: []resourcemutator.ResourceKey{
 				{
@@ -146,10 +148,13 @@ func TestApplyPythonOutput(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			merged, state, err := applyPythonOutput(tc.input, tc.output)
+			input := loadRoot(t, tc.input)
+			output := loadRoot(t, tc.output)
+			plan, state, err := applyPythonOutput(input.View(), output.View())
+			require.NoError(t, err)
 
-			assert.NoError(t, err)
-			assert.Equal(t, tc.output, merged)
+			require.NoError(t, input.Override(plan))
+			assert.Equal(t, output.View().AsAny(), input.View().AsAny())
 
 			assert.ElementsMatch(t, tc.added, state.AddedResources.ToArray())
 			assert.ElementsMatch(t, tc.updated, state.UpdatedResources.ToArray())
@@ -159,36 +164,45 @@ func TestApplyPythonOutput(t *testing.T) {
 }
 
 func TestMergeOutput_disallowDelete(t *testing.T) {
-	input := mapOf("not_resource", dyn.V("value"))
-	output := emptyMap()
+	input := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
+	output := loadRoot(t, emptyMap())
 
-	_, _, err := applyPythonOutput(input, output)
+	_, _, err := applyPythonOutput(input.View(), output.View())
 
-	assert.EqualError(t, err, `unexpected change at "not_resource" (delete)`)
+	assert.EqualError(t, err, `unexpected change at "bundle" (delete)`)
 }
 
 func TestMergeOutput_disallowInsert(t *testing.T) {
-	output := mapOf("not_resource", dyn.V("value"))
-	input := emptyMap()
+	output := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
+	input := loadRoot(t, emptyMap())
 
-	_, _, err := applyPythonOutput(input, output)
+	_, _, err := applyPythonOutput(input.View(), output.View())
 
-	assert.EqualError(t, err, `unexpected change at "not_resource" (insert)`)
+	assert.EqualError(t, err, `unexpected change at "bundle" (insert)`)
 }
 
 func TestMergeOutput_disallowUpdate(t *testing.T) {
-	output := mapOf("not_resource", dyn.V("value"))
-	input := mapOf("not_resource", dyn.V("new value"))
+	output := loadRoot(t, mapOf("bundle", mapOf("name", "value")))
+	input := loadRoot(t, mapOf("bundle", mapOf("name", "new value")))
 
-	_, _, err := applyPythonOutput(input, output)
+	_, _, err := applyPythonOutput(input.View(), output.View())
 
-	assert.EqualError(t, err, `unexpected change at "not_resource" (update)`)
+	assert.EqualError(t, err, `unexpected change at "bundle.name" (update)`)
+}
+
+// loadRoot returns the configuration for the configuration tree v.
+func loadRoot(t *testing.T, v any) *config.Root {
+	raw, err := json.Marshal(v)
+	require.NoError(t, err)
+	r, diags := config.LoadFromBytes("output.json", raw)
+	require.NoError(t, diags.Error())
+	return r
 }
 
 type overrideVisitorOmitemptyTestCase struct {
 	name        string
-	path        dyn.Path
-	left        dyn.Value
+	path        *structpath.PathNode
+	left        any
 	expectedErr error
 }
 
@@ -197,76 +211,70 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 	// there is no semantic difference between empty and missing, so we keep them as they were before
 	// Python code deleted them.
 
-	location := diag.Location{
-		File:   "databricks.yml",
-		Line:   10,
-		Column: 20,
-	}
-
 	testCases := []overrideVisitorOmitemptyTestCase{
 		{
 			name:        "undo delete of empty variables",
-			path:        dyn.MustPathFromString("variables"),
-			left:        dyn.NewValue([]dyn.Value{}, []diag.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
+			path:        structpath.MustParsePath("variables"),
+			left:        &[]string{},
+			expectedErr: structvar.ErrOverrideUndoDelete,
 		},
 		{
 			name:        "undo delete of empty job clusters",
-			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{}, []diag.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
+			path:        structpath.MustParsePath("resources.jobs.job0.job_clusters"),
+			left:        &[]string{},
+			expectedErr: structvar.ErrOverrideUndoDelete,
 		},
 		{
 			name:        "allow delete of non-empty job clusters",
-			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []diag.Location{location})}, []diag.Location{location}),
+			path:        structpath.MustParsePath("resources.jobs.job0.job_clusters"),
+			left:        &[]string{"abc"},
 			expectedErr: nil,
 		},
 		{
 			name:        "undo delete of empty tags",
-			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NewValue(map[string]dyn.Value{}, []diag.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
+			path:        structpath.MustParsePath("resources.jobs.job0.tags"),
+			left:        &map[string]string{},
+			expectedErr: structvar.ErrOverrideUndoDelete,
 		},
 		{
 			name: "allow delete of non-empty tags",
-			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []diag.Location{location})}, []diag.Location{location}),
+			path: structpath.MustParsePath("resources.jobs.job0.tags"),
+			left: &map[string]string{"dev": "true"},
 
 			expectedErr: nil,
 		},
 		{
 			name:        "undo delete of nil",
-			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NilValue.WithLocations([]diag.Location{location}),
-			expectedErr: merge.ErrOverrideUndoDelete,
+			path:        structpath.MustParsePath("resources.jobs.job0.tags"),
+			left:        (*map[string]string)(nil),
+			expectedErr: structvar.ErrOverrideUndoDelete,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, visitor := createOverrideVisitor(dyn.NilValue, dyn.NilValue)
+			_, visitor := createOverrideVisitor(structvar.View{}, structvar.View{})
 
-			err := visitor.VisitDelete(tc.path, tc.left)
+			err := visitor.VisitDelete(tc.path, structvar.NewView(tc.left, nil, nil))
 
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
 }
 
-func mapOf(key string, value dyn.Value) dyn.Value {
-	return dyn.V(map[string]dyn.Value{
+func mapOf(key string, value any) any {
+	return map[string]any{
 		key: value,
-	})
+	}
 }
 
-func mapOf2(key1 string, value1 dyn.Value, key2 string, value2 dyn.Value) dyn.Value {
-	return dyn.V(map[string]dyn.Value{
+func mapOf2(key1 string, value1 any, key2 string, value2 any) any {
+	return map[string]any{
 		key1: value1,
 		key2: value2,
-	})
+	}
 }
 
-func emptyMap() dyn.Value {
-	return dyn.V(map[string]dyn.Value{})
+func emptyMap() any {
+	return map[string]any{}
 }

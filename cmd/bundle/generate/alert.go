@@ -12,9 +12,8 @@ import (
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -141,13 +140,7 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"alerts": dyn.V(map[string]dyn.Value{
-					alertKey: v,
-				}),
-			}),
-		}
+		result := structyaml.M("resources", structyaml.M("alerts", structyaml.M(alertKey, v)))
 
 		// Create config directory if needed
 		if err := os.MkdirAll(configDir, 0o755); err != nil {
@@ -156,11 +149,11 @@ After generation, you can deploy this alert to other targets using:
 
 		// Save configuration file
 		configPath := filepath.Join(configDir, alertKey+".alert.yml")
-		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+		styles := map[string]yaml.Style{
 			"display_name": yaml.DoubleQuotedStyle,
-		})
+		}
 
-		err = saver.SaveAsYAML(result, configPath, force)
+		err = structyaml.Save(configPath, result, force, styles)
 		if err != nil {
 			return err
 		}

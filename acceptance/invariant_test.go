@@ -8,10 +8,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 const invariantConfigsDir = "bundle/invariant/configs"
@@ -88,31 +87,22 @@ func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants ma
 		contents, err := os.ReadFile(path)
 		require.NoError(t, err)
 
-		v, err := yamlloader.LoadYAML(path, strings.NewReader(string(contents)))
-		require.NoError(t, err, "failed to parse %s", path)
-
-		resources := v.Get("resources")
-		if resources.Kind() != dyn.KindMap {
-			// Some configs (e.g. PyDABs) declare resources outside of YAML.
-			continue
+		var doc struct {
+			Resources map[string]any `yaml:"resources"`
 		}
+		require.NoError(t, yaml.Unmarshal(contents, &doc), "failed to parse %s", path)
 
-		for _, group := range resources.MustMap().Pairs() {
-			groupName := group.Key.MustString()
+		// Some configs (e.g. PyDABs) declare resources outside of YAML.
+		for groupName, group := range doc.Resources {
 			present[groupName] = true
 
-			if group.Value.Kind() != dyn.KindMap {
-				continue
-			}
-			for _, resource := range group.Value.MustMap().Pairs() {
-				cfg := resource.Value
-				if cfg.Kind() != dyn.KindMap {
-					continue
-				}
-				if cfg.Get("permissions").Kind() != dyn.KindInvalid {
+			resources, _ := group.(map[string]any)
+			for _, resource := range resources {
+				cfg, _ := resource.(map[string]any)
+				if _, ok := cfg["permissions"]; ok {
 					withPermissions[groupName] = true
 				}
-				if cfg.Get("grants").Kind() != dyn.KindInvalid {
+				if _, ok := cfg["grants"]; ok {
 					withGrants[groupName] = true
 				}
 			}

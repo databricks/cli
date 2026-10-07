@@ -60,6 +60,7 @@ func (*ResourceSecretScopeAcls) PrepareInputConfig(inputConfig *[]resources.Secr
 		Refs: map[string]string{
 			"scope_name": "${" + baseNode + ".name}",
 		},
+		Locations: nil,
 	}, nil
 }
 

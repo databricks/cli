@@ -6,129 +6,86 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReverseInterpolatePreservesBConfigValue(t *testing.T) {
-	// This test verifies that our approach of getting b.Config.Value(),
-	// reverse interpolating it, and wrapping in a new config.Root
-	// does NOT mutate b.Config
+	// This test verifies that reverse interpolating a config returns a new
+	// config.Root and does NOT mutate the original.
 
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "test",
-			},
-		},
-	}
+	root, diags := config.LoadFromBytes("test.yml", []byte(`
+bundle:
+  name: test
+resources:
+  jobs:
+    my_job:
+      name: My Job
+      description: ${databricks_pipeline.my_pipeline.id}
+      max_concurrent_runs: ${databricks_job.other.id}
+`))
+	require.NoError(t, diags.Error())
+	b := &bundle.Bundle{Config: *root}
 
-	err := b.Config.Mutate(func(_ dyn.Value) (dyn.Value, error) {
-		return dyn.V(map[string]dyn.Value{
-			"bundle": dyn.V(map[string]dyn.Value{
-				"name": dyn.V("test"),
-			}),
-			"resources": dyn.V(map[string]dyn.Value{
-				"jobs": dyn.V(map[string]dyn.Value{
-					"my_job": dyn.V(map[string]dyn.Value{
-						"name":       dyn.V("My Job"),
-						"depends_on": dyn.V("${databricks_pipeline.my_pipeline.id}"),
-					}),
-				}),
-			}),
-		}), nil
-	})
+	originalJSON, err := json.Marshal(b.Config.View().AsAny())
 	require.NoError(t, err)
 
-	originalValue := b.Config.Value()
-	originalJSON, err := json.Marshal(originalValue.AsAny())
+	uninterpolatedConfig, err := reverseInterpolateConfig(&b.Config)
 	require.NoError(t, err)
 
-	interpolatedRoot := b.Config.Value()
-
-	uninterpolatedRoot, err := reverseInterpolate(interpolatedRoot)
-	require.NoError(t, err)
-
-	dependsOn, err := dyn.GetByPath(uninterpolatedRoot, dyn.MustPathFromString("resources.jobs.my_job.depends_on"))
-	require.NoError(t, err)
-	dependsOnStr, ok := dependsOn.AsString()
+	uninterpolated := uninterpolatedConfig.View()
+	description, ok := uninterpolated.Lookup(structpath.MustParsePath("resources.jobs.my_job.description")).AsString()
 	require.True(t, ok)
-	assert.Equal(t, "${resources.pipelines.my_pipeline.id}", dependsOnStr, "should be bundle-style after reverse interpolation")
+	assert.Equal(t, "${resources.pipelines.my_pipeline.id}", description, "should be bundle-style after reverse interpolation")
 
-	var uninterpolatedConfig config.Root
-	err = uninterpolatedConfig.Mutate(func(_ dyn.Value) (dyn.Value, error) {
-		return uninterpolatedRoot, nil
-	})
-	require.NoError(t, err)
-
-	afterValue := b.Config.Value()
-	afterJSON, err := json.Marshal(afterValue.AsAny())
-	require.NoError(t, err)
-
-	assert.Equal(t, string(originalJSON), string(afterJSON), "b.Config.Value() should not change")
-
-	originalDependsOn, err := dyn.GetByPath(afterValue, dyn.MustPathFromString("resources.jobs.my_job.depends_on"))
-	require.NoError(t, err)
-	originalDependsOnStr, ok := originalDependsOn.AsString()
+	// References in fields that cannot hold a string are rewritten too.
+	maxRuns, ok := uninterpolated.Lookup(structpath.MustParsePath("resources.jobs.my_job.max_concurrent_runs")).AsString()
 	require.True(t, ok)
-	assert.Equal(t, "${databricks_pipeline.my_pipeline.id}", originalDependsOnStr, "terraform-style reference should be preserved in b.Config")
+	assert.Equal(t, "${resources.jobs.other.id}", maxRuns)
+
+	// Locations are kept.
+	assert.Equal(t, b.Config.GetLocations("resources.jobs.my_job.description"), uninterpolatedConfig.GetLocations("resources.jobs.my_job.description"))
+
+	afterJSON, err := json.Marshal(b.Config.View().AsAny())
+	require.NoError(t, err)
+	assert.Equal(t, string(originalJSON), string(afterJSON), "b.Config should not change")
+
+	originalDescription, ok := b.Config.View().Lookup(structpath.MustParsePath("resources.jobs.my_job.description")).AsString()
+	require.True(t, ok)
+	assert.Equal(t, "${databricks_pipeline.my_pipeline.id}", originalDescription, "terraform-style reference should be preserved in b.Config")
 }
 
 func TestReverseInterpolate(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    dyn.Value
-		expected dyn.Value
+		input    string
+		expected string
 	}{
 		{
-			name: "converts terraform-style job reference to bundle-style",
-			input: dyn.V(map[string]dyn.Value{
-				"job_id": dyn.V("${databricks_job.my_job.id}"),
-			}),
-			expected: dyn.V(map[string]dyn.Value{
-				"job_id": dyn.V("${resources.jobs.my_job.id}"),
-			}),
+			name:     "converts terraform-style job reference to bundle-style",
+			input:    "${databricks_job.my_job.id}",
+			expected: "${resources.jobs.my_job.id}",
 		},
 		{
-			name: "leaves bundle-style references unchanged",
-			input: dyn.V(map[string]dyn.Value{
-				"pipeline_id": dyn.V("${resources.pipelines.my_pipeline.id}"),
-			}),
-			expected: dyn.V(map[string]dyn.Value{
-				"pipeline_id": dyn.V("${resources.pipelines.my_pipeline.id}"),
-			}),
+			name:     "leaves bundle-style references unchanged",
+			input:    "${resources.pipelines.my_pipeline.id}",
+			expected: "${resources.pipelines.my_pipeline.id}",
 		},
 		{
-			name: "handles nested paths",
-			input: dyn.V(map[string]dyn.Value{
-				"config": dyn.V(map[string]dyn.Value{
-					"source": dyn.V("${databricks_pipeline.my_pipeline.url}"),
-				}),
-			}),
-			expected: dyn.V(map[string]dyn.Value{
-				"config": dyn.V(map[string]dyn.Value{
-					"source": dyn.V("${resources.pipelines.my_pipeline.url}"),
-				}),
-			}),
+			name:     "handles nested paths",
+			input:    "${databricks_pipeline.my_pipeline.url}",
+			expected: "${resources.pipelines.my_pipeline.url}",
 		},
 		{
-			name: "skips unknown terraform resource types",
-			input: dyn.V(map[string]dyn.Value{
-				"unknown": dyn.V("${unknown_resource.my_resource.id}"),
-			}),
-			expected: dyn.V(map[string]dyn.Value{
-				"unknown": dyn.V("${unknown_resource.my_resource.id}"),
-			}),
+			name:     "skips unknown terraform resource types",
+			input:    "${unknown_resource.my_resource.id}",
+			expected: "${unknown_resource.my_resource.id}",
 		},
 		{
-			name: "handles multiple references in one value",
-			input: dyn.V(map[string]dyn.Value{
-				"combined": dyn.V("${databricks_job.job1.id}/${databricks_pipeline.pipeline1.id}"),
-			}),
-			expected: dyn.V(map[string]dyn.Value{
-				"combined": dyn.V("${resources.jobs.job1.id}/${resources.pipelines.pipeline1.id}"),
-			}),
+			name:     "handles multiple references in one value",
+			input:    "${databricks_job.job1.id}/${databricks_pipeline.pipeline1.id}",
+			expected: "${resources.jobs.job1.id}/${resources.pipelines.pipeline1.id}",
 		},
 	}
 
@@ -136,7 +93,7 @@ func TestReverseInterpolate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := reverseInterpolate(tt.input)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expected.AsAny(), result.AsAny())
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

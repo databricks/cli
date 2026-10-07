@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type processRootIncludes struct{}
@@ -37,12 +38,11 @@ func hasGlobCharacters(path string) (string, bool) {
 }
 
 func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var out []bundle.Mutator
+	var out []*processInclude
 
 	// Preserve the raw include patterns before they are replaced below with the
 	// expanded list of loaded files, so IsFileIncluded can re-match against them.
-	patterns := b.Config.Include
-	b.SetIncludePatterns(patterns)
+	b.SetIncludePatterns(b.Config.Include)
 
 	// Map with files we've already seen to avoid loading them twice.
 	seen := map[string]bool{}
@@ -127,25 +127,40 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		slices.Sort(includes)
 		files = append(files, includes...)
 		for _, include := range includes {
-			out = append(out, ProcessInclude(filepath.Join(b.BundleRootPath, include), include))
+			out = append(out, &processInclude{fullPath: filepath.Join(b.BundleRootPath, include), relPath: include})
 		}
+	}
+
+	// Swap out the original includes list with the expanded globs.
+	// Include is omitempty in the typed configuration, so an empty list must stay
+	// absent rather than be written as [].
+	b.Config.Include = nil
+	if len(files) > 0 {
+		b.Config.Include = files
 	}
 
 	// Track number of bundle YAML (or JSON) files in the configuration. The +1 is there
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	// ProcessInclude merges into the configuration via [config.Root.Merge], so it does
-	// not need its own mutator scope. Giving each included file one would re-convert the
-	// whole accumulated configuration per file, making load quadratic in the number of
-	// included files (~20 minutes for 6000 files).
-	bundle.ApplySeqInScopeContext(ctx, b, out...)
+	// Load all included files first and merge them into the configuration at once.
+	// Merging them one by one would convert the whole accumulated configuration per
+	// file, making load quadratic in the number of included files.
+	var roots []*config.Root
+	for _, m := range out {
+		this, diags := m.load()
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
+		if diags.HasError() {
+			return nil
+		}
+		roots = append(roots, this)
+	}
 
-	// Swap out the original include patterns with the expanded globs. This is done after
-	// the includes are merged: [config.Root.Merge] reloads the typed configuration from
-	// the dynamic tree, which still holds the patterns, followed by the include sections
-	// of included files (merging concatenates sequences). Those are kept as they are.
-	// Include is omitempty, so an empty list is absent from the configuration.
-	b.Config.Include = append(files, b.Config.Include[len(patterns):]...)
+	err := b.Config.Merge(roots...)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	return nil
 }

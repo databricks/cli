@@ -8,9 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -27,12 +24,8 @@ type annotationHandler struct {
 // Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
 func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandler, error) {
-	merged, err := mergeAnnotationFiles(extracted, fromFile)
-	if err != nil {
-		return nil, err
-	}
 	return &annotationHandler{
-		parsedAnnotations:  merged,
+		parsedAnnotations:  mergeAnnotationFiles(extracted, fromFile),
 		fileAnnotations:    fromFile,
 		missingAnnotations: annotation.File{},
 	}, nil
@@ -79,25 +72,42 @@ func isEmptyDescriptor(d annotation.Descriptor) bool {
 // mergeAnnotationFiles merges later layers over earlier ones with the same
 // semantics the on-disk annotation files used to be merged with: maps merge
 // recursively, scalars take the later value, sequences concatenate.
-func mergeAnnotationFiles(files ...annotation.File) (annotation.File, error) {
-	prev := dyn.NilValue
+func mergeAnnotationFiles(files ...annotation.File) annotation.File {
+	merged := annotation.File{}
 	for _, f := range files {
-		v, err := convert.FromTyped(f, dyn.NilValue)
-		if err != nil {
-			return nil, err
-		}
-		prev, err = merge.Merge(prev, v)
-		if err != nil {
-			return nil, err
+		for typeKey, ta := range f {
+			merged.SetSelf(typeKey, mergeDescriptor(merged[typeKey].Self, ta.Self))
+			for name, d := range ta.Fields {
+				merged.SetField(typeKey, name, mergeDescriptor(merged[typeKey].Fields[name], d))
+			}
 		}
 	}
+	return merged
+}
 
-	var data annotation.File
-	err := convert.ToTyped(&data, prev)
-	if err != nil {
-		return nil, err
+// mergeDescriptor merges the set fields of b over a: maps merge by key, sequences
+// concatenate and other values are replaced.
+func mergeDescriptor(a, b annotation.Descriptor) annotation.Descriptor {
+	dst, src := reflect.ValueOf(&a).Elem(), reflect.ValueOf(b)
+	for i := range dst.NumField() {
+		f, g := dst.Field(i), src.Field(i)
+		switch {
+		case g.IsZero():
+		case f.Kind() == reflect.Slice:
+			f.Set(reflect.AppendSlice(reflect.AppendSlice(reflect.Zero(f.Type()), f), g))
+		case f.Kind() == reflect.Map:
+			m := reflect.MakeMap(f.Type())
+			for _, v := range []reflect.Value{f, g} {
+				for iter := v.MapRange(); iter.Next(); {
+					m.SetMapIndex(iter.Key(), iter.Value())
+				}
+			}
+			f.Set(m)
+		default:
+			f.Set(g)
+		}
 	}
-	return data, nil
+	return a
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
@@ -125,10 +135,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 // descriptions for fields that have no documentation anywhere. Entries for
 // fields that no longer exist in the config are dropped with a warning.
 func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typeGraph) error {
-	updated, err := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
-	if err != nil {
-		return err
-	}
+	updated := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
 
 	detached, err := saveAnnotationsFile(outputPath, updated, g)
 	if err != nil {

@@ -2,11 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"maps"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,7 +102,6 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, root.initializeDynamicValue())
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
@@ -156,7 +157,6 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, root.initializeDynamicValue())
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
 	assert.Equal(t, "foo var", root.Variables["foo"].Description)
@@ -172,83 +172,138 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 
 func TestIsFullVariableOverrideDef(t *testing.T) {
 	testCases := []struct {
-		value    dyn.Value
+		value    map[string]any
 		expected bool
 	}{
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type":        dyn.V("string"),
-				"default":     dyn.V("foo"),
-				"description": dyn.V("foo var"),
-			}),
+			value: map[string]any{
+				"type":        "string",
+				"default":     "foo",
+				"description": "foo var",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type":        dyn.V("string"),
-				"lookup":      dyn.V("foo"),
-				"description": dyn.V("foo var"),
-			}),
+			value: map[string]any{
+				"type":        "string",
+				"lookup":      "foo",
+				"description": "foo var",
+			},
 			expected: false,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type":    dyn.V("string"),
-				"default": dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"type":    "string",
+				"default": "foo",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type":   dyn.V("string"),
-				"lookup": dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"type":   "string",
+				"lookup": "foo",
+			},
 			expected: false,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"description": dyn.V("string"),
-				"default":     dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"description": "string",
+				"default":     "foo",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"description": dyn.V("string"),
-				"lookup":      dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"description": "string",
+				"lookup":      "foo",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"default": dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"default": "foo",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"lookup": dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"lookup": "foo",
+			},
 			expected: true,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type": dyn.V("string"),
-			}),
+			value: map[string]any{
+				"type": "string",
+			},
 			expected: false,
 		},
 		{
-			value: dyn.V(map[string]dyn.Value{
-				"type":        dyn.V("string"),
-				"default":     dyn.V("foo"),
-				"description": dyn.V("foo var"),
-				"lookup":      dyn.V("foo"),
-			}),
+			value: map[string]any{
+				"type":        "string",
+				"default":     "foo",
+				"description": "foo var",
+				"lookup":      "foo",
+			},
 			expected: false,
 		},
 	}
 
 	for i, tc := range testCases {
-		assert.Equal(t, tc.expected, isFullVariableOverrideDef(tc.value), "test case %d", i)
+		keys := slices.Collect(maps.Keys(tc.value))
+		assert.Equal(t, tc.expected, isFullVariableOverrideDef(keys), "test case %d", i)
 	}
+}
+
+func TestLoadFromBytesNotAMap(t *testing.T) {
+	for _, content := range []string{"hello\n", "- a\n- b\n"} {
+		r, diags := LoadFromBytes("databricks.yml", []byte(content))
+		assert.Nil(t, r)
+		assert.ErrorContains(t, diags.Error(), "failed to load databricks.yml")
+	}
+}
+
+func TestMergeComplexVariableSequenceDefaults(t *testing.T) {
+	a, diags := LoadFromBytes("a.yml", []byte("variables:\n  v:\n    type: complex\n    default: [1, 2]\n"))
+	require.NoError(t, diags.Error())
+	b, diags := LoadFromBytes("b.yml", []byte("variables:\n  v:\n    type: complex\n    default: [3]\n"))
+	require.NoError(t, diags.Error())
+	require.NoError(t, a.Merge(b))
+	assert.Equal(t, []any{1, 2, 3}, a.Variables["v"].Default)
+}
+
+func TestTargetVariableShorthandThroughAliases(t *testing.T) {
+	r, diags := LoadFromBytes("a.yml", []byte(`
+x: &dev dev_value
+y: &common {b: from_anchor, c: from_anchor}
+variables:
+  a: {default: d}
+  b: {default: d}
+  c: {default: d}
+targets:
+  dev:
+    variables:
+      <<: *common
+      a: *dev
+      c: explicit
+`))
+	require.NoError(t, diags.Error())
+	require.NoError(t, r.MergeTargetOverrides("dev"))
+	assert.Equal(t, "dev_value", r.Variables["a"].Default)
+	assert.Equal(t, "from_anchor", r.Variables["b"].Default)
+	assert.Equal(t, "explicit", r.Variables["c"].Default)
+}
+
+func TestNestedYAMLAnchorCycle(t *testing.T) {
+	_, diags := LoadFromBytes("a.yml", []byte("variables:\n  v:\n    default: &x {a: [*x]}\n"))
+	assert.ErrorContains(t, diags.Error(), `cyclic reference to anchor "x"`)
+}
+
+func TestSetReferenceAtPointerField(t *testing.T) {
+	r, diags := LoadFromBytes("a.yml", []byte("resources:\n  jobs:\n    j:\n      name: j\n"))
+	require.NoError(t, diags.Error())
+	path := structpath.MustParsePath("resources.jobs.j.trigger")
+	require.NoError(t, r.SetReference(path, "${var.t}"))
+	s, ok := r.View().Lookup(path).AsString()
+	require.True(t, ok)
+	assert.Equal(t, "${var.t}", s)
 }

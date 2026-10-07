@@ -8,7 +8,8 @@ import (
 	"github.com/databricks/cli/bundle"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type rewriteSyncPaths struct{}
@@ -21,9 +22,8 @@ func (m *rewriteSyncPaths) Name() string {
 	return "RewriteSyncPaths"
 }
 
-// makeRelativeTo returns a dyn.MapFunc that joins the relative path
-// of the file it was defined in w.r.t. the bundle root path, with
-// the contents of the string node.
+// makeRelativeTo joins the relative path of the file the string node was
+// defined in w.r.t. the bundle root path, with the contents of the string node.
 //
 // For example:
 //   - The bundle root is /foo
@@ -31,63 +31,46 @@ func (m *rewriteSyncPaths) Name() string {
 //   - The string node contains "somefile.*"
 //
 // Then the resulting value will be "bar/somefile.*".
-func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
-	return func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-		dir := filepath.Dir(v.Location().File)
-		rel, err := filepath.Rel(root, dir)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Locations()), nil
+func (m *rewriteSyncPaths) makeRelativeTo(root string, v structvar.View) (string, error) {
+	dir := filepath.Dir(v.Location().File)
+	rel, err := filepath.Rel(root, dir)
+	if err != nil {
+		return "", err
 	}
+
+	s, ok := v.AsString()
+	if !ok {
+		return "", fmt.Errorf("expected string value but got %s", v.Kind())
+	}
+
+	return filepath.Join(rel, s), nil
 }
 
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
-			v, err = dyn.Map(v, "paths", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
+	rewrite := func(field string, toSlash bool) error {
+		pattern := structpath.MustParsePattern("sync." + field + "[*]")
+		return structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, v structvar.View) error {
+			path, err := m.makeRelativeTo(b.BundleRootPath, v)
 			if err != nil {
-				return dyn.InvalidValue, err
+				return err
 			}
-
-			makeRelativeFn := m.makeRelativeTo(b.BundleRootPath)
-
-			// Makes include and exclude paths relative to the bundle root first.
-			// Then converts them to use Unix-style slashes.
-			// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
-			v, err = dyn.Map(v, "include", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := makeRelativeFn(p, val)
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-				str, ok := relPath.AsString()
-				if !ok {
-					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
-				}
-				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
-			}))
-			if err != nil {
-				return dyn.InvalidValue, err
+			if toSlash {
+				path = filepath.ToSlash(path)
 			}
-
-			v, err = dyn.Map(v, "exclude", dyn.Foreach(func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-				relPath, err := makeRelativeFn(p, val)
-				if err != nil {
-					return dyn.InvalidValue, err
-				}
-				str, ok := relPath.AsString()
-				if !ok {
-					return dyn.InvalidValue, fmt.Errorf("expected string value but got %s", relPath.Kind())
-				}
-				return dyn.NewValue(filepath.ToSlash(str), relPath.Locations()), nil
-			}))
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-			return v, nil
+			return b.Config.Set(p, path)
 		})
-	})
+	}
+
+	// Makes include and exclude paths relative to the bundle root first.
+	// Then converts them to use Unix-style slashes.
+	// This is required for the ignore.GitIgnore we use in libs/fileset to work correctly.
+	err := rewrite("paths", false)
+	if err == nil {
+		err = rewrite("include", true)
+	}
+	if err == nil {
+		err = rewrite("exclude", true)
+	}
 
 	return diag.FromErr(err)
 }

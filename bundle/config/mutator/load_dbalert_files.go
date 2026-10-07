@@ -11,9 +11,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -57,26 +56,21 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			continue
 		}
 
-		alertV, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key("alerts"), dyn.Key(alertKey)))
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		alertPath := structpath.NewStringKeys(nil, "resources", "alerts", alertKey)
+		alertV := b.Config.View().Lookup(alertPath)
 
 		// No other fields other than allowedInYAML should be set in the bundle YAML.
-		m, ok := alertV.AsMap()
-		if !ok {
+		if alertV.Kind() != structvar.KindMap {
 			return diag.FromErr(fmt.Errorf("internal error: alert value is not a map, got %s", alertV.Kind()))
 		}
 
-		for _, p := range m.Pairs() {
-			k := p.Key.MustString()
-			v := p.Value
+		for k, v := range alertV.MapItems() {
 
 			if slices.Contains(allowedInYAML, k) {
 				continue
 			}
 
-			if v.Kind() == dyn.KindNil || v.Kind() == dyn.KindInvalid {
+			if v.Kind() == structvar.KindNil || v.Kind() == structvar.KindInvalid {
 				continue
 			}
 
@@ -86,7 +80,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
 					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
-					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, k),
+					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, k)},
 					Locations: v.Locations(),
 				},
 			}
@@ -108,7 +102,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
+					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -123,21 +117,21 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
+					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
 		}
 
 		// Check that the file does not have any variable interpolations.
-		if dynvar.ContainsVariableReference(string(content)) {
+		if structvar.ContainsVariableReference(string(content)) {
 			return diag.Diagnostics{
 				{
 					ID:        diag.ID(""),
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
 					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
-					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
+					Paths:     []*structpath.PathNode{structpath.NewStringKey(alertPath, "file_path")},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}

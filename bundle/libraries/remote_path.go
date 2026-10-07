@@ -11,8 +11,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // LocalLibraryPaths returns the local file paths of all libraries in the bundle
@@ -101,25 +102,20 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 	sources := slices.Sorted(maps.Keys(libs))
 
 	// Update all the config paths to point to the uploaded location
-	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		for _, source := range sources {
-			locations := libs[source]
-			remotePath := path.Join(uploadPath, filepath.Base(source))
+	for _, source := range sources {
+		locations := libs[source]
+		remotePath := path.Join(uploadPath, filepath.Base(source))
 
-			for _, location := range locations {
-				// Re-append the extras suffix that was stripped before upload.
-				remotePathWithExtras := remotePath + location.extras
-				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePathWithExtras, []diag.Location{location.location}))
-				if err != nil {
-					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePathWithExtras, err)
-				}
+		for _, location := range locations {
+			// Re-append the extras suffix that was stripped before upload.
+			remotePathWithExtras := remotePath + location.extras
+			err = b.Config.Set(location.configPath, remotePathWithExtras)
+			if err != nil {
+				diags = diags.Extend(diag.FromErr(fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePathWithExtras, err)))
+				return libs, diags
 			}
+			b.Config.SetLocations(location.configPath, []diag.Location{location.location})
 		}
-
-		return v, nil
-	})
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	return libs, diags
@@ -134,15 +130,15 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, error) {
 	libs := make(map[string]([]LocationToUpdate))
 
-	patterns := []dyn.Pattern{
-		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		envDepsPattern.Append(dyn.AnyIndex()),
-		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
+	patterns := []*structpath.PatternNode{
+		structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].whl"),
+		structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].jar"),
+		structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].whl"),
+		structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].jar"),
+		structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].whl"),
+		structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].jar"),
+		structpath.MustParsePattern(envDepsPattern.String() + "[*]"),
+		structpath.MustParsePattern(pipelineEnvDepsPattern.String() + "[*]"),
 		// The AI Runtime task's code_source_path is a local archive (typically an
 		// artifact-built .tar.gz) that must be uploaded and referenced by its remote
 		// path, exactly like a wheel or jar library.
@@ -150,75 +146,63 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		forEachAiRuntimeCodeSourcePattern,
 	}
 
+	root := b.Config.View()
 	for _, pattern := range patterns {
-		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				source, ok := v.AsString()
-				if !ok {
-					return v, fmt.Errorf("expected string, got %s", v.Kind())
-				}
+		err := structvar.ForEach(root, pattern, func(p *structpath.PathNode, v structvar.View) error {
+			source, ok := v.AsString()
+			if !ok {
+				return fmt.Errorf("expected string, got %s", v.Kind())
+			}
 
-				if !IsLibraryLocal(source) {
-					return v, nil
-				}
+			if !IsLibraryLocal(source) {
+				return nil
+			}
 
-				// Split off any pip extras suffix so the upload targets the real
-				// file; the suffix is re-appended to the remote path afterwards.
-				source, extras := patchwheel.SplitWheelExtras(source)
+			// Split off any pip extras suffix so the upload targets the real
+			// file; the suffix is re-appended to the remote path afterwards.
+			source, extras := patchwheel.SplitWheelExtras(source)
 
-				source = filepath.Join(b.SyncRootPath, source)
-				libs[source] = append(libs[source], LocationToUpdate{
-					configPath: p,
-					location:   v.Location(),
-					extras:     extras,
-				})
-
-				return v, nil
+			source = filepath.Join(b.SyncRootPath, source)
+			libs[source] = append(libs[source], LocationToUpdate{
+				configPath: p,
+				location:   v.Location(),
+				extras:     extras,
 			})
+
+			return nil
 		})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	artifactPattern := dyn.NewPattern(
-		dyn.Key("artifacts"),
-		dyn.AnyKey(),
-		dyn.Key("files"),
-		dyn.AnyIndex(),
-	)
+	artifactPattern := structpath.MustParsePattern("artifacts.*.files[*]")
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(v, artifactPattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			file, ok := v.AsMap()
-			if !ok {
-				return v, fmt.Errorf("expected map, got %s", v.Kind())
-			}
+	err := structvar.ForEach(root, artifactPattern, func(p *structpath.PathNode, v structvar.View) error {
+		if v.Kind() != structvar.KindMap {
+			return fmt.Errorf("expected map, got %s", v.Kind())
+		}
 
-			sv, ok := file.GetByString("source")
-			if !ok {
-				return v, nil
-			}
+		sv := v.Get("source")
+		if !sv.IsValid() {
+			return nil
+		}
 
-			source, ok := sv.AsString()
-			if !ok {
-				return v, fmt.Errorf("expected string, got %s", v.Kind())
-			}
+		source, ok := sv.AsString()
+		if !ok {
+			return fmt.Errorf("expected string, got %s", v.Kind())
+		}
 
-			if sv, ok = file.GetByString("patched"); ok {
-				patched, ok := sv.AsString()
-				if ok && patched != "" {
-					source = patched
-				}
-			}
+		if patched, ok := v.Get("patched").AsString(); ok && patched != "" {
+			source = patched
+		}
 
-			libs[source] = append(libs[source], LocationToUpdate{
-				configPath: p.Append(dyn.Key("remote_path")),
-				location:   v.Location(),
-			})
-
-			return v, nil
+		libs[source] = append(libs[source], LocationToUpdate{
+			configPath: structpath.NewStringKey(p, "remote_path"),
+			location:   v.Location(),
 		})
+
+		return nil
 	})
 	if err != nil {
 		return nil, err

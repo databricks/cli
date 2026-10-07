@@ -3,9 +3,12 @@ package resourcemutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/databricks/cli/libs/dyn"
 )
 
 type getResourceKeyTestCase struct {
@@ -38,7 +41,7 @@ func TestGetResourceKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.path, func(t *testing.T) {
-			key, err := getResourceKey(dyn.MustPathFromString(tc.path))
+			key, err := getResourceKey(structpath.MustParsePath(tc.path))
 			if tc.err {
 				assert.Error(t, err)
 			} else {
@@ -51,29 +54,23 @@ func TestGetResourceKey(t *testing.T) {
 
 type resourceKeySetAddTestCase struct {
 	name     string
-	pattern  dyn.Pattern
-	root     dyn.Value
+	pattern  *structpath.PatternNode
+	root     structvar.View
 	expected []ResourceKey
 }
 
 func TestResourceKeySet_AddPattern(t *testing.T) {
-	root := dyn.V(map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"jobs": dyn.V(map[string]dyn.Value{
-				"job_1": dyn.V(map[string]dyn.Value{
-					"name": dyn.V("job_1"),
-				}),
-				"job_2": dyn.V(map[string]dyn.Value{
-					"name": dyn.V("job_2"),
-				}),
-			}),
-		}),
-	})
+	var cfg config.Root
+	cfg.Resources.Jobs = map[string]*resources.Job{
+		"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
+		"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
+	}
+	root := cfg.View()
 
 	testCases := []resourceKeySetAddTestCase{
 		{
 			name:    "one job pattern",
-			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key("job_1")),
+			pattern: structpath.MustParsePattern("resources.jobs.job_1"),
 			root:    root,
 			expected: []ResourceKey{
 				{
@@ -84,7 +81,7 @@ func TestResourceKeySet_AddPattern(t *testing.T) {
 		},
 		{
 			name:    "all resources pattern",
-			pattern: dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+			pattern: structpath.MustParsePattern("resources.*.*"),
 			root:    root,
 			expected: []ResourceKey{
 				{

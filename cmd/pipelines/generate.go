@@ -10,12 +10,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -83,8 +80,7 @@ Use --existing-pipeline-dir to generate pipeline configuration from spark-pipeli
 			return fmt.Errorf("failed to construct .pipeline.yml: %w", err)
 		}
 
-		saver := yamlsaver.NewSaver()
-		err = saver.SaveAsYAML(resourcesMap, outputFile, force)
+		err = structyaml.Save(outputFile, resourcesMap, force, nil)
 		if err != nil {
 			return err
 		}
@@ -208,31 +204,21 @@ func parseSparkPipelineYAML(ctx context.Context, filePath string) (*sdpPipeline,
 	}
 	defer file.Close()
 
-	dv, err := yamlloader.LoadYAML(filePath, file)
+	out := sdpPipeline{}
+	_, diags, err := structvar.DecodeYAML(filePath, file, &out)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", filePath, err)
-	}
-
-	out := sdpPipeline{}
-	normalized, diags := convert.Normalize(&out, dv)
-	if diags.HasError() {
-		return nil, fmt.Errorf("failed to parse %s: %w", filePath, diags.Error())
 	}
 
 	for _, diag := range diags {
 		logdiag.LogDiag(ctx, diag)
 	}
 
-	err = convert.ToTyped(&out, normalized)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", filePath, diags.Error())
-	}
-
 	return &out, nil
 }
 
 // convertToResources converts a spark-pipeline.yml spec to DABs YAML format with "resources" property
-func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[string]dyn.Value, error) {
+func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (structyaml.Map, error) {
 	// YAML paths are relative to directory containing YAML file, in this case:
 	// DABs YAML is in "./resources/<directoryName>.pipeline.yml"
 	// SDP YAML is in "./<pipelineDirectoryPath>/spark-pipeline.yml"
@@ -256,55 +242,29 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 		},
 	}
 
-	environmentDyn, err := convert.FromTyped(environment, dyn.NilValue)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert environments into dyn.Value: %w", err)
-	}
-
-	librariesDyn, err := convertLibraries(relativePath, spec.Libraries)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
-	}
-
-	// maps are unordered, and saver is sorting keys by diag.Location
-	// this is helper function to monotonically assign locations as keys are created
-	var line int
-	nextLocation := func() []diag.Location {
-		line += 1
-		return []diag.Location{{Line: line}}
-	}
-
-	pipelineMap := map[string]dyn.Value{
-		"name":       dyn.V(spec.Name).WithLocations(nextLocation()),
-		"catalog":    dyn.V(catalog).WithLocations(nextLocation()),
-		"schema":     dyn.V(schema).WithLocations(nextLocation()),
-		"root_path":  dyn.V(relativePath).WithLocations(nextLocation()),
-		"serverless": dyn.V(true).WithLocations(nextLocation()),
-		"libraries":  librariesDyn.WithLocations(nextLocation()),
-	}
+	// Keys are written in the order they are added.
+	pipelineMap := structyaml.M(
+		"name", spec.Name,
+		"catalog", catalog,
+		"schema", schema,
+		"root_path", relativePath,
+		"serverless", true,
+		"libraries", convertLibraries(relativePath, spec.Libraries),
+	)
 
 	// configuration is optional field, skip if empty
 	if spec.Configuration != nil {
-		dv, err := convert.FromTyped(spec.Configuration, dyn.NilValue)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert configuration into dyn.Value: %w", err)
-		}
-
-		// NB: golang maps are unordered, and currently we don't preserve the order
-		pipelineMap["configuration"] = dv.WithLocations(nextLocation())
+		pipelineMap.Add("configuration", structyaml.Value(spec.Configuration))
 	}
 
-	pipelineMap["environment"] = environmentDyn.WithLocations(nextLocation())
+	pipelineMap.Add("environment", structyaml.Value(environment))
 
-	resourcesMap := map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"pipelines": dyn.V(map[string]dyn.Value{
-				resourceName: dyn.V(pipelineMap),
-			}),
-		}),
+	resourcesMap := structyaml.M("resources", structyaml.M("pipelines", structyaml.M(resourceName, pipelineMap)))
+
+	_, diag, err := structvar.DecodeYAMLNode("", structyaml.Node(resourcesMap, nil), &config.Root{}, nil)
+	if err != nil {
+		return nil, err
 	}
-
-	_, diag := convert.Normalize(&config.Root{}, dyn.V(resourcesMap))
 	if len(diag) > 0 {
 		return nil, fmt.Errorf("generated output doesn't match expected schema: %v", diag)
 	}
@@ -316,7 +276,7 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 //
 // relativePath contains a path to append into SDP libraries path to make
 // them relative to generated DABs YAML
-func convertLibraries(relativePath string, specLibraries []sdpPipelineLibrary) (dyn.Value, error) {
+func convertLibraries(relativePath string, specLibraries []sdpPipelineLibrary) any {
 	var libraries []pipelines.PipelineLibrary
 
 	for _, lib := range specLibraries {
@@ -329,16 +289,11 @@ func convertLibraries(relativePath string, specLibraries []sdpPipelineLibrary) (
 		}
 	}
 
-	librariesDyn, err := convert.FromTyped(libraries, dyn.NilValue)
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
+	// Value returns nil if libraries is an empty array
+	if v := structyaml.Value(libraries); v != nil {
+		return v
 	}
 
-	// FromTyped returns NilValue if libraries is an empty array
-	if librariesDyn.Kind() == dyn.KindNil {
-		// we always want to leave empty array as a placeholder in generated YAML
-		return dyn.V([]dyn.Value{}), nil
-	}
-
-	return librariesDyn, nil
+	// we always want to leave empty array as a placeholder in generated YAML
+	return []any{}
 }

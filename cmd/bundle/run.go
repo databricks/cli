@@ -21,10 +21,10 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/spf13/cobra"
 )
 
@@ -189,7 +189,7 @@ Example usage:
 				// runner sees concrete values (e.g. an app's env vars referencing another
 				// resource, or its source_code_path pointing at the immutable snapshot's
 				// full_path, which lives only in the deployed state).
-				target := dyn.NewPath(dyn.Key("resources"), dyn.Key(ref.Description.PluralName), dyn.Key(ref.Key))
+				target := structpath.NewStringKeys(nil, "resources", ref.Description.PluralName, ref.Key)
 				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config, target); err != nil {
 					return err
 				}

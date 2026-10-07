@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // evaluateTemplate evaluates a template string like "${resources.pipelines.bar.cluster[0].label}"
 // by looking up each ${...} reference from TF state.
 func evaluateTemplate(state TFStateAttrs, template string) (string, error) {
-	ref, ok := dynvar.NewRef(dyn.V(template))
+	ref, ok := structvar.NewRef(template)
 	if !ok {
 		return template, nil
 	}

@@ -5,9 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/structs/structyaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -174,38 +172,27 @@ func TestConvertToResources(t *testing.T) {
 		},
 	}
 
-	expected := map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"pipelines": dyn.V(map[string]dyn.Value{
-				"my_pipeline": dyn.V(map[string]dyn.Value{
-					"name":       dyn.V("My Pipeline").WithLocations([]diag.Location{{Line: 1}}),
-					"catalog":    dyn.V("${var.catalog}").WithLocations([]diag.Location{{Line: 2}}),
-					"schema":     dyn.V("${var.schema}").WithLocations([]diag.Location{{Line: 3}}),
-					"root_path":  dyn.V("../src/my_pipeline").WithLocations([]diag.Location{{Line: 4}}),
-					"serverless": dyn.V(true).WithLocations([]diag.Location{{Line: 5}}),
-					"libraries": dyn.V([]dyn.Value{
-						dyn.V(map[string]dyn.Value{
-							"glob": dyn.V(map[string]dyn.Value{
-								"include": dyn.V("../src/my_pipeline/transformations/**"),
-							}),
-						}),
-					}).WithLocations([]diag.Location{{Line: 6}}),
-					"configuration": dyn.V(map[string]dyn.Value{
-						"key0": dyn.V("value0"),
-						"key1": dyn.V("value1"),
-					}).WithLocations([]diag.Location{{Line: 7}}),
-					"environment": dyn.V(map[string]dyn.Value{
-						"dependencies": dyn.V([]dyn.Value{
-							dyn.V("--editable ${workspace.file_path}"),
-						}),
-					}).WithLocations([]diag.Location{{Line: 8}}),
-				}),
-			}),
-		}),
-	}
+	expected := structyaml.M(
+		"resources", structyaml.M(
+			"pipelines", structyaml.M(
+				"my_pipeline", structyaml.M(
+					"name", "My Pipeline",
+					"catalog", "${var.catalog}",
+					"schema", "${var.schema}",
+					"root_path", "../src/my_pipeline",
+					"serverless", true,
+					"libraries", []any{
+						structyaml.M("glob", structyaml.M("include", "../src/my_pipeline/transformations/**")),
+					},
+					"configuration", structyaml.M("key0", "value0", "key1", "value1"),
+					"environment", structyaml.M("dependencies", []any{"--editable ${workspace.file_path}"}),
+				),
+			),
+		),
+	)
 
 	actual, err := convertToResources(&input, "my_pipeline", "src/my_pipeline")
 	require.NoError(t, err)
 
-	dynassert.Equal(t, dyn.V(expected), dyn.V(actual))
+	assert.Equal(t, expected, actual)
 }

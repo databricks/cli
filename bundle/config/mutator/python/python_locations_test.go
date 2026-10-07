@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,42 +17,25 @@ func TestMergeLocations(t *testing.T) {
 	yamlLocation := diag.Location{File: "foo.yml", Line: 1, Column: 1}
 
 	locations := newPythonLocations()
-	putPythonLocation(locations, dyn.MustPathFromString("foo"), pythonLocation)
+	putPythonLocation(locations, structpath.MustParsePath("foo"), pythonLocation)
 
-	input := dyn.NewValue(
-		map[string]dyn.Value{
-			"foo": dyn.V(
-				map[string]dyn.Value{
-					"baz": dyn.NewValue("baz", []diag.Location{yamlLocation}),
-					"qux": dyn.NewValue("baz", []diag.Location{generatedLocation, yamlLocation}),
-				},
-			),
-			"bar": dyn.NewValue("baz", []diag.Location{generatedLocation}),
-		},
-		[]diag.Location{yamlLocation},
-	)
+	mapper := mergePythonLocations(locations)
+	at := func(path string, locs ...diag.Location) []diag.Location {
+		var p *structpath.PathNode
+		if path != "" {
+			p = structpath.MustParsePath(path)
+		}
+		return mapper(p, locs)
+	}
 
-	expected := dyn.NewValue(
-		map[string]dyn.Value{
-			"foo": dyn.NewValue(
-				map[string]dyn.Value{
-					// pythonLocation is appended to the beginning of the list if absent
-					"baz": dyn.NewValue("baz", []diag.Location{pythonLocation, yamlLocation}),
-					// generatedLocation is replaced by pythonLocation
-					"qux": dyn.NewValue("baz", []diag.Location{pythonLocation, yamlLocation}),
-				},
-				[]diag.Location{pythonLocation},
-			),
-			// if location is unknown, we keep it as-is
-			"bar": dyn.NewValue("baz", []diag.Location{generatedLocation}),
-		},
-		[]diag.Location{yamlLocation},
-	)
-
-	actual, err := mergePythonLocations(input, locations)
-
-	assert.NoError(t, err)
-	dynassert.Equal(t, expected, actual)
+	// pythonLocation is prepended if absent
+	assert.Equal(t, []diag.Location{pythonLocation, yamlLocation}, at("foo.baz", yamlLocation))
+	// generatedLocation is replaced by pythonLocation
+	assert.Equal(t, []diag.Location{pythonLocation, yamlLocation}, at("foo.qux", generatedLocation, yamlLocation))
+	assert.Equal(t, []diag.Location{pythonLocation}, at("foo"))
+	// if location is unknown, we keep it as-is
+	assert.Equal(t, []diag.Location{generatedLocation}, at("bar", generatedLocation))
+	assert.Equal(t, []diag.Location{yamlLocation}, at("", yamlLocation))
 }
 
 func TestFindLocation(t *testing.T) {
@@ -61,10 +43,10 @@ func TestFindLocation(t *testing.T) {
 	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
-	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
-	putPythonLocation(locations, dyn.MustPathFromString("foo.bar"), location1)
+	putPythonLocation(locations, structpath.MustParsePath("foo"), location0)
+	putPythonLocation(locations, structpath.MustParsePath("foo.bar"), location1)
 
-	actual, exists := findPythonLocation(locations, dyn.MustPathFromString("foo.bar"))
+	actual, exists := findPythonLocation(locations, structpath.MustParsePath("foo.bar"))
 
 	assert.True(t, exists)
 	assert.Equal(t, location1, actual)
@@ -76,11 +58,11 @@ func TestFindLocation_indexPathComponent(t *testing.T) {
 	location2 := diag.Location{File: "foo.py", Line: 3, Column: 1}
 
 	locations := newPythonLocations()
-	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
-	putPythonLocation(locations, dyn.MustPathFromString("foo.bar"), location1)
-	putPythonLocation(locations, dyn.MustPathFromString("foo.bar[0]"), location2)
+	putPythonLocation(locations, structpath.MustParsePath("foo"), location0)
+	putPythonLocation(locations, structpath.MustParsePath("foo.bar"), location1)
+	putPythonLocation(locations, structpath.MustParsePath("foo.bar[0]"), location2)
 
-	actual, exists := findPythonLocation(locations, dyn.MustPathFromString("foo.bar[0]"))
+	actual, exists := findPythonLocation(locations, structpath.MustParsePath("foo.bar[0]"))
 
 	assert.True(t, exists)
 	assert.Equal(t, location2, actual)
@@ -91,10 +73,10 @@ func TestFindLocation_closestAncestorLocation(t *testing.T) {
 	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
-	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
-	putPythonLocation(locations, dyn.MustPathFromString("foo.bar"), location1)
+	putPythonLocation(locations, structpath.MustParsePath("foo"), location0)
+	putPythonLocation(locations, structpath.MustParsePath("foo.bar"), location1)
 
-	actual, exists := findPythonLocation(locations, dyn.MustPathFromString("foo.bar.baz"))
+	actual, exists := findPythonLocation(locations, structpath.MustParsePath("foo.bar.baz"))
 
 	assert.True(t, exists)
 	assert.Equal(t, location1, actual)
@@ -105,10 +87,10 @@ func TestFindLocation_unknownLocation(t *testing.T) {
 	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
-	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
-	putPythonLocation(locations, dyn.MustPathFromString("foo.bar"), location1)
+	putPythonLocation(locations, structpath.MustParsePath("foo"), location0)
+	putPythonLocation(locations, structpath.MustParsePath("foo.bar"), location1)
 
-	_, exists := findPythonLocation(locations, dyn.MustPathFromString("bar"))
+	_, exists := findPythonLocation(locations, structpath.MustParsePath("bar"))
 
 	assert.False(t, exists)
 }
@@ -137,21 +119,18 @@ func TestLoadOutput(t *testing.T) {
 	locations := newPythonLocations()
 	putPythonLocation(
 		locations,
-		dyn.MustPathFromString("resources.jobs.my_job"),
+		structpath.MustParsePath("resources.jobs.my_job"),
 		location,
 	)
 
-	value, diags := loadOutput(
+	root, diags := loadOutput(
 		bundleRoot,
 		bytes.NewReader([]byte(output)),
 		locations,
 	)
 
 	assert.Equal(t, diag.Diagnostics{}, diags)
-
-	name, err := dyn.Get(value, "resources.jobs.my_job.name")
-	require.NoError(t, err)
-	require.Equal(t, []diag.Location{location}, name.Locations())
+	require.Equal(t, []diag.Location{location}, root.LocationsAt(structpath.MustParsePath("resources.jobs.my_job.name")))
 }
 
 func TestParsePythonLocations_absolutePath(t *testing.T) {

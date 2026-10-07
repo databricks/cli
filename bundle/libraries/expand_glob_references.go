@@ -4,35 +4,35 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type expand struct{}
 
-func matchError(p dyn.Path, l []diag.Location, message string) diag.Diagnostic {
+func matchError(p *structpath.PathNode, l []diag.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   message,
 		Locations: l,
-		Paths:     dyn.ToStructPaths(p),
+		Paths:     []*structpath.PathNode{p},
 	}
 }
 
-func getLibDetails(v dyn.Value) (string, string, bool) {
-	m := v.MustMap()
-	whl, ok := m.GetByString("whl")
-	if ok {
-		return whl.MustString(), "whl", true
+func getLibDetails(lib compute.Library) (string, string, bool) {
+	if lib.Whl != "" {
+		return lib.Whl, "whl", true
 	}
 
-	jar, ok := m.GetByString("jar")
-	if ok {
-		return jar.MustString(), "jar", true
+	if lib.Jar != "" {
+		return lib.Jar, "jar", true
 	}
 
 	return "", "", false
@@ -72,48 +72,92 @@ func isGlobPattern(path string) bool {
 	return strings.ContainsAny(path, "*?[")
 }
 
-func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
-	var output []dyn.Value
+// expandFunc expands the item at path p into the items it is replaced with.
+// If relocate is not empty, it names the field of each new item that takes the locations of the item.
+type expandFunc[T any] func(ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, item T) (output []T, relocate string, diags diag.Diagnostics)
+
+// expandSequence replaces the items of the sequence at path p with the items expandFunc returns for them.
+// New items keep the locations of the item they were expanded from.
+func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.PathNode, lv structvar.View, fn expandFunc[T]) diag.Diagnostics {
+	items, ok := sequencePointer[T](lv)
+	if !ok {
+		return nil
+	}
+
 	var diags diag.Diagnostics
-
-	libs := v.MustSequence()
-	for i, lib := range libs {
-		lp := p.Append(dyn.Index(i))
-		path, libType, supported := getLibDetails(lib)
-		if !supported || !IsLibraryLocal(path) {
-			output = append(output, lib)
-			continue
-		}
-
-		lp = lp.Append(dyn.Key(libType))
-
-		matches, err := findMatches(ctx, b, path)
-		if err != nil {
-			diags = diags.Append(matchError(lp, lib.Locations(), err.Error()))
-			continue
-		}
-
-		for _, match := range matches {
-			output = append(output, dyn.NewValue(map[string]dyn.Value{
-				libType: dyn.NewValue(match, lib.Locations()),
-			}, lib.Locations()))
+	output := make([]T, 0, len(*items))
+	var sources [][]int
+	var relocates []string
+	var locations [][]diag.Location
+	for i, item := range *items {
+		ip := structpath.NewIndex(p, i)
+		expanded, relocate, d := fn(ctx, b, ip, item)
+		diags = diags.Extend(d)
+		locs := b.Config.LocationsAt(ip)
+		for _, e := range expanded {
+			output = append(output, e)
+			sources = append(sources, []int{i})
+			relocates = append(relocates, relocate)
+			locations = append(locations, locs)
 		}
 	}
 
-	return diags, output
+	*items = output
+	b.Config.UpdateSequence(p, sources)
+	for i, relocate := range relocates {
+		if relocate != "" {
+			b.Config.SetLocations(structpath.NewStringKey(structpath.NewIndex(p, i), relocate), locations[i])
+		}
+	}
+
+	return diags
 }
 
-func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
-	var output []dyn.Value
-	var diags diag.Diagnostics
+// sequencePointer returns a pointer to the typed sequence the view is based on.
+func sequencePointer[T any](lv structvar.View) (*[]T, bool) {
+	if lv.Kind() != structvar.KindSequence {
+		return nil, false
+	}
 
-	deps := v.MustSequence()
-	for i, dep := range deps {
-		lp := p.Append(dyn.Index(i))
-		path := dep.MustString()
+	v := lv.Reflect()
+	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+	if !v.CanAddr() {
+		return nil, false
+	}
+
+	return reflect.TypeAssert[*[]T](v.Addr())
+}
+
+func expandLibraries(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics {
+	return expandSequence(ctx, b, p, lv, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, lib compute.Library) ([]compute.Library, string, diag.Diagnostics) {
+		path, libType, supported := getLibDetails(lib)
+		if !supported || !IsLibraryLocal(path) {
+			return []compute.Library{lib}, "", nil
+		}
+
+		matches, err := findMatches(ctx, b, path)
+		if err != nil {
+			return nil, "", diag.Diagnostics{matchError(structpath.NewStringKey(ip, libType), b.Config.LocationsAt(ip), err.Error())}
+		}
+
+		var output []compute.Library
+		for _, match := range matches {
+			if libType == "whl" {
+				output = append(output, compute.Library{Whl: match})
+			} else {
+				output = append(output, compute.Library{Jar: match})
+			}
+		}
+		return output, libType, nil
+	})
+}
+
+func expandEnvironmentDeps(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics {
+	return expandSequence(ctx, b, p, lv, func(ctx context.Context, b *bundle.Bundle, ip *structpath.PathNode, path string) ([]string, string, diag.Diagnostics) {
 		if !IsLibraryLocal(path) {
-			output = append(output, dep)
-			continue
+			return []string{path}, "", nil
 		}
 
 		// Strip extras before globbing so "[...]" isn't read as a glob class, then re-append.
@@ -121,88 +165,30 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
-			continue
+			return nil, "", diag.Diagnostics{matchError(ip, b.Config.LocationsAt(ip), err.Error())}
 		}
 
+		var output []string
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(match+extras, dep.Locations()))
+			output = append(output, match+extras)
 		}
-	}
-
-	return diags, output
+		return output, "", nil
+	})
 }
 
 type expandPattern struct {
-	pattern dyn.Pattern
-	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
+	pattern *structpath.PatternNode
+	fn      func(ctx context.Context, lv structvar.View, p *structpath.PathNode, b *bundle.Bundle) diag.Diagnostics
 }
 
-var taskLibrariesPattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("jobs"),
-	dyn.AnyKey(),
-	dyn.Key("tasks"),
-	dyn.AnyIndex(),
-	dyn.Key("libraries"),
-)
-
-var forEachTaskLibrariesPattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("jobs"),
-	dyn.AnyKey(),
-	dyn.Key("tasks"),
-	dyn.AnyIndex(),
-	dyn.Key("for_each_task"),
-	dyn.Key("task"),
-	dyn.Key("libraries"),
-)
-
-var aiRuntimeCodeSourcePattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("jobs"),
-	dyn.AnyKey(),
-	dyn.Key("tasks"),
-	dyn.AnyIndex(),
-	dyn.Key("ai_runtime_task"),
-	dyn.Key("code_source_path"),
-)
-
-var forEachAiRuntimeCodeSourcePattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("jobs"),
-	dyn.AnyKey(),
-	dyn.Key("tasks"),
-	dyn.AnyIndex(),
-	dyn.Key("for_each_task"),
-	dyn.Key("task"),
-	dyn.Key("ai_runtime_task"),
-	dyn.Key("code_source_path"),
-)
-
-var envDepsPattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("jobs"),
-	dyn.AnyKey(),
-	dyn.Key("environments"),
-	dyn.AnyIndex(),
-	dyn.Key("spec"),
-	dyn.Key("dependencies"),
-)
-
-var pipelineEnvDepsPattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("pipelines"),
-	dyn.AnyKey(),
-	dyn.Key("environment"),
-	dyn.Key("dependencies"),
-)
-
-var clusterLibrariesPattern = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("clusters"),
-	dyn.AnyKey(),
-	dyn.Key("libraries"),
+var (
+	taskLibrariesPattern              = structpath.MustParsePattern("resources.jobs.*.tasks[*].libraries")
+	forEachTaskLibrariesPattern       = structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.libraries")
+	aiRuntimeCodeSourcePattern        = structpath.MustParsePattern("resources.jobs.*.tasks[*].ai_runtime_task.code_source_path")
+	forEachAiRuntimeCodeSourcePattern = structpath.MustParsePattern("resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.code_source_path")
+	envDepsPattern                    = structpath.MustParsePattern("resources.jobs.*.environments[*].spec.dependencies")
+	pipelineEnvDepsPattern            = structpath.MustParsePattern("resources.pipelines.*.environment.dependencies")
+	clusterLibrariesPattern           = structpath.MustParsePattern("resources.clusters.*.libraries")
 )
 
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -231,23 +217,15 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, expander := range expanders {
-			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				d, output := expander.fn(ctx, b, p, lv)
-				diags = diags.Extend(d)
-				return dyn.NewValue(output, lv.Locations()), nil
-			})
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+	for _, expander := range expanders {
+		err := structvar.ForEach(b.Config.View(), expander.pattern, func(p *structpath.PathNode, lv structvar.View) error {
+			diags = diags.Extend(expander.fn(ctx, lv, p, b))
+			return nil
+		})
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+			break
 		}
-
-		return v, nil
-	})
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	return diags

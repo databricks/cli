@@ -2,11 +2,11 @@ package mutator
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 // Temporary: this mutator collects telemetry on escape patterns ($${}, $$, \${}, \$)
@@ -24,12 +24,7 @@ func (*collectEscapeTelemetry) Name() string {
 func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var hasDoubleDollarBrace, hasDoubleDollar, hasBackslashDollarBrace, hasBackslashDollar bool
 
-	_, err := dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		s, ok := v.AsString()
-		if !ok {
-			return v, nil
-		}
-
+	walkStrings(reflect.ValueOf(&b.Config), func(s string) {
 		if !hasDoubleDollarBrace && strings.Contains(s, "$${") {
 			hasDoubleDollarBrace = true
 		}
@@ -42,12 +37,7 @@ func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag
 		if !hasBackslashDollar && containsBackslashDollarWithoutBrace(s) {
 			hasBackslashDollar = true
 		}
-
-		return v, nil
 	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	if hasDoubleDollarBrace {
 		b.Metrics.SetBoolValue("config_has_double_dollar_brace", true)
@@ -63,6 +53,40 @@ func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag
 	}
 
 	return nil
+}
+
+// walkStrings calls fn for every string value in the configuration value v,
+// including strings stored in interface values (e.g. variable defaults).
+func walkStrings(v reflect.Value, fn func(string)) {
+	switch v.Kind() {
+	case reflect.String:
+		fn(v.String())
+	case reflect.Pointer, reflect.Interface:
+		if !v.IsNil() {
+			walkStrings(v.Elem(), fn)
+		}
+	case reflect.Struct:
+		t := v.Type()
+		for i := range t.NumField() {
+			f := t.Field(i)
+			// Like the configuration conversion, skip fields without a JSON name.
+			name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+			if !f.IsExported() || (!f.Anonymous && (name == "" || name == "-")) {
+				continue
+			}
+			walkStrings(v.Field(i), fn)
+		}
+	case reflect.Slice:
+		for i := range v.Len() {
+			walkStrings(v.Index(i), fn)
+		}
+	case reflect.Map:
+		iter := v.MapRange()
+		for iter.Next() {
+			walkStrings(iter.Value(), fn)
+		}
+	default:
+	}
 }
 
 // containsDoubleDollarWithoutBrace returns true if s contains "$$" not followed by "{".

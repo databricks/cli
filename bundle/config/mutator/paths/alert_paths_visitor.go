@@ -1,18 +1,14 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func VisitAlertPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("alerts"),
-		dyn.AnyKey(),
-		dyn.Key("file_path"),
-	)
+func VisitAlertPaths(root structvar.View, fn VisitFunc) error {
+	pattern := structpath.MustParsePattern("resources.alerts.*.file_path")
 
-	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
 		return fn(path, TranslateModeLocalRelative, value)
 	})
 }

@@ -8,9 +8,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type tfOnlyReferences struct{}
@@ -30,8 +29,12 @@ func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 	var diags diag.Diagnostics
 
 	// Walk the entire config looking for ${resources.*} references.
-	_ = dyn.WalkReadOnly(b.Config.Value(), func(_ dyn.Path, v dyn.Value) error {
-		ref, ok := dynvar.NewRef(v)
+	_ = structvar.Walk(b.Config.View(), func(_ *structpath.PathNode, v structvar.View) error {
+		s, ok := v.AsString()
+		if !ok {
+			return nil
+		}
+		ref, ok := structvar.NewRef(s)
 		if !ok {
 			return nil
 		}
@@ -57,25 +60,20 @@ func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 // "resources.jobs.src.always_running" and returns a diagnostic when it refers
 // to a TF-only field, or nil otherwise.
 func checkTFOnlyReference(ref string, loc diag.Location) *diag.Diagnostic {
-	p, err := dyn.NewPathFromString(ref)
+	p, err := structpath.ParsePath(ref)
 	// Need at least resources.<group>.<name>.<field>
-	if err != nil || len(p) < 4 || p[0].Key() != "resources" {
+	if err != nil || p.Len() < 4 || p.KeyAt(0) != "resources" {
 		return nil
 	}
 
-	group := p[1].Key()
+	group := p.KeyAt(1)
 	tfOnlyFields, ok := terraform_dabs_map.TerraformOnlyFields[group]
 	if !ok || len(tfOnlyFields) == 0 {
 		return nil
 	}
 
 	// Field path is everything after resources.<group>.<name>.
-	fieldNode, err := structpath.ParsePath(p[3:].String())
-	if err != nil {
-		return nil
-	}
-
-	if !tfOnlyFields.Contains(fieldNode) {
+	if !tfOnlyFields.Contains(p.SkipPrefix(3)) {
 		return nil
 	}
 

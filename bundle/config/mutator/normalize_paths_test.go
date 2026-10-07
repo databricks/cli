@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,20 +38,14 @@ func TestNormalizePaths(t *testing.T) {
 
 	// update config as if 'notebook_path' property is defined in resources/job_1.yml
 	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
-	path := dyn.MustPathFromString("resources.jobs.job1.tasks[0].notebook_task.notebook_path")
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPath(v, path, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-			return dyn.NewValue(value.MustString(), []diag.Location{location}), nil
-		})
-	})
-	require.NoError(t, err)
+	path := structpath.MustParsePath("resources.jobs.job1.tasks[0].notebook_task.notebook_path")
+	b.Config.SetLocations(path, []diag.Location{location})
 
 	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 
-	newValue, err := dyn.GetByPath(b.Config.Value(), path)
-	require.NoError(t, err)
-	require.Equal(t, "src/notebook.py", newValue.MustString())
+	require.Equal(t, "src/notebook.py", b.Config.Resources.Jobs["job1"].Tasks[0].NotebookTask.NotebookPath)
+	require.Equal(t, []diag.Location{location}, b.Config.LocationsAt(path))
 }
 
 func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
@@ -77,20 +71,14 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 	}
 
 	location := diag.Location{File: filepath.Join(tmpDir, "resources", "run.yml")}
-	path := dyn.MustPathFromString("resources.job_runs.run1.lifecycle.triggers[0].on_file_change")
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPath(v, path, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-			return dyn.NewValue(value.MustString(), []diag.Location{location}), nil
-		})
-	})
-	require.NoError(t, err)
+	path := structpath.MustParsePath("resources.job_runs.run1.lifecycle.triggers[0].on_file_change")
+	b.Config.SetLocations(path, []diag.Location{location})
 
 	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 
-	newValue, err := dyn.GetByPath(b.Config.Value(), path)
-	require.NoError(t, err)
-	require.Equal(t, "data/*.txt", newValue.MustString())
+	require.Equal(t, "data/*.txt", *b.Config.Resources.JobRuns["run1"].Lifecycle.Triggers[0].OnFileChange)
+	require.Equal(t, []diag.Location{location}, b.Config.LocationsAt(path))
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {

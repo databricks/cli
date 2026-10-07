@@ -2,10 +2,13 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type prependWorkspacePrefix struct{}
@@ -25,31 +28,39 @@ var skipPrefixes = []string{
 }
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	w := &b.Config.Workspace
-	for _, path := range []*string{
-		&w.RootPath,
-		&w.FilePath,
-		&w.ArtifactPath,
-		&w.StatePath,
-		&w.ResourcePath,
-	} {
-		*path = prependWorkspacePrefixTo(*path)
+	patterns := []*structpath.PatternNode{
+		structpath.MustParsePattern("workspace.root_path"),
+		structpath.MustParsePattern("workspace.file_path"),
+		structpath.MustParsePattern("workspace.artifact_path"),
+		structpath.MustParsePattern("workspace.state_path"),
+		structpath.MustParsePattern("workspace.resource_path"),
 	}
 
-	return nil
-}
+	for _, pattern := range patterns {
+		err := structvar.ForEach(b.Config.View(), pattern, func(p *structpath.PathNode, pv structvar.View) error {
+			path, ok := pv.AsString()
+			if !ok {
+				return fmt.Errorf("expected string, got %s", pv.Kind())
+			}
 
-func prependWorkspacePrefixTo(path string) string {
-	// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
-	if !strings.HasPrefix(path, "/") {
-		return path
-	}
+			// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
+			if !strings.HasPrefix(path, "/") {
+				return nil
+			}
 
-	for _, prefix := range skipPrefixes {
-		if strings.HasPrefix(path, prefix) {
-			return path
+			for _, prefix := range skipPrefixes {
+				if strings.HasPrefix(path, prefix) {
+					return nil
+				}
+			}
+
+			// Set keeps the locations of the value, so diagnostics point at the original config line.
+			return b.Config.Set(p, "/Workspace"+path)
+		})
+		if err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
-	return "/Workspace" + path
+	return nil
 }

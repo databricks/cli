@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
