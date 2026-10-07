@@ -182,17 +182,18 @@ func TestResourcesYMLRemoteAdditionGates(t *testing.T) {
 
 		for _, rule := range rc.IgnoreRemoteAdditions {
 			field := rule.Field
-			require.False(t, rule.WhenSet.IsRoot(),
-				"%s: ignore_remote_additions entry %q needs a when_set", resourceType, field.String())
 
 			if !field.IsRoot() {
 				assert.NoError(t, structaccess.ValidatePattern(adapter.StateType(), field),
 					"%s: ignore_remote_additions field %q does not resolve in the state type", resourceType, field.String())
 			}
-			gate, err := structpath.ParsePattern(joinPattern(field, rule.WhenSet.String()))
-			require.NoError(t, err)
-			assert.NoError(t, structaccess.ValidatePattern(adapter.StateType(), gate),
-				"%s: ignore_remote_additions when_set %q does not resolve under %q", resourceType, rule.WhenSet, field.String())
+			// when_set is optional; a nil gate means the rule always applies.
+			if rule.WhenSet != nil {
+				gate, err := structpath.ParsePattern(joinPattern(field, rule.WhenSet.String()))
+				require.NoError(t, err)
+				assert.NoError(t, structaccess.ValidatePattern(adapter.StateType(), gate),
+					"%s: ignore_remote_additions when_set %q does not resolve under %q", resourceType, rule.WhenSet, field.String())
+			}
 		}
 	}
 }
