@@ -75,7 +75,7 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{cloneP},
+				Paths:     dyn.ToStructPaths(cloneP),
 			})
 		}
 

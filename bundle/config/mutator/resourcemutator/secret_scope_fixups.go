@@ -138,7 +138,7 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					Severity:  diag.Error,
 					Summary:   "Failed to collapse permissions for secret scope",
 					Detail:    err.Error(),
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.secret_scopes." + key)},
+					Paths:     dyn.ToStructPaths(dyn.MustPathFromString("resources.secret_scopes." + key)),
 					Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
 				},
 			}

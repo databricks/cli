@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/iamutil"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
 )
 
 type validateTargetMode struct{}

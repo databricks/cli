@@ -201,7 +201,7 @@ func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 				Column: 6,
 			},
 		},
-		Paths: []dyn.Path{{}},
+		Paths: dyn.ToStructPaths(dyn.EmptyPath),
 	})
 }
 
@@ -259,7 +259,7 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 				Column: 15,
 			},
 		},
-		Paths: []dyn.Path{dyn.NewPath(dyn.Key("job_id"))},
+		Paths: dyn.ToStructPaths(dyn.NewPath(dyn.Key("job_id"))),
 	})
 }
 
@@ -284,7 +284,7 @@ func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 				Column: 40,
 			},
 		},
-		Paths: []dyn.Path{dyn.NewPath(dyn.Key("new_settings"), dyn.Key("timeout_seconds"))},
+		Paths: dyn.ToStructPaths(dyn.NewPath(dyn.Key("new_settings"), dyn.Key("timeout_seconds"))),
 	})
 }
 

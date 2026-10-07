@@ -43,7 +43,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{slices.Clone(p)},
+				Paths:     dyn.ToStructPaths(slices.Clone(p)),
 			})
 
 			return v, nil

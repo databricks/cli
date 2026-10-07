@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type required struct{}
@@ -59,7 +60,7 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("required field %q is not set", field),
 					Locations: v.Locations(),
-					Paths:     []dyn.Path{cloneP},
+					Paths:     dyn.ToStructPaths(cloneP),
 				})
 			}
 		}
@@ -97,19 +98,19 @@ func sortDiagnostics(diags diag.Diagnostics) {
 func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Dashboards should always have a name and warehouse_id.
 	var nameLocations []dyn.Location
-	var namePaths []dyn.Path
+	var namePaths []*structpath.PathNode
 	var warehouseIdLocations []dyn.Location
-	var warehouseIdPaths []dyn.Path
+	var warehouseIdPaths []*structpath.PathNode
 
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
 			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, dyn.MustPathFromString("resources.dashboards."+key))
+			namePaths = append(namePaths, dyn.ToStructPath(dyn.MustPathFromString("resources.dashboards."+key)))
 		}
 		if dashboard.WarehouseId == "" {
 			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, dyn.MustPathFromString("resources.dashboards."+key))
+			warehouseIdPaths = append(warehouseIdPaths, dyn.ToStructPath(dyn.MustPathFromString("resources.dashboards."+key)))
 		}
 	}
 
@@ -139,7 +140,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
 				Locations: b.Config.GetLocations(path),
-				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+				Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
 			})
 		}
 	}
@@ -166,7 +167,7 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 					Severity:  diag.Error,
 					Summary:   "grant principal is required",
 					Locations: v.Locations(),
-					Paths:     []dyn.Path{slices.Clone(p)},
+					Paths:     dyn.ToStructPaths(slices.Clone(p)),
 				})
 			}
 			if isMissingOrEmptySequence(v.Get("privileges")) {
@@ -174,7 +175,7 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 					Severity:  diag.Error,
 					Summary:   "grant privileges is required",
 					Locations: v.Locations(),
-					Paths:     []dyn.Path{slices.Clone(p)},
+					Paths:     dyn.ToStructPaths(slices.Clone(p)),
 				})
 			}
 			return v, nil
@@ -207,7 +208,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
 				Locations: b.Config.GetLocations("resources.secret_scopes." + key),
-				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+				Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
 			})
 		}
 	}

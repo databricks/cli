@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -86,7 +87,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 				Summary:   s,
 				Severity:  diag.Error,
 				Locations: b.Config.GetLocations("workspace.artifact_path"),
-				Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+				Paths:     structpath.MustParsePaths("workspace.artifact_path"),
 			},
 		}
 	}
@@ -118,7 +119,7 @@ this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
 			Locations: slices.Concat(b.Config.GetLocations("workspace.artifact_path"), locations),
-			Paths:     append([]dyn.Path{dyn.MustPathFromString("workspace.artifact_path")}, path),
+			Paths:     append(structpath.MustParsePaths("workspace.artifact_path"), dyn.ToStructPath(path)),
 		}}
 
 	}

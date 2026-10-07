@@ -61,6 +61,6 @@ func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClu
 		// Other associated locations are not relevant since they are
 		// overridden during merging.
 		Locations: b.Config.GetLocations(path),
-		Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+		Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
 	}}
 }

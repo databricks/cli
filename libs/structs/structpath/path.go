@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 const (
@@ -637,6 +634,15 @@ func MustParsePath(s string) *PathNode {
 	return path
 }
 
+// MustParsePaths parses each of paths like [MustParsePath], e.g. for diag.Diagnostic.Paths.
+func MustParsePaths(paths ...string) []*PathNode {
+	out := make([]*PathNode, len(paths))
+	for i, s := range paths {
+		out[i] = MustParsePath(s)
+	}
+	return out
+}
+
 // isReservedFieldChar checks if character is reserved and cannot be used in field names
 func isReservedFieldChar(ch byte) bool {
 	switch ch {
@@ -672,26 +678,6 @@ func isValidField(s string) bool {
 		}
 	}
 	return len(s) > 0
-}
-
-// PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
-// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
-func PureReferenceToPath(s string) (*PathNode, bool) {
-	ref, ok := dynvar.NewRef(dyn.V(s))
-	if !ok {
-		return nil, false
-	}
-
-	if !ref.IsPure() {
-		return nil, false
-	}
-
-	pattern, err := parse(ref.References()[0], false)
-	if err != nil {
-		return nil, false
-	}
-
-	return (*PathNode)(pattern), true
 }
 
 // SkipPrefix returns a new PathNode that skips the first n components of the path.

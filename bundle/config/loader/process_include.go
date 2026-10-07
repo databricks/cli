@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
@@ -108,16 +109,16 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 	}
 
 	var locations []dyn.Location
-	var paths []dyn.Path
+	var paths []*structpath.PathNode
 	for _, rr := range resources {
 		locations = append(locations, rr.value.Locations()...)
-		paths = append(paths, rr.path)
+		paths = append(paths, dyn.ToStructPath(rr.path))
 	}
 	// Sort the locations and paths to make the output deterministic.
 	slices.SortFunc(locations, func(a, b dyn.Location) int {
 		return cmp.Compare(a.String(), b.String())
 	})
-	slices.SortFunc(paths, func(a, b dyn.Path) int {
+	slices.SortFunc(paths, func(a, b *structpath.PathNode) int {
 		return cmp.Compare(a.String(), b.String())
 	})
 
@@ -168,7 +169,7 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Detail: `An include section is defined in a file that is not databricks.yml.
 Only includes defined in databricks.yml are applied.`,
 			Locations: this.GetLocations("include"),
-			Paths:     []dyn.Path{dyn.MustPathFromString("include")},
+			Paths:     structpath.MustParsePaths("include"),
 		})
 	}
 

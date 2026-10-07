@@ -13,25 +13,20 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
-
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/logger"
-
-	"github.com/databricks/cli/libs/python"
-
-	"github.com/databricks/cli/bundle/env"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/python"
+	"github.com/databricks/databricks-sdk-go/logger"
 )
 
 type phase string

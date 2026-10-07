@@ -34,7 +34,7 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
-			Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			Paths:     dyn.ToStructPaths(dyn.MustPathFromString(path)),
 			Locations: b.Config.GetLocations(path),
 		})
 	}

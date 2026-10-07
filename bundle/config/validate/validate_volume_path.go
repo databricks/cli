@@ -39,7 +39,7 @@ func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 				Summary:   fmt.Sprintf("%s %s starts with /Volumes. /Volumes can only be used with workspace.artifact_path.", check.configName, check.path),
 				Detail:    "For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace",
 				Locations: b.Config.GetLocations(check.configName),
-				Paths:     []dyn.Path{dyn.MustPathFromString(check.configName)},
+				Paths:     dyn.ToStructPaths(dyn.MustPathFromString(check.configName)),
 			})
 
 			// Return early for root path validation

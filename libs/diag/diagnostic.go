@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type Diagnostic struct {
@@ -24,7 +25,7 @@ type Diagnostic struct {
 
 	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
 	// It may be nil if there are no associated paths.
-	Paths []dyn.Path
+	Paths []*structpath.PathNode
 
 	// A diagnostic ID. Only used for select diagnostic messages.
 	ID ID

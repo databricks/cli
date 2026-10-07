@@ -85,7 +85,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
 					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))},
+					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))),
 					Locations: v.Locations(),
 				},
 			}
@@ -107,7 +107,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -122,7 +122,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
 					Detail:    "",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -136,7 +136,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
 					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+					Paths:     dyn.ToStructPaths(dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))),
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}

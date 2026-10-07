@@ -8,13 +8,12 @@ import (
 	"slices"
 	"strings"
 
-	yaml3 "go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	yaml3 "go.yaml.in/yaml/v3"
 )
 
 // fieldsKey nests a type's block of field nodes inside the node of a field

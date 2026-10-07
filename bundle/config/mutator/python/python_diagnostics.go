@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // pythonDiagnostic is a single entry in diagnostics.json
@@ -55,9 +56,9 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse path: %s", err)
 		}
-		var paths []dyn.Path
+		var paths []*structpath.PathNode
 		if path != nil {
-			paths = []dyn.Path{path}
+			paths = dyn.ToStructPaths(path)
 		}
 
 		var locations []dyn.Location

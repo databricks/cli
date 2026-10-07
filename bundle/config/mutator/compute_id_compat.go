@@ -55,7 +55,7 @@ func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagn
 		Severity:  diag.Warning,
 		Summary:   "compute_id is deprecated, please use cluster_id instead",
 		Locations: computeId.Locations(),
-		Paths:     []dyn.Path{computeIdPath},
+		Paths:     dyn.ToStructPaths(computeIdPath),
 	})
 
 	clusterIdPath := p.Append(dyn.Key("cluster_id"))

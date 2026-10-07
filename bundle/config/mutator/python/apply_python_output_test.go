@@ -4,10 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-
-	"github.com/databricks/cli/libs/dyn/merge"
-
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/stretchr/testify/assert"
 )
 

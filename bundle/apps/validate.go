@@ -172,7 +172,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				ref.permission,
 				appKey,
 			),
-			Paths:     []dyn.Path{dyn.MustPathFromString(appPath)},
+			Paths:     dyn.ToStructPaths(dyn.MustPathFromString(appPath)),
 			Locations: b.Config.GetLocations(appPath),
 		})
 	}
