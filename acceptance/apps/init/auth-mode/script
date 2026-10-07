@@ -1,0 +1,37 @@
+init() {
+  name=$1; shift
+  trace $CLI apps init --template ./template --skip-install --name $name \
+    --features analytics,genie,jobs \
+    --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 \
+    --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k "$@"
+  cat $name/app.yaml $name/databricks.yml
+  rm -rf $name
+}
+
+title "Default: every resource bound to the service principal"
+init app-sp
+
+title "App-wide OBO, job kept on the service principal"
+init app-obo --auth-mode obo --set jobs.job.authMode=sp
+
+title "Mixed: warehouse both, genie OBO"
+init app-mixed --set analytics.sql-warehouse.authMode=both --set genie.genie-space.authMode=obo
+
+title "App-wide OBO: resources without a scope stay on the service principal"
+init app-obo-lenient --auth-mode obo
+
+title "Analytics OBO, genie space on the service principal: plugin scopes still emitted"
+init app-genie-sp --set analytics.sql-warehouse.authMode=obo --set genie.genie-space.authMode=sp
+
+title "Errors"
+trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.authMode=obo
+trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --set jobs.secret.authMode=sp
+trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --auth-mode both
+
+title "Validate: OBO resource whose scope was removed from user_api_scopes"
+trace $CLI apps init --template ./template --skip-install --name app-val --features analytics \
+  --set analytics.sql-warehouse.id=wh1 --set analytics.sql-warehouse.authMode=obo
+grep -v -- '- sql$' app-val/databricks.yml > app-val/databricks.yml.new
+mv app-val/databricks.yml.new app-val/databricks.yml
+trace errcode $CLI apps validate --path app-val
+rm -rf app-val

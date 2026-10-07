@@ -1,0 +1,55 @@
+bundle:
+  name: {{.projectName}}
+{{- if .bundle.variables}}
+
+variables:
+{{.bundle.variables}}
+{{- end}}
+
+resources:
+  apps:
+    app:
+      name: "{{.projectName}}"
+      description: "{{.appDescription}}"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+
+{{- if .bundle.userApiScopes}}
+      user_api_scopes:
+{{.bundle.userApiScopes}}
+{{- else if or .plugins.genie .plugins.files .plugins.serving}}
+      user_api_scopes:
+{{- if .plugins.genie}}
+        - dashboards.genie
+{{- end}}
+{{- if .plugins.files}}
+        - files.files
+{{- end}}
+{{- if .plugins.serving}}
+        - serving.serving-endpoints
+{{- end}}
+{{- else}}
+      # Uncomment to enable on behalf of user API scopes. Available scopes: sql, dashboards.genie, files.files, serving.serving-endpoints
+      # user_api_scopes:
+      #   - sql
+{{- end}}
+{{- if .bundle.resources}}
+
+      # The resources which this app has access to.
+      resources:
+{{.bundle.resources}}
+{{- end}}
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: {{.workspaceHost}}
+{{- if .bundle.targetVariables}}
+
+    variables:
+{{.bundle.targetVariables}}
+{{- end}}
