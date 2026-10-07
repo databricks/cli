@@ -1,0 +1,2 @@
+title "backend field errors fail dry-run"
+musterr trace $CLI air run -f valid.yaml --dry-run

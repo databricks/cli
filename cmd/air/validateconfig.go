@@ -5,18 +5,39 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 // validateConfigPath is AiTrainingService's pre-flight: it checks a training
 // config server-side and returns the problems, without submitting. Called with a
 // raw client.Do because the SDK does not model AiTrainingService.
 const validateConfigPath = "/api/2.0/ai-training/config:validate"
+
+const dryRunValidationMaxAttempts = 2
+
+type dryRunValidationAttemptBudgetKey struct{}
+
+func armDryRunValidationAttemptBudget(ctx context.Context) context.Context {
+	return context.WithValue(ctx, dryRunValidationAttemptBudgetKey{}, new(int))
+}
+
+func allowDryRunValidationRetry(ctx context.Context) bool {
+	attempts, ok := ctx.Value(dryRunValidationAttemptBudgetKey{}).(*int)
+	if !ok {
+		return false
+	}
+	*attempts++
+	return *attempts < dryRunValidationMaxAttempts
+}
 
 // configFieldError is one problem the server found, addressed to the config
 // field that caused it. Mirrors the proto FieldError.
@@ -30,26 +51,86 @@ type validateConfigResponse struct {
 	Errors []configFieldError `json:"errors"`
 }
 
+// validationUnavailableError means the backend check could not finish.
+type validationUnavailableError struct {
+	err       error
+	retryable bool
+}
+
+func (e *validationUnavailableError) Error() string { return e.err.Error() }
+func (e *validationUnavailableError) Unwrap() error { return e.err }
+
+func asValidationUnavailable(err error, retryable bool) error {
+	return &validationUnavailableError{
+		err:       fmt.Errorf("config validation unavailable: %w", err),
+		retryable: retryable,
+	}
+}
+
+func validationUnavailable(err error) (*validationUnavailableError, bool) {
+	return errors.AsType[*validationUnavailableError](err)
+}
+
 // preflightValidate checks the config against the backend before any upload, so
 // a bad config fails fast with the server's own field-level errors.
 //
-// It fails open: the endpoint is behind a SAFE flag and older workspaces do not
-// have it, so a disabled or missing endpoint skips the check and lets submission
-// proceed (where the config is validated again, authoritatively). A 5xx is a
-// backend problem, not the user's config, so it fails open too. Only a 4xx (the
-// server rejected the config) or a populated error list blocks.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer) error {
+// It preserves the existing submission behavior: a missing endpoint or 5xx
+// fails open, while other request failures and field errors block.
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
+	err = validateConfig(ctx, apiClient, cfg, commandPath, containers, idempotencyToken)
+	if endpointUnavailable(err) || serverError(err) {
+		return nil
+	}
+	return err
+}
 
-	var resp validateConfigResponse
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath, containers), &resp)
+func newDryRunValidationClient(w *databricks.WorkspaceClient) (*client.DatabricksClient, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
-		if endpointUnavailable(err) || serverError(err) {
-			return nil
+		return nil, err
+	}
+	clientCfg.TransientErrors = nil
+	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
+		apiErr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
+			return false
 		}
+		if apiErr.StatusCode != http.StatusTooManyRequests && apiErr.StatusCode != http.StatusServiceUnavailable {
+			return false
+		}
+		return allowDryRunValidationRetry(ctx)
+	}
+	return client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
+}
+
+func validateDryRunConfig(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string, timeout time.Duration) error {
+	apiClient, err := newDryRunValidationClient(w)
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	validationCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	validationCtx = armDryRunValidationAttemptBudget(validationCtx)
+
+	err = validateConfig(validationCtx, apiClient, cfg, commandPath, containers, idempotencyToken)
+	if unavailable, retryable := classifyValidationFailure(err); unavailable {
+		return asValidationUnavailable(err, retryable)
+	}
+	return err
+}
+
+// validateConfig performs the current backend validation without client-side
+// availability fallbacks. The legacy response reports field errors only; it
+// cannot yet distinguish complete success from skipped backend dependencies.
+func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+	var resp validateConfigResponse
+	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken), &resp)
+	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 	if len(resp.Errors) == 0 {
@@ -58,11 +139,40 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	return errors.New(formatConfigErrors(resp.Errors))
 }
 
-// validateConfigRequest builds the {task, run_options} body from the user's config. commandPath is
+// classifyValidationFailure separates service failures from caller errors and
+// reports whether retrying the same request may succeed.
+func classifyValidationFailure(err error) (unavailable, retryable bool) {
+	if errors.Is(err, context.Canceled) {
+		return false, false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true, true
+	}
+	if _, ok := errors.AsType[*url.Error](err); ok {
+		return true, true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
+		return false, false
+	}
+	if apiErr.ErrorCode == "FEATURE_DISABLED" ||
+		apiErr.StatusCode == http.StatusNotFound ||
+		apiErr.StatusCode == http.StatusNotImplemented {
+		return true, false
+	}
+	if apiErr.StatusCode == http.StatusRequestTimeout ||
+		apiErr.StatusCode == http.StatusTooManyRequests ||
+		apiErr.StatusCode >= 500 {
+		return true, true
+	}
+	return false, false
+}
+
+// validateConfigRequest builds the {task, run_options, environment} body from the user's config. commandPath is
 // the workspace path where the command script will be uploaded; the caller computes it before this
 // call so the server can validate the real path. `parameters` is intentionally omitted: it is
 // free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
-func validateConfigRequest(cfg *runConfig, commandPath string, containers []submittedContainer) map[string]any {
+func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) map[string]any {
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
@@ -98,21 +208,25 @@ func validateConfigRequest(cfg *runConfig, commandPath string, containers []subm
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
 	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)
-
-	req := map[string]any{"task": task}
-	if runOptions := validateConfigRunOptions(cfg); len(runOptions) > 0 {
-		req["run_options"] = runOptions
+	if image := cfg.unityCatalogImagePath(); image != "" {
+		task["unity_catalog_image_path"] = image
 	}
-	return req
+	runtimeVersion, _ := cfg.runtimeVersion()
+	dependencies, _ := cfg.inlineDependencies()
+
+	return map[string]any{
+		"task":        task,
+		"run_options": validateConfigRunOptions(cfg, idempotencyToken),
+		"environment": buildRunEnvironment(dlRuntimeImage(ctx, runtimeVersion), dependencies),
+	}
 }
 
-// validateConfigRunOptions gathers the run-level fields into run_options,
-// omitting any the user didn't set.
-func validateConfigRunOptions(cfg *runConfig) map[string]any {
-	runOptions := map[string]any{}
+// validateConfigRunOptions includes the effective idempotency token and any
+// run-level fields the user set.
+func validateConfigRunOptions(cfg *runConfig, idempotencyToken string) map[string]any {
+	runOptions := map[string]any{"idempotency_token": idempotencyToken}
 	putOpt(runOptions, "max_retries", cfg.MaxRetries)
 	putOpt(runOptions, "timeout_minutes", cfg.TimeoutMinutes)
-	putOpt(runOptions, "idempotency_token", cfg.IdempotencyToken)
 	putOpt(runOptions, "usage_policy_name", cfg.UsagePolicyName)
 	putOpt(runOptions, "usage_policy_id", cfg.UsagePolicyID)
 	if len(cfg.EnvVariables) > 0 {
@@ -132,9 +246,8 @@ func putOpt[T any](m map[string]any, key string, value *T) {
 	}
 }
 
-// endpointUnavailable reports whether the failure means the endpoint isn't there
-// to answer — the flag is off, or the workspace predates it — as opposed to the
-// config being rejected. Those cases fail open.
+// endpointUnavailable reports that the validation endpoint could not answer
+// because it is disabled or absent.
 func endpointUnavailable(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
@@ -142,10 +255,7 @@ func endpointUnavailable(err error) bool {
 		apiErr.StatusCode == http.StatusNotImplemented)
 }
 
-// serverError reports whether the failure is a 5xx: a backend problem, not the
-// user's config. The SDK already retries the transient subset (503, 429, IO
-// errors); a 5xx that still surfaces here fails open, since blocking a submit on
-// a backend blip isn't actionable and submit re-validates anyway.
+// serverError reports a backend 5xx rather than a caller error.
 func serverError(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode >= 500

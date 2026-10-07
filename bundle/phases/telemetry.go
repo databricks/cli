@@ -303,7 +303,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// Record whether the removed terraform engine was still requested (the command
 	// then fails with the removal error), separately per source. Only emitted when
 	// true; absence means "not requested via this source". An invalid env value has
-	// already failed the command upstream via ResolveEngineSetting, so treating the
+	// already failed the command upstream via ValidateEngineSetting, so treating the
 	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
