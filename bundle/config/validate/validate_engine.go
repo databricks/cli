@@ -31,7 +31,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Severity:  diag.Warning,
 			Summary:   "bundle.terraform is deprecated and has no effect: " + engine.TerraformRemovedSummary,
 			Locations: tf.Locations(),
-			Paths:     structpath.MustParsePaths("bundle.terraform"),
+			Paths:     structpath.NewStringKeysSlice("bundle", "terraform"),
 		})
 	}
 

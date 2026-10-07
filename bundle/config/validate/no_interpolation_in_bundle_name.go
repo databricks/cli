@@ -29,7 +29,7 @@ is a part of the path at which your bundle state is stored at by default. Parame
 runtime can have unexpected consequences like duplicate deployments or resources not being
 cleaned up during bundle destroy.`,
 			Locations: b.Config.GetLocations("bundle.name"),
-			Paths:     structpath.MustParsePaths("bundle.name"),
+			Paths:     structpath.NewStringKeysSlice("bundle", "name"),
 		})
 	}
 

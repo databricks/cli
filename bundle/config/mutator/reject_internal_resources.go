@@ -26,7 +26,7 @@ func (m *rejectInternalResources) Apply(ctx context.Context, b *bundle.Bundle) d
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "Internal resources cannot be set in bundle configuration",
-			Paths:     structpath.MustParsePaths("resources"),
+			Paths:     structpath.NewStringKeysSlice("resources"),
 			Locations: b.Config.GetLocations("resources"),
 		})
 	}

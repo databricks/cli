@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +45,7 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
-		Paths:     dyn.ToStructPaths(dyn.NewPath(dyn.Key("bar"))),
+		Paths:     structpath.NewStringKeysSlice("bar"),
 	}, diags[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -306,7 +307,7 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
-		Paths:     dyn.ToStructPaths(dyn.NewPath(dyn.Key("bar"))),
+		Paths:     structpath.NewStringKeysSlice("bar"),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -430,7 +431,7 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
-		Paths:     dyn.ToStructPaths(dyn.NewPath(dyn.Index(2))),
+		Paths:     []*structpath.PathNode{structpath.NewIndex(nil, 2)},
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.

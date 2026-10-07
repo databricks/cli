@@ -56,7 +56,7 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "error summary",
-					Paths:    structpath.MustParsePaths("resources.jobs.job0.name"),
+					Paths:    structpath.NewStringKeysSlice("resources", "jobs", "job0", "name"),
 				},
 			},
 		},

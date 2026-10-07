@@ -84,7 +84,7 @@ func TestValidateArtifactPath(t *testing.T) {
 			Severity:  diag.Error,
 			Summary:   expected,
 			Locations: []dyn.Location{{File: "file", Line: 1, Column: 1}},
-			Paths:     structpath.MustParsePaths("workspace.artifact_path"),
+			Paths:     structpath.NewStringKeysSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 
@@ -171,7 +171,7 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 			Severity:  diag.Error,
 			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
-			Paths:     structpath.MustParsePaths("workspace.artifact_path"),
+			Paths:     structpath.NewStringKeysSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 }

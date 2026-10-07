@@ -169,7 +169,7 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Detail: `An include section is defined in a file that is not databricks.yml.
 Only includes defined in databricks.yml are applied.`,
 			Locations: this.GetLocations("include"),
-			Paths:     structpath.MustParsePaths("include"),
+			Paths:     structpath.NewStringKeysSlice("include"),
 		})
 	}
 

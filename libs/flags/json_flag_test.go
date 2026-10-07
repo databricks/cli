@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -259,7 +260,7 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 				Column: 15,
 			},
 		},
-		Paths: dyn.ToStructPaths(dyn.NewPath(dyn.Key("job_id"))),
+		Paths: structpath.NewStringKeysSlice("job_id"),
 	})
 }
 
@@ -284,7 +285,7 @@ func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 				Column: 40,
 			},
 		},
-		Paths: dyn.ToStructPaths(dyn.NewPath(dyn.Key("new_settings"), dyn.Key("timeout_seconds"))),
+		Paths: structpath.NewStringKeysSlice("new_settings", "timeout_seconds"),
 	})
 }
 
