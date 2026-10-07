@@ -21,7 +21,7 @@ func TestVisitDashboardPaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitDashboardPaths)
-	expected := structpath.MustParsePaths("resources.dashboards.dashboard0.file_path")
+	expected := structpath.NewStringKeysSlice("resources", "dashboards", "dashboard0", "file_path")
 
 	assert.ElementsMatch(t, expected, actual)
 }
