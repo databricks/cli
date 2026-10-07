@@ -1,5 +1,4 @@
-bundle:
-  name: test-bundle
+bundle: {name: test-bundle}
 
 resources:
   jobs:

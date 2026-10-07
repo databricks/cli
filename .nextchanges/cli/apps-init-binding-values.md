@@ -1,1 +1,0 @@
-* `databricks apps init` now requires a value for every field a service principal resource binding references, prompting for missing values in an interactive terminal and otherwise failing with the `--set` key to use, instead of creating a project with unset variables. ([#6903](https://github.com/databricks/cli/pull/6903))

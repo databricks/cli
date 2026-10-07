@@ -1,1 +1,0 @@
-* Add `databricks apps init --package-manager <npm|pnpm>` to select the package manager for Node.js templates. Infer the default quietly from template lockfiles and AppKit version, check prerequisites before creating files, and preserve template formatting and pnpm version pins. ([#6902](https://github.com/databricks/cli/pull/6902))

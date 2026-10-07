@@ -1,1 +1,0 @@
-* Accept title-case booleans (`True`/`False`, as rendered by Azure Pipelines) for boolean variables, and accept the same boolean strings (`yes`/`no`, `on`/`off`, ...) in Python bundles as in YAML. ([#6942](https://github.com/databricks/cli/pull/6942))
