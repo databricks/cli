@@ -5,8 +5,17 @@ Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
 >>> musterr [CLI] bundle deploy
 Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
 
->>> musterr [CLI] bundle summary
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Schemas:
+    foo:
+      Name: foo
+      URL:  (not deployed)
 
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
