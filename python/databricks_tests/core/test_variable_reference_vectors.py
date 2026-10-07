@@ -11,7 +11,7 @@ from databricks.bundles.core._transform import (
 
 _REFERENCE_VECTORS = (
     Path(__file__).resolve().parents[3]
-    / "libs/dyn/dynvar/testdata/reference_vectors.json"
+    / "libs/structs/structvar/testdata/reference_vectors.json"
 )
 
 

@@ -1,5 +1,0 @@
-# 6. String Anchors
-commonMessage: &msg "Hello, World!"
-
-greeting1: *msg
-greeting2: *msg

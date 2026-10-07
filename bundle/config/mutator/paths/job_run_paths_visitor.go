@@ -1,24 +1,17 @@
 package paths
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // VisitJobRunPaths visits local paths on job_runs so NormalizePaths can rewrite
 // them relative to the bundle root. Not used by TranslatePaths: hashing still
 // needs a local glob, not a workspace path.
-func VisitJobRunPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("job_runs"),
-		dyn.AnyKey(),
-		dyn.Key("lifecycle"),
-		dyn.Key("triggers"),
-		dyn.AnyIndex(),
-		dyn.Key("on_file_change"),
-	)
+func VisitJobRunPaths(root structvar.View, fn VisitFunc) error {
+	pattern := structpath.MustParsePattern("resources.job_runs.*.lifecycle.triggers[*].on_file_change")
 
-	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, value structvar.View) error {
 		return fn(path, TranslateModeLocalRelative, value)
 	})
 }

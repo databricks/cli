@@ -116,6 +116,7 @@ func (r *ResourcePermissions) PrepareInputConfig(inputConfig any, resourceKey st
 		Refs: map[string]string{
 			"object_id": r.objectType + "${" + baseNode + "." + r.idField + "}",
 		},
+		Locations: nil,
 	}, nil
 }
 

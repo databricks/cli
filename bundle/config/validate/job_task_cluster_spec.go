@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -27,13 +26,13 @@ func (v *jobTaskClusterSpec) Name() string {
 func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
+	jobsPath := structpath.NewStringKeys(nil, "resources", "jobs")
 
 	for resourceName, job := range b.Config.Resources.Jobs {
-		resourcePath := jobsPath.Append(dyn.Key(resourceName))
+		resourcePath := structpath.NewStringKeys(jobsPath, resourceName)
 
 		for taskIndex, task := range job.Tasks {
-			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
+			taskPath := structpath.NewIndex(structpath.NewStringKeys(resourcePath, "tasks"), taskIndex)
 
 			diags = diags.Extend(validateJobTask(b, task, taskPath))
 		}
@@ -42,7 +41,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.PathNode) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string
@@ -73,7 +72,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 	}
 
 	if task.ForEachTask != nil {
-		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
+		forEachTaskPath := structpath.NewStringKeys(taskPath, "for_each_task", "task")
 
 		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
 	}
@@ -89,13 +88,12 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 				strings.Join(unspecified, ", "),
 			)
 
-			taskNode := dyn.ToStructPath(taskPath)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
-				Locations: b.Config.GetLocationsOf(taskNode),
-				Paths:     []*structpath.PathNode{taskNode},
+				Locations: b.Config.GetLocations(taskPath.String()),
+				Paths:     []*structpath.PathNode{taskPath},
 			})
 		}
 	}

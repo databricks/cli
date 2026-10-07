@@ -56,14 +56,14 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			Summary:  "There are no files to sync, please check your .gitignore",
 		})
 	} else {
-		path := structpath.NewPath(nil, "sync", "exclude")
+		path := "sync.exclude"
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "There are no files to sync, please check your .gitignore and sync.exclude configuration",
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
-			Locations: b.Config.GetLocationsOf(path),
-			Paths:     []*structpath.PathNode{path},
+			Locations: b.Config.GetLocations(path),
+			Paths:     structpath.MustParsePaths(path),
 		})
 	}
 
