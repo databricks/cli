@@ -2,11 +2,12 @@ package paths
 
 import (
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type pipelineRewritePattern struct {
-	pattern dyn.Pattern
+	pattern *structpath.PatternNode
 	mode    TranslateMode
 
 	// If function defined in skipRewrite returns true, we skip rewriting the path.
@@ -15,32 +16,28 @@ type pipelineRewritePattern struct {
 }
 
 // Base pattern to match all libraries in all pipelines.
-var base = dyn.NewPattern(
-	dyn.Key("resources"),
-	dyn.Key("pipelines"),
-	dyn.AnyKey(),
-)
+var base = "resources.pipelines.*"
 
 func pipelineRewritePatterns() []pipelineRewritePattern {
 	// Compile list of configuration paths to rewrite.
 	allPatterns := []pipelineRewritePattern{
 		{
-			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("notebook"), dyn.Key("path")),
+			pattern:     structpath.MustParsePattern(base + ".libraries[*].notebook.path"),
 			mode:        TranslateModeNotebook,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("file"), dyn.Key("path")),
+			pattern:     structpath.MustParsePattern(base + ".libraries[*].file.path"),
 			mode:        TranslateModeFile,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			pattern:     structpath.MustParsePattern(base + ".libraries[*].glob.include"),
 			mode:        TranslateModeGlob,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     base.Append(dyn.Key("root_path")),
+			pattern:     structpath.MustParsePattern(base + ".root_path"),
 			mode:        TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},
@@ -52,15 +49,8 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
 		{
-			pattern: dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			mode: TranslateModeLocalRelativeWithPrefix,
+			pattern: structpath.MustParsePattern("resources.pipelines.*.environment.dependencies[*]"),
+			mode:    TranslateModeLocalRelativeWithPrefix,
 			skipRewrite: func(s string) bool {
 				return !libraries.IsLibraryLocal(s)
 			},
@@ -69,14 +59,7 @@ func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 
 	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
 		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
+			structpath.MustParsePattern("resources.pipelines.*.environment.dependencies[*]"),
 			TranslateModeEnvironmentPipFlag,
 			func(s string) bool {
 				_, _, ok := libraries.IsLocalPathInPipFlag(s)
@@ -88,50 +71,24 @@ func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 	return append(pipelineEnvironmentsPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
 }
 
-func VisitPipelinePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	var err error
-	newValue := value
-
+func VisitPipelinePaths(root structvar.View, fn VisitFunc) error {
 	for _, rewritePattern := range pipelineRewritePatterns() {
-		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			sv, ok := v.AsString()
-			if !ok {
-				return v, nil
-			}
-			if rewritePattern.skipRewrite(sv) {
-				return v, nil
-			}
-
-			return fn(p, rewritePattern.mode, v)
-		})
+		err := visitString(root, rewritePattern.pattern, rewritePattern.mode, rewritePattern.skipRewrite, fn)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return err
 		}
 	}
 
-	return newValue, nil
+	return nil
 }
 
-func VisitPipelineLibrariesPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
-	var err error
-	newValue := value
-
+func VisitPipelineLibrariesPaths(root structvar.View, fn VisitFunc) error {
 	for _, rewritePattern := range pipelineLibrariesRewritePatterns() {
-		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			sv, ok := v.AsString()
-			if !ok {
-				return v, nil
-			}
-			if rewritePattern.skipRewrite(sv) {
-				return v, nil
-			}
-
-			return fn(p, rewritePattern.mode, v)
-		})
+		err := visitString(root, rewritePattern.pattern, rewritePattern.mode, rewritePattern.skipRewrite, fn)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return err
 		}
 	}
 
-	return newValue, nil
+	return nil
 }

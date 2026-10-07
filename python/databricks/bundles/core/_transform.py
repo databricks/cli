@@ -19,7 +19,7 @@ __all__ = [
 
 _T = TypeVar("_T")
 
-# Same strings as normalizeBool in libs/dyn/convert/normalize.go.
+# Same strings as the bool decoding in libs/structs/structvar/decode.go.
 # See https://yaml.org/type/bool.html.
 _TRUE_STRINGS = [
     "true",
@@ -311,8 +311,8 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
 
 # Regex for string corresponding to variables.
 #
-# The source of truth is regex in libs/dyn/dynvar/ref.go.
-# Behavioral parity is enforced by libs/dyn/dynvar/testdata/reference_vectors.json.
+# The source of truth is regex in libs/structs/structvar/ref.go.
+# Behavioral parity is enforced by libs/structs/structvar/testdata/reference_vectors.json.
 #
 # The (?<!\$) lookbehind skips references escaped by a preceding "$": "$${a.b}" is a
 # literal "${a.b}" for the Databricks runtime, not a bundle reference.

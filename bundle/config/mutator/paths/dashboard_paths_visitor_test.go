@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,9 +21,7 @@ func TestVisitDashboardPaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitDashboardPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.dashboards.dashboard0.file_path"),
-	}
+	expected := structpath.MustParsePaths("resources.dashboards.dashboard0.file_path")
 
 	assert.ElementsMatch(t, expected, actual)
 }

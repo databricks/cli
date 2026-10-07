@@ -1,22 +1,64 @@
 package configsync
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func loadTestConfig(t *testing.T, yaml string) *config.Root {
+	t.Helper()
+	root, diags := config.LoadFromBytes("test.yml", []byte(yaml))
+	require.NoError(t, diags.Error())
+	return root
+}
+
+// scalarView returns a view of the string s.
+func scalarView(t *testing.T, s string) structvar.View {
+	t.Helper()
+	root := loadTestConfig(t, fmt.Sprintf("bundle:\n  name: %q\n", s))
+	return root.View().Lookup(structpath.MustParsePath("bundle.name"))
+}
+
+// tasksView returns views of job tasks, each given as the YAML of its fields in flow style.
+func tasksView(t *testing.T, tasks ...string) []structvar.View {
+	t.Helper()
+	var sb strings.Builder
+	sb.WriteString("resources:\n  jobs:\n    j:\n      tasks:\n")
+	for _, task := range tasks {
+		fmt.Fprintf(&sb, "        - {%s}\n", task)
+	}
+	root := loadTestConfig(t, sb.String())
+	var out []structvar.View
+	for _, elem := range root.View().Lookup(structpath.MustParsePath("resources.jobs.j.tasks")).Sequence() {
+		out = append(out, elem)
+	}
+	return out
+}
+
+// variablesConfig returns a resolved configuration with the given variable values.
+func variablesConfig(t *testing.T, values map[string]any) resolvedConfig {
+	t.Helper()
+	var sb strings.Builder
+	sb.WriteString("variables:\n")
+	for name, value := range values {
+		fmt.Fprintf(&sb, "  %s:\n    value: %#v\n", name, value)
+	}
+	return resolvedConfig{view: loadTestConfig(t, sb.String()).View(), overrides: map[string]any{}}
+}
 
 // TestRestoreOriginalRefs_HardcodedFieldNotRewritten fences the Replace safety
 // invariant: a hardcoded leaf must never be rewritten to a variable reference
 // just because the remote value coincidentally matches a variable elsewhere.
 func TestRestoreOriginalRefs_HardcodedFieldNotRewritten(t *testing.T) {
-	preResolved := dyn.V("us-east-1")
-	resolved := dyn.V(map[string]dyn.Value{
-		"variables": dyn.V(map[string]dyn.Value{
-			"region": dyn.V(map[string]dyn.Value{"value": dyn.V("main")}),
-		}),
-	})
+	preResolved := scalarView(t, "us-east-1")
+	resolved := variablesConfig(t, map[string]any{"region": "main"})
 	// Even though "main" matches ${var.region}, restoreOriginalRefs must NOT
 	// rewrite it — the original was hardcoded.
 	result := restoreOriginalRefs("main", preResolved, resolved, &RestoreStats{})
@@ -29,17 +71,8 @@ func TestRestoreOriginalRefs_HardcodedFieldNotRewritten(t *testing.T) {
 func TestRestoreFromSiblings_ValueMatchesVariableButDifferentPath(t *testing.T) {
 	// Sibling uses ${var.retry_count}=5 at .max_retries. New element has
 	// .min_retry_interval=5 — coincidental match at a DIFFERENT relative path.
-	siblings := []dyn.Value{
-		dyn.V(map[string]dyn.Value{
-			"task_key":    dyn.V("main"),
-			"max_retries": dyn.V("${var.retry_count}"),
-		}),
-	}
-	resolved := dyn.V(map[string]dyn.Value{
-		"variables": dyn.V(map[string]dyn.Value{
-			"retry_count": dyn.V(map[string]dyn.Value{"value": dyn.V(int64(5))}),
-		}),
-	})
+	siblings := tasksView(t, `task_key: main, max_retries: "${var.retry_count}"`)
+	resolved := variablesConfig(t, map[string]any{"retry_count": 5})
 	value := map[string]any{
 		"task_key":           "other",
 		"min_retry_interval": int64(5),
@@ -53,32 +86,22 @@ func TestRestoreFromSiblings_ValueMatchesVariableButDifferentPath(t *testing.T) 
 // same-value rule: when two siblings use different variables at the same
 // relative path that both resolve to the same value, restoration is skipped.
 func TestRestoreFromSiblings_AmbiguousAcrossSiblings(t *testing.T) {
-	siblings := []dyn.Value{
-		dyn.V(map[string]dyn.Value{"default": dyn.V("${var.landing_schema}")}),
-		dyn.V(map[string]dyn.Value{"default": dyn.V("${var.curated_schema}")}),
-	}
-	resolved := dyn.V(map[string]dyn.Value{
-		"variables": dyn.V(map[string]dyn.Value{
-			"landing_schema": dyn.V(map[string]dyn.Value{"value": dyn.V("raw_data")}),
-			"curated_schema": dyn.V(map[string]dyn.Value{"value": dyn.V("raw_data")}),
-		}),
-	})
-	value := map[string]any{"default": "raw_data"}
+	siblings := tasksView(t, `task_key: "${var.landing_schema}"`, `task_key: "${var.curated_schema}"`)
+	resolved := variablesConfig(t, map[string]any{"landing_schema": "raw_data", "curated_schema": "raw_data"})
+	value := map[string]any{"task_key": "raw_data"}
 	result := restoreFromSiblings(value, siblings, resolved, &RestoreStats{}).(map[string]any)
-	assert.Equal(t, "raw_data", result["default"])
+	assert.Equal(t, "raw_data", result["task_key"])
 }
 
 // TestRestoreCompoundInterpolation covers the template alignment algorithm.
 // End-to-end coverage (pure ref match, sibling match, non-sequence skip, etc.)
 // lives in acceptance/bundle/config-remote-sync/resolve_variables.
 func TestRestoreCompoundInterpolation(t *testing.T) {
-	resolved := dyn.V(map[string]dyn.Value{
-		"variables": dyn.V(map[string]dyn.Value{
-			"host": dyn.V(map[string]dyn.Value{"value": dyn.V("dev-sql.example.com")}),
-			"port": dyn.V(map[string]dyn.Value{"value": dyn.V("1433")}),
-			"db":   dyn.V(map[string]dyn.Value{"value": dyn.V("analytics_dev")}),
-			"acct": dyn.V(map[string]dyn.Value{"value": dyn.V("acct")}),
-		}),
+	resolved := variablesConfig(t, map[string]any{
+		"host": "dev-sql.example.com",
+		"port": "1433",
+		"db":   "analytics_dev",
+		"acct": "acct",
 	})
 
 	tests := []struct {
@@ -108,7 +131,7 @@ func TestRestoreCompoundInterpolation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := restoreOriginalRefs(tt.remote, dyn.V(tt.template), resolved, &RestoreStats{})
+			result := restoreOriginalRefs(tt.remote, scalarView(t, tt.template), resolved, &RestoreStats{})
 			assert.Equal(t, tt.want, result)
 		})
 	}

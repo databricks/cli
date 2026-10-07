@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -855,10 +855,8 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 	ctx := t.Context()
 	// Assign the variables to the dynamic configuration.
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			p := dyn.MustPathFromString("resources.jobs.job.tasks[0]")
-			return dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
-		})
+		p := structpath.MustParsePath("resources.jobs.job.tasks[0]")
+		err := b.Config.SetReference(structpath.NewStringKey(p, "libraries"), "${var.cluster_libraries}")
 		require.NoError(t, err)
 	})
 

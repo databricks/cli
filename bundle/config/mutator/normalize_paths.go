@@ -14,7 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type normalizePaths struct{}
@@ -43,41 +44,39 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	// Do not normalize job task paths if using git source
 	gitSourcePaths := collectGitSourcePaths(b)
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
-			if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
-				return v, nil
-			}
+	err := paths.VisitPaths(b.Config.View(), func(path *structpath.PathNode, kind paths.TranslateMode, v structvar.View) error {
+		if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
+			return nil
+		}
 
-			value, ok := v.AsString()
-			if !ok {
-				return dyn.InvalidValue, fmt.Errorf("value at %s is not a string", path.String())
-			}
+		value, ok := v.AsString()
+		if !ok {
+			return fmt.Errorf("value at %s is not a string", path.String())
+		}
 
-			newValue, err := normalizePath(value, v.Location(), b.BundleRootPath)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+		newValue, err := normalizePath(value, v.Location(), b.BundleRootPath)
+		if err != nil {
+			return err
+		}
 
-			return dyn.NewValue(newValue, v.Locations()), nil
-		})
+		return b.Config.Set(path, newValue)
 	})
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to normalize paths: %w", err))
 	}
 
-	return diag.FromErr(err)
+	return nil
 }
 
-func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
-	var jobs []dyn.Path
+func collectGitSourcePaths(b *bundle.Bundle) []*structpath.PathNode {
+	var jobs []*structpath.PathNode
 
 	for name, job := range b.Config.Resources.Jobs {
 		if job == nil {
 			continue
 		}
 		if job.GitSource != nil {
-			jobs = append(jobs, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(name)))
+			jobs = append(jobs, structpath.NewStringKeys(nil, "resources", "jobs", name))
 		}
 	}
 
