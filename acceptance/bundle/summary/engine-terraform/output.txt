@@ -38,6 +38,20 @@ Target: default
 
 Found 1 error
 
+>>> musterr [CLI] bundle validate -o json
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:3:11
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+{
+  "engine": "terraform",
+  "environment": "default",
+  "name": "test-bundle",
+  "target": "default"
+}
+
 >>> update_file.py databricks.yml   engine: terraform 
 
 >>> [CLI] bundle summary
@@ -62,3 +76,15 @@ Name: test-bundle
 Target: default
 
 Found 1 error
+
+>>> musterr [CLI] bundle validate -o json
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+
+Unset the DATABRICKS_BUNDLE_ENGINE environment variable (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+{
+  "environment": "default",
+  "name": "test-bundle",
+  "target": "default"
+}

@@ -2,8 +2,10 @@ trace $CLI bundle summary
 trace $CLI bundle summary -o json | jq .bundle.engine
 # Other commands still reject engine: terraform.
 trace musterr $CLI bundle validate
+trace musterr $CLI bundle validate -o json | jq .bundle
 
 # The env var is not checked by summary (bundle.engine is removed first, since it takes priority over the env var).
 trace update_file.py databricks.yml "  engine: terraform" ""
 DATABRICKS_BUNDLE_ENGINE=terraform trace $CLI bundle summary
 DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle validate
+DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle validate -o json | jq .bundle
