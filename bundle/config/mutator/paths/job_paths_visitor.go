@@ -1,6 +1,8 @@
 package paths
 
 import (
+	"slices"
+
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -14,35 +16,35 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
+func jobTaskRewritePatterns(taskBase dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			taskBase.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
 			TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			taskBase.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			taskBase.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
 			TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			taskBase.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
+			taskBase.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			taskBase.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -50,17 +52,17 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			// The AI Runtime task runs this bash script on each node; the backend
 			// reads it as a workspace file, so translate the local path to its
 			// remote (or immutable-snapshot) location like any other file.
-			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
+			taskBase.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 	}
 }
 
-func jobEnvironmentRewritePatterns(base dyn.Pattern) []jobRewritePattern {
+func jobEnvironmentRewritePatterns(environmentBase dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			base.Append(dyn.Key("spec"), dyn.Key("project_environment")),
+			environmentBase.Append(dyn.Key("spec"), dyn.Key("project_environment")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -69,7 +71,7 @@ func jobEnvironmentRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 
 func jobRewritePatterns() []jobRewritePattern {
 	// Base pattern to match all tasks in all jobs.
-	base := dyn.NewPattern(
+	taskBase := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("jobs"),
 		dyn.AnyKey(),
@@ -77,8 +79,10 @@ func jobRewritePatterns() []jobRewritePattern {
 		dyn.AnyIndex(),
 	)
 
-	taskPatterns := jobTaskRewritePatterns(base)
-	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	taskPatterns := slices.Concat(
+		jobTaskRewritePatterns(taskBase),
+		jobTaskRewritePatterns(taskBase.Append(dyn.Key("for_each_task"), dyn.Key("task"))),
+	)
 
 	environmentBase := dyn.NewPattern(
 		dyn.Key("resources"),
@@ -89,8 +93,7 @@ func jobRewritePatterns() []jobRewritePattern {
 	)
 	environmentPatterns := jobEnvironmentRewritePatterns(environmentBase)
 
-	patterns := append(taskPatterns, forEachPatterns...)
-	patterns = append(patterns, jobRewritePattern{
+	taskPatterns = append(taskPatterns, jobRewritePattern{
 		dyn.NewPattern(
 			dyn.Key("resources"),
 			dyn.Key("jobs"),
@@ -104,7 +107,7 @@ func jobRewritePatterns() []jobRewritePattern {
 		TranslateModeFile,
 		noSkipRewrite,
 	})
-	return append(patterns, environmentPatterns...)
+	return slices.Concat(taskPatterns, environmentPatterns)
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
