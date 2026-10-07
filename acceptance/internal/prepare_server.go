@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/testproxy"
@@ -117,7 +118,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := iamutil.GetCurrentUser(t.Context(), w)
 		require.NoError(t, err, "Failed to get current user")
 
-		workspaceID, err := w.CurrentWorkspaceID(t.Context())
+		workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
 		require.NoError(t, err, "Failed to get current workspace id")
 
 		cfg := w.Config
@@ -139,7 +140,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			}
 		}
 
-		return cfg, *user, strconv.FormatInt(workspaceID, 10)
+		return cfg, *user, workspaceID
 	}
 
 	// Same topology as cloud, with the testserver as the upstream. Both servers see

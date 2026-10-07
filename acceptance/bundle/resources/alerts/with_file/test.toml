@@ -14,6 +14,6 @@ Env.MSYS_NO_PATHCONV = "1"
 
 # redact ?[ow]=[WORKSPACE_ID]. Different clouds can have different URL serialization, like [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID] vs [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?o=[WORKSPACE_ID].
 [[Repls]]
-Old = '\?[ow]=\d+'
+Old = '\?[ow]=\[WORKSPACE_ID\]'
 New = ''
-Order = 0
+Order = 1000
