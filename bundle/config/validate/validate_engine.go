@@ -54,7 +54,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   engine.TerraformRemovedSummary,
-			Detail:    engine.TerraformRemovedDetail,
+			Detail:    engine.TerraformRemovedConfigDetail,
 			Locations: []dyn.Location{loc},
 		})
 	}

@@ -30,7 +30,7 @@ const (
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;
 	// all are absent when auto-migration did not run. If both config and env
-	// set direct, ConfigType wins per ResolveEngineSetting, so via_config
+	// set direct, bundle.engine wins per ValidateEngineSetting, so via_config
 	// covers the "durable opt-in" population and via_env covers the
 	// "env-var only" population.
 	//   - via_config:  bundle.engine = "direct" was set in the bundle config.

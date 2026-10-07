@@ -73,8 +73,8 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		extraArgsStr := getCommonArgs(cmd)
 
-		// Clear the engine env var so migrate always uses terraform engine to read existing state,
-		// regardless of what the user may have set in their environment.
+		// Clear the engine env var so the user's environment cannot affect how the existing
+		// Terraform state is read for migration.
 		cmd.SetContext(env.Set(cmd.Context(), engine.EnvVar, ""))
 
 		opts := utils.ProcessOptions{
@@ -93,7 +93,7 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 		if stateDesc.Lineage == "" {
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
-To start using direct engine, set "engine: direct" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
+New bundles use the direct engine automatically, no migration is needed.`)
 			return root.ErrAlreadyPrinted
 		}
 

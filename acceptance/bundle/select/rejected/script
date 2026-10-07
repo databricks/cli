@@ -1,3 +1,0 @@
-# --select is only supported by the direct engine; both plan and deploy reject it.
-trace musterr $CLI bundle plan --select my_job
-trace musterr $CLI bundle deploy --select my_job

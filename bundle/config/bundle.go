@@ -23,8 +23,8 @@ type Bundle struct {
 	// DEPRECATED. Left for backward compatibility with Target
 	Environment string `json:"environment,omitempty" bundle:"readonly"`
 
-	// Terraform holds configuration related to Terraform.
-	// For example, where to find the binary, which version to use, etc.
+	// DEPRECATED. The Terraform engine was removed, so this setting is ignored
+	// (a warning is reported if it is set). Kept so existing configs still parse.
 	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
 	// Force-override Git branch validation.

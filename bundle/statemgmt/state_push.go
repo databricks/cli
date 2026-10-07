@@ -25,8 +25,8 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
 
 	local, err := os.Open(localPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		// The state file can be absent if terraform apply is skipped because
-		// there are no changes to apply in the plan.
+		// The state file can be absent if the deploy made no changes
+		// that needed to be recorded.
 		log.Debugf(ctx, "Local state file does not exist: %s", localPath)
 		return
 	}
