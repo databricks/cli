@@ -57,6 +57,21 @@ func cliLaunchDir(base, experiment, run string) string {
 	return path.Join(base, ".air", "cli_launch", experiment, run+"_"+unique)
 }
 
+// prospectiveLaunchPaths returns the workspace paths a submission would use
+// without creating directories or uploading artifacts.
+func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig) (string, string, string, error) {
+	base, err := userWorkspaceDir(ctx, w)
+	if err != nil {
+		return "", "", "", err
+	}
+	runName := ""
+	if cfg.MLflowRunName != nil {
+		runName = *cfg.MLflowRunName
+	}
+	launchDir := cliLaunchDir(base, cfg.ExperimentName, runName)
+	return base, launchDir, path.Join(launchDir, commandScriptName), nil
+}
+
 // ensureExperimentDirectory creates experimentDir if it is missing, matching the
 // CLI's convention for its other artifact directories. Without this, a missing
 // parent surfaces only as a server-side INTERNAL_ERROR after the run is wasted.

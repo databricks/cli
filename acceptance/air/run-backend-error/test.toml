@@ -1,0 +1,18 @@
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '''
+{
+  "errors": [
+    {
+      "path": "deployments[0].compute.accelerator_count",
+      "message": "accelerator_count must be at most 1024, but was 1032.",
+      "code": "OUT_OF_RANGE"
+    },
+    {
+      "path": "env_variables[1INVALID]",
+      "message": "env_variables[1INVALID] contains characters that are not allowed.",
+      "code": "DISALLOWED_CHARACTERS"
+    }
+  ]
+}
+'''

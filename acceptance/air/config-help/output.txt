@@ -18,7 +18,7 @@ Usage:
   databricks air run [flags]
 
 Flags:
-      --dry-run                  Validate the config without submitting
+      --dry-run                  Validate the config against the workspace without submitting a run
   -f, --file string              Path to the workload YAML config
   -h, --help                     help for run
       --idempotency-key string   Return the existing run if this key was already used
