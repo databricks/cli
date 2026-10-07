@@ -320,8 +320,9 @@ func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
 	assert.Equal(t, int32(2), dials.Load(), "expected the initial dial plus exactly one handover dial")
 }
 
-// A handover dial can fail with context.Canceled from the dialer's own internals while the session
-// is still live. That is a failed dial, not the session ending, so later ticks must still hand over.
+// A failed dial never touches the live connection, whatever error it returns, so the handover loop
+// must check for it before it treats context.Canceled as the session ending. Later ticks must still
+// hand over.
 func TestHandoverDialCanceledKeepsHandingOver(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
