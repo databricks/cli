@@ -47,6 +47,7 @@ var defaultPrefixes = []string{
 var artifactPath = structpath.MustParsePath("artifacts")
 
 type resolveVariableReferences struct {
+	// prefixes are top-level config keys.
 	prefixes    []string
 	pattern     *structpath.PatternNode
 	lookupFn    func(structvar.View, *structpath.PathNode, *bundle.Bundle) (structvar.View, error)
@@ -169,7 +170,7 @@ func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bund
 func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	prefixes := make([]*structpath.PathNode, len(m.prefixes))
 	for i, prefix := range m.prefixes {
-		prefixes[i] = structpath.MustParsePath(prefix)
+		prefixes[i] = structpath.NewPath(nil, prefix)
 	}
 
 	// The path ${var.foo} is a shorthand for ${variables.foo.value}.

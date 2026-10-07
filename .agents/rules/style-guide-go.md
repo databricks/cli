@@ -117,6 +117,10 @@ return fieldPaths
 
 **RULE: Be careful with `encoding/csv` `Writer.UseCRLF = true`.** It rewrites both record terminators AND embedded newlines inside quoted fields to `\r\n`, so tests for quoted multiline fields must expect `\r\n`, not just the line endings between rows.
 
+### Structpath
+
+**RULE: Build computed structpath paths and patterns from parts (`structpath.NewPath`, `NewPathSlice`, `NewPattern`); never format or concatenate a string to parse it.** `MustParsePath`/`MustParsePattern`/`MustParsePaths` are for string literals and tests; `ParsePath` with the error handled is for user input. The `NoComputedStructpathParse` ruleguard rule enforces this.
+
 ### Environment variables
 
 **RULE: In library and product code, use `github.com/databricks/cli/libs/env` for reading environment variables, not `os.Getenv`.** `env.Get(ctx, name)` and `env.Lookup(ctx, name)` can be overridden per-context in tests, so you don't have to mutate process-wide state to exercise a code path. `os.Getenv` is still fine in `main`, tests, and acceptance/integration harnesses where no `ctx` is available and overrides aren't needed.
