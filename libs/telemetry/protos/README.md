@@ -21,5 +21,4 @@ The shared CLI logger uploads at command exit and respects
 `DATABRICKS_CLI_DISABLE_TELEMETRY`. Dry runs do not emit a submission event.
 Unlike Python AIR's `sgcli_log`, this event does not include `--via` attribution
 or a separate first-log timing event, and watched submissions remain buffered
-until the command exits. The Universe schema must land before ingestion can
-retain the new event.
+until the command exits.

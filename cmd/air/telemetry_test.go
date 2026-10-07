@@ -101,7 +101,7 @@ func TestAirRunTelemetry(t *testing.T) {
 			require.NotNil(t, event)
 			assert.Equal(t, !tc.fail && !tc.failUpload, event.SubmittedSuccessfully)
 			assert.Equal(t, tc.snapshot, event.HasCodeSnapshot)
-			assert.Equal(t, protos.AirGPUType1xH100, event.GPUType)
+			assert.Equal(t, string(gpuType1xH100), event.GPUType)
 			assert.Equal(t, 1, event.NumGPUs)
 			assert.Equal(t, 1, event.NumNodes)
 			assert.GreaterOrEqual(t, event.SubmitLatencyMs, int64(0))
@@ -190,8 +190,18 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 	assert.Empty(t, result.CodeSourcePath)
 }
 
-func TestTelemetryGPUTypeCoversSupportedTypes(t *testing.T) {
-	for _, g := range gpuTypes {
-		assert.NotEqual(t, protos.AirGPUTypeUnspecified, telemetryGPUType(g), "missing telemetry GPU type: %s", g)
-	}
+func TestAirRunTelemetryContainersHaveDockerImage(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, events := captureAirTelemetry(t, server, w)
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", minimalConfig))
+	require.NoError(t, err)
+	cfg.Command = nil
+	cfg.Containers = []containerConfig{{Name: "trainer", UnityCatalogImage: "private.schema.image:tag"}}
+	logRunEvent(ctx, cfg, snapshotResult{}, 123, time.Millisecond, nil)
+	require.NoError(t, telemetry.Upload(ctx, protos.ExecutionContext{}))
+	require.Len(t, *events, 1)
+	assert.True(t, (*events)[0].Entry.DatabricksCliLog.AirRunEvent.HasDockerImage)
 }
