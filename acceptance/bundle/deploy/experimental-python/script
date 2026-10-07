@@ -1,4 +1,6 @@
 trace uv run --quiet --with $DATABRICKS_BUNDLES_WHEEL -- $CLI bundle deploy
-uv run --quiet --with $DATABRICKS_BUNDLES_WHEEL -- replace_ids.py
+# Read the id from the API rather than via replace_ids.py: that needs the bundles wheel
+# (uv run), and uv cannot spawn a .py script on Windows. python3, not jq: the id exceeds 2^53.
+add_repl "$($CLI jobs list --output json | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["job_id"])')" JOB1_ID
 
 trace $CLI jobs list --output json | nostamp
