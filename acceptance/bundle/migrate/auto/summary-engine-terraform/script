@@ -11,7 +11,7 @@ trace update_file.py databricks.yml "{name: test-bundle}" "{name: test-bundle, e
 title "Summary works with engine: terraform and shows the deployed job's ID and URL"
 trace $CLI bundle summary
 trace $CLI bundle summary -o json | jq '{engine: .bundle.engine, id: .resources.jobs.test_job.id, url: .resources.jobs.test_job.url}'
-rm -f "$OUT_REQUESTS"
 
-title "Summary does not migrate: terraform state is left untouched\n"
+title "Summary does not migrate: no state writes, terraform state is left untouched\n"
+trace print_requests.py
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

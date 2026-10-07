@@ -38,7 +38,9 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
   "url": "[DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[NUMID]"
 }
 
-=== Summary does not migrate: terraform state is left untouched
+=== Summary does not migrate: no state writes, terraform state is left untouched
+
+>>> print_requests.py
 
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
