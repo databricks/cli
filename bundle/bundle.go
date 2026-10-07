@@ -67,14 +67,19 @@ const terraformStateFilename = "terraform.tfstate"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount      int64
-	TargetCount                 int64
-	DeploymentId                uuid.UUID
-	BoolValues                  []protos.BoolMapEntry
-	PythonAddedResourcesCount   int64
-	PythonUpdatedResourcesCount int64
-	ExecutionTimes              []protos.IntMapEntry
-	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+	ConfigurationFileCount   int64
+	TargetCount              int64
+	DeploymentId             uuid.UUID
+	BoolValues               []protos.BoolMapEntry
+	ExecutionTimes           []protos.IntMapEntry
+	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// Number of resources added and updated by the Python mutator, keyed by resource type.
+	PythonAddedResources   map[string]int64
+	PythonUpdatedResources map[string]int64
+
+	// Configuration section Python support is declared in.
+	PythonConfigSection protos.PydabsConfigSection
 
 	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
 	// requested engine as soon as it is resolved, then refined to the state's engine

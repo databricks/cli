@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 type phase string
@@ -107,6 +108,17 @@ type runPythonMutatorOpts struct {
 	authEnv        map[string]string
 }
 
+// addResourceCounts adds the number of resources in set to counts, per resource type.
+func addResourceCounts(counts map[string]int64, set resourcemutator.ResourceKeySet) map[string]int64 {
+	for resourceType, names := range set {
+		if counts == nil {
+			counts = make(map[string]int64)
+		}
+		counts[resourceType] += int64(len(names))
+	}
+	return counts
+}
+
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
 // into a common structure.
 func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
@@ -148,6 +160,23 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		}, nil
 	} else {
 		return opts{}, nil
+	}
+}
+
+// pythonConfigSection reports which section the user declared Python support in.
+func pythonConfigSection(b *bundle.Bundle) protos.PydabsConfigSection {
+	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
+	experimentalPythonEnabled := b.Config.Experimental != nil && !reflect.DeepEqual(b.Config.Experimental.Python, config.Python{})
+
+	switch {
+	case pythonEnabled && experimentalPythonEnabled:
+		return protos.PydabsConfigSectionBoth
+	case pythonEnabled:
+		return protos.PydabsConfigSectionPython
+	case experimentalPythonEnabled:
+		return protos.PydabsConfigSectionExperimentalPython
+	default:
+		return protos.PydabsConfigSectionUnspecified
 	}
 }
 
@@ -199,6 +228,12 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Record before applyBackwardsCompatibilityFixes copies 'python' into 'experimental/python',
+	// which makes the sections indistinguishable. The load_resources phase runs first.
+	if m.phase == PythonMutatorPhaseLoadResources {
+		b.Metrics.PythonConfigSection = pythonConfigSection(b)
+	}
+
 	err := applyBackwardsCompatibilityFixes(b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
@@ -290,8 +325,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	})
 
 	// we can precisely track resources that are added/updated, so sum doesn't double-count
-	b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
-	b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
+	b.Metrics.PythonUpdatedResources = addResourceCounts(b.Metrics.PythonUpdatedResources, result.UpdatedResources)
+	b.Metrics.PythonAddedResources = addResourceCounts(b.Metrics.PythonAddedResources, result.AddedResources)
 
 	if err == mutateDiagsHasError {
 		if !mutateDiags.HasError() {
