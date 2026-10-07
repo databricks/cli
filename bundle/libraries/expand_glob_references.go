@@ -106,7 +106,7 @@ func expandSequence[T any](ctx context.Context, b *bundle.Bundle, p *structpath.
 	b.Config.UpdateSequence(p, sources)
 	for i, relocate := range relocates {
 		if relocate != "" {
-			b.Config.SetLocations(structpath.NewStringKey(structpath.NewIndex(p, i), relocate), locations[i])
+			b.Config.SetLocations(structpath.NewPath(p, i, relocate), locations[i])
 		}
 	}
 

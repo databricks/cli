@@ -64,7 +64,7 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
 		}
 
-		path = structpath.NewStringKeys(path, "lifecycle", "prevent_destroy")
+		path = structpath.NewPath(path, "lifecycle", "prevent_destroy")
 
 		preventDestroyV := root.Lookup(path)
 		if !preventDestroyV.IsValid() {
