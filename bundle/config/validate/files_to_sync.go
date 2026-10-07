@@ -63,7 +63,7 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
 			Locations: b.Config.GetLocations(path),
-			Paths:     structpath.NewStringKeysSlice("sync", "exclude"),
+			Paths:     structpath.NewPathSlice("sync", "exclude"),
 		})
 	}
 

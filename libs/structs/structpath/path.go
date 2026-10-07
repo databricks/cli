@@ -169,18 +169,26 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return NewBracketString(prev, fieldName)
 }
 
-// NewStringKeys appends the keys to prev, each like [NewStringKey].
-func NewStringKeys(prev *PathNode, keys ...string) *PathNode {
-	for _, k := range keys {
-		prev = NewStringKey(prev, k)
+// NewPath appends parts to prev: a string is a key (see [NewStringKey]) and an int is
+// an index. Other types panic.
+func NewPath(prev *PathNode, parts ...any) *PathNode {
+	for _, part := range parts {
+		switch v := part.(type) {
+		case string:
+			prev = NewStringKey(prev, v)
+		case int:
+			prev = NewIndex(prev, v)
+		default:
+			panic(fmt.Sprintf("structpath.NewPath: unsupported part %#v", part))
+		}
 	}
 	return prev
 }
 
-// NewStringKeysSlice returns the path of keys from the root as a one-element slice,
-// e.g. for diag.Diagnostic.Paths.
-func NewStringKeysSlice(keys ...string) []*PathNode {
-	return []*PathNode{NewStringKeys(nil, keys...)}
+// NewPathSlice returns the path of parts from the root (see [NewPath]) as a one-element
+// slice, e.g. for diag.Diagnostic.Paths.
+func NewPathSlice(parts ...any) []*PathNode {
+	return []*PathNode{NewPath(nil, parts...)}
 }
 
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {

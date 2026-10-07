@@ -79,7 +79,7 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml", Line: 13, Column: 7},
 						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml", Line: 4, Column: 7},
 					},
-					Paths: structpath.NewStringKeysSlice("resources", "jobs", "foo"),
+					Paths: structpath.NewPathSlice("resources", "jobs", "foo"),
 				},
 			},
 		},

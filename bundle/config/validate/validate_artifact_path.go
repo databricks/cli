@@ -87,7 +87,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 				Summary:   s,
 				Severity:  diag.Error,
 				Locations: b.Config.GetLocations("workspace.artifact_path"),
-				Paths:     structpath.NewStringKeysSlice("workspace", "artifact_path"),
+				Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 			},
 		}
 	}
@@ -119,7 +119,7 @@ this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
 			Locations: slices.Concat(b.Config.GetLocations("workspace.artifact_path"), locations),
-			Paths:     append(structpath.NewStringKeysSlice("workspace", "artifact_path"), dyn.ToStructPath(path)),
+			Paths:     append(structpath.NewPathSlice("workspace", "artifact_path"), dyn.ToStructPath(path)),
 		}}
 
 	}

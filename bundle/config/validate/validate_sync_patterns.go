@@ -62,7 +62,7 @@ func checkPatterns(ctx context.Context, patterns []string, field string, b *bund
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
 					Locations: b.Config.GetLocations(path),
-					Paths:     []*structpath.PathNode{structpath.NewIndex(structpath.NewStringKeys(nil, "sync", field), index)},
+					Paths:     structpath.NewPathSlice("sync", field, index),
 				})
 			}
 			return nil

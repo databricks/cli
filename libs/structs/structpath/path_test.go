@@ -1283,14 +1283,17 @@ func TestMustParsePaths(t *testing.T) {
 	assert.Empty(t, MustParsePaths())
 }
 
-func TestNewStringKeys(t *testing.T) {
-	assert.Equal(t, "a.b['c d']", NewStringKeys(NewStringKey(nil, "a"), "b", "c d").String())
-	assert.Nil(t, NewStringKeys(nil))
-	assert.Equal(t, "a", NewStringKeys(NewStringKey(nil, "a")).String())
+func TestNewPath(t *testing.T) {
+	assert.Equal(t, "a.b['c d']", NewPath(NewStringKey(nil, "a"), "b", "c d").String())
+	assert.Equal(t, "resources.jobs.j.tasks[2].job_cluster_key", NewPath(nil, "resources", "jobs", "j", "tasks", 2, "job_cluster_key").String())
+	assert.Nil(t, NewPath(nil))
+	assert.Equal(t, "a", NewPath(NewStringKey(nil, "a")).String())
+	assert.Panics(t, func() { NewPath(nil, int64(1)) })
 }
 
-func TestNewStringKeysSlice(t *testing.T) {
-	paths := NewStringKeysSlice("resources", "jobs", "${var.env}_job")
+func TestNewPathSlice(t *testing.T) {
+	paths := NewPathSlice("resources", "jobs", "${var.env}_job")
 	require.Len(t, paths, 1)
 	assert.Equal(t, "resources.jobs['${var.env}_job']", paths[0].String())
+	assert.Equal(t, "sync.paths[3]", NewPathSlice("sync", "paths", 3)[0].String())
 }

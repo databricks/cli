@@ -36,7 +36,7 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "idempotency_token must not be set in bundle configuration; the CLI sets it on each run-now request",
-			Paths:     structpath.NewStringKeysSlice("resources", "job_runs", name, "idempotency_token"),
+			Paths:     structpath.NewPathSlice("resources", "job_runs", name, "idempotency_token"),
 			Locations: b.Config.GetLocations(path),
 		})
 	}

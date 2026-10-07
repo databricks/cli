@@ -45,7 +45,7 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
-		Paths:     structpath.NewStringKeysSlice("bar"),
+		Paths:     structpath.NewPathSlice("bar"),
 	}, diags[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -307,7 +307,7 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
-		Paths:     structpath.NewStringKeysSlice("bar"),
+		Paths:     structpath.NewPathSlice("bar"),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.

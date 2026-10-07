@@ -33,13 +33,13 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 		for index, task := range job.Tasks {
 			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
 				fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index),
-				[]*structpath.PathNode{structpath.NewStringKey(structpath.NewIndex(structpath.NewStringKeys(nil, "resources", "jobs", k, "tasks"), index), "job_cluster_key")}))
+				structpath.NewPathSlice("resources", "jobs", k, "tasks", index, "job_cluster_key")))
 
 			// The Jobs API rejects nested for_each_task, so one level is sufficient.
 			if task.ForEachTask != nil {
 				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
 					fmt.Sprintf("resources.jobs.%s.tasks[%d].for_each_task.task.job_cluster_key", k, index),
-					[]*structpath.PathNode{structpath.NewStringKeys(structpath.NewIndex(structpath.NewStringKeys(nil, "resources", "jobs", k, "tasks"), index), "for_each_task", "task", "job_cluster_key")}))
+					structpath.NewPathSlice("resources", "jobs", k, "tasks", index, "for_each_task", "task", "job_cluster_key")))
 			}
 		}
 	}

@@ -27,7 +27,7 @@ func (v *validateDashboardEtags) Apply(ctx context.Context, b *bundle.Bundle) di
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("dashboard %q has an etag set. Etags must not be set in bundle configuration", dashboard.DisplayName),
-					Paths:     structpath.NewStringKeysSlice("resources", "dashboards", k),
+					Paths:     structpath.NewPathSlice("resources", "dashboards", k),
 					Locations: b.Config.GetLocations("resources.dashboards." + k),
 				},
 			}

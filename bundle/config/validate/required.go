@@ -106,11 +106,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
 			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
+			namePaths = append(namePaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 		if dashboard.WarehouseId == "" {
 			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, structpath.NewStringKeys(nil, "resources", "dashboards", key))
+			warehouseIdPaths = append(warehouseIdPaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 	}
 
@@ -140,7 +140,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
 				Locations: b.Config.GetLocations(path),
-				Paths:     structpath.NewStringKeysSlice("resources", "sql_warehouses", key),
+				Paths:     structpath.NewPathSlice("resources", "sql_warehouses", key),
 			})
 		}
 	}
@@ -207,7 +207,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
 				Locations: b.Config.GetLocations("resources.secret_scopes." + key),
-				Paths:     []*structpath.PathNode{structpath.NewIndex(structpath.NewStringKeys(nil, "resources", "secret_scopes", key, "permissions"), i)},
+				Paths:     structpath.NewPathSlice("resources", "secret_scopes", key, "permissions", i),
 			})
 		}
 	}
