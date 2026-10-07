@@ -536,10 +536,11 @@ func TestServerEOFDuringHandoverIsACleanExit(t *testing.T) {
 
 	clientInput, clientWriter := io.Pipe()
 	defer clientWriter.Close()
+	clientOutput := newTestBuffer(t)
 	ticks := make(chan time.Time, 1)
 	clientDone := make(chan error, 1)
 	go func() {
-		clientDone <- RunClientProxy(ctx, clientInput, io.Discard, func() <-chan time.Time { return ticks }, time.Hour, false,
+		clientDone <- RunClientProxy(ctx, clientInput, clientOutput, func() <-chan time.Time { return ticks }, time.Hour, false,
 			func(dialCtx context.Context, _ DialRequest) (*websocket.Conn, error) {
 				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) // nolint:bodyclose
 				return conn, err
@@ -551,9 +552,13 @@ func TestServerEOFDuringHandoverIsACleanExit(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("the server did not accept the connection")
 	}
-	// The client waits for the server's first byte before it treats the session as started.
-	_, err := serverWriter.Write([]byte("SSH-2.0-test\r\n"))
+	// The client waits for the server's first byte before it treats the session as started. Wait
+	// until the client has it: the write only proves the sending loop read it, and a handover that
+	// takes the mutex before the sending loop sends it would block the loop from reading the EOF.
+	banner := []byte("SSH-2.0-test\r\n")
+	_, err := serverWriter.Write(banner)
 	require.NoError(t, err)
+	require.NoError(t, clientOutput.WaitForWrite(banner))
 	ticks <- time.Now()
 	select {
 	case <-ackReceived:
