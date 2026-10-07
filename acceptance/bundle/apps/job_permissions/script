@@ -12,9 +12,16 @@ has_manage_run() {
     | jq 'any(.access_control_list[].all_permissions[]; .permission_level == "CAN_MANAGE_RUN")'
 }
 
-# The first deploy is not asserted: job permissions and the app (which grants the job
-# permission) can be deployed in either order, so CAN_MANAGE_RUN may or may not be
-# there yet. The second deploy must keep it (the bug this test covers).
+# The permissions after the first deploy are not checked. This is flaky on direct,
+# because there are (at least) two ways to complete deployment:
+# sequence 1:
+#  job is deployed
+#  job permissions are deployed
+#  app is deployed
+# sequence 2:
+#  job is deployed
+#  app is deployed, updates job permissions
+#  job permissions are deployed
 
 title "After second deploy"
 trace $CLI bundle deploy -qq
