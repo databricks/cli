@@ -185,6 +185,30 @@
       "path": "resources.jobs._asset-bundle-deploymentjob.id"
     },
     {
+      "id": "trailing-underscore",
+      "input": "${hello_world_.world_world__}",
+      "match": true,
+      "references": ["hello_world_.world_world__"],
+      "pure": true,
+      "path": "hello_world_.world_world__"
+    },
+    {
+      "id": "resource-key-trailing-underscore",
+      "input": "${resources.jobs.job_.id}",
+      "match": true,
+      "references": ["resources.jobs.job_.id"],
+      "pure": true,
+      "path": "resources.jobs.job_.id"
+    },
+    {
+      "id": "resource-key-leading-and-trailing-underscores",
+      "input": "${resources.jobs._my__job__.id}",
+      "match": true,
+      "references": ["resources.jobs._my__job__.id"],
+      "pure": true,
+      "path": "resources.jobs._my__job__.id"
+    },
+    {
       "id": "segment-trailing-hyphen",
       "input": "${hello_world-.world_world}",
       "match": false
