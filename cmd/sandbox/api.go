@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -237,11 +237,11 @@ func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 
 // headers attaches the workspace routing identifier so multi-workspace
 // gateways (e.g. SPOG hosts) can scope the credential. The
-// auth.WorkspaceIDNone sentinel ("none") is treated as unset so the
+// profile.WorkspaceIDNone sentinel ("none") is treated as unset so the
 // literal string never goes on the wire.
 func (a *sandboxAPI) headers() map[string]string {
 	wsID := a.c.Config.WorkspaceID
-	if wsID == "" || wsID == auth.WorkspaceIDNone {
+	if wsID == "" || wsID == profile.WorkspaceIDNone {
 		return nil
 	}
 	return map[string]string{orgIDHeader: wsID}

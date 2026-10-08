@@ -3,6 +3,7 @@ package auth
 import (
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -54,7 +55,7 @@ func ResolveConfigType(cfg *config.Config) config.ConfigType {
 		return configType
 	}
 
-	if cfg.WorkspaceID != "" && cfg.WorkspaceID != WorkspaceIDNone {
+	if cfg.WorkspaceID != "" && cfg.WorkspaceID != profile.WorkspaceIDNone {
 		return config.WorkspaceConfig
 	}
 	return config.AccountConfig

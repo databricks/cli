@@ -635,7 +635,7 @@ func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
 	}
 	err := setHostAndAccountId(ctx, skipProfile, &args, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, auth.WorkspaceIDNone, args.WorkspaceID)
+	assert.Equal(t, profile.WorkspaceIDNone, args.WorkspaceID)
 }
 
 func TestShouldPromptWorkspace(t *testing.T) {

@@ -32,7 +32,7 @@ func isAccountOnlyProfile(p profile.Profile) bool {
 	if auth.IsClassicAccountHost(cfg.CanonicalHostName()) {
 		return true
 	}
-	return p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone)
+	return p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone)
 }
 
 // LoadProfile loads and validates the named Docker credential helper profile.
@@ -59,7 +59,7 @@ func EnsureUniqueProfile(ctx context.Context, profiler profile.Profiler, p profi
 		return err
 	}
 
-	if p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone {
+	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
 		matches = append(matches, p)
 	}
 	var names []string
