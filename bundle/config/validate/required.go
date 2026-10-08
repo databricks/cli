@@ -50,8 +50,6 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			return nil
 		}
 
-		cloneP := slices.Clone(p)
-
 		fields := generated.RequiredFields[pattern.String()]
 		for _, field := range fields {
 			vv := v.Get(field)
@@ -60,7 +58,7 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("required field %q is not set", field),
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(cloneP),
+					Paths:     dyn.ToStructPaths(p),
 				})
 			}
 		}
@@ -167,7 +165,7 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 					Severity:  diag.Error,
 					Summary:   "grant principal is required",
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(slices.Clone(p)),
+					Paths:     dyn.ToStructPaths(p),
 				})
 			}
 			if isMissingOrEmptySequence(v.Get("privileges")) {
@@ -175,7 +173,7 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 					Severity:  diag.Error,
 					Summary:   "grant privileges is required",
 					Locations: v.Locations(),
-					Paths:     dyn.ToStructPaths(slices.Clone(p)),
+					Paths:     dyn.ToStructPaths(p),
 				})
 			}
 			return v, nil

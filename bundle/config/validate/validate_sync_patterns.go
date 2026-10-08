@@ -26,16 +26,16 @@ func (v *validateSyncPatterns) Name() string {
 func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	s := b.Config.Sync
 
-	checkPatterns(ctx, s.Exclude, "exclude", b)
+	checkPatterns(ctx, s.Exclude, structpath.NewPath(nil, "sync", "exclude"), b)
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	checkPatterns(ctx, s.Include, "include", b)
+	checkPatterns(ctx, s.Include, structpath.NewPath(nil, "sync", "include"), b)
 	return nil
 }
 
-func checkPatterns(ctx context.Context, patterns []string, field string, b *bundle.Bundle) {
+func checkPatterns(ctx context.Context, patterns []string, path *structpath.PathNode, b *bundle.Bundle) {
 	var errs errgroup.Group
 
 	for index, pattern := range patterns {
@@ -57,12 +57,12 @@ func checkPatterns(ctx context.Context, patterns []string, field string, b *bund
 			}
 
 			if len(all) == 0 {
-				path := fmt.Sprintf("sync.%s[%d]", field, index)
+				path := structpath.NewPath(path, index)
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
-					Locations: b.Config.GetLocations(path),
-					Paths:     structpath.NewPathSlice("sync", field, index),
+					Locations: b.Config.GetLocations(path.String()),
+					Paths:     []*structpath.PathNode{path},
 				})
 			}
 			return nil
