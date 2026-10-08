@@ -125,21 +125,29 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState selects the newest Terraform or direct state.
-// Local state is ignored when deployment history is enabled.
+// Deployment history removes local cache files and selects only remote state.
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
-	// Consider local and remote state unless deployment history requires remote state.
+	// Deployment history requires remote state even when local caches exist.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	historyEnabled := bundleenv.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory)
 	states := readStates(ctx, b, AlwaysPull(bool(alwaysPull) || historyEnabled))
-	localDirectExists := slices.ContainsFunc(states, func(state *StateDesc) bool {
-		return state.IsLocal && state.Engine.IsDirect()
-	})
+	if logdiag.HasError(ctx) {
+		return nil
+	}
 	if historyEnabled {
-		states = slices.DeleteFunc(states, func(state *StateDesc) bool { return state.IsLocal })
+		states = slices.DeleteFunc(states, func(state *StateDesc) bool {
+			if !state.IsLocal {
+				return false
+			}
+			if err := os.Remove(state.SourcePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", state.SourcePath, err))
+			}
+			return true
+		})
 	}
 	for _, state := range states {
 		if state.readErr != nil {
@@ -174,12 +182,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if len(states) == 0 {
-		if historyEnabled && localDirectExists {
-			// When deployment history is enabled and remote state is absent, the local cache can be cleaned up.
-			if err := os.Remove(localPathDirect); err != nil && !errors.Is(err, fs.ErrNotExist) {
-				logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", filepath.ToSlash(localPathDirect), err))
-			}
-		}
 		return winner
 	}
 

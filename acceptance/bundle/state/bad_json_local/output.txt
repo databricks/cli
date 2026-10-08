@@ -8,6 +8,8 @@ create schemas.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
+>>> test ! -e .databricks/bundle/default/terraform/terraform.tfstate
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr [CLI] bundle plan
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: unexpected end of JSON input
 
@@ -16,3 +18,5 @@ Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: unexpec
 create schemas.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> test ! -e .databricks/bundle/default/resources.json
