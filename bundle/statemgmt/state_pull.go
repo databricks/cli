@@ -34,6 +34,7 @@ type StateDesc struct {
 	// additional fields describing state:
 	SourcePath string
 	Content    []byte
+	readErr    error
 
 	Engine  engine.EngineType `json:"-"`
 	IsLocal bool              `json:"-"`
@@ -64,19 +65,17 @@ func (s *StateDesc) IsDMS() bool {
 	return ok
 }
 
-func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
+func localRead(fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
-		}
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 
 	state := &StateDesc{}
-	err = json.Unmarshal(content, state)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
+		state.readErr = fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err)
+	} else if err := json.Unmarshal(content, state); err != nil {
+		state.readErr = fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err)
 	}
 
 	state.SourcePath = filepath.ToSlash(fullPath)
@@ -135,7 +134,18 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	historyEnabled := bundleenv.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory)
-	states := readStates(ctx, b, alwaysPull, historyEnabled)
+	states := readStates(ctx, b, AlwaysPull(bool(alwaysPull) || historyEnabled))
+	localDirectExists := slices.ContainsFunc(states, func(state *StateDesc) bool {
+		return state.IsLocal && state.Engine.IsDirect()
+	})
+	if historyEnabled {
+		states = slices.DeleteFunc(states, func(state *StateDesc) bool { return state.IsLocal })
+	}
+	for _, state := range states {
+		if state.readErr != nil {
+			logdiag.LogError(ctx, state.readErr)
+		}
+	}
 
 	if logdiag.HasError(ctx) {
 		return nil
@@ -164,7 +174,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if len(states) == 0 {
-		if historyEnabled {
+		if historyEnabled && localDirectExists {
 			// When deployment history is enabled and remote state is absent, the local cache can be cleaned up.
 			if err := os.Remove(localPathDirect); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", filepath.ToSlash(localPathDirect), err))
@@ -196,7 +206,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, historyEnabled bool) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
 	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
@@ -206,12 +216,8 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, hi
 		return nil
 	}
 
-	var directLocalState, terraformLocalState *StateDesc
-	// Deployment history uses remote state as the source of truth.
-	if !historyEnabled {
-		directLocalState = localRead(ctx, localPathDirect, engine.EngineDirect)
-		terraformLocalState = localRead(ctx, localPathTerraform, engine.EngineTerraform)
-	}
+	directLocalState := localRead(localPathDirect, engine.EngineDirect)
+	terraformLocalState := localRead(localPathTerraform, engine.EngineTerraform)
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)
