@@ -172,16 +172,16 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	// upload the bytes now or reuse an object already in the store.
 	remote := path.Join(uploadPath, tarName)
 
-	_, err = f.Stat(ctx, tarName)
-	if err == nil {
+	exists, err := snapshotExists(ctx, f, tarName)
+	if err != nil {
+		return result, err
+	}
+	if exists {
 		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
 		result.CodeSourcePath = remote
 		result.PackagingDurationMs = new(int64(0))
 		result.UploadDurationMs = new(int64(0))
 		return result, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return result, fmt.Errorf("failed to check snapshot cache: %w", err)
 	}
 
 	tmp, err := os.MkdirTemp("", "air-snapshot-*")
@@ -240,4 +240,18 @@ func snapshotUploadFiler(ctx context.Context, w *databricks.WorkspaceClient, art
 	}
 	f, err := filer.NewWorkspaceFilesClient(w, uploadPath)
 	return f, uploadPath, err
+}
+
+// snapshotExists reports whether name already exists in the artifact store, used to
+// short-circuit a content-addressed upload (either mode). A not-found is a clean miss
+// (false, nil); any other error is surfaced.
+func snapshotExists(ctx context.Context, store filer.Filer, name string) (bool, error) {
+	_, err := store.Stat(ctx, name)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to check snapshot cache: %w", err)
 }
