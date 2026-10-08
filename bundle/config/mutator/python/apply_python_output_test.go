@@ -7,9 +7,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
