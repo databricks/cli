@@ -565,34 +565,21 @@ func (r Root) GetLocations(path string) []diag.Location {
 	if err != nil {
 		return nil
 	}
-	return r.locations.Nearest(p)
-}
-
-// GetLocationOf is [Root.GetLocation] for a path node.
-func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
-	v, ok := r.valueOf(path)
-	if !ok {
-		return diag.Location{}
-	}
-	return v.Location()
+	return r.GetLocationsOf(p)
 }
 
 // GetLocationsOf is [Root.GetLocations] for a path node.
 func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
-	v, ok := r.valueOf(path)
-	if !ok {
-		return nil
-	}
-	return v.Locations()
+	return r.locations.Nearest(path)
 }
 
-func (r Root) valueOf(path *structpath.PathNode) (dyn.Value, bool) {
-	p, ok := dyn.FromStructPath(path)
-	if !ok {
-		return dyn.InvalidValue, false
+// GetLocationOf is [Root.GetLocation] for a path node.
+func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
+	locs := r.GetLocationsOf(path)
+	if len(locs) == 0 {
+		return diag.Location{}
 	}
-	v, err := dyn.GetByPath(r.value, p)
-	return v, err == nil
+	return locs[0]
 }
 
 // DefinitionLocation returns the primary location the value at path is defined at,
