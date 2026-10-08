@@ -7,12 +7,8 @@ id  name
 --  -----
 1   alice
 2   bob
-3   carol
-4   dave
-5   eve
 
-5 rows
-Use --limit <n> to preview more rows.
+2 rows
 
 === json output
 
@@ -25,18 +21,6 @@ Use --limit <n> to preview more rows.
   {
     "id": "2",
     "name": "bob"
-  },
-  {
-    "id": "3",
-    "name": "carol"
-  },
-  {
-    "id": "4",
-    "name": "dave"
-  },
-  {
-    "id": "5",
-    "name": "eve"
   }
 ]
 
@@ -55,7 +39,7 @@ Error: invalid table name "people": expected catalog.schema.table (Unity Catalog
     "disposition": "INLINE",
     "format": "JSON_ARRAY",
     "on_wait_timeout": "CONTINUE",
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 5",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
     "wait_timeout": "10s",
     "warehouse_id": "wh-test"
   }
@@ -67,7 +51,7 @@ Error: invalid table name "people": expected catalog.schema.table (Unity Catalog
     "disposition": "INLINE",
     "format": "JSON_ARRAY",
     "on_wait_timeout": "CONTINUE",
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 5",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
     "wait_timeout": "10s",
     "warehouse_id": "wh-test"
   }

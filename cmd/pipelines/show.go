@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultLimit = 5
+const defaultLimit = 10
 
 func showCommand() *cobra.Command {
 	var warehouseID string
