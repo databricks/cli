@@ -300,10 +300,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		if logdiag.HasError(ctx) {
 			return
 		}
+		cmdio.LogString(ctx, "Enabling deployment history...")
 		if err := dmsmigration.Migrate(ctx, &b.DeploymentBundle.StateDB); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
+		logDeploymentVersion(ctx, b)
 		statemgmt.PushResourcesState(ctx, b)
 		if logdiag.HasError(ctx) {
 			return
