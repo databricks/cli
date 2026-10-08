@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="sdp-pipeline-tests" tests="4" failures="1" errors="1" skipped="1" time="0.000">
+  <properties>
+    <property name="pipeline_id" value="2d0401ce-8229-4795-926f-c3991369655e"></property>
+    <property name="update_id" value="3627a3a1-2374-4bc2-981f-49bb81ef662c"></property>
+  </properties>
+  <testcase classname="test_demo.py" name="test_demo.py::test_pass" time="0.000"></testcase>
+  <testcase classname="test_demo.py" name="test_demo.py::test_fail" time="0.000">
+    <failure message="AssertionError: intentional demo failure">def test_fail():&#xA;&gt;       assert 1 + 1 == 3, &#34;intentional demo failure&#34;&#xA;E       AssertionError: intentional demo failure&#xA;&#xA;Workspace/Shared/sdp_m2_20260918/test_demo.py:9: AssertionError</failure>
+  </testcase>
+  <testcase classname="test_demo.py" name="test_demo.py::test_skip" time="0.000">
+    <skipped message="Skipped: demo skip reason"></skipped>
+  </testcase>
+  <testcase classname="test_demo.py" name="test_demo.py::test_error" time="0.000">
+    <error message="RuntimeError: intentional setup error for demo">@pytest.fixture&#xA;    def broken_setup():&#xA;&gt;       raise RuntimeError(&#34;intentional setup error for demo&#34;)&#xA;E       RuntimeError: intentional setup error for demo&#xA;&#xA;Workspace/Shared/sdp_m2_20260918/test_demo.py:19: RuntimeError</error>
+  </testcase>
+</testsuite>
