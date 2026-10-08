@@ -1,0 +1,59 @@
+
+=== default history by pipeline id
+
+>>> [CLI] pipelines history [UUID]
+Updates Summary for pipeline [UUID]:
+Update ID: update-3
+   State: COMPLETED
+   Creation Time: [TIMESTAMP]
+   Full Refresh: false
+   Validate Only: false
+Update ID: update-2
+   State: FAILED
+   Creation Time: [TIMESTAMP]
+   Full Refresh: false
+   Validate Only: true
+Update ID: update-1
+   State: CANCELED
+   Creation Time: [TIMESTAMP]
+   Full Refresh: false
+   Validate Only: false
+
+=== json output
+
+>>> [CLI] pipelines history [UUID] --output json
+{
+  "Key": "[UUID]",
+  "Updates": [
+    {
+      "creation_time": 1640995200000,
+      "state": "COMPLETED",
+      "update_id": "update-3",
+      "validate_only": false
+    },
+    {
+      "creation_time": 1640908800000,
+      "state": "FAILED",
+      "update_id": "update-2",
+      "validate_only": true
+    },
+    {
+      "creation_time": 1640822400000,
+      "state": "CANCELED",
+      "update_id": "update-1",
+      "validate_only": false
+    }
+  ]
+}
+
+=== wire request uses pipeline id
+
+>>> print_requests.py //api/2.0/pipelines/[UUID]/updates --get
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}

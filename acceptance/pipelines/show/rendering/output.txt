@@ -2,6 +2,7 @@
 === table output: long note truncated, ragged row blank cell
 
 >>> [CLI] pipelines show main.default.people
+Table: main.default.people
 name   id  note
 -----  --  ----------------------------------------
 alice  1   this is a very long note value that e...
