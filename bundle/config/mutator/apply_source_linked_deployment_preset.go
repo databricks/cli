@@ -39,7 +39,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 					Severity:  diag.Warning,
 					Summary:   "source-linked deployment is available only in the Databricks Workspace",
 					Paths:     []*structpath.PathNode{path},
-					Locations: b.Config.GetLocations(path.SkipPrefix(2).String()),
+					Locations: b.Config.GetLocationsOf(path.SkipPrefix(2)),
 				},
 			)
 
@@ -57,7 +57,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 					Severity:  diag.Warning,
 					Summary:   "source-linked deployment in non-development mode is deprecated and will not be supported in a future release",
 					Paths:     []*structpath.PathNode{path},
-					Locations: b.Config.GetLocations(path.SkipPrefix(2).String()),
+					Locations: b.Config.GetLocationsOf(path.SkipPrefix(2)),
 				},
 			)
 		}
@@ -77,7 +77,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 				Summary:   "workspace.file_path setting will be ignored in source-linked deployment mode",
 				Detail:    "In source-linked deployment files are not copied to the destination and resources use source files instead",
 				Paths:     []*structpath.PathNode{path},
-				Locations: b.Config.GetLocations(path.String()),
+				Locations: b.Config.GetLocationsOf(path),
 			},
 		)
 	}

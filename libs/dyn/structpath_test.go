@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,4 +27,13 @@ func TestToStructPaths(t *testing.T) {
 	assert.Equal(t, "a.b", paths[0].String())
 	assert.Equal(t, "c[1]", paths[1].String())
 	assert.Empty(t, dyn.ToStructPaths())
+}
+
+func TestFromStructPath(t *testing.T) {
+	p, ok := dyn.FromStructPath(structpath.NewPath(nil, "resources", "jobs", "a.b", "tasks", 2))
+	assert.True(t, ok)
+	assert.Equal(t, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key("a.b"), dyn.Key("tasks"), dyn.Index(2)), p)
+
+	_, ok = dyn.FromStructPath(structpath.MustParsePath("tasks[task_key='x']"))
+	assert.False(t, ok)
 }

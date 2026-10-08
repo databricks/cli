@@ -28,7 +28,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Missing app source code path or git source",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
-				Locations: b.Config.GetLocations("resources.apps." + key),
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
 			})
 			continue
 		}
@@ -38,7 +38,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Both source_code_path and git_source fields are set",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
-				Locations: b.Config.GetLocations("resources.apps." + key),
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
 			})
 			continue
 		}
@@ -48,7 +48,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 				Severity:  diag.Error,
 				Summary:   "Duplicate app source code path",
 				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
-				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s.source_code_path", key)),
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
 			})
 		}
 		usedSourceCodePaths[app.SourceCodePath] = key
@@ -155,7 +155,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 			continue
 		}
 
-		appPath := "resources.apps." + appKey
+		appPath := structpath.NewPath(nil, "resources", "apps", appKey)
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  fmt.Sprintf("app %q references %s %q which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the %s permissions", appKey, refType, resourceKey, refType),
@@ -173,8 +173,8 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				ref.permission,
 				appKey,
 			),
-			Paths:     structpath.NewPathSlice("resources", "apps", appKey),
-			Locations: b.Config.GetLocations(appPath),
+			Paths:     []*structpath.PathNode{appPath},
+			Locations: b.Config.GetLocationsOf(appPath),
 		})
 	}
 

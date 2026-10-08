@@ -103,12 +103,14 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, structpath.NewPath(nil, "resources", "dashboards", key))
+			path := structpath.NewPath(nil, "resources", "dashboards", key)
+			nameLocations = append(nameLocations, b.Config.GetLocationsOf(path)...)
+			namePaths = append(namePaths, path)
 		}
 		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, structpath.NewPath(nil, "resources", "dashboards", key))
+			path := structpath.NewPath(nil, "resources", "dashboards", key)
+			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocationsOf(path)...)
+			warehouseIdPaths = append(warehouseIdPaths, path)
 		}
 	}
 
@@ -133,12 +135,12 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
 	for key, warehouse := range b.Config.Resources.SqlWarehouses {
 		if strings.TrimSpace(warehouse.Name) == "" {
-			path := "resources.sql_warehouses." + key
+			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocations(path),
-				Paths:     structpath.NewPathSlice("resources", "sql_warehouses", key),
+				Locations: b.Config.GetLocationsOf(path),
+				Paths:     []*structpath.PathNode{path},
 			})
 		}
 	}
@@ -204,7 +206,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.GetLocations("resources.secret_scopes." + key),
+				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "secret_scopes", key)),
 				Paths:     structpath.NewPathSlice("resources", "secret_scopes", key, "permissions", i),
 			})
 		}

@@ -61,7 +61,7 @@ func checkPatterns(ctx context.Context, patterns []string, path *structpath.Path
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
-					Locations: b.Config.GetLocations(path.String()),
+					Locations: b.Config.GetLocationsOf(path),
 					Paths:     []*structpath.PathNode{path},
 				})
 			}

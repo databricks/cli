@@ -30,7 +30,7 @@ func (v *validateGenieSpaceEtags) Apply(ctx context.Context, b *bundle.Bundle) d
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("genie space %q has an etag set. Etags must not be set in bundle configuration", genieSpace.Title),
 					Paths:     structpath.NewPathSlice("resources", "genie_spaces", k),
-					Locations: b.Config.GetLocations("resources.genie_spaces." + k),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "genie_spaces", k)),
 				},
 			}
 		}

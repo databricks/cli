@@ -23,3 +23,19 @@ func ToStructPaths(paths ...Path) []*structpath.PathNode {
 	}
 	return out
 }
+
+// FromStructPath converts a [structpath.PathNode] of keys and indices to a [Path].
+// It reports false for nodes a [Path] cannot represent (key-value selectors, wildcards).
+func FromStructPath(p *structpath.PathNode) (Path, bool) {
+	var out Path
+	for _, n := range p.AsSlice() {
+		if k, ok := n.StringKey(); ok {
+			out = append(out, Key(k))
+		} else if i, ok := n.Index(); ok {
+			out = append(out, Index(i))
+		} else {
+			return nil, false
+		}
+	}
+	return out, true
+}

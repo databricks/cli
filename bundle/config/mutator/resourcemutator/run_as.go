@@ -109,7 +109,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 			}
 			diags = diags.Extend(reportRunAsNotSupported(
 				"dashboards with embed_credentials set to true",
-				b.Config.GetLocation("resources.dashboards."+key),
+				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
 				b.Config.Workspace.CurrentUser.UserName,
 				identity,
 			))
