@@ -592,6 +592,112 @@ func TestServerEOFDuringHandoverIsACleanExit(t *testing.T) {
 	}
 }
 
+// If the client's input ends while its receiving loop holds the server's normal handover close, the
+// client must still complete the swap: its exit then sends the resumable "finished" close on the
+// replacement connection, and the server ends the session at once instead of waiting for a reattach.
+func TestClientEOFDuringHandoverReleasesServer(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	serverProxy := newResumableProxyConnection(nil)
+	serverInput, serverWriter := io.Pipe()
+	defer serverWriter.Close()
+	serverReady := make(chan struct{})
+	serverDone := make(chan error, 1)
+	handoverDone := make(chan error, 1)
+	var accepted atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !accepted.CompareAndSwap(false, true) {
+			handoverDone <- serverProxy.acceptHandover(ctx, w, r)
+			return
+		}
+		if err := serverProxy.accept(w, r); err != nil {
+			serverDone <- err
+			return
+		}
+		close(serverReady)
+		// Mirrors runServerProxy.
+		err := serverProxy.start(ctx, serverInput, io.Discard)
+		closeProxyConnection(ctx, serverProxy)
+		serverDone <- err
+	}))
+	defer server.Close()
+
+	clientInput, clientWriter := io.Pipe()
+	defer clientWriter.Close()
+	clientSource := &closeSignalingSource{ReadCloser: clientInput, closed: make(chan struct{})}
+	clientOutput := newTestBuffer(t)
+	ticks := make(chan time.Time, 1)
+	clientDone := make(chan error, 1)
+	ackSent := make(chan struct{})
+	releaseAck := make(chan struct{})
+	var dials atomic.Int32
+	go func() {
+		clientDone <- RunClientProxy(ctx, clientSource, clientOutput, func() <-chan time.Time { return ticks }, time.Hour, true,
+			func(dialCtx context.Context, _ DialRequest) (*websocket.Conn, error) {
+				conn, _, err := websocket.DefaultDialer.DialContext(dialCtx, "ws"+server.URL[4:], nil) // nolint:bodyclose
+				// Hold the client's receiving loop right after it acknowledges the server's
+				// handover close on the first connection, until the client's teardown has started.
+				if err == nil && dials.Add(1) == 1 {
+					defaultCloseHandler := conn.CloseHandler()
+					conn.SetCloseHandler(func(code int, text string) error {
+						err := defaultCloseHandler(code, text)
+						close(ackSent)
+						select {
+						case <-releaseAck:
+						case <-ctx.Done():
+						}
+						return err
+					})
+				}
+				return conn, err
+			})
+	}()
+
+	select {
+	case <-serverReady:
+	case <-ctx.Done():
+		t.Fatal("the server did not accept the connection")
+	}
+	banner := []byte("SSH-2.0-test\r\n")
+	_, err := serverWriter.Write(banner)
+	require.NoError(t, err)
+	require.NoError(t, clientOutput.WaitForWrite(banner))
+	ticks <- time.Now()
+	select {
+	case <-ackSent:
+	case <-ctx.Done():
+		t.Fatal("the client did not acknowledge the handover close")
+	}
+	select {
+	case err := <-handoverDone:
+		require.NoError(t, err)
+	case <-ctx.Done():
+		t.Fatal("the server did not finish the handover")
+	}
+	require.NoError(t, clientWriter.Close())
+	select {
+	case <-clientSource.closed:
+	case <-ctx.Done():
+		t.Fatal("the client did not start its teardown")
+	}
+	close(releaseAck)
+
+	select {
+	case err := <-clientDone:
+		require.NoError(t, err)
+	case <-ctx.Done():
+		t.Fatal("the client did not finish")
+	}
+	select {
+	case err := <-serverDone:
+		require.NoError(t, err)
+	case <-serverProxy.resume.parked:
+		t.Fatalf("a clean client exit left the server waiting %v for a reattach", serverProxy.resume.grace)
+	case <-ctx.Done():
+		t.Fatal("the server did not finish after a clean client exit")
+	}
+}
+
 // TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
 // websocket but can't launch its command, so it closes the connection immediately. The client
 // proxy must exit promptly instead of hanging on the handover goroutine (which would leave the
