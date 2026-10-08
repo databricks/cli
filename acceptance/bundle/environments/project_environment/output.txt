@@ -1,23 +1,8 @@
 
 >>> [CLI] bundle validate -o json
 {
-  "tasks": [
-    {
-      "environment_key": "project",
-      "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook"
-      },
-      "task_key": "notebook"
-    }
-  ],
-  "environments": [
-    {
-      "environment_key": "project",
-      "spec": {
-        "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/pyproject.toml"
-      }
-    }
-  ]
+  "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook",
+  "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/pyproject.toml"
 }
 
 >>> [CLI] bundle deploy
@@ -28,23 +13,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.2/jobs/create
 {
-  "tasks": [
-    {
-      "environment_key": "project",
-      "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook"
-      },
-      "task_key": "notebook"
-    }
-  ],
-  "environments": [
-    {
-      "environment_key": "project",
-      "spec": {
-        "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/pyproject.toml"
-      }
-    }
-  ]
+  "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook",
+  "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/pyproject.toml"
 }
 
 >>> update_file.py resources/job.yml ../pyproject.toml ./pyproject.toml
@@ -57,21 +27,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.2/jobs/reset
 {
-  "tasks": [
-    {
-      "environment_key": "project",
-      "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook"
-      },
-      "task_key": "notebook"
-    }
-  ],
-  "environments": [
-    {
-      "environment_key": "project",
-      "spec": {
-        "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/resources/pyproject.toml"
-      }
-    }
-  ]
+  "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/src/notebook",
+  "project_environment": "/Workspace/Users/[USERNAME]/.bundle/project_environment/default/files/resources/pyproject.toml"
 }

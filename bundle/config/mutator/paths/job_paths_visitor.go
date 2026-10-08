@@ -57,16 +57,6 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 	}
 }
 
-func jobEnvironmentRewritePatterns(environmentBase dyn.Pattern) []jobRewritePattern {
-	return []jobRewritePattern{
-		{
-			environmentBase.Append(dyn.Key("spec"), dyn.Key("project_environment")),
-			TranslateModeFile,
-			noSkipRewrite,
-		},
-	}
-}
-
 func jobRewritePatterns() []jobRewritePattern {
 	// Task-level base pattern for all jobs.
 	base := dyn.NewPattern(
@@ -77,36 +67,39 @@ func jobRewritePatterns() []jobRewritePattern {
 		dyn.AnyIndex(),
 	)
 
-	taskPatterns := append(
-		jobTaskRewritePatterns(base),
-		jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))...,
+	taskPatterns := jobTaskRewritePatterns(base)
+	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	patterns := append(taskPatterns, forEachPatterns...)
+	return append(patterns,
+		jobRewritePattern{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environment_variables"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("files"),
+				dyn.AnyIndex(),
+			),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
+		// Environment-level pattern for all jobs.
+		jobRewritePattern{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environments"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("project_environment"),
+			),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
 	)
-
-	// Environment-level base pattern for all jobs.
-	environmentBase := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("environments"),
-		dyn.AnyIndex(),
-	)
-	environmentPatterns := jobEnvironmentRewritePatterns(environmentBase)
-
-	taskPatterns = append(taskPatterns, jobRewritePattern{
-		dyn.NewPattern(
-			dyn.Key("resources"),
-			dyn.Key("jobs"),
-			dyn.AnyKey(),
-			dyn.Key("environment_variables"),
-			dyn.AnyIndex(),
-			dyn.Key("spec"),
-			dyn.Key("files"),
-			dyn.AnyIndex(),
-		),
-		TranslateModeFile,
-		noSkipRewrite,
-	})
-	return append(taskPatterns, environmentPatterns...)
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.
