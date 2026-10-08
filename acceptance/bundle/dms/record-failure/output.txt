@@ -2,6 +2,7 @@
 === A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Error: cannot create resources.jobs.doomed: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES] (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create

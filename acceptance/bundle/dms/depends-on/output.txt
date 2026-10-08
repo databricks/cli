@@ -18,6 +18,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 === Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Created jobs.child
 Created jobs.parent
 Files: 2 uploaded, 0 deleted

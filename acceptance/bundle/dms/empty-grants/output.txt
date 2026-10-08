@@ -2,6 +2,7 @@
 === Deploy a schema with one grant: the grants node is recorded with its state
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-empty-grants-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Created schemas.foo
 Created schemas.foo.grants
 Files: 2 uploaded, 0 deleted
@@ -83,6 +84,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-empty-grants-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 Updated schemas.foo.grants
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged

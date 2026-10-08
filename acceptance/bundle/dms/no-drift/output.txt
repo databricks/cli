@@ -2,6 +2,7 @@
 === Deploy job foo and pipeline bar; both are recorded at version 1
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Created jobs.foo
 Created pipelines.bar
 Files: 3 uploaded, 0 deleted
@@ -68,6 +69,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   in databricks.yml:18:20
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 Updated pipelines.bar
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged

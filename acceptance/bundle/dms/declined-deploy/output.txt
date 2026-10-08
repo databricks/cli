@@ -2,6 +2,7 @@
 === Deploy a schema, so the deployment and its first version exist
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy-[UNIQUE_NAME]/default/files...
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Created schemas.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged

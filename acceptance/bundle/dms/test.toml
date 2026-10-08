@@ -15,3 +15,14 @@ Ignore = [
 # rejection path. Pinned to "true" (not the suite's ["", "true"]) since the field already
 # records - the empty variant would just duplicate it.
 EnvMatrix.DMS = ["true"]
+
+# Preserve the version link around the parent rule that removes it.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: '
+New = '__CURRENT_DEPLOYMENT_VERSION__: '
+Order = -1
+
+[[Repls]]
+Old = '(?m)^__CURRENT_DEPLOYMENT_VERSION__: '
+New = 'Current Deployment Version: '
+Order = 1
