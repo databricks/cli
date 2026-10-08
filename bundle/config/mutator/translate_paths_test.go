@@ -115,6 +115,50 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	)
 }
 
+func TestTranslatePathsRejectsExplicitArtifactPathWithImmutableFolder(t *testing.T) {
+	dir := t.TempDir()
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				ImmutableFolder: true,
+			},
+			Workspace: config.Workspace{
+				ArtifactPath: "/Workspace/Shared/libs",
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.ErrorContains(t, diags.Error(), "workspace.artifact_path cannot be configured when experimental.immutable_folder is enabled")
+}
+
+func TestTranslatePathsRejectsExplicitFilePathWithImmutableFolder(t *testing.T) {
+	dir := t.TempDir()
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				ImmutableFolder: true,
+			},
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/Shared/files",
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.ErrorContains(t, diags.Error(), "workspace.file_path cannot be configured when experimental.immutable_folder is enabled")
+}
+
 func TestTranslatePaths(t *testing.T) {
 	dir := t.TempDir()
 	touchNotebookFile(t, filepath.Join(dir, "my_job_notebook.py"))

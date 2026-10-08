@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle validate
+Error: workspace.artifact_path cannot be configured when experimental.immutable_folder is enabled
+  in databricks.yml:8:18
+
+Name: my-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my-bundle/default
+
+Found 1 error
+
+Exit code: 1

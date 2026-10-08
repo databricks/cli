@@ -71,15 +71,17 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
-		// This mutator needs to be run before variable interpolation and defining default workspace paths
-		// because it affects how workspace variables are resolved.
-		mutator.ApplySourceLinkedDeploymentPreset(),
-
 		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
 		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
 		// Allows running the full test suite against the immutable folder code path without
 		// modifying any databricks.yml files.
+		// Must run before ApplySourceLinkedDeploymentPreset, which disables source-linked
+		// deployment for immutable bundles.
 		mutator.OverrideImmutableFolder(),
+
+		// This mutator needs to be run before variable interpolation and defining default workspace paths
+		// because it affects how workspace variables are resolved.
+		mutator.ApplySourceLinkedDeploymentPreset(),
 
 		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
 		// Reads (typed): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
