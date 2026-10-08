@@ -647,8 +647,19 @@ type configField struct {
 // `-h config.<field>` and --override path validation resolve against it.
 func configSchema() configField {
 	return configField{
-		path:     configHelpRoot,
-		help:     "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + ".compute.accelerator_type.",
+		path: configHelpRoot,
+		help: "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + `.compute.accelerator_type.
+
+  AI coding agents can use the databricks-ai-runtime skill to write workload
+  YAML, submit runs, and monitor progress.
+
+  Install the skill locally for your coding agent:
+
+    databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+
+  Follow the prompts to choose your coding agent and installation scope.
+  Use --scope project to install into the current project.
+  See: https://github.com/databricks/databricks-agent-skills/tree/main/experimental/databricks-ai-runtime`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
