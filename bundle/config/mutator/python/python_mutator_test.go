@@ -9,29 +9,21 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 
 	"github.com/databricks/cli/bundle/env"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/bundle"
-
 	"github.com/databricks/cli/bundle/config"
-
 	"github.com/databricks/cli/internal/testutil"
-
 	"github.com/databricks/cli/libs/cmdio"
-
 	"github.com/databricks/cli/libs/process"
-
 	"github.com/stretchr/testify/assert"
-
-	"strings"
-
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {
