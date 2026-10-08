@@ -17,7 +17,27 @@ func newValidateCmd() *cobra.Command {
 		Long: `Validate a Databricks App project by running build, typecheck, and lint checks.
 
 This command detects the project type and runs the appropriate validation:
-- Node.js projects (package.json): runs npm install, build, typecheck, lint, and tests
+- Node.js projects (package.json): installs dependencies and runs typegen,
+  lint:ast-grep, typecheck, build, and test scripts when present
+
+An npm or pnpm packageManager declaration in package.json takes precedence over
+lockfiles in the project directory. Conflicting lockfiles produce a warning.
+Without a supported declaration, the package manager is detected from lockfiles:
+- package-lock.json or npm-shrinkwrap.json: npm
+- pnpm-lock.yaml: pnpm
+
+Only npm and pnpm are supported. Unsupported packageManager declarations and
+Yarn/Bun lockfiles produce a warning and are ignored. Without a supported
+declaration, projects with both npm and pnpm lockfiles warn and use npm;
+projects without a supported lockfile also use npm.
+The selected package manager must be on PATH in the project directory.
+Dependencies are installed when node_modules is absent.
+
+Scripts use the package manager's normal workspace behavior. For pnpm workspaces,
+define root scripts that run the checks for the packages you want to validate.
+
+For AppKit projects (appkit.plugins.json), it first checks that resources accessed on
+behalf of the user are not app-only and that their scopes are in user_api_scopes.
 
 Examples:
   # Validate the current directory
@@ -56,6 +76,10 @@ func runValidate(cmd *cobra.Command) error {
 	skipTests, _ := cmd.Flags().GetBool("skip-tests")
 	opts := validation.ValidateOptions{
 		SkipTests: skipTests,
+	}
+
+	if err := validation.ValidateAuthModes(projectPath); err != nil {
+		return err
 	}
 
 	// Get validator for project type

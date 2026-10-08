@@ -81,3 +81,19 @@ func TestValidateEngineTerraformConfigDeprecated(t *testing.T) {
 	assert.Contains(t, diags[0].Summary, "bundle.terraform is deprecated")
 	assert.Equal(t, []dyn.Location{loc}, diags[0].Locations)
 }
+
+func TestValidateEngineTerraformAllowed(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Engine: engine.EngineTerraform,
+			},
+		},
+		AllowTerraformEngineConfig: true,
+	}
+	bundletest.SetLocation(b, "bundle.engine", []dyn.Location{{File: "databricks.yml", Line: 5, Column: 3}})
+	diags := ValidateEngine().Apply(t.Context(), b)
+	assert.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "has been removed")
+}

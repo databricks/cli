@@ -25,7 +25,7 @@ The deploy payload is declared twice: the proto in the universe repo (`proto/log
 ## Adding a new metric
 
 1. Add the field to the relevant message in `libs/telemetry/protos/`, and populate it in `bundle/phases/telemetry.go`.
-2. Refresh the acceptance golden: `go test ./acceptance -run '^TestAccept/bundle/telemetry' -update`. Anything engine-dependent belongs in a per-engine `out.*.$DATABRICKS_BUNDLE_ENGINE.txt` file rather than the engine-agnostic `out.telemetry.txt`; see the comments in that test's `script`.
+2. Refresh the acceptance golden: `go test ./acceptance -run '^TestAccept/bundle/telemetry' -update`.
 3. Send the universe PR adding the same field to the proto, with a `compliance.data_label` annotation matching the neighbouring fields.
 
 **RULE: Never send a resource name, path, or any other user-authored string.** Names are PII. Resource identity goes through the numeric/UUID ID lists (`resource_job_ids` and friends), and only for types that have such an ID.
@@ -37,7 +37,7 @@ Other things worth knowing:
 - A one-off boolean needs no proto change: add a key constant to `bundle/metrics/metrics.go` (snake_case, matching the constant name) and call `b.Metrics.SetBoolValue(...)`. It lands in `experimental.bool_values`.
 - Metrics that may be removed later belong in `BundleDeployExperimental`, which carries no compatibility guarantees.
 - Positional encodings such as the `upload_file_sizes` histogram are frozen once the metric has adoption: changing a bucket bound silently changes the meaning of every previously reported entry.
-- Anything measured from the deployment state is engine-dependent. The direct engine keeps per-resource state in `resources.json` and reports sizes; the terraform path leaves `StateSizeBytes` zero and reports only counts.
+- Per-resource state sizes come from the direct engine's state in `resources.json`.
 
 ## Where the data lands
 

@@ -28,13 +28,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DEPLOY",
     "operations": [
       {
-        "resource_key": "schemas.foo",
-        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+        "action_type": "OPERATION_ACTION_TYPE_CREATE",
+        "resource_key": "schemas.foo"
       }
-    ]
+    ],
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 }
 {
@@ -46,7 +46,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "error_message": "",
     "resource_id": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
@@ -117,14 +117,14 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DEPLOY",
-    "previous_version_id": "1",
     "operations": [
       {
-        "resource_key": "schemas.foo",
-        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE",
+        "resource_key": "schemas.foo"
       }
-    ]
+    ],
+    "previous_version_id": "1",
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 }
 {
@@ -135,7 +135,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   },
   "body": {
     "error_message": "",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "status": "OPERATION_STATUS_PENDING"
   }
 }
@@ -148,7 +148,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "body": {
     "error_message": "",
     "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
-    "sequence_id": "1",
+    "sequence_id": 1,
     "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
@@ -219,14 +219,14 @@ Destroy: 1 deleted
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DESTROY",
-    "previous_version_id": "2",
     "operations": [
       {
-        "resource_key": "schemas.foo",
-        "action_type": "OPERATION_ACTION_TYPE_DELETE"
+        "action_type": "OPERATION_ACTION_TYPE_DELETE",
+        "resource_key": "schemas.foo"
       }
-    ]
+    ],
+    "previous_version_id": "2",
+    "version_type": "VERSION_TYPE_DESTROY"
   }
 }
 {
@@ -237,7 +237,7 @@ Destroy: 1 deleted
   },
   "body": {
     "error_message": "",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

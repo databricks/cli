@@ -29,17 +29,17 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DEPLOY",
     "operations": [
       {
-        "resource_key": "schemas.foo",
-        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+        "action_type": "OPERATION_ACTION_TYPE_CREATE",
+        "resource_key": "schemas.foo"
       },
       {
-        "resource_key": "schemas.foo.grants",
-        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+        "action_type": "OPERATION_ACTION_TYPE_CREATE",
+        "resource_key": "schemas.foo.grants"
       }
-    ]
+    ],
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 }
 {
@@ -51,7 +51,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "error_message": "",
     "resource_id": "main.dms_empty_grants_[UNIQUE_NAME]",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_empty_grants_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
@@ -65,7 +65,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "error_message": "",
     "resource_id": "schema/main.dms_empty_grants_[UNIQUE_NAME]",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_empty_grants_[UNIQUE_NAME]\",\"__embed__\":[{\"principal\":\"deco-test-user@databricks.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
@@ -96,14 +96,14 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DEPLOY",
-    "previous_version_id": "1",
     "operations": [
       {
-        "resource_key": "schemas.foo.grants",
-        "action_type": "OPERATION_ACTION_TYPE_UPDATE"
+        "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+        "resource_key": "schemas.foo.grants"
       }
-    ]
+    ],
+    "previous_version_id": "1",
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 }
 {
@@ -114,7 +114,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   },
   "body": {
     "error_message": "",
-    "sequence_id": "0",
+    "sequence_id": 0,
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

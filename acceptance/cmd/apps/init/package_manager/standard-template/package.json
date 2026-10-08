@@ -1,0 +1,22 @@
+{
+  "name": "{{.projectName}}",
+  "version": "0.1.0",
+  "description": "{{.appDescription}}",
+  "packageManager": "pnpm@11.0.8",
+  "scripts": {
+    "build": "pnpm run build:server && pnpm run build:client",
+    "build:server": "node --version",
+    "build:client": "node --version",
+    "predev": "pnpm run sync && pnpm run typegen",
+    "sync": "node --version",
+    "typegen": "node --version",
+    "dev": "vite dev",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "overrides": {
+    "lodash": "4.17.21"
+  }
+}

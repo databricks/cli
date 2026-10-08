@@ -414,14 +414,14 @@ func TestToTypedBoolFromString(t *testing.T) {
 	var out bool
 
 	// True-ish
-	for _, v := range []string{"y", "yes", "on", "true"} {
+	for _, v := range []string{"y", "yes", "on", "true", "True", "TRUE"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
 		assert.True(t, out)
 	}
 
 	// False-ish
-	for _, v := range []string{"n", "no", "off", "false"} {
+	for _, v := range []string{"n", "no", "off", "false", "False", "FALSE"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
 		assert.False(t, out)

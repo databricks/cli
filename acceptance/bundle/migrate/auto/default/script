@@ -5,7 +5,19 @@ export DATABRICKS_BUNDLE_ENGINE=
 # must not deploy with terraform.
 title "Replay a prior terraform deployment"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
 rm -f "$OUT_REQUESTS"
+
+# Set after the replay: replay_tfstate.py runs bundle validate, which rejects engine: terraform.
+title "Summary works with engine: terraform and shows the deployed job's ID and URL"
+trace update_file.py databricks.yml "{name: test-bundle}" "{name: test-bundle, engine: terraform}"
+trace $CLI bundle summary
+trace $CLI bundle summary -o json | jq '{engine: .bundle.engine, id: .resources.jobs.test_job.id, url: .resources.jobs.test_job.url}'
+
+title "Summary does not migrate: no state writes, terraform state is left untouched\n"
+trace print_requests.py
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace update_file.py databricks.yml "{name: test-bundle, engine: terraform}" "{name: test-bundle}"
 
 title "Redeploy with nothing set: direct is the default, so auto-migration triggers"
 trace $CLI bundle deploy

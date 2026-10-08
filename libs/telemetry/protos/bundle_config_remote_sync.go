@@ -11,6 +11,7 @@ const (
 	BundleConfigRemoteSyncErrorCategoryYamlApplyFailed     BundleConfigRemoteSyncErrorCategory = "YAML_APPLY_FAILED"
 	BundleConfigRemoteSyncErrorCategorySaveFailed          BundleConfigRemoteSyncErrorCategory = "SAVE_FAILED"
 	BundleConfigRemoteSyncErrorCategoryOutputFailed        BundleConfigRemoteSyncErrorCategory = "OUTPUT_FAILED"
+	BundleConfigRemoteSyncErrorCategoryResourceNotInConfig BundleConfigRemoteSyncErrorCategory = "RESOURCE_NOT_IN_CONFIG"
 )
 
 // BundleConfigRemoteSyncEvent is emitted on every execution of the
@@ -18,7 +19,7 @@ const (
 //
 // All fields are aggregate counts, booleans, or system-defined categories.
 // No resource names, keys, field paths, file paths, or configuration values
-// are logged.
+// are logged outside ErrorMessage.
 type BundleConfigRemoteSyncEvent struct {
 	// Whether the command was invoked with --save (config files written to
 	// disk) as opposed to diff-only mode.
