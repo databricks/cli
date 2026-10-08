@@ -26,3 +26,13 @@ Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/[UUID]
 === Shutting the app down
 
 >>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown
+
+=== A pnpm lockfile selects pnpm to install, build, and start the app
+
+>>> grep -x Running command: pnpm run start ../LOG.pnpm
+Running command: pnpm run start
+
+>>> cat commands.log
+pnpm install
+pnpm run build
+pnpm run start
