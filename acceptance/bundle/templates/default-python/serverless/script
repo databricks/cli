@@ -12,11 +12,13 @@ $CLI bundle plan -o json -t prod | nostamp > ../../out.plan_prod.json
 
 rm "$OUT_REQUESTS"
 trace $CLI bundle deploy -t dev
+replace_ids.py -t dev
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.txt
 trace $CLI bundle plan -t dev  # check if if there is drift
 trace $CLI bundle plan -t dev -o json | nostamp > ../../out.plan_after_deploy_dev.json
 
 trace $CLI bundle deploy -t prod
+replace_ids.py -t prod
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.prod.txt
 trace $CLI bundle plan -t prod  # check if there is drift
 trace $CLI bundle plan -t prod -o json | nostamp > ../../out.plan_after_deploy_prod.json

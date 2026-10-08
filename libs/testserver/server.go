@@ -319,7 +319,7 @@ Response.Body = '<response body here>'
 	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
 		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
-			"workspace_id":  "900800700600",
+			"workspace_id":  strconv.Itoa(TestWorkspaceID),
 		}
 	})
 

@@ -13,6 +13,7 @@
 
 title "Deploy 1 (normal: creates the job and the committed state)"
 trace $CLI bundle deploy
+replace_ids.py
 
 # Fail the plan-stage refresh GET for the next two deploys only.
 fault.py "GET /api/2.2/jobs/get" 403 0 2

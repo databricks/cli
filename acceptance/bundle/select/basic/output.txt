@@ -68,7 +68,7 @@ select_used true
     "tasks": [
       {
         "run_job_task": {
-          "job_id": [NUMID]
+          "job_id": [BAR_ID]
         },
         "task_key": "run_bar"
       }
@@ -86,13 +86,13 @@ Resources:
   Jobs:
     bar:
       Name: bar-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[BAR_ID]?w=[WORKSPACE_ID]
     baz:
       Name: baz-[UNIQUE_NAME]
       URL:  (not deployed)
     foo:
       Name: foo-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 === Full plan after partial deploy
 >>> [CLI] bundle plan

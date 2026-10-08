@@ -21,8 +21,8 @@ Created jobs.sample_job
 Created pipelines.lakeflow_project_etl
 Files: 14 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === Run pipeline
 >>> [CLI] pipelines run
@@ -45,9 +45,9 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/d
 Created pipelines.lakeflow_project_etl_2
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
-View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
-View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]

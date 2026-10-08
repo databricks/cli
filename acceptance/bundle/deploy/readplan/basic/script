@@ -5,6 +5,7 @@ trace print_requests.py --get //jobs | nostamp | contains.py "!GET" "!POST"
 
 # First deploy to create the resource
 trace $CLI bundle deploy --plan tmp.plan_create.json
+replace_ids.py
 trace print_requests.py --get //jobs | nostamp | contains.py "!GET" "POST"
 
 # Generate a plan (should show "skip" since nothing changed)

@@ -25,6 +25,7 @@ $CLI bundle deploy --select jobs.my_job $(readplanarg plan-job.json)
 $CLI bundle plan --select schemas.my_schema -o json > plan-schema.json
 title "bundle deploy --select schemas.my_schema\n"
 $CLI bundle deploy --select schemas.my_schema $(readplanarg plan-schema.json)
+replace_ids.py
 
 # Assert the permissions PUT and grants PATCH were emitted for the selected resources.
 trace print_requests.py --sort //permissions

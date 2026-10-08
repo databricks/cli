@@ -32,7 +32,7 @@ Resources:
   Jobs:
     foo:
       Name: ${resources.jobs.变量.id}
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
     变量:
       Name: hello
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[变量_ID]?w=[WORKSPACE_ID]

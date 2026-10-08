@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -19,10 +20,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// TestWorkspaceID is the id of the fake workspace.
+const TestWorkspaceID = 900800700600
+
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        900800700600,
+	WorkspaceId:        TestWorkspaceID,
 }
 
 func AddDefaultHandlers(server *Server) {
@@ -75,7 +79,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {
 		return Response{
-			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
+			Headers: map[string][]string{"X-Databricks-Org-Id": {strconv.Itoa(TestWorkspaceID)}},
 			Body:    req.Workspace.MeUser(req.Token),
 		}
 	})

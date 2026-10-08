@@ -1,7 +1,7 @@
 
 >>> [CLI] jobs create --json {"name":"abc"}
 {
-  "job_id": [NUMID]
+  "job_id": [JOB_ID]
 }
 
 >>> print_requests.py //jobs

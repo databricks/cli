@@ -55,7 +55,7 @@
               "job_cluster_key": "job_cluster",
               "libraries": [
                 {
-                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl"
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[WHEEL_BUILD]-py3-none-any.whl"
                 }
               ],
               "notebook_task": {
@@ -72,7 +72,7 @@
               "job_cluster_key": "job_cluster",
               "libraries": [
                 {
-                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl"
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[WHEEL_BUILD]-py3-none-any.whl"
                 }
               ],
               "python_wheel_task": {

@@ -7,7 +7,7 @@ Error: --host is not supported for auth docker configure. Select the workspace w
 >>> musterr [CLI] auth docker configure docker-test --account-id [UUID]
 Error: --account-id is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
 
->>> musterr [CLI] auth docker configure docker-test --workspace-id [NUMID]
+>>> musterr [CLI] auth docker configure docker-test --workspace-id [WORKSPACE_ID]
 Error: --workspace-id is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
 
 === Profile argument and flag
@@ -48,7 +48,7 @@ Error: profile "blank-auth" uses auth_type "". Docker credential helper requires
 === Another profile already maps to the workspace
 
 >>> musterr [CLI] auth docker configure docker-test
-Error: multiple Databricks profiles match workspace ID [NUMID]: duplicate and docker-test. Remove duplicate workspace_id entries before using Docker credential helper
+Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: duplicate and docker-test. Remove duplicate workspace_id entries before using Docker credential helper
 
 === Nothing changed
 Docker config not created; profiles unchanged
