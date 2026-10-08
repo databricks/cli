@@ -165,7 +165,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	if len(states) == 0 {
 		if historyEnabled {
-			// An ignored local cache must not be reopened when remote state is absent.
+			// When deployment history is enabled and remote state is absent, the local cache can be cleaned up.
 			if err := os.Remove(localPathDirect); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", filepath.ToSlash(localPathDirect), err))
 			}
