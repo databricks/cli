@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
@@ -48,6 +53,38 @@ func validationTestWorkspaceClient(t *testing.T, host string) *databricks.Worksp
 	return w
 }
 
+func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *databricks.WorkspaceClient {
+	t.Helper()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:          "https://example.test",
+		Token:         "token",
+		HTTPTransport: transport,
+	})
+	require.NoError(t, err)
+	return w
+}
+
+type validationRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn validationRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
+type validationErrorReadCloser struct{}
+
+func (validationErrorReadCloser) Read([]byte) (int, error) { return 0, errors.New("body read failed") }
+func (validationErrorReadCloser) Close() error             { return nil }
+
+type validationContextReadCloser struct {
+	ctx context.Context
+}
+
+func (r validationContextReadCloser) Read([]byte) (int, error) {
+	<-r.ctx.Done()
+	return 0, r.ctx.Err()
+}
+func (validationContextReadCloser) Close() error { return nil }
+
 func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -65,6 +102,154 @@ func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestPreflightValidationUnavailableWarnsWithoutRetry(t *testing.T) {
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			requests.Add(1)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"error_code":"TEMPORARILY_UNAVAILABLE","message":"try again"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), requests.Load())
+	assert.Equal(t, "Warning: server-side config validation was unavailable; continuing with submission.\n", stderr.String())
+}
+
+func TestPreflightValidationDoesNotRetryTransportFailure(t *testing.T) {
+	var requests atomic.Int32
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		if req.URL.Path == validateConfigPath {
+			requests.Add(1)
+		}
+		return nil, errors.New("connection failed")
+	})
+
+	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), requests.Load())
+}
+
+func TestPreflightValidationFailsOpenOnInvalidSuccessResponse(t *testing.T) {
+	tests := []struct {
+		name string
+		body func() io.ReadCloser
+	}{
+		{"body read failure", func() io.ReadCloser { return validationErrorReadCloser{} }},
+		{"malformed JSON", func() io.ReadCloser { return io.NopCloser(strings.NewReader("{")) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var requests atomic.Int32
+			w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+				body := io.NopCloser(strings.NewReader(`{}`))
+				if req.URL.Path == validateConfigPath {
+					requests.Add(1)
+					body = tt.body()
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"Content-Type": []string{"application/json"}},
+					Body:       body,
+					Request:    req,
+				}, nil
+			})
+
+			err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.NoError(t, err)
+			assert.Equal(t, int32(1), requests.Load())
+		})
+	}
+}
+
+func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		body := io.NopCloser(strings.NewReader(`{}`))
+		status := http.StatusOK
+		if req.URL.Path == validateConfigPath {
+			body = validationErrorReadCloser{}
+			status = http.StatusUnauthorized
+		}
+		return &http.Response{
+			StatusCode: status,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       body,
+			Request:    req,
+		}, nil
+	})
+
+	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.Error(t, err)
+}
+
+func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
+	releaseRequest := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			<-releaseRequest
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	close(releaseRequest)
+	require.NoError(t, err)
+	assert.Less(t, time.Since(started), time.Second)
+}
+
+func TestPreflightValidationPropagatesCancellation(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == validateConfigPath {
+			<-r.Context().Done()
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestPreflightValidationPropagatesCancellationWhileReadingResponse(t *testing.T) {
+	validationStarted := make(chan struct{})
+	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
+		body := io.NopCloser(strings.NewReader(`{}`))
+		if req.URL.Path == validateConfigPath {
+			close(validationStarted)
+			body = validationContextReadCloser{ctx: req.Context()}
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       body,
+			Request:    req,
+		}, nil
+	})
+
+	ctx, cancel := context.WithCancel(t.Context())
+	go func() {
+		<-validationStarted
+		cancel()
+	}()
+	err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestPreflightValidateBlocksOnCallerError(t *testing.T) {
