@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"

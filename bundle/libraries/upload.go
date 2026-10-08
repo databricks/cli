@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+
 	"golang.org/x/sync/errgroup"
 )
 

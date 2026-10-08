@@ -7,9 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/permissions"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"
