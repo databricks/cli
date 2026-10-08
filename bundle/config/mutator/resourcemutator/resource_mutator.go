@@ -6,12 +6,14 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+
+	"github.com/databricks/cli/bundle"
 )
 
 // When a new resource is added to configuration, we apply bundle
