@@ -29,7 +29,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": 8796093022208,
     "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
@@ -102,7 +102,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": 8796093022208,
     "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
@@ -143,7 +143,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": 8796093022208,
     "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,

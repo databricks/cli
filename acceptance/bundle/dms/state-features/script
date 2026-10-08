@@ -3,6 +3,8 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "Deploy records version 3 and the deployment_history feature, with resources held in DMS"
 trace $CLI bundle deploy
 trace jq '{state_version, features, state}' .databricks/bundle/default/resources.json
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-features-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
 rm -f "$OUT_REQUESTS"
 
 title "Reopening version 3 reads resources from DMS and produces a no-op plan"

@@ -9,8 +9,7 @@
 # with truncated output and, depending on which side noticed the drop first, exit code 0.
 #
 # 8 MiB is the size that matters: the remote IDE server pushes about 7 MiB while it starts, and
-# it is eight times the window that broke. Keep the payload under 10,000,000 bytes - the root
-# test.toml rewrites any run of 8 or more digits to [NUMID], which would erase the counts.
+# it is eight times the window that broke.
 PAYLOAD_BYTES=8388608
 
 # Generated rather than committed: 8 MiB does not belong in the repo, and the exact bytes do not

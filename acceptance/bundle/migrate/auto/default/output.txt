@@ -22,7 +22,7 @@ Resources:
   Jobs:
     test_job:
       Name: Test Auto-Migrate Job
-      URL:  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle summary -o json
 Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
@@ -35,7 +35,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 {
   "engine": "terraform",
   "id": "[TEST_JOB_ID]",
-  "url": "[DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[NUMID]"
+  "url": "[DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]"
 }
 
 === Summary does not migrate: no state writes, terraform state is left untouched

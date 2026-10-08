@@ -14,6 +14,6 @@ Ignore = [
 # the case for the local testserver (127.0.0.1) and aws hosts; azure/gcp vanity hosts
 # embed the ID and omit it. Stripping it lets one golden match local and all clouds.
 [[Repls]]
-Old = '\?[ow]=\d+'
+Old = '\?[ow]=\[WORKSPACE_ID\]'
 New = ''
-Order = 0
+Order = 1000

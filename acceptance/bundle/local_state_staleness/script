@@ -30,6 +30,7 @@ trap cleanup EXIT
 title "Step 1: Deploy bundle A"
 cd "$BUNDLE_A_DIR"
 trace "$CLI" bundle deploy --force-lock --auto-approve
+replace_ids.py
 
 title "Step 2: Deploy bundle B"
 cd "$BUNDLE_B_DIR"

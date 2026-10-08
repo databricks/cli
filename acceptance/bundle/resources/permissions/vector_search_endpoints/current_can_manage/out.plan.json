@@ -7,7 +7,7 @@
       "new_state": {
         "value": {
           "endpoint_type": "STANDARD",
-          "name": "vs-permissions-endpoint"
+          "name": "[FOO_ID]"
         }
       }
     },

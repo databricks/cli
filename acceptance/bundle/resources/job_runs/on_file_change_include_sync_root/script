@@ -13,6 +13,7 @@ file_triggers() {
 
 title "first deploy"
 withdir bundle trace $CLI bundle deploy
+withdir bundle replace_ids.py
 trace file_triggers
 
 title "editing the file next to the included YAML re-fires"
