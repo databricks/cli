@@ -610,7 +610,7 @@ func writeConfigFieldHelp(w io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field)
+	renderConfigField(w, field, nil)
 	return nil
 }
 
@@ -857,10 +857,16 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField) {
+func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
+	}
+	if f.path == "config.compute" && len(computeOptions) > 0 {
+		fmt.Fprintln(w, "\n  Supported accelerator types:")
+		for _, option := range computeOptions {
+			fmt.Fprintf(w, "    %s - %s%s\n", option.HardwareAccelerator, formatPerNodeAcceleratorCount(option), launchStageBadge(option.LaunchStage))
+		}
 	}
 
 	if len(f.children) == 0 {
@@ -888,6 +894,63 @@ func renderConfigField(w io.Writer, f configField) {
 		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+}
+
+func filterKnownComputeOptions(options []computeOption) []computeOption {
+	result := make([]computeOption, 0, len(options))
+	for _, option := range options {
+		if _, err := parseGPUType(option.HardwareAccelerator); err == nil {
+			result = append(result, option)
+		}
+	}
+	return result
+}
+
+func fallbackComputeOptions() []computeOption {
+	options := make([]computeOption, 0, len(gpuTypes))
+	for _, acceleratorType := range gpuTypes {
+		perNode, err := gpusPerNode(acceleratorType)
+		if err != nil {
+			continue
+		}
+		options = append(options, computeOption{
+			HardwareAccelerator:     string(acceleratorType),
+			PerNodeAcceleratorCount: &perNode,
+		})
+	}
+	return options
+}
+
+func formatPerNodeAcceleratorCount(option computeOption) string {
+	count := option.PerNodeAcceleratorCount
+	if count == nil {
+		acceleratorType, err := parseGPUType(option.HardwareAccelerator)
+		if err == nil {
+			if fallback, err := gpusPerNode(acceleratorType); err == nil {
+				count = &fallback
+			}
+		}
+	}
+	if count == nil {
+		return "accelerator count per node unavailable"
+	}
+	unit := "accelerators"
+	if *count == 1 {
+		unit = "accelerator"
+	}
+	return fmt.Sprintf("%d %s per node", *count, unit)
+}
+
+func launchStageBadge(stage string) string {
+	labels := map[string]string{
+		"PRIVATE_PREVIEW": "Private Preview",
+		"PUBLIC_BETA":     "Beta",
+		"PUBLIC_PREVIEW":  "Public Preview",
+	}
+	if label := labels[stage]; label != "" {
+		return " [" + label + "]"
+	}
+	return ""
 }
 
 // configFieldSummary is the one-line description used in a field listing: the

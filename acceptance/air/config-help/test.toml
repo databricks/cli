@@ -1,0 +1,16 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/compute-options"
+Response.Body = '''
+{
+  "compute_options": [
+    {"hardware_accelerator": "GPU_1xH100", "per_node_accelerator_count": 1, "launch_stage": "PRIVATE_PREVIEW"},
+    {"hardware_accelerator": "GPU_8xH100", "per_node_accelerator_count": 8, "launch_stage": "GA"}
+  ]
+}
+'''
