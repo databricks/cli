@@ -199,6 +199,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 
 	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
+	var incompatibleLocalState *StateDesc
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)
@@ -219,6 +220,10 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		})
 
 		wg.Wait()
+		// The remote marker determines the backend; a conflicting local state is stale.
+		if directRemoteState != nil && directLocalState != nil && directRemoteState.IsDMS() != directLocalState.IsDMS() {
+			incompatibleLocalState = directLocalState
+		}
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference (later is preferred):
@@ -228,6 +233,13 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	}
 	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
 	slices.SortStableFunc(states, func(a, b *StateDesc) int {
+		aIncompatible, bIncompatible := a == incompatibleLocalState, b == incompatibleLocalState
+		if aIncompatible != bIncompatible {
+			if aIncompatible {
+				return -1
+			}
+			return 1
+		}
 		// DMS tombstones have serial zero but supersede the previous full state.
 		aDMS, bDMS := a.IsDMS(), b.IsDMS()
 		if aDMS != bDMS {

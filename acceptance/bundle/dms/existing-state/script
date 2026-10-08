@@ -21,9 +21,13 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${de
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/1" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 
-title "Restore stale local state and deploy again: remote DMS state wins, version 3 has no migration or resource creation"
-trace cp .databricks/resources.before-dms.json .databricks/bundle/default/resources.json
-trace $CLI bundle deploy
+title "Restore remote state without the deployment history flag: migrate again in version 3, then deploy in version 4"
+trace MSYS_NO_PATHCONV=1 $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json" --file .databricks/resources.before-dms.json --format AUTO --overwrite
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=3' '?version=4' 'Resources: 0 created' '!Created '
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
+
+title "Read back both completed migrations and deploys: version 3 binds the restored remote state"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 
 rm -f "$OUT_REQUESTS"
