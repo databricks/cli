@@ -8,10 +8,89 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func newVolumeConfig(t *testing.T, response any) *config {
+	t.Helper()
+
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		assert.Equal(t, "/api/2.0/fs/files/Volumes/main/schema/volume/config.json", req.URL.Path)
+		return response
+	})
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", func(req testserver.Request) any {
+		return testserver.Response{StatusCode: 404, Body: map[string]string{"message": "directory not found"}}
+	})
+
+	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "test-token",
+	})
+	require.NoError(t, err)
+
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), workspaceClient)
+	c, err := newConfig(ctx, os.DirFS("./testdata/config-assign-from-file"), "schema.json")
+	require.NoError(t, err)
+	return c
+}
+
+func TestTemplateConfigAssignValuesFromVolume(t *testing.T) {
+	c := newVolumeConfig(t, `{"int_val":1,"float_val":2,"bool_val":true,"string_val":"hello"}`)
+
+	err := c.assignValuesFromFile("dbfs:/Volumes/main/schema/volume/config.json")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), c.values["int_val"])
+	assert.InDelta(t, float64(2), c.values["float_val"].(float64), 0.0001)
+	assert.Equal(t, true, c.values["bool_val"])
+	assert.Equal(t, "hello", c.values["string_val"])
+}
+
+func TestTemplateConfigAssignValuesFromVolumeReturnsErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		response any
+		contains string
+	}{
+		{
+			name: "invalid config",
+			response: testserver.Response{
+				StatusCode: 200,
+				Body:       "not json",
+			},
+			contains: "failed to load config from file dbfs:/Volumes/main/schema/volume/config.json: invalid character",
+		},
+		{
+			name: "not found",
+			response: testserver.Response{
+				StatusCode: 404,
+				Body:       map[string]string{"error_code": "NOT_FOUND", "message": "file not found"},
+			},
+			contains: "failed to load config from file dbfs:/Volumes/main/schema/volume/config.json",
+		},
+		{
+			name: "permission denied",
+			response: testserver.Response{
+				StatusCode: 403,
+				Body:       map[string]string{"error_code": "PERMISSION_DENIED", "message": "permission denied"},
+			},
+			contains: "failed to load config from file dbfs:/Volumes/main/schema/volume/config.json",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newVolumeConfig(t, tt.response)
+			err := c.assignValuesFromFile("dbfs:/Volumes/main/schema/volume/config.json")
+			assert.ErrorContains(t, err, tt.contains)
+		})
+	}
+}
 
 func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file"
