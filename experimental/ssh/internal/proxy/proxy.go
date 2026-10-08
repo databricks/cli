@@ -537,9 +537,10 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 				var closeConnSignal error
 				switch {
 				case websocket.IsCloseError(err, websocket.CloseNormalClosure):
-					// The peer completed its side of the handover, so complete the swap even when
-					// the session is ending: teardown then closes the replacement connection
-					// gracefully, and a resumable peer does not wait for a reattach.
+					// A normal close ends the old connection cleanly, usually as the peer's side of
+					// the handover. Complete the swap even when the session is ending: teardown then
+					// closes the replacement connection gracefully, and a resumable peer does not
+					// wait for a reattach.
 				case ctx.Err() != nil:
 					// The session is ending and teardown closed the connection under the handover
 					// (see the ctx.Err() check below). Pass the cancellation on, so the handover
