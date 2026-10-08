@@ -14,8 +14,7 @@ import (
 type applySourceLinkedDeploymentPreset struct{}
 
 func targetPresetPath(target string) *structpath.PathNode {
-	p := structpath.NewPath(nil, "targets", target)
-	return structpath.NewPath(p, "presets", "source_linked_deployment")
+	return structpath.NewPath(nil, "targets", target, "presets", "source_linked_deployment")
 }
 
 // Apply source-linked deployment preset
