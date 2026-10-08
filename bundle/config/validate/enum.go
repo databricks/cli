@@ -69,13 +69,12 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if !validValue {
 			// p is a slice of path components. We need to clone it before using it in diagnostics
 			// since the WalkReadOnly function will mutate it while walking the config tree.
-			cloneP := slices.Clone(p)
 
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
 				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(cloneP),
+				Paths:     dyn.ToStructPaths(p),
 			})
 		}
 
