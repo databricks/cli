@@ -361,14 +361,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting {
+		b.MigratingToDMS = opts.Deploy && stateDesc.Engine.IsDirect() && !stateDesc.IsDMS() && configuresDeploymentHistory(ctx, b)
+		if b.MigratingToDMS && opts.ReadPlanPath != "" {
+			return b, stateDesc, errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
+		}
+		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting && !b.MigratingToDMS {
 			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
-		if needDirectState && stateDesc.IsDMS() {
+		if needDirectState && (stateDesc.IsDMS() || b.MigratingToDMS) {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
@@ -386,6 +390,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 			nextVersion := lastVersionID + 1
+			if b.MigratingToDMS {
+				nextVersion++ // The bind-only migration consumes the first version.
+			}
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
 				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
@@ -402,7 +409,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if !cmdctx.HasWorkspaceClient(ctx) {
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+			if b.MigratingToDMS {
+				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
+				b.DeploymentBundle.StateDB.VersionID = lastVersionID
+			} else if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

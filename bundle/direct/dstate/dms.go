@@ -16,6 +16,21 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
+// UseDeploymentHistory persists the DMS marker after all existing resources have been recorded.
+func (db *DeploymentState) UseDeploymentHistory(versionID int) error {
+	db.AssertOpenedForRead()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.recordsHistory = true
+	db.VersionID = versionID
+	if db.Data.Features == nil {
+		db.Data.Features = make(map[string]struct{})
+	}
+	db.Data.Features[FeatureDeploymentHistory] = struct{}{}
+	return db.unlockedSave()
+}
+
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS
 // resources.json does not track state. The service is queried for state for resources and then they
 // are filled in-place in DeploymentState.Data.State:

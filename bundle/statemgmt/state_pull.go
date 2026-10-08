@@ -228,6 +228,14 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	}
 	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
 	slices.SortStableFunc(states, func(a, b *StateDesc) int {
+		// DMS tombstones have serial zero but supersede the previous full state.
+		aDMS, bDMS := a.IsDMS(), b.IsDMS()
+		if aDMS != bDMS {
+			if aDMS {
+				return 1
+			}
+			return -1
+		}
 		return a.Serial - b.Serial
 	})
 
