@@ -7,7 +7,7 @@ Created pipelines.bar
 Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -23,7 +23,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -o json
 {
-  "deployment_id": "[NUMID]",
+  "deployment_id": "[DEPLOYMENT_ID]",
   "latest_version_id": 1
 }
 
@@ -80,7 +80,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "catalog": "main",
     "channel": "CURRENT",
     "deployment": {
-      "deployment_id": "[NUMID]",
+      "deployment_id": "[DEPLOYMENT_ID]",
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
       "version_id": "1"
@@ -103,7 +103,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
-      "deployment_id": "[NUMID]",
+      "deployment_id": "[DEPLOYMENT_ID]",
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
       "version_id": "1"
@@ -124,7 +124,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "catalog": "main",
     "channel": "CURRENT",
     "deployment": {
-      "deployment_id": "[NUMID]",
+      "deployment_id": "[DEPLOYMENT_ID]",
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
       "version_id": "2"
@@ -144,7 +144,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   }
 }
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -164,7 +164,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   in databricks.yml:18:20
 
 {
-  "deployment_id": "[NUMID]",
+  "deployment_id": "[DEPLOYMENT_ID]",
   "latest_version_id": 2
 }
 

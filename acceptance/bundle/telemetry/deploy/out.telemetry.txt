@@ -27,13 +27,13 @@
         "resource_dashboard_count": 0,
         "resource_app_count": 0,
         "resource_job_ids": [
-          "[NUMID]",
-          "[NUMID]",
-          "[NUMID]"
+          "[JOB_ONE_ID]",
+          "[JOB_THREE_ID]",
+          "[JOB_TWO_ID]"
         ],
         "resource_pipeline_ids": [
-          "[UUID]",
-          "[UUID]"
+          "[PIPELINE_ONE_ID]",
+          "[PIPELINE_TWO_ID]"
         ],
         "experimental": {
           "configuration_file_count": 1,

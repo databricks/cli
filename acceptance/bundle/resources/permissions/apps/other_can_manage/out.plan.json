@@ -2,21 +2,21 @@
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "plan": {
-    "resources.apps.foo": {
+    "resources.apps.[FOO_ID]": {
       "action": "create",
       "new_state": {
         "value": {
           "description": "",
-          "name": "foo",
+          "name": "[FOO_ID]",
           "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
         }
       }
     },
-    "resources.apps.foo.permissions": {
+    "resources.apps.[FOO_ID].permissions": {
       "depends_on": [
         {
-          "node": "resources.apps.foo",
-          "label": "${resources.apps.foo.id}"
+          "node": "resources.apps.[FOO_ID]",
+          "label": "${resources.apps.[FOO_ID].id}"
         }
       ],
       "action": "create",
@@ -43,7 +43,7 @@
           ]
         },
         "vars": {
-          "object_id": "/apps/${resources.apps.foo.id}"
+          "object_id": "/apps/${resources.apps.[FOO_ID].id}"
         }
       }
     }

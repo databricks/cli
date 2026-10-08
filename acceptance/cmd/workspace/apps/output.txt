@@ -3,7 +3,7 @@
 >>> [CLI] apps create --json @input.json
 {
   "active_deployment": {
-    "deployment_id": "deploy-[NUMID]",
+    "deployment_id": "deploy-[DEPLOYMENT_ID]",
     "source_code_path": "/Workspace/Users/[USERNAME]/test-name",
     "status": {
       "message": "Deployment succeeded",
@@ -36,7 +36,7 @@
     }
   ],
   "service_principal_client_id": "[UUID]",
-  "service_principal_id": [NUMID],
+  "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }
@@ -45,7 +45,7 @@
 >>> [CLI] apps update test-name --json @input.json
 {
   "active_deployment": {
-    "deployment_id": "deploy-[NUMID]",
+    "deployment_id": "deploy-[DEPLOYMENT_ID]",
     "source_code_path": "/Workspace/Users/[USERNAME]/test-name",
     "status": {
       "message": "Deployment succeeded",
@@ -78,7 +78,7 @@
     }
   ],
   "service_principal_client_id": "[UUID]",
-  "service_principal_id": [NUMID],
+  "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }

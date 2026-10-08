@@ -140,7 +140,7 @@ git-repo-init
 git add template
 git commit -qm 'Add template'
 git tag template-v0.81.0
-git tag template-v0.57.0
+git tag template-v0.84.0
 git tag template-v0.82.0
 git branch 0.81-maintenance
 repo_url=$(python3 -c 'from pathlib import Path; print(Path.cwd().as_uri())')

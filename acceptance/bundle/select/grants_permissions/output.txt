@@ -36,7 +36,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 >>> print_requests.py --sort //permissions
 {
   "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/schema/main.my_schema_[UNIQUE_NAME]",
+  "path": "/api/2.1/unity-catalog/permissions/schema/[MY_SCHEMA_ID]",
   "body": {
     "changes": [
       {
@@ -50,7 +50,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "path": "/api/2.0/permissions/jobs/[MY_JOB_ID]",
   "body": {
     "access_control_list": [
       {

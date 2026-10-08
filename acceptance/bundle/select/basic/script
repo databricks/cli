@@ -25,6 +25,7 @@ trace $CLI bundle plan --select jobs.foo
 $CLI bundle plan --select jobs.foo -o json > plan.json
 title "bundle deploy --select jobs.foo\n"
 $CLI bundle deploy --select jobs.foo $(readplanarg plan.json)
+replace_ids.py
 # The deploy reports that --select was used via telemetry.
 title "Telemetry:\n"
 print_telemetry_bool_values | grep '^select_used '
