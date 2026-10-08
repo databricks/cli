@@ -18,26 +18,28 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "features": null
 }
 
-=== Enable recording: bind the original state in version 1, then deploy updates in version 2
+>>> cp databricks.yml .databricks/bundle/default/resources.json
+
+=== Enable recording with an invalid local cache: bind remote serial 1 in version 2, then deploy updates in version 3
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Enabling deployment history...
-Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=1
-Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=2
+Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=2
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=3
 Updated jobs.one
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 {"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-existing-state-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default"}}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.one"}, {"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.two"}], "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.one"}], "previous_version_id": "1", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "POST", "path": "/api/2.2/jobs/reset", "body": {"job_id": [ONE_ID], "new_settings": {"deployment": {"deployment_id": "[NUMID]", "kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json", "version_id": "2"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "updated", "queue": {"enabled": true}}}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"2\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"updated\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.one"}, {"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.two"}], "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "3"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.one"}], "previous_version_id": "2", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.2/jobs/reset", "body": {"job_id": [ONE_ID], "new_settings": {"deployment": {"deployment_id": "[NUMID]", "kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json", "version_id": "3"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "updated", "queue": {"enabled": true}}}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"3\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"updated\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 >>> find.py resources[.]json[.]wal --expect 0
 
@@ -59,19 +61,19 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "completion_reason": "VERSION_COMPLETE_SUCCESS",
     "previous_version_id": null,
     "status": "VERSION_STATUS_COMPLETED",
-    "version_id": "1",
+    "version_id": "2",
     "version_type": "VERSION_TYPE_DEPLOY"
   },
   {
     "completion_reason": "VERSION_COMPLETE_SUCCESS",
-    "previous_version_id": "1",
+    "previous_version_id": "2",
     "status": "VERSION_STATUS_COMPLETED",
-    "version_id": "2",
+    "version_id": "3",
     "version_type": "VERSION_TYPE_DEPLOY"
   }
 ]
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/1 -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/2 -o json
 [
   {
     "action_type": "OPERATION_ACTION_TYPE_BIND",
@@ -104,7 +106,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   }
 ]
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/2 -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/3 -o json
 [
   {
     "action_type": "OPERATION_ACTION_TYPE_UPDATE",
@@ -120,41 +122,34 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   }
 ]
 
-=== Restore remote state without the deployment history flag: migrate again in version 3, then deploy in version 4
+=== Restore remote serial 1 without the deployment history flag: migrate after DMS version 3 in version 4, then deploy in version 5
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-dms.json --format AUTO --overwrite
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Enabling deployment history...
-Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=3
-Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=4
+Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=4
+Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=5
 Updated jobs.two
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "3"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.one"}, {"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.two"}], "previous_version_id": "2", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "4"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.two"}], "previous_version_id": "3", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "POST", "path": "/api/2.2/jobs/reset", "body": {"job_id": [TWO_ID], "new_settings": {"deployment": {"deployment_id": "[NUMID]", "kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json", "version_id": "4"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "two", "queue": {"enabled": true}, "tasks": [{"run_job_task": {"job_id": [ONE_ID]}, "task_key": "run_one"}]}}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/4/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"4\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "4"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.one"}, {"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.two"}], "previous_version_id": "3", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/4/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/4/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/4/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "5"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.two"}], "previous_version_id": "4", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.2/jobs/reset", "body": {"job_id": [TWO_ID], "new_settings": {"deployment": {"deployment_id": "[NUMID]", "kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json", "version_id": "5"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "two", "queue": {"enabled": true}, "tasks": [{"run_job_task": {"job_id": [ONE_ID]}, "task_key": "run_one"}]}}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/5/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"5\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
-=== Read back both completed migrations and deploys: version 3 binds the restored remote state
+=== Read back both completed migrations and deploys: version 4 binds the restored remote state
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
 [
   {
     "completion_reason": "VERSION_COMPLETE_SUCCESS",
     "previous_version_id": null,
-    "status": "VERSION_STATUS_COMPLETED",
-    "version_id": "1",
-    "version_type": "VERSION_TYPE_DEPLOY"
-  },
-  {
-    "completion_reason": "VERSION_COMPLETE_SUCCESS",
-    "previous_version_id": "1",
     "status": "VERSION_STATUS_COMPLETED",
     "version_id": "2",
     "version_type": "VERSION_TYPE_DEPLOY"
@@ -172,10 +167,17 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "status": "VERSION_STATUS_COMPLETED",
     "version_id": "4",
     "version_type": "VERSION_TYPE_DEPLOY"
+  },
+  {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS",
+    "previous_version_id": "4",
+    "status": "VERSION_STATUS_COMPLETED",
+    "version_id": "5",
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 ]
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/3 -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/4 -o json
 [
   {
     "action_type": "OPERATION_ACTION_TYPE_BIND",

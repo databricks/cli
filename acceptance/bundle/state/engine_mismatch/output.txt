@@ -1,10 +1,15 @@
 
 === Direct opt-in with terraform state on disk: debug states reports without warning
 
->>> [CLI] bundle debug states
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle debug states
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
 
 === Invalid env var with config set: config takes priority, still no warning
 
->>> DATABRICKS_BUNDLE_ENGINE=bla [CLI] bundle debug states
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false DATABRICKS_BUNDLE_ENGINE=bla [CLI] bundle debug states
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Deployment history reads remote state and ignores local Terraform state
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle debug states
+

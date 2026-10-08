@@ -1,8 +1,10 @@
 export DATABRICKS_BUNDLE_ENGINE=""
 mkdir -p .databricks/bundle/default/terraform
 echo "{" > .databricks/bundle/default/terraform/terraform.tfstate
-trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'terraform.tfstate' 'unexpected end'
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'terraform.tfstate' 'unexpected end'
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan | contains.py 'Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged'
 
 rm .databricks/bundle/default/terraform/terraform.tfstate
 echo "{" > .databricks/bundle/default/resources.json
-trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'resources.json' 'unexpected end'
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'resources.json' 'unexpected end'
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan | contains.py 'Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged'

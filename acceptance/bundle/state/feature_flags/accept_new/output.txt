@@ -1,4 +1,8 @@
 
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json --file [STATE_FILE] --format AUTO --overwrite
+
 >>> [CLI] bundle plan
 create jobs.my_job
 

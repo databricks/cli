@@ -1,9 +1,15 @@
 
 === If serial is the same, refuse to proceed
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate --file .databricks/bundle/default/terraform/terraform.tfstate --format AUTO --overwrite
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json --file .databricks/bundle/default/resources.json --format AUTO --overwrite
+
 >>> musterr [CLI] bundle deploy
 Error: same serial number in terraform and direct states
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=20 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=20 lineage=""
+- terraform.tfstate: remote terraform state serial=20 lineage=""
+- resources.json: remote direct state serial=20 lineage=""
 

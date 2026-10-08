@@ -1,6 +1,10 @@
 
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json --file [STATE_FILE] --format AUTO --overwrite
+
 >>> musterr [CLI] bundle plan
-Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: state version 999 is newer than supported version 3; upgrade the CLI
+Error: migrating state resources.json: state version 999 is newer than supported version 3; upgrade the CLI
 
 
 >>> cmp [STATE_FILE] .databricks/bundle/default/resources.json

@@ -4,26 +4,30 @@ rm -f "$OUT_REQUESTS"
 title "Use a fake browser that just prints the URL it would have opened"
 export BROWSER="echo_browser.py"
 
-# touch "$OUT_REQUESTS" before each print_requests.py call: the commands without
-# --force-pull make zero HTTP requests, so the file is never created and
-# print_requests.py would otherwise exit with "File not found".
+# touch "$OUT_REQUESTS" before each print_requests.py call: unforced commands
+# without deployment history use local state and may make zero HTTP requests.
 
-title "bundle summary without --force-pull: no remote state read\n"
-trace $CLI bundle summary > /dev/null
+unforced_export_assertion='!/api/2.0/workspace/export'
+if [ "$DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY" = "true" ]; then
+    unforced_export_assertion='/api/2.0/workspace/export'
+fi
+
+title "bundle summary without --force-pull\n"
+trace $CLI bundle summary > LOG.summary_output
 touch "$OUT_REQUESTS"
-print_requests.py --get //workspace/export
+print_requests.py --get //workspace/export | contains.py "$unforced_export_assertion" > LOG.summary
 
 title "bundle summary --force-pull: remote state read\n"
-trace $CLI bundle summary --force-pull > /dev/null
+trace $CLI bundle summary --force-pull > LOG.summary_forced_output
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export
 
-title "bundle open without --force-pull: no remote state read\n"
-trace $CLI bundle open foo > /dev/null
+title "bundle open without --force-pull\n"
+trace $CLI bundle open foo > LOG.open_output
 touch "$OUT_REQUESTS"
-print_requests.py --get //workspace/export
+print_requests.py --get //workspace/export | contains.py "$unforced_export_assertion" > LOG.open
 
 title "bundle open --force-pull: remote state read\n"
-trace $CLI bundle open foo --force-pull > /dev/null
+trace $CLI bundle open foo --force-pull > LOG.open_forced_output
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export

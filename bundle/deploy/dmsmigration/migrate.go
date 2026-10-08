@@ -36,7 +36,7 @@ func Migrate(ctx context.Context, db *dstate.DeploymentState) error {
 		}
 	}
 
-	versionID := db.VersionID + 1
+	versionID := max(db.Data.Serial, db.VersionID) + 1
 	previousVersionID := ""
 	if db.VersionID > 0 {
 		previousVersionID = strconv.Itoa(db.VersionID)

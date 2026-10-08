@@ -6,11 +6,12 @@ replace_ids.py
 trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
+trace cp databricks.yml .databricks/bundle/default/resources.json
 
-title "Enable recording: bind the original state in version 1, then deploy updates in version 2"
+title "Enable recording with an invalid local cache: bind remote serial 1 in version 2, then deploy updates in version 3"
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
 update_file.py databricks.yml 'name: one' 'name: updated'
-trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=1' '?version=2'
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=2' '?version=3'
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace print_state.py --no-dms
@@ -18,16 +19,16 @@ trace print_state.py --no-dms
 title "Read back the completed migration and deploy versions with their recorded resource state"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/1" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 
-title "Restore remote state without the deployment history flag: migrate again in version 3, then deploy in version 4"
+title "Restore remote serial 1 without the deployment history flag: migrate after DMS version 3 in version 4, then deploy in version 5"
 trace MSYS_NO_PATHCONV=1 $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json" --file .databricks/resources.before-dms.json --format AUTO --overwrite
-trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=3' '?version=4' 'Resources: 0 created' '!Created '
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 
-title "Read back both completed migrations and deploys: version 3 binds the restored remote state"
+title "Read back both completed migrations and deploys: version 4 binds the restored remote state"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 
 rm -f "$OUT_REQUESTS"

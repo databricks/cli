@@ -1,8 +1,18 @@
 
->>> musterr [CLI] bundle plan
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr [CLI] bundle plan
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: unexpected end of JSON input
 
 
->>> musterr [CLI] bundle plan
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle plan
+create schemas.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr [CLI] bundle plan
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: unexpected end of JSON input
 
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle plan
+create schemas.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

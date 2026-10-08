@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -124,15 +125,17 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 	return state
 }
 
-// PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
+// PullResourcesState selects the newest Terraform or direct state.
+// Local state is ignored when deployment history is enabled.
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
-	// We read all 4 possible states: terraform/direct X local/remote and pick the most recent one.
+	// Consider local and remote state unless deployment history requires remote state.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, alwaysPull)
+	historyEnabled := bundleenv.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory)
+	states := readStates(ctx, b, alwaysPull, historyEnabled)
 
 	if logdiag.HasError(ctx) {
 		return nil
@@ -161,6 +164,12 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if len(states) == 0 {
+		if historyEnabled {
+			// An ignored local cache must not be reopened when remote state is absent.
+			if err := os.Remove(localPathDirect); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", filepath.ToSlash(localPathDirect), err))
+			}
+		}
 		return winner
 	}
 
@@ -170,7 +179,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if !winner.IsLocal {
-		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
+		log.Info(ctx, "Using remote resource state.")
 
 		localStatePath := localPathTerraform
 		if winner.Engine == engine.EngineDirect {
@@ -187,7 +196,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, historyEnabled bool) []*StateDesc {
 	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
@@ -197,9 +206,12 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return nil
 	}
 
-	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
-	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
-	var incompatibleLocalState *StateDesc
+	var directLocalState, terraformLocalState *StateDesc
+	// Deployment history uses remote state as the source of truth.
+	if !historyEnabled {
+		directLocalState = localRead(ctx, localPathDirect, engine.EngineDirect)
+		terraformLocalState = localRead(ctx, localPathTerraform, engine.EngineTerraform)
+	}
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)
@@ -220,10 +232,6 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		})
 
 		wg.Wait()
-		// The remote marker determines the backend; a conflicting local state is stale.
-		if directRemoteState != nil && directLocalState != nil && directRemoteState.IsDMS() != directLocalState.IsDMS() {
-			incompatibleLocalState = directLocalState
-		}
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference (later is preferred):
@@ -233,21 +241,6 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	}
 	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
 	slices.SortStableFunc(states, func(a, b *StateDesc) int {
-		aIncompatible, bIncompatible := a == incompatibleLocalState, b == incompatibleLocalState
-		if aIncompatible != bIncompatible {
-			if aIncompatible {
-				return -1
-			}
-			return 1
-		}
-		// DMS tombstones have serial zero but supersede the previous full state.
-		aDMS, bDMS := a.IsDMS(), b.IsDMS()
-		if aDMS != bDMS {
-			if aDMS {
-				return 1
-			}
-			return -1
-		}
 		return a.Serial - b.Serial
 	})
 

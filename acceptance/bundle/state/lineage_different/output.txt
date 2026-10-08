@@ -1,34 +1,40 @@
 
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate --file .databricks/bundle/default/terraform/terraform.tfstate --format AUTO --overwrite
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json --file .databricks/bundle/default/resources.json --format AUTO --overwrite
+
 >>> musterr [CLI] bundle plan
 Error: lineage mismatch in state files
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+- terraform.tfstate: remote terraform state serial=0 lineage="111"
+- resources.json: remote direct state serial=0 lineage="222"
 
 
 >>> musterr [CLI] bundle deploy
 Error: lineage mismatch in state files
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+- terraform.tfstate: remote terraform state serial=0 lineage="111"
+- resources.json: remote direct state serial=0 lineage="222"
 
 
->>> musterr [CLI] bundle summary
+>>> musterr [CLI] bundle summary --force-pull
 Error: lineage mismatch in state files
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+- terraform.tfstate: remote terraform state serial=0 lineage="111"
+- resources.json: remote direct state serial=0 lineage="222"
 
 
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: lineage mismatch in state files
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+- terraform.tfstate: remote terraform state serial=0 lineage="111"
+- resources.json: remote direct state serial=0 lineage="222"
 
 
 >>> [CLI] bundle validate

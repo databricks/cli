@@ -176,6 +176,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// History-enabled state reads need initialized remote paths even without --force-pull.
+	if opts.ReadState && configuresDeploymentHistory(ctx, b) {
+		opts.SkipInitialize = false
+	}
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -354,7 +358,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath = b.StateFilenameDirect(ctx)
 			if !stateDesc.IsDMS() {
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(!configuresDeploymentHistory(ctx, b)), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
@@ -381,9 +385,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 
 			// Stamp the deployment and the version this run records onto every job and pipeline so
-			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
-			// does not exist until a first deploy creates it, so it is left off here and the deploy
-			// phase stamps the created id.
+			// the plan carries them. The deployment version follows the last recorded version or
+			// the bind-only migration version; deployment_id does not exist until a first deploy
+			// creates it, so it is left off here and the deploy phase stamps the created id.
 			lastVersionID, err := parseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -391,7 +395,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			nextVersion := lastVersionID + 1
 			if b.MigratingToDMS {
-				nextVersion++ // The bind-only migration consumes the first version.
+				nextVersion = max(b.DeploymentBundle.StateDB.Data.Serial, lastVersionID) + 2
 			}
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
@@ -641,7 +645,7 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	_, localPath := b.StateFilenameDirect(ctx)
 	if !resolveDeploymentHistory(ctx, b, stateDesc) {
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(!configuresDeploymentHistory(ctx, b)), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
 		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)

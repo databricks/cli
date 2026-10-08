@@ -2,5 +2,10 @@ title 'If serial is the same, refuse to proceed'
 mkdir -p .databricks/bundle/default/terraform
 echo '{"version": 4, "serial": 20}' > .databricks/bundle/default/terraform/terraform.tfstate
 echo '{"serial": 20}' > .databricks/bundle/default/resources.json
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+trace MSYS_NO_PATHCONV=1 $CLI workspace mkdirs "$state_path"
+trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/terraform.tfstate" --file .databricks/bundle/default/terraform/terraform.tfstate --format AUTO --overwrite
+trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/bundle/default/resources.json --format AUTO --overwrite
+rm .databricks/bundle/default/terraform/terraform.tfstate .databricks/bundle/default/resources.json
 #trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
