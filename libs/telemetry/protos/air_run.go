@@ -25,8 +25,8 @@ type AirRunEvent struct {
 	JobRunID              string `json:"job_run_id,omitempty"`
 	CodeSourceUsesGit     *bool  `json:"code_source_uses_git,omitempty"`
 
-	// Compressed tarball bytes, including when reusing a cached snapshot.
-	// Absent when no archive was measured; a measured zero remains explicit.
+	// Compressed tarball bytes for a new upload. Absent on cache hits and
+	// when no archive was measured; a measured zero remains explicit.
 	CodeSourceSizeBytes *int64 `json:"code_source_size_bytes,omitempty"`
 
 	CodeSourcePackagingMode AirPackagingMode `json:"code_source_packaging_mode,omitempty"`

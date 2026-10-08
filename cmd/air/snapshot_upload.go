@@ -172,12 +172,10 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	// upload the bytes now or reuse an object already in the store.
 	remote := path.Join(uploadPath, tarName)
 
-	info, err := f.Stat(ctx, tarName)
+	_, err = f.Stat(ctx, tarName)
 	if err == nil {
 		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
-		size := info.Size()
 		result.CodeSourcePath = remote
-		result.SizeBytes = &size
 		result.PackagingDurationMs = new(int64(0))
 		result.UploadDurationMs = new(int64(0))
 		return result, nil

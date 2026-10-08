@@ -660,9 +660,6 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 		info = dirInfo
 	} else if entry, ok := s.files[cleaned]; ok {
 		info = entry.Info
-		if info.ObjectType == workspace.ObjectTypeFile {
-			info.Size = int64(len(entry.Data))
-		}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
