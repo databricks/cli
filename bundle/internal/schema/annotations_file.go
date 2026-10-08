@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	yaml3 "go.yaml.in/yaml/v3"
-	"github.com/databricks/cli/libs/diag"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"

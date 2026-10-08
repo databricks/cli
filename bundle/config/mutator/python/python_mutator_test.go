@@ -11,15 +11,13 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/libs/dyn"
-
-	"github.com/databricks/cli/libs/diag"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"

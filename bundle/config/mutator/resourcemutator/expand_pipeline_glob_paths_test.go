@@ -7,16 +7,14 @@ import (
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-	"github.com/databricks/cli/libs/diag"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/bundle"
-
 	"github.com/databricks/cli/bundle/config"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
