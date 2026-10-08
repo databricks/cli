@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -566,6 +567,27 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	}
 
 	return Response{Body: body}
+}
+
+// ListVersions returns recorded versions in descending numeric order.
+func (s *FakeWorkspace) ListVersions(deploymentID string) Response {
+	defer s.LockUnlock()()
+
+	d, ok := s.DmsDeployments[deploymentID]
+	if !ok {
+		return dmsNotFound("deployment " + deploymentID)
+	}
+
+	versions := make([]bundledeployments.Version, 0, len(d.Versions))
+	for _, version := range d.Versions {
+		versions = append(versions, *version)
+	}
+	slices.SortFunc(versions, func(a, b bundledeployments.Version) int {
+		aID, _ := strconv.ParseInt(a.VersionId, 10, 64)
+		bID, _ := strconv.ParseInt(b.VersionId, 10, 64)
+		return cmp.Compare(bID, aID)
+	})
+	return Response{Body: bundledeployments.ListVersionsResponse{Versions: versions}}
 }
 
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {

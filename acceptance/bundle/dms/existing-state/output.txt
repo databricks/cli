@@ -51,6 +51,74 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
  "state": {}
 }
 
+=== Read back the completed migration and deploy versions with their recorded resource state
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
+[
+  {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS",
+    "previous_version_id": null,
+    "status": "VERSION_STATUS_COMPLETED",
+    "version_id": "1",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  },
+  {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS",
+    "previous_version_id": "1",
+    "status": "VERSION_STATUS_COMPLETED",
+    "version_id": "2",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/1 -o json
+[
+  {
+    "action_type": "OPERATION_ACTION_TYPE_BIND",
+    "resource_id": "[ONE_ID]",
+    "resource_key": "jobs.one",
+    "state": {
+      "depends_on": null,
+      "state": {
+        "name": "one"
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  },
+  {
+    "action_type": "OPERATION_ACTION_TYPE_BIND",
+    "resource_id": "[TWO_ID]",
+    "resource_key": "jobs.two",
+    "state": {
+      "depends_on": [
+        {
+          "label": "${resources.jobs.one.id}",
+          "node": "resources.jobs.one"
+        }
+      ],
+      "state": {
+        "name": "two"
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/2 -o json
+[
+  {
+    "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+    "resource_id": "[ONE_ID]",
+    "resource_key": "jobs.one",
+    "state": {
+      "depends_on": null,
+      "state": {
+        "name": "updated"
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+]
+
 === Restore stale local state and deploy again: remote DMS state wins, version 3 has no migration or resource creation
 >>> cp .databricks/resources.before-dms.json .databricks/bundle/default/resources.json
 

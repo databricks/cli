@@ -15,6 +15,12 @@ trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace print_state.py --no-dms
 
+title "Read back the completed migration and deploy versions with their recorded resource state"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/1" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
+
 title "Restore stale local state and deploy again: remote DMS state wins, version 3 has no migration or resource creation"
 trace cp .databricks/resources.before-dms.json .databricks/bundle/default/resources.json
 trace $CLI bundle deploy
