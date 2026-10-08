@@ -607,16 +607,16 @@ func (r Root) GetLocations(path string) []diag.Location {
 }
 
 // GetLocationOf is [Root.GetLocation] for a path node.
-func (r Root) GetLocationOf(path *structpath.PathNode) dyn.Location {
+func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
 	v, ok := r.valueOf(path)
 	if !ok {
-		return dyn.Location{}
+		return diag.Location{}
 	}
 	return v.Location()
 }
 
 // GetLocationsOf is [Root.GetLocations] for a path node.
-func (r Root) GetLocationsOf(path *structpath.PathNode) []dyn.Location {
+func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
 	v, ok := r.valueOf(path)
 	if !ok {
 		return nil
