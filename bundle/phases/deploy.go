@@ -305,7 +305,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logdiag.LogError(ctx, err)
 			return
 		}
-		logDeploymentVersion(ctx, b)
+		logDeploymentVersion(ctx, b, "Deployment history enabled")
 		statemgmt.PushResourcesState(ctx, b)
 		if logdiag.HasError(ctx) {
 			return
@@ -360,12 +360,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logdiag.LogError(ctx, err)
 			return
 		}
-		if len(staged) > 0 || b.MigratingToDMS {
+		if len(staged) > 0 {
 			if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}
-			logDeploymentVersion(ctx, b)
+			logDeploymentVersion(ctx, b, "Current Deployment Version")
 		}
 	}
 

@@ -10,7 +10,7 @@ trace jq '{state_version, serial, features}' .databricks/bundle/default/resource
 title "Enable recording: bind the original state in version 1, then deploy updates in version 2"
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
 update_file.py databricks.yml 'name: one' 'name: updated'
-trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' '?version=1' '?version=2'
+trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=1' '?version=2'
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace print_state.py --no-dms

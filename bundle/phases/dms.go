@@ -159,7 +159,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
-func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, message string) {
 	deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 	version := b.DeploymentBundle.StateDB.VersionID
 	if version == 0 {
@@ -171,11 +171,11 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
 		// Only the link is lost, so report the version without it rather than failing
 		// a deploy over it.
 		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
-		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", deploymentID, version))
+		cmdio.LogString(ctx, fmt.Sprintf("%s: %s version %d", message, deploymentID, version))
 		return
 	}
 
-	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, deploymentID, version))
+	cmdio.LogString(ctx, message+": "+workspaceurls.DeploymentURL(*baseURL, deploymentID, version))
 }
 
 // deploymentMetadata describes the bundle this deploy came from and where it

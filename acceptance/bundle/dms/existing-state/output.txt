@@ -22,6 +22,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Enabling deployment history...
+Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Updated jobs.one
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
