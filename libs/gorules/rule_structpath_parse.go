@@ -23,4 +23,18 @@ func NoComputedStructpathParse(m dsl.Matcher) {
 	).
 		Where(!m.File().Name.Matches(`_test\.go$`)).
 		Report(`build the path with structpath.NewPath / NewPattern instead of formatting and parsing a string`)
+
+	m.Match(
+		`$c.GetLocations($a + $b)`,
+		`$c.GetLocation($a + $b)`,
+		`$c.DefinitionLocation($a + $b)`,
+		`$c.GetLocations(fmt.Sprintf($*_))`,
+		`$c.GetLocation(fmt.Sprintf($*_))`,
+		`$c.DefinitionLocation(fmt.Sprintf($*_))`,
+		`$c.GetLocations($p.String())`,
+		`$c.GetLocation($p.String())`,
+		`$c.DefinitionLocation($p.String())`,
+	).
+		Where(!m.File().Name.Matches(`_test\.go$`)).
+		Report(`pass a *structpath.PathNode to GetLocationsOf / GetLocationOf / DefinitionLocationOf instead of a built string`)
 }

@@ -119,7 +119,7 @@ return fieldPaths
 
 ### Structpath
 
-**RULE: Build computed structpath paths and patterns from parts (`structpath.NewPath`, `NewPathSlice`, `NewPattern`); never format or concatenate a string to parse it.** `MustParsePath`/`MustParsePattern`/`MustParsePaths` are for string literals and tests; `ParsePath` with the error handled is for user input. The `NoComputedStructpathParse` ruleguard rule enforces this.
+**RULE: Build computed structpath paths and patterns from parts (`structpath.NewPath`, `NewPathSlice`, `NewPattern`); never format or concatenate a string to parse it (for location lookups pass the node to `GetLocationsOf`).** `MustParsePath`/`MustParsePattern`/`MustParsePaths` are for string literals and tests; `ParsePath` with the error handled is for user input. The `NoComputedStructpathParse` ruleguard rule enforces this.
 
 ### Environment variables
 

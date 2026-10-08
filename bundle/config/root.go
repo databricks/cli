@@ -589,7 +589,12 @@ func (r Root) DefinitionLocation(path string) diag.Location {
 	if err != nil {
 		return diag.Location{}
 	}
-	locs := r.locations.At(p)
+	return r.DefinitionLocationOf(p)
+}
+
+// DefinitionLocationOf is [Root.DefinitionLocation] for a path node.
+func (r Root) DefinitionLocationOf(path *structpath.PathNode) diag.Location {
+	locs := r.locations.At(path)
 	if len(locs) == 0 {
 		return diag.Location{}
 	}
