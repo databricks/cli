@@ -296,6 +296,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if b.MigratingToDMS {
+		if err := statemgmt.BackupRemoteResourcesState(ctx, b); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return

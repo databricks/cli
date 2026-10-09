@@ -54,6 +54,11 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
  "state": {}
 }
 
+=== The remote backup preserves the original direct state byte for byte
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.first.json
+
+>>> cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
+
 === Read back the completed migration and deploy versions with their recorded resource state
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
 [
@@ -123,6 +128,8 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 ]
 
 === Restore remote serial 1 without the deployment history flag: migrate after DMS version 3 in version 4, then deploy in version 5
+>>> update_file.py .databricks/resources.before-dms.json "serial": 1 "serial":  1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-dms.json --format AUTO --overwrite
 
 >>> [CLI] bundle deploy
@@ -143,6 +150,11 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 {"method": "POST", "path": "/api/2.2/jobs/reset", "body": {"job_id": [TWO_ID], "new_settings": {"deployment": {"deployment_id": "[NUMID]", "kind": "BUNDLE", "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json", "version_id": "5"}, "edit_mode": "UI_LOCKED", "format": "MULTI_TASK", "max_concurrent_runs": 1, "name": "two", "queue": {"enabled": true}, "tasks": [{"run_job_task": {"job_id": [ONE_ID]}, "task_key": "run_one"}]}}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/5/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"5\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"two\",\"queue\":{\"enabled\":true},\"tasks\":[{\"run_job_task\":{\"job_id\":[ONE_ID]},\"task_key\":\"run_one\"}]},\"depends_on\":[{\"node\":\"resources.jobs.one\",\"label\":\"${resources.jobs.one.id}\"}]}", "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+=== The remote backup is overwritten with the restored direct state's changed bytes
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.repeat.json
+
+>>> cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
 
 === Read back both completed migrations and deploys: version 4 binds the restored remote state
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json

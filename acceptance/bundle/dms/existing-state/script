@@ -16,6 +16,10 @@ trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace print_state.py --no-dms
 
+title "The remote backup preserves the original direct state byte for byte"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json
+trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
+
 title "Read back the completed migration and deploy versions with their recorded resource state"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
@@ -23,9 +27,14 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -S 'map({resource_key, resource_id, action_type, status, state: (.state | fromjson | {state: {name: .state.name}, depends_on})}) | sort_by(.resource_key)'
 
 title "Restore remote serial 1 without the deployment history flag: migrate after DMS version 3 in version 4, then deploy in version 5"
+trace update_file.py .databricks/resources.before-dms.json '"serial": 1' '"serial":  1'
 trace MSYS_NO_PATHCONV=1 $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json" --file .databricks/resources.before-dms.json --format AUTO --overwrite
 trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline
+
+title "The remote backup is overwritten with the restored direct state's changed bytes"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format RAW --file .databricks/resources.backup.repeat.json
+trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
 
 title "Read back both completed migrations and deploys: version 4 binds the restored remote state"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -S 'map({version_id, previous_version_id, version_type, status, completion_reason}) | sort_by(.version_id)'
