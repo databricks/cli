@@ -1,0 +1,170 @@
+
+=== Initial summary before deploy
+>>> [CLI] bundle summary -o json
+{
+  "description": "DESCRIPTION1",
+  "entities": [
+    {
+      "name": "account_id"
+    }
+  ],
+  "full_name": "main.myschema.myfeature",
+  "function": {
+    "aggregation_function": {
+      "count_function": {
+        "input": "amount"
+      },
+      "time_window": {
+        "sliding": {
+          "slide_duration": "86400s",
+          "window_duration": "604800s"
+        }
+      }
+    }
+  },
+  "modified_status": "created",
+  "source": {
+    "delta_table_source": {
+      "full_name": "main.myschema.mysource"
+    }
+  },
+  "timeseries_column": {
+    "name": "event_ts"
+  }
+}
+
+=== Verify it does not exist yet
+>>> musterr [CLI] feature-engineering get-feature main.myschema.myfeature
+Error: Resource ml.Feature not found: main.myschema.myfeature
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/features",
+  "body": {
+    "description": "DESCRIPTION1",
+    "entities": [
+      {
+        "name": "account_id"
+      }
+    ],
+    "full_name": "main.myschema.myfeature",
+    "function": {
+      "aggregation_function": {
+        "count_function": {
+          "input": "amount"
+        },
+        "time_window": {
+          "sliding": {
+            "slide_duration": "86400s",
+            "window_duration": "604800s"
+          }
+        }
+      }
+    },
+    "source": {
+      "delta_table_source": {
+        "full_name": "main.myschema.mysource"
+      }
+    },
+    "timeseries_column": {
+      "name": "event_ts"
+    }
+  }
+}
+
+=== Summary should show the id and the Catalog Explorer url
+>>> [CLI] bundle summary -o json
+{
+  "id": "main.myschema.myfeature",
+  "url": "[DATABRICKS_URL]/explore/data/features/main/myschema/myfeature?w=[WORKSPACE_ID]"
+}
+
+=== Verify deployment
+>>> [CLI] feature-engineering get-feature main.myschema.myfeature
+{
+  "full_name": "main.myschema.myfeature",
+  "description": "DESCRIPTION1",
+  "catalog_name": "main",
+  "schema_name": "myschema",
+  "name": "myfeature"
+}
+
+=== Update description (should update in place, not recreate)
+>>> update_file.py databricks.yml DESCRIPTION1 DESCRIPTION2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "PATCH",
+  "path": "/api/2.0/feature-engineering/features/main.myschema.myfeature",
+  "q": {
+    "update_mask": "description"
+  },
+  "body": {
+    "description": "DESCRIPTION2",
+    "entities": [
+      {
+        "name": "account_id"
+      }
+    ],
+    "full_name": "main.myschema.myfeature",
+    "function": {
+      "aggregation_function": {
+        "count_function": {
+          "input": "amount"
+        },
+        "time_window": {
+          "sliding": {
+            "slide_duration": "86400s",
+            "window_duration": "604800s"
+          }
+        }
+      }
+    },
+    "source": {
+      "delta_table_source": {
+        "full_name": "main.myschema.mysource"
+      }
+    },
+    "timeseries_column": {
+      "name": "event_ts"
+    }
+  }
+}
+
+>>> [CLI] feature-engineering get-feature main.myschema.myfeature
+"DESCRIPTION2"
+
+=== Change an immutable field (should plan a recreate)
+>>> update_file.py databricks.yml amount other_column
+
+>>> [CLI] bundle plan
+recreate features.feature1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.features.feature1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/features/main.myschema.myfeature"
+}

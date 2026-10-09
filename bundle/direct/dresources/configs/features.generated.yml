@@ -1,0 +1,21 @@
+# Generated, do not edit.
+
+recreate_on_changes:
+  - field: full_name
+    reason: spec:immutable
+  - field: function
+    reason: spec:immutable
+  - field: source
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: catalog_name
+    reason: spec:output_only
+  - field: created_at
+    reason: spec:output_only
+  - field: created_by
+    reason: spec:output_only
+  - field: name
+    reason: spec:output_only
+  - field: schema_name
+    reason: spec:output_only

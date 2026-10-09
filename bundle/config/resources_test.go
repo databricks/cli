@@ -361,6 +361,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		Features: map[string]*resources.Feature{
+			"my_feature": {
+				Feature: ml.Feature{
+					FullName: "main.myschema.my_feature",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -391,6 +398,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeature(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)

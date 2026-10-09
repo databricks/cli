@@ -1,0 +1,22 @@
+recreate_on_changes:
+  # UpdateFeature accepts only `description`, so a change to any of these cannot be applied in
+  # place. The spec deliberately leaves them OPTIONAL rather than IMMUTABLE so feature versioning
+  # stays open, which means features.generated.yml will never cover them and these entries are
+  # permanent.
+  - field: entities
+    reason: immutable
+  - field: timeseries_column
+    reason: immutable
+  - field: lineage_context
+    reason: immutable
+  - field: inputs
+    reason: immutable
+  - field: time_window
+    reason: immutable
+  - field: filter_condition
+    reason: immutable
+
+stable_output_fields:
+  # name is the last component of full_name, which is immutable, so it cannot change on an
+  # in-place update; see the stable_output_fields doc in config.go and ES-2202624.
+  - field: name

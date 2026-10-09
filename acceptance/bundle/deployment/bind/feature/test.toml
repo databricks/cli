@@ -1,0 +1,22 @@
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]
+
+# The bind flow issues a GET to confirm the remote feature exists before binding.
+[[Server]]
+Pattern = "GET /api/2.0/feature-engineering/features/{full_name}"
+Response.Body = '''
+{
+  "full_name": "main.myschema.boundfeature",
+  "catalog_name": "main",
+  "schema_name": "myschema",
+  "name": "boundfeature",
+  "description": "bound feature",
+  "source": {"delta_table_source": {"full_name": "main.myschema.mysource"}},
+  "function": {"column_selection": {"column": "amount"}},
+  "entities": [{"name": "account_id"}],
+  "timeseries_column": {"name": "event_ts"}
+}
+'''

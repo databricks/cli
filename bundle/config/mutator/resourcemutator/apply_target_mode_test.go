@@ -156,6 +156,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Volumes: map[string]*resources.Volume{
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
 				},
+				Features: map[string]*resources.Feature{
+					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
@@ -491,6 +494,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
+	assert.Equal(t, "catalog1.schema1.feature1", b.Config.Resources.Features["feature1"].FullName)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
@@ -535,6 +539,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
 		"Apps",
+		"Features",
 		"SecretScopes",
 		"Secrets",
 		"DatabaseInstances",

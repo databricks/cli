@@ -1,0 +1,27 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_feature"
+
+resources:
+  features:
+    my_feature_1:
+      full_name: main.default.my_feature_1
+      description: "My Feature"
+      source:
+        delta_table_source:
+          full_name: main.default.my_source_1
+      function:
+        aggregation_function:
+          count_function:
+            input: value
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s

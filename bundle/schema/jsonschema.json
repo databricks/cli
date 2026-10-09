@@ -1026,6 +1026,94 @@
                   }
                 ]
               },
+              "resources.Feature": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "description": "[Private Preview] The description of the feature.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "entities": {
+                        "description": "[Private Preview] The entity columns for the feature, used as aggregation keys and for query-time lookup.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.EntityColumn",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "filter_condition": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "full_name": {
+                        "description": "[Private Preview] The full three-part name (catalog, schema, name) of the feature. This is the\nfeature's resource identifier; the catalog_name, schema_name, and name fields\nbelow are OUTPUT_ONLY decomposed views of this value.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "function": {
+                        "description": "[Private Preview] The function by which the feature is computed.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.Function",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "inputs": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/slice/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "lineage_context": {
+                        "description": "[Private Preview] Lineage context information for this feature.\nWARNING: This field is primarily intended for internal use by Databricks systems and\nis automatically populated when features are created through Databricks notebooks or jobs.\nUsers should not manually set this field as incorrect values may lead to inaccurate lineage tracking or unexpected behavior.\nThis field will be set by feature-engineering client and should be left unset by SDK and terraform users.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LineageContext",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "source": {
+                        "description": "[Private Preview] The data source of the feature.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DataSource",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "time_window": {
+                        "description": "[Private Preview]",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeWindow",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "timeseries_column": {
+                        "description": "[Private Preview] Column recording time, used for point-in-time joins, backfills, and aggregations.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeseriesColumn",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "full_name",
+                      "function",
+                      "source"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.GenieSpace": {
                 "oneOf": [
                   {
@@ -4022,6 +4110,11 @@
                     },
                     "external_locations": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                    },
+                    "features": {
+                      "description": "The feature definitions for the bundle, where each key is the name of the feature.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Feature",
+                      "markdownDescription": "The feature definitions for the bundle, where each key is the name of the feature."
                     },
                     "genie_spaces": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
@@ -12113,6 +12206,481 @@
                 }
               ]
             },
+            "ml.AggregationFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "An aggregation function applied over a time window.",
+                  "properties": {
+                    "approx_count_distinct": {
+                      "description": "[Private Preview] Computes the approximate count of distinct values.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxCountDistinctFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "approx_percentile": {
+                      "description": "[Private Preview] Computes the approximate percentile of values.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ApproxPercentileFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "avg": {
+                      "description": "[Private Preview] Computes the average of values.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AvgFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "count_function": {
+                      "description": "[Private Preview] Computes the count of values.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CountFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "first": {
+                      "description": "[Private Preview] Returns the first value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "first_distinct": {
+                      "description": "[Private Preview] Returns the first N distinct values, ordered by the feature's timeseries column.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstDistinctFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "first_n": {
+                      "description": "[Private Preview] Returns the first N values, ordered by the feature's timeseries column.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FirstNFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "last": {
+                      "description": "[Private Preview] Returns the last value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "last_distinct": {
+                      "description": "[Private Preview] Returns the last N distinct values, ordered by the feature's timeseries column.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastDistinctFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "last_n": {
+                      "description": "[Private Preview] Returns the last N values, ordered by the feature's timeseries column.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.LastNFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "max": {
+                      "description": "[Private Preview] Computes the maximum value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaxFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "min": {
+                      "description": "[Private Preview] Computes the minimum value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MinFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "stddev_pop": {
+                      "description": "[Private Preview] Computes the population standard deviation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevPopFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "stddev_samp": {
+                      "description": "[Private Preview] Computes the sample standard deviation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StddevSampFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sum": {
+                      "description": "[Private Preview] Computes the sum of values.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SumFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "time_window": {
+                      "description": "[Private Preview] The time window over which the aggregation is computed.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TimeWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "var_pop": {
+                      "description": "[Private Preview] Computes the population variance.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarPopFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "var_samp": {
+                      "description": "[Private Preview] Computes the sample variance.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.VarSampFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ApproxCountDistinctFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the approximate count of distinct values.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the approximate count of distinct values is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "relative_sd": {
+                      "description": "[Private Preview] The maximum relative standard deviation allowed (default defined by Spark).",
+                      "$ref": "#/$defs/float64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ApproxPercentileFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the approximate percentile of values.",
+                  "properties": {
+                    "accuracy": {
+                      "description": "[Private Preview] The accuracy parameter (higher is more accurate but slower).",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "input": {
+                      "description": "[Private Preview] The input column from which the approximate percentile is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "percentile": {
+                      "description": "[Private Preview] The percentile value to compute (between 0 and 1).",
+                      "$ref": "#/$defs/float64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input",
+                    "percentile"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.AvgFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the average of values.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the average is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ColumnIdentifier": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "variant_expr_path": {
+                      "description": "[Private Preview] String representation of the column name using dot-prefixed path notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "variant_expr_path"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ColumnSelection": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A ColumnSelection function, equivalent to the LAST() record of an entity over a lifetime window",
+                  "properties": {
+                    "column": {
+                      "description": "[Private Preview] Column name from source to select as the feature value.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "column"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ContinuousWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "offset": {
+                      "description": "[Private Preview] The offset of the continuous window (must be non-positive).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "window_duration": {
+                      "description": "[Private Preview] The duration of the continuous window (must be positive).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "window_duration"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.CountFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the count of values.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the count is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.CustomUdf": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A CustomUdf function applies a registered Unity Catalog function row-wise to\nsource columns, producing a single output column per row.",
+                  "properties": {
+                    "function_path": {
+                      "description": "[Private Preview] Fully qualified 3-part Unity Catalog path of the function to apply.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "input_bindings": {
+                      "description": "[Private Preview] Binds each UC function parameter to a source column.\nMay be empty for zero-argument functions (e.g. a timestamp generator).",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.InputBinding",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "function_path"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.DataSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Specifies the data source backing a feature. Exactly one source type must be set.",
+                  "properties": {
+                    "delta_table_source": {
+                      "description": "[Private Preview] A Delta table data source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DeltaTableSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "feature_view_source": {
+                      "description": "[Private Preview] A data source composed from registered upstream Features.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureViewSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "kafka_source": {
+                      "description": "[Private Preview] A Kafka stream data source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.KafkaSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lateness": {
+                      "description": "[Private Preview] Completeness timing for this Feature's use of the source. This configuration is part of the\nFeature definition; it does not modify the underlying table or stream.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SourceLateness",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "request_source": {
+                      "description": "[Private Preview] A request-time data source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RequestSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "stream_source": {
+                      "description": "[Private Preview] A Stream data source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.StreamSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.DeltaTableSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "dataframe_schema": {
+                      "description": "[Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType JSON format (from df.schema.json()).\nRequired if transformation_sql is specified.\nExample: {\"type\":\"struct\",\"fields\":[{\"name\":\"col_a\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"col_c\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "entity_columns": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "filter_condition": {
+                      "description": "[Private Preview] Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "full_name": {
+                      "description": "[Private Preview] The full three-part (catalog, schema, table) name of the Delta table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timeseries_column": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "transformation_sql": {
+                      "description": "[Private Preview] A single SQL SELECT expression applied after filter_condition.\nShould contains all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "full_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.EntityColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "description": "[Private Preview] The name of the entity column. For Kafka sources, use dot-prefixed path notation to reference\nfields within the key or value schema (e.g., \"value.user_id\", \"key.partition_key\"). For nested\nfields, the leaf node name (e.g., \"user_id\" from \"value.trip_details.user_id\") is what will\nbe present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:user_id\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.ExperimentPermissionLevel": {
               "oneOf": [
                 {
@@ -12176,6 +12744,576 @@
                 }
               ]
             },
+            "ml.FeatureReference": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A reference to one registered upstream Feature. A message rather than a bare name so an\nupstream can later be pinned more precisely (e.g. by version) without a breaking type change.",
+                  "properties": {
+                    "feature": {
+                      "description": "[Private Preview] The three-part full name of the upstream Feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FeatureViewSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A data source composed from registered upstream Features.",
+                  "properties": {
+                    "feature_references": {
+                      "description": "[Private Preview] The upstream Features this source reads. Must include at least one feature.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FieldDefinition": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A single field definition within a FlatSchema, specifying the field name and its scalar data type.\nDoes not support nested or complex types (arrays, maps, structs).",
+                  "properties": {
+                    "data_type": {
+                      "description": "[Private Preview] The scalar data type of the field.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ScalarDataType",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "name": {
+                      "description": "[Private Preview] The name of the field.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "data_type",
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FirstDistinctFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the first N distinct values, ordered by the feature's timeseries column.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the first N distinct values are returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "n": {
+                      "description": "[Private Preview] The number of distinct values to return.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input",
+                    "n"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FirstFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the first value.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the first value is returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FirstNFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the first N values, ordered by the feature's timeseries column.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the first N values are returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "n": {
+                      "description": "[Private Preview] The number of values to return.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input",
+                    "n"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FlatSchema": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A flat (non-nested) schema for request-time fields, defined as an ordered list of field definitions.\nThis schema only supports scalar types.",
+                  "properties": {
+                    "fields": {
+                      "description": "[Private Preview] The list of fields in this schema.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FieldDefinition",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "fields"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.Function": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "aggregation_function": {
+                      "description": "[Private Preview] An aggregation function applied over a time window.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.AggregationFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "column_selection": {
+                      "description": "[Private Preview] Selects the latest value of a single column in a data source",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnSelection",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "custom_udf": {
+                      "description": "[Private Preview] Applies a registered Unity Catalog function row-wise to source columns.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CustomUdf",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "extra_parameters": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FunctionExtraParameter",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "function_type": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FunctionFunctionType",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FunctionExtraParameter": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "description": "[Private Preview] The name of the parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "value": {
+                      "description": "[Private Preview] The value of the parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "value"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FunctionFunctionType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "FUNCTION_TYPE_UNSPECIFIED",
+                    "AVG",
+                    "COUNT",
+                    "SUM",
+                    "MIN",
+                    "MAX",
+                    "FIRST",
+                    "LAST",
+                    "APPROX_COUNT_DISTINCT",
+                    "APPROX_PERCENTILE",
+                    "STDDEV_POP",
+                    "STDDEV_SAMP",
+                    "VAR_POP",
+                    "VAR_SAMP"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.InputBinding": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Binds a single UC function parameter to a source column.",
+                  "properties": {
+                    "column": {
+                      "description": "[Private Preview] Source column whose value is passed for this parameter at execution time.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "parameter": {
+                      "description": "[Private Preview] Name of the UC function parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "column",
+                    "parameter"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.JobContext": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "description": "[Private Preview] The job ID where this API invoked.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "job_run_id": {
+                      "description": "[Private Preview] The job run ID where this API was invoked.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.KafkaSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "entity_column_identifiers": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ColumnIdentifier",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "filter_condition": {
+                      "description": "[Private Preview] The filter condition applied to the source data before aggregation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "name": {
+                      "description": "[Private Preview] Name of the Kafka source, used to identify it. This is used to look up the corresponding KafkaConfig object. Can be distinct from topic name.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timeseries_column_identifier": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnIdentifier",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.LastDistinctFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the last N distinct values, ordered by the feature's timeseries column.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the last N distinct values are returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "n": {
+                      "description": "[Private Preview] The number of distinct values to return.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input",
+                    "n"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.LastFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the last value.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the last value is returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.LastNFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Returns the last N values, ordered by the feature's timeseries column.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the last N values are returned.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "n": {
+                      "description": "[Private Preview] The number of values to return.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input",
+                    "n"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.LineageContext": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Lineage context information for tracking where an API was invoked. This will allow us to track lineage, which currently uses caller entity information for use across the Lineage Client and Observability in Lumberjack.",
+                  "properties": {
+                    "job_context": {
+                      "description": "[Private Preview] Job context information including job ID and run ID.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.JobContext",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "notebook_id": {
+                      "description": "[Private Preview] The notebook ID where this API was invoked.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaxFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the maximum value.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the maximum is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MinFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the minimum value.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the minimum is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.ModelTag": {
               "oneOf": [
                 {
@@ -12220,6 +13358,411 @@
                 }
               ]
             },
+            "ml.RequestSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A request-time data source whose value is provided at inference time: offline batch scoring or online serving endpoint",
+                  "properties": {
+                    "dataframe_schema": {
+                      "description": "[Private Preview] A schema containing scalar or nested fields, in Spark StructType JSON format\n(from df.schema.json()). This preserves field, array-element, and map-value nullability.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "flat_schema": {
+                      "description": "[Private Preview] A flat schema with scalar-typed fields only.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FlatSchema",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.RollingWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A rolling time window with an optional non-negative delay.",
+                  "properties": {
+                    "delay": {
+                      "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "window_duration": {
+                      "description": "[Private Preview] The duration of the rolling window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SawtoothWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A sawtooth window served via the hybrid batch + streaming path. The batch pipeline maintains\ndaily partial aggregates for the bulk of the window while the streaming pipeline maintains the\nmost recent day(s), and serving merges them on read. Same field shape as RollingWindow, but a\ndistinct type so the control plane can explicitly identify hybrid (sawtooth) features rather\nthan inferring hybrid behavior from window_duration.",
+                  "properties": {
+                    "delay": {
+                      "description": "[Private Preview] Delay is not currently supported for Sawtooth windows.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "window_duration": {
+                      "description": "[Private Preview] The duration of the window. Must be positive and span more than two days when set, so that both\nthe batch (N-1 day) and stale-path (N-2 day) partial aggregates are well defined. The duration\nneed not be a whole number of days (e.g. 3 days 15 minutes is allowed). Absent means lifetime\n(aggregate over the entity's entire history).",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ScalarDataType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Scalar data types for request-time field definitions.\nOnly flat (non-nested) types are supported.",
+                  "enum": [
+                    "INTEGER",
+                    "FLOAT",
+                    "BOOLEAN",
+                    "STRING",
+                    "DOUBLE",
+                    "LONG",
+                    "TIMESTAMP",
+                    "DATE",
+                    "SHORT",
+                    "BINARY",
+                    "DECIMAL"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SlidingWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "delay": {
+                      "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "offset": {
+                      "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h slide produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than slide_duration (and therefore\nwindow_duration).",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "slide_duration": {
+                      "description": "[Private Preview] The slide duration (interval by which windows advance, must be positive and less than duration).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "window_duration": {
+                      "description": "[Private Preview] The duration of the sliding window. Must be positive when set; absent means lifetime\n(aggregate over the entity's entire history).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "slide_duration"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SourceLateness": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configures when event-time data from this source is considered complete for a Feature.",
+                  "properties": {
+                    "settling_delay": {
+                      "description": "[Private Preview] Non-negative time to wait after a window ends before treating its source data as complete.\nTraining shifts the eligible evaluation time backwards by this duration so it does not join\ndata that would still have been settling online. Materialization waits for the duration to\nelapse before publishing the window. If unset, source data is considered settled immediately.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.StddevPopFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the population standard deviation.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the population standard deviation is computed. For Kafka sources,\nuse dot-prefixed path notation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.StddevSampFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the sample standard deviation.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the sample standard deviation is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.StreamSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Stream entity used as a data source for a feature.",
+                  "properties": {
+                    "dataframe_schema": {
+                      "description": "[Private Preview] Schema of the resulting dataframe after transformations, in Spark StructType\nJSON format (from df.schema.json()).\nAny subsequent functions operate against this dataframe.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "filter_condition": {
+                      "description": "[Private Preview] The filter condition applied to the source data before aggregation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "full_name": {
+                      "description": "[Private Preview] Three-part full name of the Stream (catalog.schema.stream).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "transformation_sql": {
+                      "description": "[Private Preview] The pipeline runs these SQL statements immediately after conversion into\nthe schema specified on the Stream object.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "full_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.SumFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the sum of values.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the sum is computed. For Kafka sources, use dot-prefixed path\nnotation (e.g., \"value.amount\"). For nested fields, the leaf node name is used.\nColon-prefixed notation (e.g., \"value:amount\") is supported for backwards\ncompatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TimeWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "continuous": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ContinuousWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "rolling": {
+                      "description": "[Private Preview] A rolling time window with an optional non-negative delay.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RollingWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sawtooth": {
+                      "description": "[Private Preview] A sawtooth window served via the hybrid batch + streaming path.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SawtoothWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sliding": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SlidingWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "start_time": {
+                      "description": "[Private Preview] Earliest event-time boundary at which the Feature may emit an output. This gates outputs, not\nthe historical inputs read by a window. For example, a 365-day window with\nstart_time=2026-01-01 begins emitting partial-window values on that date instead of waiting\nfor 365 days of data; a lifetime window produces no output before start_time. If unset,\ntumbling and fixed-duration sliding windows first emit at an offset-aligned boundary after a\nfull window can be formed. If unset, lifetime sliding windows and rolling windows emit as soon as\neligible source data exists.\nNot currently supported for sawtooth windows or for Features with a stream source.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "tumbling": {
+                      "description": "[Private Preview]",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TumblingWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TimeseriesColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "description": "[Private Preview] The name of the timeseries column. For Kafka sources, use dot-prefixed path notation to\nreference fields within the key or value schema (e.g., \"value.event_timestamp\"). For nested\nfields, the leaf node name (e.g., \"event_timestamp\" from \"value.event_details.event_timestamp\")\nis what will be present in materialized tables and expected to match at query time.\nColon-prefixed notation (e.g., \"value:event_timestamp\") is supported for\nbackwards compatibility but is deprecated; migrate to dot notation.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.TumblingWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "delay": {
+                      "description": "[Private Preview] Non-negative analytic lag that evaluates the window this far in the past. Use this for timing\nvariations unrelated to source lateness, such as a 30-day count as of one week ago. If unset,\nthe analytic lag is zero. It composes with source.lateness when both are set.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "offset": {
+                      "description": "[Private Preview] Non-negative phase shift from the default midnight UTC alignment. For example, offset=22h on\na 24h window produces boundaries at 22:00 UTC (17:00 New York in standard time) instead of\nmidnight UTC. If unset, the offset is zero. Must be shorter than window_duration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "window_duration": {
+                      "description": "[Private Preview] The duration of each tumbling window (non-overlapping, fixed-duration windows).",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "window_duration"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.UcTraceLocation": {
               "oneOf": [
                 {
@@ -12249,6 +13792,54 @@
                   "required": [
                     "catalog",
                     "schema"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.VarPopFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the population variance.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the population variance is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.VarSampFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Computes the sample variance.",
+                  "properties": {
+                    "input": {
+                      "description": "[Private Preview] The input column from which the sample variance is computed.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "input"
                   ]
                 },
                 {
@@ -18151,6 +19742,20 @@
                     }
                   ]
                 },
+                "resources.Feature": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Feature"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.GenieSpace": {
                   "oneOf": [
                     {
@@ -19330,12 +20935,96 @@
                   }
                 ]
               },
+              "ml.ColumnIdentifier": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ColumnIdentifier"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.EntityColumn": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.EntityColumn"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "ml.ExperimentTag": {
                 "oneOf": [
                   {
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.FeatureReference": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.FieldDefinition": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FieldDefinition"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.FunctionExtraParameter": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FunctionExtraParameter"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.InputBinding": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.InputBinding"
                     }
                   },
                   {
