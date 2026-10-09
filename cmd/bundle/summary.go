@@ -31,6 +31,10 @@ Useful after deployment to see what was created and where to find it.`,
 			AlwaysPull:       forcePull,
 			IncludeLocations: includeLocations,
 			InitIDs:          true,
+			// Let users inspect a bundle that pins the removed Terraform engine.
+			InitFunc: func(b *bundle.Bundle) {
+				b.AllowTerraformEngineConfig = true
+			},
 		})
 		if err != nil {
 			return err

@@ -125,7 +125,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) *StateDesc {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
 	// We read all 4 possible states: terraform/direct X local/remote and pick the most recent one.
@@ -142,8 +142,8 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	if len(states) == 0 {
 		winner = &StateDesc{
-			// No state, go with user-provided or default
-			Engine:  requiredEngine.Type.ThisOrDefault(),
+			// No state: a new deployment uses the direct engine.
+			Engine:  engine.EngineDirect,
 			IsLocal: true,
 			// Lineage and Serial are empty
 		}

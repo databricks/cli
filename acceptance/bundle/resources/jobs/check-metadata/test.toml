@@ -15,6 +15,6 @@ Env.MSYS_NO_PATHCONV = "1"
 
 [[Repls]]
 # clean up ?[ow]=<num> suffix after URL since not all workspaces have that
-Old = '\?[ow]=\[NUMID\]'
+Old = '\?[ow]=\[WORKSPACE_ID\]'
 New = ''
 Order = 1000

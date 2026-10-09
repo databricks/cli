@@ -1,9 +1,5 @@
 package terraform
 
-const (
-	TerraformConfigFileName = "bundle.tf.json"
-)
-
 var GroupToTerraformName = map[string]string{
 	// 2 level groups: resources.GROUP
 	"jobs":                    "databricks_job",

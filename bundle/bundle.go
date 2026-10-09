@@ -86,7 +86,7 @@ type Metrics struct {
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
-	// the state file. Nil for terraform deploys.
+	// the state file.
 	ResourceState resourcestate.ExportedResourcesMap
 }
 
@@ -188,13 +188,16 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
-	// MigratingToDirect is set when the direct engine is requested but the existing
-	// state still uses terraform, so the state is migrated to the direct engine after
-	// this deploy. Resources that only the direct engine supports are skipped by this
-	// run rather than rejected: terraform cannot deploy them, and since terraform
-	// could never have deployed them they are absent from its state. The next deploy,
-	// which runs on the migrated state, creates them.
+	// MigratingToDirect is set when the existing state still uses terraform, so it is
+	// migrated to the direct engine in memory before the command runs (statemgmt.Migrate).
+	// Deploy and destroy commit the migration (statemgmt.CommitMigration); other commands
+	// leave the terraform state untouched.
 	MigratingToDirect bool
+
+	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
+	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
+	// (bundle summary) so users can still inspect a bundle that pins the removed engine.
+	AllowTerraformEngineConfig bool
 
 	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
 	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally

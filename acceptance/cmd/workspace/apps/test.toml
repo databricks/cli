@@ -1,1 +1,10 @@
 RecordRequests = true
+
+# The testserver mints these per run.
+[[Repls]]
+Old = 'deploy-\d+'
+New = 'deploy-[DEPLOYMENT_ID]'
+
+[[Repls]]
+Old = '"service_principal_id": \d+'
+New = '"service_principal_id": [SERVICE_PRINCIPAL_ID]'

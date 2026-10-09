@@ -30,11 +30,11 @@ Building python_artifact...
 
 >>> [CLI] bundle deploy -t dev
 Building python_artifact...
-Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UNIQUE_NAME]/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl...
+Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UNIQUE_NAME]/project_name_[UNIQUE_NAME]-0.0.1+[WHEEL_BUILD]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Created jobs.sample_job
 Created pipelines.project_name_[UNIQUE_NAME]_etl
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t dev
@@ -48,7 +48,7 @@ Resources:
   Jobs:
     sample_job:
       Name: [dev [USERNAME]] sample_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_ID]
   Pipelines:
     project_name_[UNIQUE_NAME]_etl:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_etl
@@ -62,7 +62,7 @@ Resources:
 @@ -51,4 +51,5 @@
          "edit_mode": "UI_LOCKED",
          "format": "MULTI_TASK",
-+        "id": "[NUMID]",
++        "id": "[JOB_ID]",
          "job_clusters": [
            {
 @@ -138,5 +139,6 @@
@@ -70,7 +70,7 @@ Resources:
            }
 -        }
 +        },
-+        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
++        "url": "[DATABRICKS_URL]/jobs/[JOB_ID]"
        }
      },
 @@ -155,4 +157,5 @@
@@ -294,7 +294,7 @@ Created jobs.sample_job
 Created jobs.sample_job.permissions
 Created pipelines.project_name_[UNIQUE_NAME]_etl
 Created pipelines.project_name_[UNIQUE_NAME]_etl.permissions
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t prod
@@ -308,7 +308,7 @@ Resources:
   Jobs:
     sample_job:
       Name: sample_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_ID]
   Pipelines:
     project_name_[UNIQUE_NAME]_etl:
       Name: project_name_[UNIQUE_NAME]_etl

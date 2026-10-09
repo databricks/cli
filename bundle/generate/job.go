@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -23,7 +24,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 			tasks = append(tasks, v)
 		}
 		// We're using location lines to define the order of keys in exported YAML.
-		value["tasks"] = dyn.NewValue(tasks, []dyn.Location{{Line: jobOrder.Get("tasks")}})
+		value["tasks"] = dyn.NewValue(tasks, []diag.Location{{Line: jobOrder.Get("tasks")}})
 	}
 
 	// We're processing job.Settings.Parameters separately to retain empty default values.
@@ -31,13 +32,13 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		var params []dyn.Value
 		for _, parameter := range job.Settings.Parameters {
 			p := map[string]dyn.Value{
-				"name":    dyn.NewValue(parameter.Name, []dyn.Location{{Line: 0}}), // We use Line: 0 to ensure that the name goes first.
-				"default": dyn.NewValue(parameter.Default, []dyn.Location{{Line: 1}}),
+				"name":    dyn.NewValue(parameter.Name, []diag.Location{{Line: 0}}), // We use Line: 0 to ensure that the name goes first.
+				"default": dyn.NewValue(parameter.Default, []diag.Location{{Line: 1}}),
 			}
 			params = append(params, dyn.V(p))
 		}
 
-		value["parameters"] = dyn.NewValue(params, []dyn.Location{{Line: jobOrder.Get("parameters")}})
+		value["parameters"] = dyn.NewValue(params, []diag.Location{{Line: jobOrder.Get("parameters")}})
 	}
 
 	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id"}, value)

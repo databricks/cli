@@ -20,4 +20,4 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-forc
 Created pipelines.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]

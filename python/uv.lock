@@ -166,7 +166,7 @@ toml = [
 
 [[package]]
 name = "databricks-bundles"
-version = "1.19.0"
+version = "1.20.0"
 source = { editable = "." }
 
 [package.dev-dependencies]

@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
@@ -51,8 +52,8 @@ func newImportCommand() *cobra.Command {
 		Long: `(Experimental) Import an existing Databricks app and convert it to a bundle configuration.
 
 This command creates a new bundle directory with the app configuration, downloads
-the app source code, binds the bundle to the existing app, and deploys it using
-direct deployment mode. This allows you to manage the app as code going forward.
+the app source code, binds the bundle to the existing app, and deploys it. This
+allows you to manage the app as code going forward.
 
 The command will:
 1. Create an empty bundle folder with databricks.yml
@@ -460,16 +461,16 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	bundleName := textutil.NormalizeString(app.Name)
 	bundleConfig := map[string]dyn.Value{
 		"bundle": dyn.NewValue(map[string]dyn.Value{
-			"name": dyn.NewValue(bundleName, []dyn.Location{{Line: 1}}),
-		}, []dyn.Location{{Line: 1}}),
+			"name": dyn.NewValue(bundleName, []diag.Location{{Line: 1}}),
+		}, []diag.Location{{Line: 1}}),
 		"workspace": dyn.NewValue(map[string]dyn.Value{
-			"host": dyn.NewValue(w.Config.Host, []dyn.Location{{Line: 2}}),
-		}, []dyn.Location{{Line: 10}}),
+			"host": dyn.NewValue(w.Config.Host, []diag.Location{{Line: 2}}),
+		}, []diag.Location{{Line: 10}}),
 		"resources": dyn.NewValue(map[string]dyn.Value{
 			"apps": dyn.V(map[string]dyn.Value{
 				appKey: v,
 			}),
-		}, []dyn.Location{{Line: 20}}),
+		}, []diag.Location{{Line: 20}}),
 	}
 
 	// Download the app source files

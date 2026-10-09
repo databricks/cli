@@ -84,8 +84,8 @@ func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnosti
 	return diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("expected a %s value, found null", expected),
-		Locations: []dyn.Location{src.Location()},
-		Paths:     []dyn.Path{path},
+		Locations: []diag.Location{src.Location()},
+		Paths:     dyn.ToStructPaths(path),
 	}
 }
 
@@ -93,8 +93,8 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 	return diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
-		Locations: []dyn.Location{src.Location()},
-		Paths:     []dyn.Path{path},
+		Locations: []diag.Location{src.Location()},
+		Paths:     dyn.ToStructPaths(path),
 	}
 }
 
@@ -151,7 +151,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 								Summary:   "Use 'value_from' instead of 'valueFrom'",
 								Detail:    "The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.",
 								Locations: pk.Locations(),
-								Paths:     []dyn.Path{path},
+								Paths:     dyn.ToStructPaths(path),
 							})
 							continue
 						}
@@ -161,7 +161,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 						Severity:  diag.Warning,
 						Summary:   "unknown field: " + fieldName,
 						Locations: pk.Locations(),
-						Paths:     []dyn.Path{path},
+						Paths:     dyn.ToStructPaths(path),
 					})
 				}
 				continue
@@ -398,8 +398,8 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
+				Locations: []diag.Location{src.Location()},
+				Paths:     dyn.ToStructPaths(path),
 			})
 		}
 		return dyn.NewValue(out, src.Locations()), nil
@@ -415,8 +415,8 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
+				Locations: []diag.Location{src.Location()},
+				Paths:     dyn.ToStructPaths(path),
 			})
 		}
 		return dyn.NewValue(out, src.Locations()), nil
@@ -442,8 +442,8 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
+				Locations: []diag.Location{src.Location()},
+				Paths:     dyn.ToStructPaths(path),
 			})
 		}
 		return dyn.NewValue(out, src.Locations()), nil
@@ -459,8 +459,8 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
+				Locations: []diag.Location{src.Location()},
+				Paths:     dyn.ToStructPaths(path),
 			})
 		}
 		return dyn.NewValue(out, src.Locations()), nil

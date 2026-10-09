@@ -26,6 +26,16 @@ type ResourceField struct {
 	Resolve      string `json:"resolve,omitempty"`
 }
 
+// ResourceBinding maps a resource to a DABs app resource entry.
+type ResourceBinding struct {
+	// YamlKey is the key under the app resource entry (e.g., "sql_warehouse", "uc_securable").
+	YamlKey string `json:"yamlKey"`
+	// VarFields are {manifestFieldName, dabsFieldName} pairs that become ${var.xxx} references.
+	VarFields [][2]string `json:"varFields"`
+	// StaticFields are {dabsFieldName, value} pairs emitted as literals.
+	StaticFields [][2]string `json:"staticFields,omitempty"`
+}
+
 // Resource defines a Databricks resource required or optional for a plugin.
 type Resource struct {
 	Type        string                   `json:"type"`        // e.g., "sql_warehouse"
@@ -34,6 +44,17 @@ type Resource struct {
 	Description string                   `json:"description"` // e.g., "SQL Warehouse for executing analytics queries"
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
+
+	// Scope is the user_api_scope needed to use this resource on behalf of the user.
+	// Empty when the resource type cannot be used on behalf of the user.
+	Scope string `json:"scope,omitempty"`
+
+	// AppOnly resources (e.g., secret, database) are always bound to the service principal.
+	AppOnly bool `json:"appOnly,omitempty"`
+
+	// Binding describes how the resource is bound to the app in databricks.yml.
+	// When nil, the CLI falls back to its built-in mapping for the resource type.
+	Binding *ResourceBinding `json:"binding,omitempty"`
 
 	// PluginName is the machine name of the plugin (e.g., "lakebase").
 	// Set during resource collection. Not part of the JSON manifest.
@@ -47,6 +68,14 @@ type Resource struct {
 // Key returns the resource key for machine use (config keys, variable naming).
 func (r Resource) Key() string {
 	return r.ResourceKey
+}
+
+// AuthKey identifies a resource for auth-mode lookups using the same type+key
+// identity as resource de-duplication (CollectResources, generator.DedupeResources).
+// Two resources that collapse to one in the generated bundle therefore share an
+// auth mode, while two resources with the same key but different types do not collide.
+func (r Resource) AuthKey() string {
+	return r.Type + ":" + r.Key()
 }
 
 // VarPrefix returns the variable name prefix derived from the resource key.
@@ -80,6 +109,9 @@ type Plugin struct {
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
+
+	// Scopes are user_api_scopes the plugin needs that are not tied to a resource (e.g., "ai-gateway").
+	Scopes []string `json:"scopes,omitempty"`
 
 	// Stability is one of "beta", "ga", or empty.
 	// Stored as a plain string so unknown future values round-trip unchanged.

@@ -2,4 +2,5 @@ title "Unicode job names resolve in resources references"
 trace $CLI bundle validate
 trace $CLI bundle plan
 trace $CLI bundle deploy
+replace_ids.py
 trace $CLI bundle summary

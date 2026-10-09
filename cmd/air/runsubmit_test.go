@@ -30,6 +30,13 @@ func stubValidateConfig(server *testserver.Server) {
 	})
 }
 
+func TestEffectiveIdempotencyToken(t *testing.T) {
+	cfg := &runConfig{IdempotencyToken: new("from-config")}
+	assert.Equal(t, "from-flag", effectiveIdempotencyToken("from-flag", cfg))
+	assert.Equal(t, "from-config", effectiveIdempotencyToken("", cfg))
+	assert.NotEmpty(t, effectiveIdempotencyToken("", &runConfig{}))
+}
+
 func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
 	// A config runtime version wins and is used bare.
@@ -249,26 +256,6 @@ func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
 	}`, string(b))
 }
 
-func TestSubmitToken(t *testing.T) {
-	cfg := &runConfig{IdempotencyToken: new("from-config")}
-
-	tok, err := submitToken("from-flag", cfg) // flag wins
-	require.NoError(t, err)
-	assert.Equal(t, "from-flag", tok)
-
-	tok, err = submitToken("", cfg) // then config
-	require.NoError(t, err)
-	assert.Equal(t, "from-config", tok)
-
-	tok, err = submitToken("", &runConfig{}) // else generated
-	require.NoError(t, err)
-	assert.NotEmpty(t, tok)
-
-	// An over-long token errors instead of being truncated.
-	_, err = submitToken(strings.Repeat("a", 65), cfg)
-	require.ErrorContains(t, err, "64 characters or less")
-}
-
 type blockingLaunchWriter struct {
 	started       chan struct{}
 	release       chan struct{}
@@ -357,7 +344,14 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
-	stubValidateConfig(server)
+	var validatedToken string
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		runOptions := body["run_options"].(map[string]any)
+		validatedToken = runOptions["idempotency_token"].(string)
+		return validateConfigResponse{}
+	})
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -371,6 +365,7 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
 	// command.sh under the run's launch directory.
@@ -387,6 +382,66 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpecAcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
+}
+
+func TestSubmitWorkloadValidationOutcome(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   any
+		wantError  string
+		wantSubmit bool
+	}{
+		{
+			name: "field error",
+			response: validateConfigResponse{Errors: []configFieldError{{
+				Path: "task.deployments[0].compute.accelerator_count", Message: "must be positive", Code: "INVALID_COUNT",
+			}}},
+			wantError: "accelerator_count: must be positive",
+		},
+		{
+			name:       "service unavailable",
+			response:   testserver.Response{StatusCode: 503, Body: map[string]string{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "try again"}},
+			wantSubmit: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			t.Cleanup(server.Close)
+			var uploads, submissions atomic.Int32
+			server.Handle("POST", validateConfigPath, func(req testserver.Request) any { return tt.response })
+			server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+				uploads.Add(1)
+				return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+			})
+			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+				submissions.Add(1)
+				return jobs.SubmitRunResponse{RunId: 777}
+			})
+			testserver.AddDefaultHandlers(server)
+
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", RetryTimeoutSeconds: 1})
+			require.NoError(t, err)
+			cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+			cfg, err := loadRunConfig(cfgPath)
+			require.NoError(t, err)
+
+			_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+			if tt.wantError != "" {
+				require.ErrorContains(t, err, tt.wantError)
+			} else {
+				require.NoError(t, err)
+			}
+			if tt.wantSubmit {
+				assert.Positive(t, uploads.Load())
+				assert.Equal(t, int32(1), submissions.Load())
+			} else {
+				assert.Zero(t, uploads.Load())
+				assert.Zero(t, submissions.Load())
+			}
+		})
+	}
 }
 
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
@@ -726,6 +781,16 @@ code_source:
 	// zero new import-file calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(false), second.UsesGit)
+	assert.Equal(t, new(modePlainTar), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -782,6 +847,16 @@ code_source:
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(true), second.UsesGit)
+	assert.Equal(t, new(modeGitArchive), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // When enabled, a code source uploads provenance sidecars (git_state.json and
@@ -822,6 +897,8 @@ code_source:
 
 	assert.Empty(t, snap.GitStatePath)
 	assert.Empty(t, snap.GitDiffPath)
+	assert.Equal(t, new(true), snap.UsesGit)
+	assert.Equal(t, new(modePlainTar), snap.PackagingMode)
 
 	_, err = sidecarStore.Read(ctx, gitStateName)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
