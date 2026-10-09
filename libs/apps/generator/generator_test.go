@@ -249,6 +249,7 @@ func TestGenerateBundleResourcesDefaultPermissions(t *testing.T) {
 		{"uc_connection", "USE_CONNECTION"},
 		{"genie_space", "CAN_VIEW"},
 		{"vector_search_index", "SELECT"},
+		{"model_service", "EXECUTE"},
 		// TODO: uncomment when bundles support app as an app resource type.
 		// {"app", "CAN_USE"},
 	}
@@ -463,6 +464,17 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 				"uc_securable:",
 				"securable_full_name: ${var.func_id}",
 				"securable_type: FUNCTION",
+				"permission: EXECUTE",
+			},
+		},
+		{
+			name:     "model_service maps to uc_securable MODEL_SERVICE",
+			resource: manifest.Resource{Type: "model_service", Alias: "Model Service", ResourceKey: "model", Permission: "EXECUTE"},
+			expectContains: []string{
+				"- name: model",
+				"uc_securable:",
+				"securable_full_name: ${var.model_name}",
+				"securable_type: MODEL_SERVICE",
 				"permission: EXECUTE",
 			},
 		},
