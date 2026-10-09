@@ -9,6 +9,7 @@ API error_code: NOT_FOUND
 API message: role not found; role_id:"does-not-exist" [TraceId: [TRACE_ID]]
 
 Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
