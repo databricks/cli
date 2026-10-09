@@ -817,25 +817,18 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 	}{
 		{
 			name:        "workspace subset",
-			response:    `{"compute_options":[{"hardware_accelerator":"GPU_8xH100","per_node_accelerator_count":4,"launch_stage":"PUBLIC_PREVIEW"},{"hardware_accelerator":"GPU_UNKNOWN"},{"hardware_accelerator":"GPU_1xA10"}]}`,
-			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_1xA10 - 1 accelerator per node",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_8xH100","per_node_accelerator_count":4,"launch_stage":"PUBLIC_PREVIEW"},{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16},{"hardware_accelerator":"GPU_1xA10"}]}`,
+			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
 		},
 		{
-			name:        "empty response falls back",
+			name:        "empty response",
 			response:    `{}`,
-			wantOptions: builtInOptions,
-			wantWarning: true,
+			wantOptions: "    No accelerator types are currently available in this workspace.",
 		},
 		{
-			name:        "disabled endpoint falls back",
-			statusCode:  http.StatusBadRequest,
-			response:    `{"error_code":"FEATURE_DISABLED","message":"ListComputeOptions is not yet enabled."}`,
-			wantOptions: builtInOptions,
-		},
-		{
-			name:        "missing endpoint falls back",
+			name:        "endpoint unavailable falls back",
 			statusCode:  http.StatusNotFound,
-			response:    `{"error_code":"ENDPOINT_NOT_FOUND","message":"Not found."}`,
+			response:    `{"error_code":"NOT_FOUND","message":"ListComputeOptions is not yet enabled."}`,
 			wantOptions: builtInOptions,
 		},
 		{
