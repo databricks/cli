@@ -22,10 +22,12 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -236,6 +238,14 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	return b, nil
 }
 
+// setLocationsOf lets logdiag fill diagnostic locations from the paths into the bundle configuration.
+// The closure reads b.Config at log time, so later configuration changes are seen.
+func setLocationsOf(ctx context.Context, b *Bundle) {
+	logdiag.SetLocationsOf(ctx, func(p *structpath.PathNode) []diag.Location {
+		return b.Config.GetLocationsOf(p)
+	})
+}
+
 // MustLoad returns a bundle configuration.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 func MustLoad(ctx context.Context) *Bundle {
@@ -254,6 +264,7 @@ func MustLoad(ctx context.Context) *Bundle {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
+	setLocationsOf(ctx, b)
 	return b
 }
 
@@ -281,6 +292,7 @@ func TryLoad(ctx context.Context) *Bundle {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
+	setLocationsOf(ctx, b)
 	return b
 }
 

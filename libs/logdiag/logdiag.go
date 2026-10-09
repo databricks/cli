@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type keyType int
@@ -26,6 +27,10 @@ type LogDiagData struct {
 
 	// Root to resolve location against
 	Root string
+
+	// LocationsOf resolves the locations of a configuration path.
+	// It is used to fill Locations of diagnostics that only set Paths. Use SetLocationsOf() to set.
+	LocationsOf func(path *structpath.PathNode) []diag.Location
 
 	// If Collect is true, diagnostics are appended to Collected. Use SetCollected() to set.
 	Collect   bool
@@ -108,6 +113,14 @@ func SetRoot(ctx context.Context, root string) {
 	read(ctx).Root = root
 }
 
+func SetLocationsOf(ctx context.Context, fn func(path *structpath.PathNode) []diag.Location) {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	val.LocationsOf = fn
+}
+
 func SetCollect(ctx context.Context, collect bool) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -155,6 +168,14 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 
 	if d.Severity > val.TargetSeverity {
 		return
+	}
+
+	if len(d.Locations) == 0 && val.LocationsOf != nil {
+		var locations []diag.Location
+		for _, p := range d.Paths {
+			locations = append(locations, val.LocationsOf(p)...)
+		}
+		d.Locations = locations
 	}
 
 	for i := range d.Locations {
