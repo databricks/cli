@@ -1,0 +1,13 @@
+resources:
+  jobs:
+    notebook:
+      name: project_environment
+      tasks:
+        - task_key: notebook
+          notebook_task:
+            notebook_path: ../src/notebook.py
+          environment_key: project
+      environments:
+        - environment_key: project
+          spec:
+            project_environment: ../pyproject.toml

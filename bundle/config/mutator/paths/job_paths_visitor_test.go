@@ -113,6 +113,8 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		JobSettings: jobs.JobSettings{
 			Environments: []jobs.JobEnvironment{
 				environment0,
+				{Spec: &compute.Environment{ProjectEnvironment: "../pyproject.toml"}},
+				{Spec: &compute.Environment{ProjectEnvironment: "/Workspace/shared/pyproject.toml"}},
 			},
 		},
 	}
@@ -126,7 +128,10 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	var expected []dyn.Path
+	expected := []dyn.Path{
+		dyn.MustPathFromString("resources.jobs.job0.environments[1].spec.project_environment"),
+		dyn.MustPathFromString("resources.jobs.job0.environments[2].spec.project_environment"),
+	}
 
 	assert.ElementsMatch(t, expected, actual)
 }

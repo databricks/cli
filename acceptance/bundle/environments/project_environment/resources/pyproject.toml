@@ -1,0 +1,6 @@
+[project]
+name = "updated-project-environment-test"
+version = "0.1.0"
+
+[tool.databricks.environment]
+environment_version = "4"
