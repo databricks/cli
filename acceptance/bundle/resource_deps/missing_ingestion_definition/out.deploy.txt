@@ -3,5 +3,6 @@ Created pipelines.foo
 Error: cannot create resources.pipelines.bar: cannot resolve "${resources.pipelines.foo.ingestion_definition.connection_name}": ingestion_definition: cannot access nil value
 
 Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 Exit code: 1

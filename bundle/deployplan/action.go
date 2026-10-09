@@ -15,6 +15,10 @@ type Action struct {
 	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
 	// because the resource implements no DoDelete (deleting it has no backend effect).
 	StateOnly bool
+	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
+	// reached this resource, Applied means its backend operation then succeeded.
+	Attempted bool
+	Applied   bool
 }
 
 func (a Action) String() string {

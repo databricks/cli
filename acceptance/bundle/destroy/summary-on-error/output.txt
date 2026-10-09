@@ -26,4 +26,4 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Fault injected by test.
 
-Destroy: 3 deleted
+Destroy: 2 deleted, 1 failed

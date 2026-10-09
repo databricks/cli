@@ -1,0 +1,1 @@
+* Bundle `deploy` and `destroy` summaries now report how many resources actually succeeded and, on a partial failure, how many failed, instead of the planned count. For example, if one of three resources fails to delete, the summary now reads `Destroy: 2 deleted, 1 failed` rather than `Destroy: 3 deleted`.

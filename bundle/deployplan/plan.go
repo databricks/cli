@@ -76,6 +76,60 @@ func (p *Plan) CountActions() ActionCounts {
 	return c
 }
 
+// AppliedCounts is CountActions restricted to what actually happened during Apply,
+// plus the number of operations that were planned but did not succeed.
+type AppliedCounts struct {
+	ActionCounts
+	Failed int
+}
+
+// CountApplied tallies the plan by outcome rather than by plan: a create/change/delete
+// is counted in its category only if its entry was applied successfully, an eligible
+// operation that was attempted but not applied (it errored, or a failed dependency
+// skipped it) is counted as Failed, and one Apply never reached is counted as neither.
+// Skips are unchanged regardless, since they run no backend operation; state-only deletes
+// are excluded entirely, matching CountActions.
+func (p *Plan) CountApplied() AppliedCounts {
+	var c AppliedCounts
+	for _, entry := range p.Plan {
+		switch entry.Action {
+		case Create:
+			if entry.Applied {
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Update, UpdateWithID, Resize:
+			if entry.Applied {
+				c.Change++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Delete:
+			if entry.IsStateOnlyDelete() {
+				continue
+			}
+			if entry.Applied {
+				c.Delete++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Recreate:
+			// A recreate is one unit: on success it counts as both a delete and a
+			// create, on failure as a single failed operation.
+			if entry.Applied {
+				c.Delete++
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Skip, Undefined:
+			c.Unchanged++
+		}
+	}
+	return c
+}
+
 // NewPlanDirect creates a new Plan for direct engine with plan_version set.
 func NewPlanDirect() *Plan {
 	return &Plan{
@@ -131,6 +185,15 @@ type PlanEntry struct {
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
+
+	// Attempted is set when Apply starts processing this entry (the apply graph ran and
+	// reached this node); Applied is set when its backend operation then succeeded. Both
+	// are runtime-only (never serialized). Together they let the deploy/destroy summaries
+	// report what actually happened - applied, or attempted-but-failed - rather than the
+	// planned count. An entry Apply never reached (e.g. a config error bailed out before
+	// the graph ran) has neither set and is reported as neither applied nor failed.
+	Attempted bool `json:"-"`
+	Applied   bool `json:"-"`
 }
 
 // IsStateOnlyDelete reports whether applying this delete only drops the state entry
@@ -234,6 +297,8 @@ func (p *Plan) GetActions() []Action {
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
 			StateOnly:   entry.StateOnly,
+			Attempted:   entry.Attempted,
+			Applied:     entry.Applied,
 		})
 	}
 
