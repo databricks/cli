@@ -7,6 +7,14 @@ Error: app-appkit requires project_name in --config-file in non-interactive mode
 >>> musterr [CLI] bundle init app-appkit --template-dir template
 Error: --template-dir is not supported for app-appkit; use databricks apps init --template for a custom AppKit template
 
+=== Version and branch cannot be combined
+>>> musterr [CLI] bundle init app-appkit --config-file input-version.json --branch main
+Error: version in --config-file cannot be combined with --tag or --branch
+
+=== JSON output is unsupported
+>>> musterr [CLI] bundle init app-appkit --config-file input.json -o json
+Error: -o json is not supported for app-appkit; use text output
+
 === Initialize AppKit from a config file without a terminal
 >>> [CLI] bundle init app-appkit --config-file input.json --output-dir output
 ✔ Creating project

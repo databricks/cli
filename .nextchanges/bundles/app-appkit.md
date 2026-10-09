@@ -1,1 +1,1 @@
-* Add `app-appkit` to `databricks bundle init` to scaffold an AppKit app using the same template as `databricks apps init`. Pass `--config-file` with `project_name` to initialize without prompts. ([#7004](https://github.com/databricks/cli/pull/7004))
+* Add `app-appkit` to bundle templates to simplify starting a Databricks Apps project. ([#7004](https://github.com/databricks/cli/pull/7004))

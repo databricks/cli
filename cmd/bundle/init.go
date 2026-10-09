@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newInitCommand(appKitInit func() *cobra.Command) *cobra.Command {
+func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
@@ -65,6 +65,15 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			}
 			templatePathOrUrl = string(selected)
 		}
+		if templatePathOrUrl == string(template.AppKitApp) {
+			return runAppKitInit(cmd, appKitInitOptions{
+				configFile:  configFile,
+				outputDir:   outputDir,
+				templateDir: templateDir,
+				tag:         tag,
+				branch:      branch,
+			})
+		}
 		r := template.Resolver{
 			TemplatePathOrUrl: templatePathOrUrl,
 			ConfigFile:        configFile,
@@ -75,15 +84,6 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 
 		tmpl, err := r.Resolve(ctx)
-		if errors.Is(err, template.ErrAppKitSelected) {
-			return runAppKitInit(cmd, appKitInit, appKitInitOptions{
-				configFile:  configFile,
-				outputDir:   outputDir,
-				templateDir: templateDir,
-				tag:         tag,
-				branch:      branch,
-			})
-		}
 		if err != nil {
 			return err
 		}

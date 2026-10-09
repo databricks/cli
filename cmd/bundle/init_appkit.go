@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/cmd/apps"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -57,7 +58,7 @@ func readAppKitInitConfig(path string) (appKitInitConfig, error) {
 	return config, nil
 }
 
-func runAppKitInit(cmd *cobra.Command, newAppKitInit func() *cobra.Command, opts appKitInitOptions) error {
+func runAppKitInit(cmd *cobra.Command, opts appKitInitOptions) error {
 	if opts.templateDir != "" {
 		return errors.New("--template-dir is not supported for app-appkit; use databricks apps init --template for a custom AppKit template")
 	}
@@ -76,7 +77,7 @@ func runAppKitInit(cmd *cobra.Command, newAppKitInit func() *cobra.Command, opts
 		return errors.New("app-appkit requires project_name in --config-file in non-interactive mode")
 	}
 
-	appCmd := newAppKitInit()
+	appCmd := apps.NewInitCommand()
 	appCmd.SetContext(cmd.Context())
 	appFlags := appCmd.Flags()
 	values := map[string]string{

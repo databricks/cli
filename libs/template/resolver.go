@@ -193,9 +193,6 @@ type Resolver struct {
 // template.
 var ErrCustomSelected = errors.New("custom template selected")
 
-// ErrAppKitSelected indicates that AppKit needs its own scaffold renderer.
-var ErrAppKitSelected = errors.New("AppKit template selected")
-
 // Configures the reader and the writer for template and returns
 // a handle to the template.
 // Prompts the user if needed.
@@ -222,9 +219,6 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 		}
 	} else {
 		templateName = TemplateName(r.TemplatePathOrUrl)
-	}
-	if templateName == AppKitApp {
-		return nil, ErrAppKitSelected
 	}
 
 	tmpl := GetDatabricksTemplate(templateName)
