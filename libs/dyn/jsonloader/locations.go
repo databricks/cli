@@ -3,7 +3,7 @@ package jsonloader
 import (
 	"sort"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type LineOffset struct {
@@ -30,14 +30,14 @@ func BuildLineOffsets(data []byte) Offset {
 }
 
 // GetPosition maps a byte offset to its corresponding line and column numbers.
-func (o Offset) GetPosition(offset int64) dyn.Location {
+func (o Offset) GetPosition(offset int64) diag.Location {
 	// Binary search to find the line
 	idx := max(sort.Search(len(o.offsets), func(i int) bool {
 		return o.offsets[i].Start > offset
 	})-1, 0)
 
 	lineOffset := o.offsets[idx]
-	return dyn.Location{
+	return diag.Location{
 		File:   o.source,
 		Line:   lineOffset.Line,
 		Column: int(offset-lineOffset.Start) + 1,

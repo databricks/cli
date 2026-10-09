@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.apps", []dyn.Location{{
+	bundletest.SetLocation(b, "resources.apps", []diag.Location{{
 		File: filepath.Join(dir, "resources/app.yml"),
 	}})
 

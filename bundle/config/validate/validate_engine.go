@@ -47,7 +47,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
-			Locations: []dyn.Location{loc},
+			Locations: []diag.Location{loc},
 		})
 	}
 
@@ -60,7 +60,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Severity:  severity,
 			Summary:   engine.TerraformRemovedSummary,
 			Detail:    engine.TerraformRemovedConfigDetail,
-			Locations: []dyn.Location{loc},
+			Locations: []diag.Location{loc},
 		})
 	}
 

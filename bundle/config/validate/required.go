@@ -95,9 +95,9 @@ func sortDiagnostics(diags diag.Diagnostics) {
 // Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
 func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Dashboards should always have a name and warehouse_id.
-	var nameLocations []dyn.Location
+	var nameLocations []diag.Location
 	var namePaths []*structpath.PathNode
-	var warehouseIdLocations []dyn.Location
+	var warehouseIdLocations []diag.Location
 	var warehouseIdPaths []*structpath.PathNode
 
 	diags := diag.Diagnostics{}

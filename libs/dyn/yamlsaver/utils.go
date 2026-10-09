@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 )
@@ -85,7 +86,7 @@ func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[strin
 		if order == nil {
 			dst[k] = v
 		} else {
-			dst[k] = dyn.NewValue(v.Value(), []dyn.Location{{Line: order.Get(k)}})
+			dst[k] = dyn.NewValue(v.Value(), []diag.Location{{Line: order.Get(k)}})
 		}
 	}
 

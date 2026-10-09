@@ -32,12 +32,12 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser, runAsUser string) diag.Diagnostics {
+func reportRunAsNotSupported(resourceType string, location diag.Location, currentUser, runAsUser string) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary: fmt.Sprintf("%s do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: %s. Run as identity: %s.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", resourceType, currentUser, runAsUser),
-		Locations: []dyn.Location{location},
+		Locations: []diag.Location{location},
 		Severity:  diag.Error,
 	}}
 }
@@ -57,7 +57,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if identityCount != 1 {
 		return diag.Diagnostics{{
 			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []dyn.Location{b.Config.GetLocation("run_as")},
+			Locations: []diag.Location{b.Config.GetLocation("run_as")},
 			Severity:  diag.Error,
 		}}
 	}

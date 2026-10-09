@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -21,7 +20,7 @@ type Diagnostic struct {
 
 	// Locations are the source code locations associated with the diagnostic message.
 	// It may be empty if there are no associated locations.
-	Locations []dyn.Location
+	Locations []Location
 
 	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
 	// It may be nil if there are no associated paths.

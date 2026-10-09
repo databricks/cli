@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -82,7 +81,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				Summary:   fmt.Sprintf("failed to get dashboard %q", dashboard.Name),
 				Detail:    err.Error(),
 				Paths:     []*structpath.PathNode{path},
-				Locations: []dyn.Location{loc},
+				Locations: []diag.Location{loc},
 			})
 			continue
 		}
@@ -111,7 +110,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"To overwrite the remote changes with your local version, use --force.\n" +
 				"The remote modifications will be lost." + agent.AgentNotice(),
 			Paths:     []*structpath.PathNode{path},
-			Locations: []dyn.Location{loc},
+			Locations: []diag.Location{loc},
 		})
 	}
 

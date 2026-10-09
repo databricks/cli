@@ -109,7 +109,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, "resources.clusters.foo", []dyn.Location{{File: "a.yml", Line: 1, Column: 1}})
+			bundletest.SetLocation(b, "resources.clusters.foo", []diag.Location{{File: "a.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
 			// Do it on the dyn.Value directly.
@@ -122,7 +122,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Severity:  diag.Warning,
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
-					Locations: []dyn.Location{{File: "a.yml", Line: 1, Column: 1}},
+					Locations: []diag.Location{{File: "a.yml", Line: 1, Column: 1}},
 					Paths:     structpath.NewPathSlice("resources", "clusters", "foo"),
 				},
 			}, diags)
@@ -157,7 +157,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, "resources.jobs.foo.job_clusters[0].new_cluster", []dyn.Location{{File: "b.yml", Line: 1, Column: 1}})
+			bundletest.SetLocation(b, "resources.jobs.foo.job_clusters[0].new_cluster", []diag.Location{{File: "b.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
 			// Do it on the dyn.Value directly.
@@ -171,7 +171,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 					Severity:  diag.Warning,
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
-					Locations: []dyn.Location{{File: "b.yml", Line: 1, Column: 1}},
+					Locations: []diag.Location{{File: "b.yml", Line: 1, Column: 1}},
 					Paths:     structpath.MustParsePaths("resources.jobs.foo.job_clusters[0].new_cluster"),
 				},
 			}, diags)
@@ -206,7 +206,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].new_cluster", []dyn.Location{{File: "c.yml", Line: 1, Column: 1}})
+			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].new_cluster", []diag.Location{{File: "c.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
 			// Do it on the dyn.Value directly.
@@ -220,7 +220,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 					Severity:  diag.Warning,
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
-					Locations: []dyn.Location{{File: "c.yml", Line: 1, Column: 1}},
+					Locations: []diag.Location{{File: "c.yml", Line: 1, Column: 1}},
 					Paths:     structpath.MustParsePaths("resources.jobs.foo.tasks[0].new_cluster"),
 				},
 			}, diags)
@@ -252,7 +252,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, "resources.pipelines.foo.clusters[0]", []dyn.Location{{File: "d.yml", Line: 1, Column: 1}})
+			bundletest.SetLocation(b, "resources.pipelines.foo.clusters[0]", []diag.Location{{File: "d.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
 			// Do it on the dyn.Value directly.
@@ -266,7 +266,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Severity:  diag.Warning,
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
-					Locations: []dyn.Location{{File: "d.yml", Line: 1, Column: 1}},
+					Locations: []diag.Location{{File: "d.yml", Line: 1, Column: 1}},
 					Paths:     structpath.MustParsePaths("resources.pipelines.foo.clusters[0]"),
 				},
 			}, diags)
@@ -305,7 +305,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 				},
 			}
 
-			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster", []dyn.Location{{File: "e.yml", Line: 1, Column: 1}})
+			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster", []diag.Location{{File: "e.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
 			// Do it on the dyn.Value directly.
@@ -319,7 +319,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 					Severity:  diag.Warning,
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
-					Locations: []dyn.Location{{File: "e.yml", Line: 1, Column: 1}},
+					Locations: []diag.Location{{File: "e.yml", Line: 1, Column: 1}},
 					Paths:     structpath.MustParsePaths("resources.jobs.foo.tasks[0].for_each_task.task.new_cluster"),
 				},
 			}, diags)

@@ -108,14 +108,14 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		detail.WriteString(l)
 	}
 
-	var locations []dyn.Location
+	var locations []diag.Location
 	var paths []*structpath.PathNode
 	for _, rr := range resources {
 		locations = append(locations, rr.value.Locations()...)
 		paths = append(paths, dyn.ToStructPath(rr.path))
 	}
 	// Sort the locations and paths to make the output deterministic.
-	slices.SortFunc(locations, func(a, b dyn.Location) int {
+	slices.SortFunc(locations, func(a, b diag.Location) int {
 		return cmp.Compare(a.String(), b.String())
 	})
 	slices.SortFunc(paths, func(a, b *structpath.PathNode) int {

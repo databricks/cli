@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -160,7 +159,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{{
+					Locations: []diag.Location{{
 						File:   "foo.yaml",
 						Line:   1,
 						Column: 2,
@@ -178,7 +177,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{
+					Locations: []diag.Location{
 						{
 							File:   "foo.yaml",
 							Line:   1,
@@ -244,7 +243,7 @@ func TestRenderDiagnostics(t *testing.T) {
 						"resources.jobs.xxx",
 						"resources.jobs.yyy",
 					),
-					Locations: []dyn.Location{
+					Locations: []diag.Location{
 						{File: "foo.yaml", Line: 1, Column: 2},
 						{File: "bar.yaml", Line: 3, Column: 4},
 					},

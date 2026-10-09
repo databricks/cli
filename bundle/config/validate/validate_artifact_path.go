@@ -52,7 +52,7 @@ func extractVolumeFromPath(artifactPath string) (string, string, string, error) 
 	return catalogName, schemaName, volumeName, nil
 }
 
-func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
+func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName string) (dyn.Path, []diag.Location, bool) {
 	volumes := r.Resources.Volumes
 	for k, v := range volumes {
 		if v.CatalogName != catalogName || v.Name != volumeName {

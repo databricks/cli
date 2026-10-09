@@ -3,12 +3,13 @@ package merge
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSelect(t *testing.T) {
-	locations := []dyn.Location{{File: "foo.yml", Line: 1, Column: 1}}
+	locations := []diag.Location{{File: "foo.yml", Line: 1, Column: 1}}
 	included := []string{"foo"}
 	input := dyn.NewValue(
 		map[string]dyn.Value{
@@ -31,7 +32,7 @@ func TestSelect(t *testing.T) {
 }
 
 func TestAntiSelect(t *testing.T) {
-	locations := []dyn.Location{{File: "foo.yml", Line: 1, Column: 1}}
+	locations := []diag.Location{{File: "foo.yml", Line: 1, Column: 1}}
 	excluded := []string{"foo"}
 	input := dyn.NewValue(
 		map[string]dyn.Value{
