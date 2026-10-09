@@ -118,9 +118,9 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 		matched, err := pathlib.Match(relPattern, rel)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-				Locations: b.Config.GetLocationsOf(loc),
+				Severity: diag.Error,
+				Summary:  fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
+				Paths:    []*structpath.PathNode{loc},
 			})
 			continue
 		}
@@ -130,9 +130,9 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 		hash, err := hashFile(b.SyncRoot, rel)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fileTriggerPrefix + fmt.Sprintf("hash %q: %s", rel, err),
-				Locations: b.Config.GetLocationsOf(loc),
+				Severity: diag.Error,
+				Summary:  fileTriggerPrefix + fmt.Sprintf("hash %q: %s", rel, err),
+				Paths:    []*structpath.PathNode{loc},
 			})
 			continue
 		}
@@ -144,9 +144,9 @@ func resolveFileTrigger(b *bundle.Bundle, loc *structpath.PathNode, pattern stri
 	}
 	if matches == 0 && !diags.HasError() {
 		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Warning,
-			Summary:   fileTriggerPrefix + fmt.Sprintf("no synced files match %q", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Severity: diag.Warning,
+			Summary:  fileTriggerPrefix + fmt.Sprintf("no synced files match %q", pattern),
+			Paths:    []*structpath.PathNode{loc},
 		})
 	}
 	return relPattern, hex.EncodeToString(h.Sum(nil)), diags
@@ -157,9 +157,9 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 	// A double star looks recursive but path.Match treats it as two ordinary stars.
 	if strings.Contains(pattern, "**") {
 		return "", diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fileTriggerPrefix + fmt.Sprintf("** in %q is not supported; use * for a single directory level", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Severity: diag.Error,
+			Summary:  fileTriggerPrefix + fmt.Sprintf("** in %q is not supported; use * for a single directory level", pattern),
+			Paths:    []*structpath.PathNode{loc},
 		})
 	}
 	// Reject a genuinely absolute path; Join would otherwise silently reinterpret it
@@ -169,9 +169,9 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 	// through to the sync-root containment check below.
 	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
 		return "", diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q must be relative to the defining YAML file", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Severity: diag.Error,
+			Summary:  fileTriggerPrefix + fmt.Sprintf("pattern %q must be relative to the defining YAML file", pattern),
+			Paths:    []*structpath.PathNode{loc},
 		})
 	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
@@ -181,18 +181,18 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc *structpath.PathNode, patt
 	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
 	if err != nil || !filepath.IsLocal(relPattern) {
 		return "", diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q is not under the sync root", pattern),
-			Locations: b.Config.GetLocationsOf(loc),
+			Severity: diag.Error,
+			Summary:  fileTriggerPrefix + fmt.Sprintf("pattern %q is not under the sync root", pattern),
+			Paths:    []*structpath.PathNode{loc},
 		})
 	}
 	relPattern = filepath.ToSlash(relPattern)
 	_, err = pathlib.Match(relPattern, "")
 	if err != nil {
 		return "", diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
-			Locations: b.Config.GetLocationsOf(loc),
+			Severity: diag.Error,
+			Summary:  fileTriggerPrefix + fmt.Sprintf("invalid pattern %q: %s", pattern, err),
+			Paths:    []*structpath.PathNode{loc},
 		})
 	}
 	return relPattern, diags

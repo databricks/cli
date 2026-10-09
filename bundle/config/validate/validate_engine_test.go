@@ -38,7 +38,7 @@ func TestValidateEngineTerraformRemoved(t *testing.T) {
 	assert.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "has been removed")
-	assert.Equal(t, []diag.Location{loc}, diags[0].Locations)
+	assert.Equal(t, "bundle.engine", diags[0].Paths[0].String())
 }
 
 func TestValidateEngineNotSet(t *testing.T) {

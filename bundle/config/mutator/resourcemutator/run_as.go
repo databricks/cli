@@ -55,9 +55,9 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	}
 	if identityCount != 1 {
 		return diag.Diagnostics{{
-			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []diag.Location{b.Config.GetLocation("run_as")},
-			Severity:  diag.Error,
+			Summary:  "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
+			Paths:    structpath.NewPathSlice("run_as"),
+			Severity: diag.Error,
 		}}
 	}
 

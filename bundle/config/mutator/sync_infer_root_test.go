@@ -190,9 +190,9 @@ func TestSyncInferRoot_Error(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	require.Len(t, diags, 2)
 	assert.Equal(t, `invalid sync path "../../../../error"`, diags[0].Summary)
-	assert.Equal(t, "databricks.yml:0:0", diags[0].Locations[0].String())
+	assert.Equal(t, "databricks.yml:0:0", b.Config.GetLocationsOf(diags[0].Paths[0])[0].String())
 	assert.Equal(t, "sync.paths[0]", diags[0].Paths[0].String())
 	assert.Equal(t, `invalid sync path "../../../../../error"`, diags[1].Summary)
-	assert.Equal(t, "databricks.yml:0:0", diags[1].Locations[0].String())
+	assert.Equal(t, "databricks.yml:0:0", b.Config.GetLocationsOf(diags[1].Paths[0])[0].String())
 	assert.Equal(t, "sync.paths[2]", diags[1].Paths[0].String())
 }

@@ -91,10 +91,9 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 
 		diags = append(diags, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("invalid sync path %q", path),
-			Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "sync", "paths", i)),
-			Paths:     []*structpath.PathNode{structpath.NewIndex(structpath.MustParsePath("sync.paths"), i)},
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("invalid sync path %q", path),
+			Paths:    []*structpath.PathNode{structpath.NewIndex(structpath.MustParsePath("sync.paths"), i)},
 		})
 	}
 
