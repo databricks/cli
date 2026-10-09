@@ -1,8 +1,8 @@
 
-=== Missing tf state is reported as skipped, exit 0
+=== Terraform removal is reported in JSON with exit 0
 {
-  "status": "skipped",
-  "error": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",
+  "status": "failed",
+  "error": "the Terraform deployment engine has been removed in Databricks CLI v1.20.0\n\nUnset the DATABRICKS_BUNDLE_ENGINE environment variable (or set it to \"direct\") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.\nSee https://docs.databricks.com/dev-tools/bundles/direct for details",
   "files": null,
   "changes": {}
 }

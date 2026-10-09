@@ -9,11 +9,11 @@ Authenticated with: pat
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ account_id: acct-123 (from [TEST_TMP_DIR]/home/.databrickscfg config file)
-  ✓ workspace_id: [NUMID] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [WORKSPACE_ID] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ token: ******** (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ profile: acct-with-ws (from --profile flag)
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: pat
-  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ rate_limit: 1000000000 (from DATABRICKS_RATE_LIMIT environment variable)
   ✓ cloud: AWS
   ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server

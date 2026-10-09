@@ -139,7 +139,39 @@ func deploymentBody(d *DmsDeployment) (map[string]any, error) {
 	if d.LastSuccessfulVersionID != "" {
 		body["last_successful_version_id"] = d.LastSuccessfulVersionID
 	}
+
+	// The service emits these blocks in proto field order rather than the SDK's
+	// alphabetical order, and `databricks api` prints response keys verbatim.
+	if gi := d.Deployment.GitInfo; gi != nil {
+		body["git_info"] = dmsGitInfo{OriginUrl: gi.OriginUrl, Branch: gi.Branch, Commit: gi.Commit}
+	}
+	if wi := d.Deployment.WorkspaceInfo; wi != nil {
+		body["workspace_info"] = dmsWorkspaceInfo{
+			RootPath:       wi.RootPath,
+			FilePath:       wi.FilePath,
+			BundleRootPath: wi.BundleRootPath,
+			GitFolderPath:  wi.GitFolderPath,
+			SourceLinked:   wi.SourceLinked,
+		}
+	}
 	return body, nil
+}
+
+// dmsGitInfo mirrors bundledeployments.GitInfo with fields in the service's key order.
+type dmsGitInfo struct {
+	OriginUrl string `json:"origin_url,omitempty"`
+	Branch    string `json:"branch,omitempty"`
+	Commit    string `json:"commit,omitempty"`
+}
+
+// dmsWorkspaceInfo mirrors bundledeployments.WorkspaceInfo with fields in the service's
+// key order. Only root_path and file_path have been observed on cloud; the rest follow.
+type dmsWorkspaceInfo struct {
+	RootPath       string `json:"root_path,omitempty"`
+	FilePath       string `json:"file_path,omitempty"`
+	BundleRootPath string `json:"bundle_root_path,omitempty"`
+	GitFolderPath  string `json:"git_folder_path,omitempty"`
+	SourceLinked   bool   `json:"source_linked,omitempty"`
 }
 
 // dmsUpdatableDeploymentFields are the update_mask paths UpdateDeployment accepts.
@@ -355,8 +387,8 @@ func (s *FakeWorkspace) Heartbeat() Response {
 	return Response{Body: bundledeployments.HeartbeatResponse{}}
 }
 
-// operationBody renders an operation the way the service does: sequence_id as a
-// JSON string, which the SDK struct cannot express (it types the field int64).
+// operationBody renders sequence_id as a JSON string, like the real service.
+// The SDK reads that string back into its int64 field, so this matches prod.
 func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 	raw, err := json.Marshal(op)
 	if err != nil {
@@ -377,26 +409,15 @@ func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 // UpdateOperation applies a later write for a resource already recorded in this
 // version. sequence_id is the concurrency precondition and increments on success.
 func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
-	// sequence_id arrives as a string, which the SDK struct cannot hold (it types the
-	// field int64), so read the body twice: once for the typed fields with that key
-	// removed, and once for the precondition alone.
+	// raw tracks which fields the body sent. A masked field with no value means clear it.
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(req.Body, &raw); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
-	var precondition struct {
-		SequenceId string `json:"sequence_id"`
-	}
-	if err := json.Unmarshal(req.Body, &precondition); err != nil {
-		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
-	}
-	delete(raw, "sequence_id")
-	typedBody, err := json.Marshal(raw)
-	if err != nil {
-		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
-	}
+	// sequence_id comes as a number (SDK) or a string (real service). Operation reads
+	// either into int64, so the whole body decodes in one shot.
 	var op bundledeployments.Operation
-	if err := json.Unmarshal(typedBody, &op); err != nil {
+	if err := json.Unmarshal(req.Body, &op); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 
@@ -461,7 +482,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	if !ok {
 		return dmsNotFound("operation " + opName)
 	}
-	if precondition.SequenceId != strconv.FormatInt(existing.SequenceId, 10) {
+	if op.SequenceId != existing.SequenceId {
 		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
 	}
 

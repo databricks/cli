@@ -10,6 +10,10 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigProviderSecret,
     ModelProviderServiceConfigProviderSecretParam,
 )
+from databricks.bundles.model_provider_services._models.model_provider_service_config_service_credential import (
+    ModelProviderServiceConfigServiceCredential,
+    ModelProviderServiceConfigServiceCredentialParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -37,6 +41,19 @@ class ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig:
     """
     GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
     Required on Create.
+    """
+
+    service_credential: VariableOrOptional[
+        ModelProviderServiceConfigServiceCredential
+    ] = None
+    """
+    Reference to a Unity Catalog service credential authorizing Gemini
+    Enterprise requests. On Create, supply `service_credential.name` as
+    `credentials/{name}`; required when using service-credential
+    authentication and mutually exclusive with `api_key`. The credential is
+    referenced by name; its value is not carried here. On read, the resolved
+    `id` and `is_deleted` are also populated. Supported only on GCP-hosted
+    workspaces.
     """
 
     @classmethod
@@ -71,6 +88,19 @@ class ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfigDict(
     """
     GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
     Required on Create.
+    """
+
+    service_credential: VariableOrOptional[
+        ModelProviderServiceConfigServiceCredentialParam
+    ]
+    """
+    Reference to a Unity Catalog service credential authorizing Gemini
+    Enterprise requests. On Create, supply `service_credential.name` as
+    `credentials/{name}`; required when using service-credential
+    authentication and mutually exclusive with `api_key`. The credential is
+    referenced by name; its value is not carried here. On read, the resolved
+    `id` and `is_deleted` are also populated. Supported only on GCP-hosted
+    workspaces.
     """
 
 

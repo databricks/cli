@@ -73,5 +73,8 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
+=== Old project is gone after recreate
+Old project is deleted
+
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!

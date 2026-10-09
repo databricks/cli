@@ -7,9 +7,11 @@ import (
 	"maps"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -84,16 +86,8 @@ Examples:
 				stats.Engine = stateDesc.Engine
 				stats.CollectStateStats(stateDesc, b.DeploymentBundle.StateDB.VersionID)
 
-				// Open the deployment state once and reuse it for both planning and
-				// selector resolution (avoids reading the terraform snapshot twice).
-				deployBundle, err := configsync.OpenDeploymentState(ctx, b, stateDesc.Engine)
-				if err != nil {
-					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
-					if errors.Is(err, configsync.ErrStateSnapshotNotFound) {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
-					}
-					return err
-				}
+				// ProcessBundleRet has already opened the direct state for reading.
+				deployBundle := &b.DeploymentBundle
 
 				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {
@@ -101,7 +95,7 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				detected, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
+				detected, err := configsync.ExtractChanges(ctx, b, plan)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -120,6 +114,18 @@ Examples:
 					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
+					}
+					// A selected resource planned as a delete was renamed or removed in the
+					// config, so its remote changes have nowhere to be written back.
+					var missing []string
+					for _, key := range selected {
+						if plan.Plan[key].Action == deployplan.Delete {
+							missing = append(missing, key)
+						}
+					}
+					if len(missing) > 0 {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResourceNotInConfig
+						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
 					detected = configsync.FilterChanges(detected, selected)
 				}

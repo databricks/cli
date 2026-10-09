@@ -1,0 +1,8 @@
+{
+  "name": "validation-metadata-npm",
+  "version": "1.0.0",
+  "packageManager": "npm@10.9.2",
+  "scripts": {
+    "build": "node -e \"console.log('declared npm build ran'); process.exit(17)\""
+  }
+}

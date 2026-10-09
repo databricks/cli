@@ -11,8 +11,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs create --json {"name": "My Job"}
 
->>> [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
-Successfully bound job with an id '[NUMID]'
+>>> [CLI] bundle deployment bind job_1 [JOB_ID] --auto-approve
+Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 === State files after bind ===
 .databricks/bundle/default/resources.json

@@ -11,11 +11,11 @@ Files: 2 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FIVE_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FOUR_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[ONE_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[THREE_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 
 === The plan records the deployment_history feature
 >>> [CLI] bundle plan -o json
@@ -33,7 +33,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === The service lists all five resources at version 1
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -98,7 +98,7 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === The service still lists all five resources, now at version 2
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",

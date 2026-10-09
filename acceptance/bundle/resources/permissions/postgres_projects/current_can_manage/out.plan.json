@@ -21,7 +21,7 @@
       "action": "create",
       "new_state": {
         "value": {
-          "object_id": "/database-projects/test-project",
+          "object_id": "/database-[FOO_ID]",
           "__embed__": [
             {
               "level": "CAN_USE",

@@ -132,9 +132,7 @@ class Task:
 
     compute: VariableOrOptional[Compute] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Task level compute configuration.
+    [Public Preview] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTask] = None
@@ -189,6 +187,16 @@ class Task:
     environment_key: VariableOrOptional[str] = None
     """
     The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
+    """
+
+    environment_variables_key: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Reference to a `JobEnvironmentVariables` entry defined in
+    `JobSettings.environment_variables`. The selected entry's variables are
+    applied to this task at execution time. This field supports serverless
+    tasks using environment version 5 or later.
     """
 
     existing_cluster_id: VariableOrOptional[str] = None
@@ -371,9 +379,7 @@ class TaskDict(TypedDict, total=False):
 
     compute: VariableOrOptional[ComputeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Task level compute configuration.
+    [Public Preview] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTaskParam]
@@ -428,6 +434,16 @@ class TaskDict(TypedDict, total=False):
     environment_key: VariableOrOptional[str]
     """
     The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
+    """
+
+    environment_variables_key: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Reference to a `JobEnvironmentVariables` entry defined in
+    `JobSettings.environment_variables`. The selected entry's variables are
+    applied to this task at execution time. This field supports serverless
+    tasks using environment version 5 or later.
     """
 
     existing_cluster_id: VariableOrOptional[str]

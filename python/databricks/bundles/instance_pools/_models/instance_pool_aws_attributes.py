@@ -23,7 +23,12 @@ class InstancePoolAwsAttributes:
 
     availability: VariableOrOptional[InstancePoolAwsAttributesAvailability] = None
     """
-    Availability type used for the spot nodes.
+    Availability type used for the instances in the pool. Supports on-demand, spot, and
+    spot-with-fallback (the pool acquires spot instances first, and falls back to on-demand
+    instances when spot capacity is unavailable).
+    
+    You can change this value on an existing pool. New clusters use the updated availability, and
+    existing clusters keep the availability they launched with.
     """
 
     instance_profile_arn: VariableOrOptional[str] = None
@@ -50,6 +55,9 @@ class InstancePoolAwsAttributes:
     When spot instances are requested for this cluster, only spot instances whose bid price
     percentage matches this field will be considered.
     Note that, for safety, we enforce this field to be no more than 10000.
+    
+    You can change this value on an existing pool. New clusters use the updated bid price, and
+    existing clusters keep the bid price they launched with.
     """
 
     zone_id: VariableOrOptional[str] = None
@@ -61,6 +69,14 @@ class InstancePoolAwsAttributes:
     This is an optional field at cluster creation, and if not specified, a default zone will be used.
     The list of available zones as well as the default value can be found by using the
     `List Zones` method.
+    
+    Set this field to "auto" to enable Auto-AZ, in which case Databricks selects the availability
+    zone for each cluster independently when the cluster launches, and retries another zone if the
+    cluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster
+    land in the same zone, and different clusters backed by the pool can run in different zones.
+    
+    You can change the zone on an existing pool. New clusters use the updated zone, and existing
+    clusters keep the zone they launched with.
     """
 
     @classmethod
@@ -76,7 +92,12 @@ class InstancePoolAwsAttributesDict(TypedDict, total=False):
 
     availability: VariableOrOptional[InstancePoolAwsAttributesAvailabilityParam]
     """
-    Availability type used for the spot nodes.
+    Availability type used for the instances in the pool. Supports on-demand, spot, and
+    spot-with-fallback (the pool acquires spot instances first, and falls back to on-demand
+    instances when spot capacity is unavailable).
+    
+    You can change this value on an existing pool. New clusters use the updated availability, and
+    existing clusters keep the availability they launched with.
     """
 
     instance_profile_arn: VariableOrOptional[str]
@@ -103,6 +124,9 @@ class InstancePoolAwsAttributesDict(TypedDict, total=False):
     When spot instances are requested for this cluster, only spot instances whose bid price
     percentage matches this field will be considered.
     Note that, for safety, we enforce this field to be no more than 10000.
+    
+    You can change this value on an existing pool. New clusters use the updated bid price, and
+    existing clusters keep the bid price they launched with.
     """
 
     zone_id: VariableOrOptional[str]
@@ -114,6 +138,14 @@ class InstancePoolAwsAttributesDict(TypedDict, total=False):
     This is an optional field at cluster creation, and if not specified, a default zone will be used.
     The list of available zones as well as the default value can be found by using the
     `List Zones` method.
+    
+    Set this field to "auto" to enable Auto-AZ, in which case Databricks selects the availability
+    zone for each cluster independently when the cluster launches, and retries another zone if the
+    cluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster
+    land in the same zone, and different clusters backed by the pool can run in different zones.
+    
+    You can change the zone on an existing pool. New clusters use the updated zone, and existing
+    clusters keep the zone they launched with.
     """
 
 

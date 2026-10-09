@@ -134,7 +134,7 @@
             }
           }
         ],
-        "job_id": [NUMID],
+        "job_id": [SAMPLE_JOB_ID],
         "max_concurrent_runs": 4,
         "name": "[dev [USERNAME]] sample_job",
         "parameters": [

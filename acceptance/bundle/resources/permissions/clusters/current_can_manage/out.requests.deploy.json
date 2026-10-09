@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/clusters/[UUID]",
+  "path": "/api/2.0/permissions/clusters/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

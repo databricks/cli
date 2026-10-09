@@ -21,7 +21,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 === Step 4: Verify only one job exists
 {
   "name": "test-job-basic-[UNIQUE_NAME]",
-  "id": [NUMID]
+  "id": [TEST_JOB_ID]
 }
 
 === Cleanup - destroy bundle A (bundle B does not have an active deployment)

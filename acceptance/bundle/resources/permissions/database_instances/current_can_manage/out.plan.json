@@ -6,7 +6,7 @@
       "action": "create",
       "new_state": {
         "value": {
-          "name": "test-db-instance"
+          "name": "[FOO_ID]"
         }
       }
     },

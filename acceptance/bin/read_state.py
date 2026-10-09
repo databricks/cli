@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Print selected attributes from terraform state.
+Print selected attributes from the bundle state.
 
 Usage: <group> <name> [attr...]
 """
@@ -11,34 +11,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from print_state import get_resources
-
-
-def print_resource_terraform(group, name, *attrs):
-    resource_type = "databricks_" + group[:-1]
-    filename = ".databricks/bundle/default/terraform/terraform.tfstate"
-    # A missing state file (e.g. after destroy removes it) means the resource's
-    # state is not there, same as a missing entry within the file.
-    if not os.path.exists(filename):
-        print(f"State not found for {group}.{name} in {filename}")
-        return
-    raw = open(filename).read()
-    data = json.loads(raw)
-    found = 0
-    for r in data["resources"]:
-        r_type = r["type"]
-        r_name = r["name"]
-        if r_type != resource_type:
-            continue
-        if r_name != name:
-            continue
-        for inst in r["instances"]:
-            attribute_values = inst.get("attributes")
-            if attribute_values:
-                values = [f"{x}={attribute_values.get(x)!r}" for x in attrs]
-                print(group, name, " ".join(values))
-                found += 1
-    if not found:
-        print(f"State not found for {group}.{name} in {filename}")
 
 
 def print_resource_direct(group, name, *attrs):
@@ -79,7 +51,5 @@ def print_resource_recorded(group, name, *attrs):
 
 if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
     print_resource_recorded(*sys.argv[1:])
-elif os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform":
-    print_resource_terraform(*sys.argv[1:])
 else:
     print_resource_direct(*sys.argv[1:])

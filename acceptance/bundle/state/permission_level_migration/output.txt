@@ -19,7 +19,7 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
  "serial": 2,
  "state": {
   "resources.jobs.my_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[MY_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -37,7 +37,7 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
   "resources.jobs.my_job.permissions": {
    "__id__": "/jobs/123",
    "state": {
-    "object_id": "/jobs/[NUMID]",
+    "object_id": "/jobs/[MY_JOB_ID]",
     "__embed__": [
      {
       "level": "CAN_VIEW",

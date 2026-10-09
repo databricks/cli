@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -53,6 +54,10 @@ const (
 	// are not provided upfront. When set to "true", --set requirement and
 	// resource validation are skipped.
 	agenticModeEnvVar = "DATABRICKS_APPS_AGENTIC_MODE"
+
+	// authModeField is the reserved --set field that selects a resource's auth mode
+	// (e.g., --set analytics.sql-warehouse.authMode=obo).
+	authModeField = "authMode"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -79,19 +84,21 @@ func normalizeVersion(version string) string {
 
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath string
-		branch       string
-		version      string
-		name         string
-		warehouseID  string
-		description  string
-		outputDir    string
-		pluginsFlag  []string
-		deploy       bool
-		run          string
-		setValues    []string
-		autoApprove  bool
-		skipInstall  bool
+		templatePath   string
+		branch         string
+		version        string
+		name           string
+		warehouseID    string
+		description    string
+		outputDir      string
+		pluginsFlag    []string
+		deploy         bool
+		run            string
+		setValues      []string
+		autoApprove    bool
+		skipInstall    bool
+		packageManager string
+		authMode       string
 	)
 
 	cmd := &cobra.Command{
@@ -133,6 +140,11 @@ Examples:
     --set analytics.sql-warehouse.id=wh1 \
     --set reporting.sql-warehouse.id=wh2
 
+  # Access resources on behalf of the user, except the job
+  databricks apps init --name my-app --features=analytics,jobs --auth-mode obo \
+    --set jobs.job.authMode=sp \
+    --set analytics.sql-warehouse.id=abc123 --set jobs.job.id=42
+
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
 
@@ -146,6 +158,8 @@ Resource configuration (--set):
   Set resource values using --set plugin.resourceKey.field=value
   Keys are defined in the template's appkit.plugins.json manifest.
   Multi-field resources (e.g., database, secret) require all fields to be set together.
+  Use --set plugin.resourceKey.authMode=obo|sp|both to choose how the app accesses a resource:
+  on behalf of the user (obo), as the app's service principal (sp), or both.
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override the default template source`,
@@ -160,23 +174,26 @@ Environment variables:
 			}
 
 			return runCreate(ctx, createOptions{
-				templatePath:   templatePath,
-				branch:         branch,
-				version:        version,
-				name:           name,
-				nameProvided:   cmd.Flags().Changed("name"),
-				warehouseID:    warehouseID,
-				description:    description,
-				outputDir:      outputDir,
-				plugins:        pluginsFlag,
-				deploy:         deploy,
-				deployChanged:  cmd.Flags().Changed("deploy"),
-				run:            run,
-				runChanged:     cmd.Flags().Changed("run"),
-				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
-				setValues:      setValues,
-				autoApprove:    autoApprove,
-				skipInstall:    skipInstall,
+				templatePath:          templatePath,
+				branch:                branch,
+				version:               version,
+				name:                  name,
+				nameProvided:          cmd.Flags().Changed("name"),
+				warehouseID:           warehouseID,
+				description:           description,
+				outputDir:             outputDir,
+				plugins:               pluginsFlag,
+				deploy:                deploy,
+				deployChanged:         cmd.Flags().Changed("deploy"),
+				run:                   run,
+				runChanged:            cmd.Flags().Changed("run"),
+				pluginsChanged:        cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				setValues:             setValues,
+				autoApprove:           autoApprove,
+				skipInstall:           skipInstall,
+				packageManager:        packageManager,
+				packageManagerChanged: cmd.Flags().Changed("package-manager"),
+				authMode:              authMode,
 			})
 		},
 	}
@@ -196,29 +213,34 @@ Environment variables:
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
+	cmd.Flags().StringVar(&authMode, "auth-mode", "", "Default resource auth mode: obo (on behalf of the user) or sp (service principal). With obo, resources that cannot be accessed on behalf of the user use sp. Prompts if not provided in interactive mode, otherwise sp.")
 	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
+	cmd.Flags().StringVar(&packageManager, "package-manager", "", "Node.js package manager (pnpm, npm; default: inferred from template)")
 
 	return cmd
 }
 
 type createOptions struct {
-	templatePath   string
-	branch         string
-	version        string
-	name           string
-	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
-	warehouseID    string
-	description    string
-	outputDir      string
-	plugins        []string
-	deploy         bool
-	deployChanged  bool // true if --deploy flag was explicitly set
-	run            string
-	runChanged     bool     // true if --run flag was explicitly set
-	pluginsChanged bool     // true if --plugins flag was explicitly set
-	setValues      []string // --set plugin.resourceKey.field=value pairs
-	autoApprove    bool
-	skipInstall    bool
+	templatePath          string
+	branch                string
+	version               string
+	name                  string
+	nameProvided          bool // true if --name flag was explicitly set (enables "flags mode")
+	warehouseID           string
+	description           string
+	outputDir             string
+	plugins               []string
+	deploy                bool
+	deployChanged         bool // true if --deploy flag was explicitly set
+	run                   string
+	runChanged            bool     // true if --run flag was explicitly set
+	pluginsChanged        bool     // true if --plugins flag was explicitly set
+	setValues             []string // --set plugin.resourceKey.field=value pairs
+	autoApprove           bool
+	skipInstall           bool
+	packageManager        string
+	packageManagerChanged bool
+	authMode              string // --auth-mode default for all resources
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -236,6 +258,9 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			return nil, fmt.Errorf("invalid --set key %q, expected plugin.resourceKey.field", key)
 		}
 		pluginName, resourceKey, fieldName := parts[0], parts[1], parts[2]
+		if fieldName == authModeField {
+			continue
+		}
 
 		plugin := m.GetPluginByName(pluginName)
 		if plugin == nil {
@@ -286,16 +311,158 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 	return rv, nil
 }
 
-// pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
+// parseSetAuthModes parses --set plugin.resourceKey.authMode=value pairs into a map of resource key to auth mode.
+// Other --set pairs are ignored (see parseSetValues).
+func parseSetAuthModes(setValues []string, m *manifest.Manifest) (map[string]string, error) {
+	modes := make(map[string]string)
+	for _, sv := range setValues {
+		key, value, _ := strings.Cut(sv, "=")
+		parts := strings.SplitN(key, ".", 3)
+		if len(parts) != 3 || parts[2] != authModeField {
+			continue
+		}
+		pluginName, resourceKey := parts[0], parts[1]
+
+		plugin := m.GetPluginByName(pluginName)
+		if plugin == nil {
+			return nil, fmt.Errorf("unknown plugin %q in --set %q; available: %v", pluginName, sv, m.GetPluginNames())
+		}
+		all := append(plugin.Resources.Required, plugin.Resources.Optional...)
+		idx := slices.IndexFunc(all, func(r manifest.Resource) bool { return r.Key() == resourceKey })
+		if idx < 0 {
+			return nil, fmt.Errorf("plugin %q has no resource with key %q", pluginName, resourceKey)
+		}
+		r := all[idx]
+
+		switch value {
+		case generator.AuthModeSP, generator.AuthModeOBO, generator.AuthModeBoth:
+		default:
+			return nil, fmt.Errorf("invalid auth mode %q in --set %q (must be obo, sp, or both)", value, sv)
+		}
+		if r.AppOnly {
+			return nil, fmt.Errorf("resource %q of plugin %q is always accessed by the app's service principal; remove --set %s", resourceKey, pluginName, sv)
+		}
+		if value != generator.AuthModeSP && r.Scope == "" {
+			return nil, fmt.Errorf("resource %q of plugin %q cannot be accessed on behalf of the user; use %s.%s.%s=sp", resourceKey, pluginName, pluginName, resourceKey, authModeField)
+		}
+		modes[r.AuthKey()] = value
+	}
+	return modes, nil
+}
+
+// resolveAuthModes returns the auth mode of each resource. Precedence, highest first:
+// --set authMode, the prompted choice, the --auth-mode default, then sp.
+// setModes and promptedModes only hold modes their resources support. The --auth-mode
+// default applies only to resources that can be accessed on behalf of the user; the keys
+// of the other resources it does not apply to are returned as keptSP.
+func resolveAuthModes(resources []manifest.Resource, setModes, promptedModes map[string]string, defaultMode string) (modes map[string]string, keptSP []string) {
+	modes = make(map[string]string)
+	for _, r := range resources {
+		mode, ok := setModes[r.AuthKey()]
+		if !ok {
+			mode, ok = promptedModes[r.AuthKey()]
+		}
+		if !ok && defaultMode == generator.AuthModeOBO {
+			if r.AppOnly || r.Scope == "" {
+				keptSP = append(keptSP, r.Key())
+				continue
+			}
+			mode = defaultMode
+		}
+		if mode == generator.AuthModeOBO || mode == generator.AuthModeBoth {
+			modes[r.AuthKey()] = mode
+		}
+	}
+	return modes, keptSP
+}
+
+// resourceConfigured reports whether any of the resource's field values are set.
+// Resource values are keyed "resourceKey.fieldName" (see parseSetValues).
+func resourceConfigured(r manifest.Resource, values map[string]string) bool {
+	for _, fieldName := range r.FieldNames() {
+		if values[r.Key()+"."+fieldName] != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// pluginHasResourceField checks whether a plugin has a resource with the given key whose
+// fields, or the fields its databricks.yml binding references, include fieldName.
 func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) bool {
 	for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 		if r.Key() == resourceKey {
 			if _, ok := r.Fields[fieldName]; ok {
 				return true
 			}
+			if _, fields, ok := generator.BindingVarFields(r); ok && slices.Contains(fields, fieldName) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// missingBindingValue is a field referenced by a resource's databricks.yml binding that has no value.
+type missingBindingValue struct {
+	resource manifest.Resource
+	yamlKey  string
+	field    string
+}
+
+// setKey returns the --set key for the missing value (plugin.resourceKey.field).
+func (mv missingBindingValue) setKey() string {
+	return mv.resource.PluginName + "." + mv.resource.Key() + "." + mv.field
+}
+
+func (mv missingBindingValue) Error() string {
+	return fmt.Sprintf("missing value for %s (needed by the %s binding); use --set %s=value", mv.setKey(), mv.yamlKey, mv.setKey())
+}
+
+// findMissingBindingValues returns the binding fields without a value for configured resources
+// that are bound to the service principal (auth mode sp or both). Resources accessed only on
+// behalf of the user have no binding, and resources without any value are left to
+// validateRequiredResources.
+func findMissingBindingValues(resources []manifest.Resource, values, authModes map[string]string) []missingBindingValue {
+	var missing []missingBindingValue
+	for _, r := range resources {
+		if authModes[r.AuthKey()] == generator.AuthModeOBO || !resourceConfigured(r, values) {
+			continue
+		}
+		yamlKey, fields, ok := generator.BindingVarFields(r)
+		if !ok {
+			continue
+		}
+		for _, f := range fields {
+			if values[r.Key()+"."+f] == "" {
+				missing = append(missing, missingBindingValue{resource: r, yamlKey: yamlKey, field: f})
+			}
+		}
+	}
+	return missing
+}
+
+// promptForBindingValue asks for a value of a binding field and stores it in values.
+func promptForBindingValue(ctx context.Context, mv missingBindingValue, values map[string]string) error {
+	var value string
+	err := huh.NewInput().
+		Title(fmt.Sprintf("%s %s", mv.resource.Alias, mv.field)).
+		Description(fmt.Sprintf("Needed by the %s binding in databricks.yml", mv.yamlKey)).
+		Value(&value).
+		Validate(func(s string) error {
+			if s == "" {
+				return errors.New("this field is required")
+			}
+			return nil
+		}).
+		WithTheme(prompt.AppkitTheme()).
+		Run()
+	if err != nil {
+		return err
+	}
+	prompt.PrintAnswered(ctx, fmt.Sprintf("%s %s", mv.resource.Alias, mv.field), value)
+	values[mv.resource.Key()+"."+mv.field] = value
+	return nil
 }
 
 // validateRequiredResources checks that all required resources have at least one
@@ -325,6 +492,7 @@ type tmplBundle struct {
 	Variables       string
 	Resources       string
 	TargetVariables string
+	UserAPIScopes   string
 }
 
 // dotEnvVars holds the generated .env file content.
@@ -353,6 +521,7 @@ type templateVars struct {
 	Bundle         tmplBundle
 	DotEnv         dotEnvVars
 	AppEnv         string
+	PackageManager string
 	// Plugins maps plugin name to its metadata
 	// Missing keys return nil, enabling {{if .plugins.analytics}} conditionals.
 	Plugins map[string]*pluginVar
@@ -382,7 +551,8 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
+// promptAuthMode indicates whether to prompt for how the app accesses resources (--auth-mode was not provided).
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove, promptAuthMode bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -455,6 +625,24 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		}
 	}
 
+	// Step 3b: Auth mode for resources that can be accessed on behalf of the user.
+	if promptAuthMode {
+		var configured []manifest.Resource
+		for _, r := range append(resources, optionalResources...) {
+			for k := range config.Dependencies {
+				if strings.HasPrefix(k, r.Key()+".") {
+					configured = append(configured, r)
+					break
+				}
+			}
+		}
+		modes, err := promptForAuthModes(ctx, configured, theme)
+		if err != nil {
+			return nil, err
+		}
+		config.AuthModes = modes
+	}
+
 	// Step 4: Description
 	config.Description = prompt.DefaultAppDescription
 	err := huh.NewInput().
@@ -480,6 +668,79 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	}
 
 	return config, nil
+}
+
+// promptForAuthModes asks once how the app accesses its resources and, for "Mixed",
+// asks per resource that can be accessed on behalf of the user.
+// Resources that cannot are listed as info and resolve to sp.
+// Returns a map of resource key to auth mode, or nil if nothing needs to be asked.
+func promptForAuthModes(ctx context.Context, resources []manifest.Resource, theme *huh.Theme) (map[string]string, error) {
+	var capable []manifest.Resource
+	for _, r := range resources {
+		if r.Scope != "" && !r.AppOnly {
+			capable = append(capable, r)
+		}
+	}
+	if len(capable) == 0 {
+		return nil, nil
+	}
+
+	const mixed = "mixed"
+	appMode := generator.AuthModeSP
+	err := huh.NewSelect[string]().
+		Title("How should the app access resources?").
+		Options(
+			huh.NewOption("Service principal", generator.AuthModeSP),
+			huh.NewOption("On behalf of user", generator.AuthModeOBO),
+			huh.NewOption("Mixed (choose per resource)", mixed),
+		).
+		Value(&appMode).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	modes := make(map[string]string, len(capable))
+	for _, r := range capable {
+		mode := appMode
+		if appMode == mixed {
+			mode = generator.AuthModeSP
+			err := huh.NewSelect[string]().
+				Title(fmt.Sprintf("How should the app access %s?", r.Alias)).
+				Options(
+					huh.NewOption("On behalf of user", generator.AuthModeOBO),
+					huh.NewOption("Service principal", generator.AuthModeSP),
+					huh.NewOption("Both", generator.AuthModeBoth),
+				).
+				Value(&mode).
+				WithTheme(theme).
+				Run()
+			if err != nil {
+				return nil, err
+			}
+		}
+		modes[r.AuthKey()] = mode
+		prompt.PrintAnswered(ctx, r.Alias, authModeLabel(mode))
+	}
+	for _, r := range resources {
+		if r.Scope == "" || r.AppOnly {
+			prompt.PrintAnswered(ctx, r.Alias, authModeLabel(generator.AuthModeSP)+" (only option)")
+		}
+	}
+	return modes, nil
+}
+
+// authModeLabel returns a user-facing label for an auth mode.
+func authModeLabel(mode string) string {
+	switch mode {
+	case generator.AuthModeOBO:
+		return "on behalf of user"
+	case generator.AuthModeBoth:
+		return "service principal and on behalf of user"
+	default:
+		return "service principal"
+	}
 }
 
 // promptForResource prompts the user for a resource value.
@@ -680,37 +941,36 @@ func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
 	return true
 }
 
-// replaceProjectName updates the project name in key files after copying a
-// pre-rendered template.  It sets bundle.name and the first
-// resources.apps.*.name in databricks.yml, and the name field in
-// package.json.
-func replaceProjectName(destDir, newName string) error {
-	// Update package.json name field via JSON round-trip.
+// rewritePackageJSON applies project naming and package-manager selection to a
+// Node template, independently of its bundle configuration or plugin selection.
+func rewritePackageJSON(destDir, newName string, selectedManager pkgmanager.Manager) error {
 	pkgPath := filepath.Join(destDir, "package.json")
 	data, err := os.ReadFile(pkgPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
 		return fmt.Errorf("read package.json: %w", err)
 	}
-	if err == nil {
-		var pkg map[string]any
-		if err := json.Unmarshal(data, &pkg); err != nil {
-			return fmt.Errorf("parse package.json: %w", err)
-		}
-		pkg["name"] = newName
-		out, err := json.MarshalIndent(pkg, "", "  ")
-		if err != nil {
-			return fmt.Errorf("encode package.json: %w", err)
-		}
-		// Preserve trailing newline convention.
-		out = append(out, '\n')
-		if err := safeWriteFile(pkgPath, out); err != nil {
-			return err
-		}
+	out, err := pkgmanager.RewriteJSON(data, newName, selectedManager)
+	if err != nil {
+		return err
+	}
+	return safeWriteFile(pkgPath, out)
+}
+
+// replaceProjectName updates the project name in key files after copying a
+// pre-rendered template. It sets bundle.name and the first resources.apps.*.name
+// in databricks.yml, the name field in package.json, and applies package-manager-specific
+// transformations (packageManager field and script normalization).
+func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Manager) error {
+	if err := rewritePackageJSON(destDir, newName, selectedManager); err != nil {
+		return err
 	}
 
 	// Update databricks.yml using yaml.Node to preserve comments and formatting.
 	ymlPath := filepath.Join(destDir, bundleConfigFile)
-	data, err = os.ReadFile(ymlPath)
+	data, err := os.ReadFile(ymlPath)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", bundleConfigFile, err)
 	}
@@ -830,27 +1090,27 @@ func findProjectSrcDir(templateDir string) string {
 	return templateDir
 }
 
-// startBackgroundNpmInstall copies the package files from the template into
-// destDir and launches `npm ci` in the background. The caller should await
+// startBackgroundInstall copies the package files from the template into
+// destDir and launches the package manager install in the background. The caller should await
 // the returned channel BEFORE writing other files to destDir to prevent
 // concurrent writes. Returns nil if the template is not a Node.js project
-// or npm is not available.
+// or the package manager is not available.
 //
 // IMPORTANT: All reads from srcProjectDir happen synchronously before the
 // goroutine launches. The template directory may be cleaned up after this
 // function returns, so file reads must not be deferred to the goroutine.
-func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) <-chan error {
-	lockFile := filepath.Join(srcProjectDir, "package-lock.json")
-	if _, err := os.Stat(lockFile); err != nil {
+func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, projectName string, m pkgmanager.Manager) <-chan error {
+	lockfileName, err := m.FindLockfile(srcProjectDir)
+	if err != nil || lockfileName == "" {
 		return nil
 	}
 
-	if _, err := exec.LookPath("npm"); err != nil {
+	if _, err := exec.LookPath(m.Name); err != nil {
 		return nil
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		log.Warnf(ctx, "Failed to create %s: %v, skipping background npm install", destDir, err)
+		log.Warnf(ctx, "Failed to create %s: %v, skipping background install", destDir, err)
 		return nil
 	}
 
@@ -866,6 +1126,7 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		minVars := templateData(templateVars{
 			ProjectName:    projectName,
 			AppDescription: prompt.DefaultAppDescription,
+			PackageManager: m.Name,
 			Plugins:        make(map[string]*pluginVar),
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
@@ -883,7 +1144,11 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	}
 
 	if !pkgWritten {
-		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
+		log.Warnf(ctx, "Failed to write package.json to %s, skipping background install", destDir)
+		return nil
+	}
+	if err := rewritePackageJSON(destDir, projectName, m); err != nil {
+		log.Warnf(ctx, "Failed to prepare package.json: %v, skipping background install", err)
 		return nil
 	}
 
@@ -895,27 +1160,39 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
 	}
 
-	// Copy package-lock.json raw (never has template vars).
-	lockData, err := os.ReadFile(lockFile)
-	if err != nil {
-		log.Warnf(ctx, "Failed to read package-lock.json: %v, skipping background npm install", err)
-		return nil
-	}
-	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
-		log.Warnf(ctx, "Failed to write package-lock.json: %v, skipping background npm install", err)
-		return nil
+	// Frozen installs must see the same overrides and build permissions as the
+	// finished project. _npmrc follows the same rename/overwrite order as copyTemplate.
+	for _, name := range []string{lockfileName, m.WorkspaceConfigName, ".npmrc", "_npmrc"} {
+		if name == "" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(srcProjectDir, name))
+		if errors.Is(err, fs.ErrNotExist) && name != lockfileName {
+			continue
+		}
+		if err != nil {
+			log.Warnf(ctx, "Failed to read %s: %v, skipping background install", name, err)
+			return nil
+		}
+		if renamed, ok := renameFiles[name]; ok {
+			name = renamed
+		}
+		if err := os.WriteFile(filepath.Join(destDir, name), data, 0o644); err != nil {
+			log.Warnf(ctx, "Failed to write %s: %v, skipping background install", name, err)
+			return nil
+		}
 	}
 
 	ch := make(chan error, 1)
 	go func() {
-		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+		cmd := exec.CommandContext(ctx, m.Name, m.InstallArgs...)
 		cmd.Dir = destDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
 		ch <- cmd.Run()
 	}()
 
-	log.Debugf(ctx, "Started background npm install in %s", destDir)
+	log.Debugf(ctx, "Started background install in %s", destDir)
 	return ch
 }
 
@@ -954,9 +1231,9 @@ func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
 	}
 }
 
-// awaitBackgroundNpmInstall waits for the background npm install to complete.
+// awaitBackgroundInstall waits for the background install to complete.
 // Shows an instant checkmark if already done, or a spinner for the remainder.
-func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
+func awaitBackgroundInstall(ctx context.Context, ch <-chan error) error {
 	select {
 	case err := <-ch:
 		if err == nil {
@@ -973,7 +1250,16 @@ func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
 	}
 }
 
-func runCreate(ctx context.Context, opts createOptions) error {
+func runCreate(ctx context.Context, opts createOptions) (runErr error) {
+	// Validate package manager early to provide clear feedback.
+	if opts.packageManagerChanged && opts.packageManager == "" {
+		return errors.New("--package-manager must be npm or pnpm")
+	}
+	selectedManager, err := pkgmanager.Resolve(opts.packageManager)
+	if err != nil {
+		return err
+	}
+
 	// --skip-install leaves the project without installed dependencies, so
 	// downstream `--run dev` / `--run dev-remote` would immediately fail.
 	// Reject the combination up front rather than after the scaffold runs.
@@ -981,8 +1267,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return errors.New("--skip-install cannot be combined with --run (dev/dev-remote require dependencies to be installed)")
 	}
 
+	switch opts.authMode {
+	case "", generator.AuthModeSP, generator.AuthModeOBO:
+	default:
+		return fmt.Errorf("invalid --auth-mode value: %q (must be obo or sp; use --set <plugin>.<resourceKey>.authMode=both for a single resource)", opts.authMode)
+	}
+
 	var selectedPlugins []string
 	var resourceValues map[string]string
+	var promptedAuthModes map[string]string
 	var shouldDeploy bool
 	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
@@ -1142,6 +1435,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != branchForClone {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
+			gitRef = fallbackRef
 			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
 			refLabel = "version " + fallbackVersion
 			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh, refLabel)
@@ -1180,13 +1474,77 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		cmdio.LogString(ctx, "Note: agentic mode active — resource validation skipped.")
 	}
 
-	// Start npm install in the background so it runs while the user answers prompts.
+	srcProjectDir := findProjectSrcDir(templateDir)
+	isNode, err := pkgmanager.IsNodeTemplate(srcProjectDir)
+	if err != nil {
+		return err
+	}
+	if opts.packageManagerChanged && !isNode {
+		return errors.New("--package-manager is only supported for Node.js templates; remove the flag for this template")
+	}
+	if isNode {
+		if !opts.packageManagerChanged {
+			selectedManager, err = pkgmanager.Detect(srcProjectDir)
+			if err != nil {
+				return err
+			}
+		}
+		// Apply version-based package manager constraints: pnpm is only supported
+		// from a specific AppKit version onwards. If the resolved version is below the
+		// threshold, downgrade pnpm requests to npm (with a warning).
+		if usingDefaultTemplate {
+			effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
+			if downgraded && opts.packageManagerChanged {
+				log.Warnf(ctx, "Package manager %q is not supported for AppKit %s, using npm instead",
+					selectedManager.Name, refLabel)
+			}
+			selectedManager = effective
+		}
+
+		if err := selectedManager.ValidateTemplate(srcProjectDir, opts.skipInstall); err != nil {
+			return err
+		}
+		if !opts.skipInstall {
+			if err := selectedManager.ValidateExecutable(); err != nil {
+				return err
+			}
+			selectedManager, err = selectedManager.ResolvePin(ctx, srcProjectDir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var installCh <-chan error
+	var projectStarted, projectComplete bool
+	installCtx, cancelInstall := context.WithCancel(ctx)
+	defer func() {
+		cancelInstall()
+		if installCh != nil {
+			// Stop the installer before removing files it may still be writing.
+			<-installCh
+		}
+		if runErr == nil || !projectStarted || projectComplete {
+			return
+		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		if err := os.RemoveAll(destDir); err != nil {
+			log.Warnf(ctx, "Failed to clean up %s: %v", filepath.ToSlash(destDir), err)
+		}
+	}()
+
+	// Start install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
-	srcProjectDir := findProjectSrcDir(templateDir)
-	var npmInstallCh <-chan error
-	if !opts.skipInstall {
-		npmInstallCh = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+	if isNode && !opts.skipInstall {
+		projectStarted = true
+		installCh = startBackgroundInstall(installCtx, srcProjectDir, destDir, opts.name, selectedManager)
 	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
@@ -1225,12 +1583,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	} else if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove, opts.authMode == "")
 		if err != nil {
 			return err
 		}
 		selectedPlugins = config.Features // Features field holds plugin names
 		resourceValues = config.Dependencies
+		promptedAuthModes = config.AuthModes
 		if config.Description != "" {
 			opts.description = config.Description
 		}
@@ -1278,8 +1637,26 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		maps.Copy(resourceValues, setVals)
 	}
 
+	setAuthModes, err := parseSetAuthModes(opts.setValues, m)
+	if err != nil {
+		return err
+	}
+
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
+
+	// Only optional resources that were actually configured end up in the project,
+	// so unconfigured ones must not be resolved or listed in the keptSP note.
+	authResources := m.CollectResources(selectedPlugins)
+	for _, r := range m.CollectOptionalResources(selectedPlugins) {
+		if resourceConfigured(r, resourceValues) {
+			authResources = append(authResources, r)
+		}
+	}
+	authModes, keptSP := resolveAuthModes(authResources, setAuthModes, promptedAuthModes, opts.authMode)
+	if len(keptSP) > 0 {
+		cmdio.LogString(ctx, "Note: these resources cannot be accessed on behalf of the user and use the service principal: "+strings.Join(keptSP, ", "))
+	}
 
 	// Warn when --features adds plugins that the pre-rendered template
 	// cannot inject (its server.ts and app.yaml are already finalised).
@@ -1330,6 +1707,27 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
+	// A resource bound to the service principal needs a value for every field its binding
+	// references, including fields the manifest does not declare. Prompt on a terminal
+	// (outside flags mode), otherwise fail before any project files are written.
+	if !agenticMode {
+		missing := findMissingBindingValues(authResources, resourceValues, authModes)
+		if len(missing) > 0 && isInteractive && !flagsMode {
+			if resourceValues == nil {
+				resourceValues = make(map[string]string)
+			}
+			for _, mv := range missing {
+				if err := promptForBindingValue(ctx, mv, resourceValues); err != nil {
+					return err
+				}
+			}
+			missing = nil
+		}
+		if len(missing) > 0 {
+			return missing[0]
+		}
+	}
+
 	// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
 	if skipDeployRunPrompt || !isInteractive {
 		var err error
@@ -1338,24 +1736,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 	}
-
-	// Track whether we started creating the project for cleanup on failure.
-	// The background npm install may have created destDir early.
-	var projectCreated bool
-	var runErr error
-	defer func() {
-		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
-			return
-		}
-		if inPlace {
-			// destDir is "." here; a wholesale RemoveAll would wipe the
-			// user's current directory (including any pre-existing .git).
-			// Leave the partial scaffold and tell the user to clean up.
-			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
-			return
-		}
-		os.RemoveAll(destDir)
-	}()
 
 	// Set description default
 	if opts.description == "" {
@@ -1383,6 +1763,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		WorkspaceHost:  workspaceHost,
 		Profile:        profile,
 		ResourceValues: resourceValues,
+		AuthModes:      authModes,
 	}
 
 	// Generate configurations from selected plugins
@@ -1413,28 +1794,33 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			Variables:       bundleVars,
 			Resources:       bundleRes,
 			TargetVariables: targetVars,
+			UserAPIScopes:   generator.GenerateUserAPIScopes(selectedPluginList, genConfig),
 		},
 		DotEnv: dotEnvVars{
 			Content: generator.GenerateDotEnv(selectedPluginList, genConfig),
 			Example: generator.GenerateDotEnvExample(selectedPluginList),
 		},
-		AppEnv:  generator.GenerateAppEnv(selectedPluginList, genConfig),
-		Plugins: plugins,
+		AppEnv:         generator.GenerateAppEnv(selectedPluginList, genConfig),
+		PackageManager: selectedManager.Name,
+		Plugins:        plugins,
 	}
 
-	// Await background npm install BEFORE copying the template so there are
-	// no concurrent writes to destDir. npm ci ran with the raw lock file; the
-	// dependency tree is determined entirely by package-lock.json which has no
+	// Await background install BEFORE copying the template so there are
+	// no concurrent writes to destDir. The install ran with the raw lock file; the
+	// dependency tree is determined entirely by the lockfile which has no
 	// template variables, so the installed node_modules is valid.
-	if npmInstallCh != nil {
-		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
-			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
+	if installCh != nil {
+		err := awaitBackgroundInstall(ctx, installCh)
+		installCh = nil
+		if err != nil {
+			log.Warnf(ctx, "Background install failed: %v, will retry during project initialization", err)
 			os.RemoveAll(filepath.Join(destDir, "node_modules"))
 		}
 	}
 
 	// Copy template with variable substitution
 	var fileCount int
+	projectStarted = true
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
 		var copyErr error
 		fileCount, copyErr = copyTemplate(ctx, templateDir, destDir, vars)
@@ -1443,14 +1829,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if runErr != nil {
 		return runErr
 	}
-	projectCreated = true // From here on, cleanup on failure
+
+	// Prune non-selected package manager artifacts.
+	if isNode {
+		if err := selectedManager.Prune(destDir); err != nil {
+			return fmt.Errorf("prune package manager artifacts: %w", err)
+		}
+	}
 
 	// For pre-rendered templates, update package.json name (not a .tmpl file)
 	// and serve as a safety net for the agentic flow.
 	if skipPluginSelection {
-		if err := replaceProjectName(destDir, opts.name); err != nil {
+		if err := replaceProjectName(destDir, opts.name, selectedManager); err != nil {
 			return fmt.Errorf("update project name: %w", err)
 		}
+	} else if err := rewritePackageJSON(destDir, opts.name, selectedManager); err != nil {
+		return fmt.Errorf("update package.json: %w", err)
 	}
 
 	// Get absolute path
@@ -1465,7 +1859,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// With --skip-install we bypass Initialize entirely and instead prepend
 	// the install command to NextSteps so the user knows to install first.
 	var nextStepsCmd string
-	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
+	projectInitializer := initializer.GetProjectInitializer(absOutputDir, selectedManager)
 	if projectInitializer != nil {
 		if opts.skipInstall {
 			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), projectInitializer.NextSteps())
@@ -1487,6 +1881,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return errors.New("--run=dev-remote is only supported for Node.js projects with @databricks/appkit")
 		}
 	}
+
+	projectComplete = true
 
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
@@ -1869,10 +2265,12 @@ func templateData(vars templateVars) map[string]any {
 		"projectName":    vars.ProjectName,
 		"appDescription": vars.AppDescription,
 		"workspaceHost":  vars.WorkspaceHost,
+		"packageManager": vars.PackageManager,
 		"bundle": map[string]any{
 			"variables":       vars.Bundle.Variables,
 			"resources":       vars.Bundle.Resources,
 			"targetVariables": vars.Bundle.TargetVariables,
+			"userApiScopes":   vars.Bundle.UserAPIScopes,
 		},
 		"dotEnv": map[string]any{
 			"content": vars.DotEnv.Content,

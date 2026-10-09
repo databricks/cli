@@ -13,3 +13,8 @@ Env.DATABRICKS_BUNDLE_ENGINE = "direct"
 # These tests replay a prior terraform deployment (replay_tfstate.py) and then migrate to direct.
 # Recording is direct-only, and the DMS variant does not apply to the migration story.
 EnvMatrix.DMS = [""]
+
+# workspace list prints each state file's object id, minted per run.
+[[Repls]]
+Old = '(?m)^\d+(\s+FILE)'
+New = '[OBJECT_ID]${1}'

@@ -41,7 +41,6 @@ import sys
 # of the file path in deadcode output.
 EXCLUDED_DIRS = [
     "libs/gorules/",  # Lint rule definitions loaded by golangci-lint's ruleguard
-    "bundle/internal/tf/schema/",  # Generated from Terraform provider schema
 ]
 
 ALLOW_COMMENT = "//deadcode:allow"
@@ -58,7 +57,7 @@ def should_exclude_line(line, excluded_dirs):
 
     A directory anywhere in the path (not only a prefix) excludes the line:
 
-    >>> should_exclude_line("x/bundle/internal/tf/schema/gen.go:10:5: func", ["bundle/internal/tf/schema/"])
+    >>> should_exclude_line("x/libs/gorules/gen.go:10:5: func", ["libs/gorules/"])
     True
     """
     return any(line.startswith(d) or ("/" + d) in line for d in excluded_dirs)

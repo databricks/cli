@@ -138,6 +138,9 @@ Example usage:
 		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
 			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 				SkipInitialize: true,
+				InitFunc: func(b *bundle.Bundle) {
+					b.AllowTerraformEngineConfig = true
+				},
 			})
 			if err != nil {
 				return err
@@ -154,6 +157,10 @@ Example usage:
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			AlwaysPull:        true,
 			ErrorOnEmptyState: true,
+			// Let users run a bundle that pins the removed Terraform engine.
+			InitFunc: func(b *bundle.Bundle) {
+				b.AllowTerraformEngineConfig = true
+			},
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, runArgs, err = resolveRunArgument(ctx, b, args)
@@ -181,8 +188,7 @@ Example usage:
 				// Resolve ${resources.*} references within the resource being run so its
 				// runner sees concrete values (e.g. an app's env vars referencing another
 				// resource, or its source_code_path pointing at the immutable snapshot's
-				// full_path, which lives only in the deployed state). Safe for both engines:
-				// with terraform the state DB is closed and references resolve from config.
+				// full_path, which lives only in the deployed state).
 				target := dyn.NewPath(dyn.Key("resources"), dyn.Key(ref.Description.PluralName), dyn.Key(ref.Key))
 				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config, target); err != nil {
 					return err

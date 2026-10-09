@@ -13,7 +13,7 @@ Before submitting a PR, run these commands to match what CI checks. CI uses the 
 # 2. Linting (CI runs full golangci-lint across all modules, not the diff-only wrapper)
 ./task lint
 
-# 3. Tests (CI runs with both deployment engines)
+# 3. Tests
 ./task test
 
 # 4. If you changed bundle config structs, schema, or direct-engine resource code:

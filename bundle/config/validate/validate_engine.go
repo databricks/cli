@@ -8,11 +8,14 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type validateEngine struct{ bundle.RO }
 
-// ValidateEngine validates that the bundle.engine setting is valid.
+// ValidateEngine validates that the bundle.engine setting is valid and warns
+// about the bundle.terraform setting, which has no effect since the Terraform
+// deployment engine was removed.
 func ValidateEngine() bundle.ReadOnlyMutator {
 	return &validateEngine{}
 }
@@ -22,30 +25,44 @@ func (v *validateEngine) Name() string {
 }
 
 func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if tf := dyn.GetValue(b.Config.Value(), "bundle.terraform"); tf.IsValid() {
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   "bundle.terraform is deprecated and has no effect: " + engine.TerraformRemovedSummary,
+			Locations: tf.Locations(),
+			Paths:     structpath.NewPathSlice("bundle", "terraform"),
+		})
+	}
+
 	configEngine := b.Config.Bundle.Engine
 	if configEngine == engine.EngineNotSet {
-		return nil
+		return diags
 	}
 
 	loc := dyn.GetValue(b.Config.Value(), "bundle.engine").Location()
 
 	parsed, ok := engine.Parse(string(configEngine))
 	if !ok {
-		return diag.Diagnostics{{
+		return diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q or %q)", configEngine, engine.EngineTerraform, engine.EngineDirect),
-			Locations: []dyn.Location{loc},
-		}}
+			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
+			Locations: []diag.Location{loc},
+		})
 	}
 
 	if parsed == engine.EngineTerraform {
-		return diag.Diagnostics{{
-			Severity:  diag.Warning,
-			Summary:   "the terraform deployment engine is deprecated and will stop working in a future version of the CLI",
-			Detail:    "See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine",
-			Locations: []dyn.Location{loc},
-		}}
+		severity := diag.Error
+		if b.AllowTerraformEngineConfig {
+			severity = diag.Warning
+		}
+		return diags.Append(diag.Diagnostic{
+			Severity:  severity,
+			Summary:   engine.TerraformRemovedSummary,
+			Detail:    engine.TerraformRemovedConfigDetail,
+			Locations: []diag.Location{loc},
+		})
 	}
 
-	return nil
+	return diags
 }

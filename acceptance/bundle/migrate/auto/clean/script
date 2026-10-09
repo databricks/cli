@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
 rm -f "$OUT_REQUESTS"
 
 # Each call to print_migration_telemetry inspects "$OUT_REQUESTS"; clear

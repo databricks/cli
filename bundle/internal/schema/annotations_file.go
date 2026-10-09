@@ -11,6 +11,7 @@ import (
 	yaml3 "go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -322,7 +323,7 @@ func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 			return nil, err
 		}
 		if len(node) > 0 {
-			out[edge.name] = dyn.NewValue(node, []dyn.Location{{Line: line}})
+			out[edge.name] = dyn.NewValue(node, []diag.Location{{Line: line}})
 			line++
 		}
 	}
@@ -349,7 +350,7 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 			return nil, err
 		}
 		if v.Kind() != dyn.KindNil {
-			out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: lineTypeDoc}})
+			out[typeDocKey] = v.WithLocations([]diag.Location{{Line: lineTypeDoc}})
 		}
 
 		child, err := s.block(edge.typ)
@@ -357,7 +358,7 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 			return nil, err
 		}
 		if len(child) > 0 {
-			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: lineFields}})
+			out[fieldsKey] = dyn.NewValue(child, []diag.Location{{Line: lineFields}})
 		}
 	}
 	return out, nil

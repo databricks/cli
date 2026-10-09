@@ -48,9 +48,6 @@ type BundleDeployExperimental struct {
 	// Number of configuration files in the bundle.
 	ConfigurationFileCount int64 `json:"configuration_file_count"`
 
-	// Size in bytes of the Terraform state file
-	TerraformStateSizeBytes int64 `json:"terraform_state_size_bytes,omitempty"`
-
 	// Number of variables in the bundle
 	VariableCount        int64 `json:"variable_count"`
 	ComplexVariableCount int64 `json:"complex_variable_count"`
@@ -118,15 +115,14 @@ type BundleDeployExperimental struct {
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
 // and state-size metadata for one bundle deployment.
 //
-// Counts cover both engines. Sizes are direct-only: the direct engine stores each
+// Counts cover all resources. Sizes are only reported for the direct engine: the direct engine stores each
 // resource's state as a JSON blob in resources.json, so a size is len(state) and
-// nothing is serialized at telemetry time. Terraform entries carry counts only.
+// nothing is serialized at telemetry time. Entries from the removed Terraform engine (older CLI versions) carry counts only.
 type BundleResourcesMetadata struct {
 	// Engine that ran the deploy: "direct" or "terraform".
 	StateEngine string `json:"state_engine,omitempty"`
 
-	// Size in bytes of the direct engine's resources.json on disk. Terraform
-	// reports its state file size as Experimental.TerraformStateSizeBytes.
+	// Size in bytes of the direct engine's resources.json on disk.
 	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
 
 	// One entry per resource type declared in the configuration, plus types that

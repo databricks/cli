@@ -1,0 +1,20 @@
+bundle:
+  name: test-pipeline-dev-mode
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-dev-mode
+      libraries:
+        - file:
+            path: pipeline_file.py
+
+targets:
+  prod:
+    default: true
+  dev:
+    mode: development
+  dev_preset_off:
+    mode: development
+    presets:
+      pipelines_development: false

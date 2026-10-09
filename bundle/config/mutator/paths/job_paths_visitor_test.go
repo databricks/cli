@@ -131,6 +131,40 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
+func TestVisitJobPaths_environmentVariables(t *testing.T) {
+	job0 := &resources.Job{
+		JobSettings: jobs.JobSettings{
+			EnvironmentVariables: []jobs.JobEnvironmentVariables{
+				{
+					EnvironmentVariablesKey: "default",
+					Spec: &jobs.JobEnvironmentVariablesSpec{
+						Files: []string{
+							"./a.env",
+							"./b.env",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	root := config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"job0": job0,
+			},
+		},
+	}
+
+	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	expected := []dyn.Path{
+		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[0]"),
+		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[1]"),
+	}
+
+	assert.ElementsMatch(t, expected, actual)
+}
+
 func TestVisitJobPaths_foreach(t *testing.T) {
 	task0 := jobs.Task{
 		ForEachTask: &jobs.ForEachTask{

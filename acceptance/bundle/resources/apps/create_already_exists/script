@@ -1,5 +1,8 @@
 # Create an app with the same name outside of bundle
-trace $CLI apps create test-app-already-exists
+trace $CLI apps create test-app-already-exists | tee app.json.tmp
+add_repl "$(sed -n 's/.*"deployment_id": "\(.*\)".*/\1/p' app.json.tmp)" APP_DEPLOYMENT_ID
+add_repl "$(sed -n 's/.*"service_principal_id": \([0-9]*\).*/\1/p' app.json.tmp)" SERVICE_PRINCIPAL_ID
+rm app.json.tmp
 
 # Bundle deploy should fail because app already exists and is not in DELETING state
 trace musterr $CLI bundle deploy

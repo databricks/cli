@@ -3,6 +3,7 @@ package yamlsaver
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,10 +61,10 @@ func TestMarshalSequenceValue(t *testing.T) {
 	s := NewSaver()
 	sequenceValue := dyn.NewValue(
 		[]dyn.Value{
-			dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
-			dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+			dyn.NewValue("value1", []diag.Location{{File: "file", Line: 1, Column: 2}}),
+			dyn.NewValue("value2", []diag.Location{{File: "file", Line: 2, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		[]diag.Location{{File: "file", Line: 1, Column: 2}},
 	)
 	v, err := s.toYamlNode(sequenceValue)
 	assert.NoError(t, err)
@@ -85,11 +86,11 @@ func TestMarshalMapValue(t *testing.T) {
 	s := NewSaver()
 	mapValue := dyn.NewValue(
 		map[string]dyn.Value{
-			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 3, Column: 2}}),
-			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
-			"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			"key3": dyn.NewValue("value3", []diag.Location{{File: "file", Line: 3, Column: 2}}),
+			"key2": dyn.NewValue("value2", []diag.Location{{File: "file", Line: 2, Column: 2}}),
+			"key1": dyn.NewValue("value1", []diag.Location{{File: "file", Line: 1, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		[]diag.Location{{File: "file", Line: 1, Column: 2}},
 	)
 
 	v, err := s.toYamlNode(mapValue)
@@ -111,12 +112,12 @@ func TestMarshalNestedValues(t *testing.T) {
 		map[string]dyn.Value{
 			"key1": dyn.NewValue(
 				map[string]dyn.Value{
-					"key2": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+					"key2": dyn.NewValue("value", []diag.Location{{File: "file", Line: 1, Column: 2}}),
 				},
-				[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+				[]diag.Location{{File: "file", Line: 1, Column: 2}},
 			),
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		[]diag.Location{{File: "file", Line: 1, Column: 2}},
 	)
 	v, err := s.toYamlNode(mapValue)
 	assert.NoError(t, err)
@@ -219,18 +220,18 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 
 	styledMap := dyn.NewValue(
 		map[string]dyn.Value{
-			"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
-			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+			"key1": dyn.NewValue("value1", []diag.Location{{File: "file", Line: 1, Column: 2}}),
+			"key2": dyn.NewValue("value2", []diag.Location{{File: "file", Line: 2, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: -2, Column: 2}},
+		[]diag.Location{{File: "file", Line: -2, Column: 2}},
 	)
 
 	unstyledMap := dyn.NewValue(
 		map[string]dyn.Value{
-			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
-			"key4": dyn.NewValue("value4", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+			"key3": dyn.NewValue("value3", []diag.Location{{File: "file", Line: 1, Column: 2}}),
+			"key4": dyn.NewValue("value4", []diag.Location{{File: "file", Line: 2, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: -1, Column: 2}},
+		[]diag.Location{{File: "file", Line: -1, Column: 2}},
 	)
 
 	val := dyn.NewValue(
@@ -238,7 +239,7 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 			"styled":   styledMap,
 			"unstyled": unstyledMap,
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		[]diag.Location{{File: "file", Line: 1, Column: 2}},
 	)
 
 	mv, err := s.toYamlNode(val)

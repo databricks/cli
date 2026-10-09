@@ -77,7 +77,6 @@ jobs:
           cp /tmp/cli_amd64/databricks ./databricks
           docker buildx build \
             --platform linux/amd64 \
-            --build-arg ARCH=amd64 \
             --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" \
             --push .
           rm databricks
@@ -87,7 +86,6 @@ jobs:
           cp /tmp/cli_arm64/databricks ./databricks
           docker buildx build \
             --platform linux/arm64 \
-            --build-arg ARCH=arm64 \
             --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64" \
             --push .
           rm databricks

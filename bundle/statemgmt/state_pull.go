@@ -125,12 +125,10 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
-// If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) *StateDesc {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
-	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
-	// However, states and env var cannot disagree.
+	// We read all 4 possible states: terraform/direct X local/remote and pick the most recent one.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
@@ -144,8 +142,8 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	if len(states) == 0 {
 		winner = &StateDesc{
-			// No state, go with user-provided or default
-			Engine:  requiredEngine.Type.ThisOrDefault(),
+			// No state: a new deployment uses the direct engine.
+			Engine:  engine.EngineDirect,
 			IsLocal: true,
 			// Lineage and Serial are empty
 		}
@@ -160,24 +158,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	if err != nil {
 		logStatesError(ctx, err.Error(), states)
 		return winner
-	}
-
-	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
-		// Direct (whether selected explicitly or by default) against a terraform
-		// state is the auto-migration path; the deploy caller (process.go) prints
-		// a dedicated pre-deploy hint for that case, so stay quiet here to avoid
-		// printing the same event twice.
-		autoMigratePath := requiredEngine.Type == engine.EngineDirect && !winner.Engine.IsDirect()
-		if !autoMigratePath {
-			msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-			// Warn only when the config also disagrees with the state. If the env var overrides
-			// a config that matches the state, log at info level to avoid noise.
-			if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
-				logStatesWarning(ctx, msg, states)
-			} else {
-				log.Infof(ctx, "%s", msg)
-			}
-		}
 	}
 
 	if len(states) == 0 {
@@ -289,10 +269,6 @@ func validateStates(states []*StateDesc) error {
 
 func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
 	logStatesDiag(ctx, diag.Error, msg, states)
-}
-
-func logStatesWarning(ctx context.Context, msg string, states []*StateDesc) {
-	logStatesDiag(ctx, diag.Warning, msg, states)
 }
 
 func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, states []*StateDesc) {

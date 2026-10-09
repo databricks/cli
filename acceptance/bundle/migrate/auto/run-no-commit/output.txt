@@ -5,7 +5,7 @@
 === bundle run on direct migrates the terraform state IN MEMORY (no commit) to resolve the job
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle run test_job --no-wait
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[TEST_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 
 >>> print_migration_telemetry
@@ -17,4 +17,35 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+
+=== bundle run works with engine: terraform: warns and runs the job from the terraform state
+>>> update_file.py databricks.yml {name: test-bundle} {name: test-bundle, engine: terraform}
+
+>>> [CLI] bundle run test_job --no-wait
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:1:37
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Run URL: [DATABRICKS_URL]/jobs/[TEST_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
+
+
+>>> print_requests.py //jobs
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [TEST_JOB_ID]
+  }
+}
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/terraform/terraform.tfstate

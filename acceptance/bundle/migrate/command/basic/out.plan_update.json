@@ -39,7 +39,7 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [NUMID],
+        "job_id": [TEST_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Test Migration Job",
         "queue": {
@@ -150,7 +150,7 @@
           ],
           "name": "Test Migrated Pipeline",
           "tags": {
-            "myjob_id": "[NUMID]",
+            "myjob_id": "[TEST_JOB_ID]",
             "myjob_name": "Test Migrated Job",
             "myjob_timeout": "${resources.jobs.test_job.timeout_seconds}",
             "myvolume_id": "mycat.myschema.myvol",
@@ -186,7 +186,7 @@
         "state": "IDLE",
         "storage": "dbfs:/pipelines/[UUID]",
         "tags": {
-          "myjob_id": "[NUMID]",
+          "myjob_id": "[TEST_JOB_ID]",
           "myjob_name": "Test Migration Job",
           "myjob_timeout": "0",
           "myvolume_id": "mycat.myschema.myvol",

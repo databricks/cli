@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -31,12 +32,12 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser, runAsUser string) diag.Diagnostics {
+func reportRunAsNotSupported(resourceType string, location diag.Location, currentUser, runAsUser string) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary: fmt.Sprintf("%s do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: %s. Run as identity: %s.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", resourceType, currentUser, runAsUser),
-		Locations: []dyn.Location{location},
+		Locations: []diag.Location{location},
 		Severity:  diag.Error,
 	}}
 }
@@ -56,7 +57,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	if identityCount != 1 {
 		return diag.Diagnostics{{
 			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []dyn.Location{b.Config.GetLocation("run_as")},
+			Locations: []diag.Location{b.Config.GetLocation("run_as")},
 			Severity:  diag.Error,
 		}}
 	}
@@ -108,7 +109,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 			}
 			diags = diags.Extend(reportRunAsNotSupported(
 				"dashboards with embed_credentials set to true",
-				b.Config.GetLocation("resources.dashboards."+key),
+				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
 				b.Config.Workspace.CurrentUser.UserName,
 				identity,
 			))
@@ -238,7 +239,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 			{
 				Severity:  diag.Warning,
 				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
-				Paths:     []dyn.Path{dyn.MustPathFromString("experimental.use_legacy_run_as")},
+				Paths:     structpath.NewPathSlice("experimental", "use_legacy_run_as"),
 				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
 			},
 		}

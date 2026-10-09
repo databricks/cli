@@ -56,16 +56,12 @@ class App(Resource):
 
     compute_max_instances: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.
+    Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.
     """
 
     compute_min_instances: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.
+    Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.
     """
 
     compute_size: VariableOrOptional[ComputeSize] = None
@@ -159,16 +155,12 @@ class AppDict(TypedDict, total=False):
 
     compute_max_instances: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.
+    Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.
     """
 
     compute_min_instances: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.
+    Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.
     """
 
     compute_size: VariableOrOptional[ComputeSizeParam]
