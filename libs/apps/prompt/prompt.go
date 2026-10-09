@@ -852,6 +852,11 @@ func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool
 	return promptUCResource(ctx, r, required, "UC Function", "Fetching functions...", ListFunctionsInSchema)
 }
 
+// PromptForModelService shows a three-step picker for model services: catalog -> schema -> model service.
+func PromptForModelService(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	return promptUCResource(ctx, r, required, "Model Service", "Fetching model services...", ListModelServicesInSchema)
+}
+
 // PromptForUCConnection shows a picker for UC connections.
 func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	title := resourceTitle("Select UC Connection", r)

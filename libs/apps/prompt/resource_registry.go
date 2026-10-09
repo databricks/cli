@@ -20,6 +20,7 @@ const (
 	ResourceTypePostgres          = "postgres" // Lakebase Autoscaling (V2)
 	ResourceTypeGenieSpace        = "genie_space"
 	ResourceTypeExperiment        = "experiment"
+	ResourceTypeModelService      = "model_service" // Unity AI Gateway model service
 	// TODO: uncomment when bundles support app as an app resource type.
 	// ResourceTypeApp = "app"
 )
@@ -72,6 +73,8 @@ func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
 		return PromptForGenieSpace, true
 	case ResourceTypeExperiment:
 		return PromptForExperiment, true
+	case ResourceTypeModelService:
+		return PromptForModelService, true
 	// TODO: uncomment when bundles support app as an app resource type.
 	// case ResourceTypeApp:
 	// 	return PromptForAppResource, true
