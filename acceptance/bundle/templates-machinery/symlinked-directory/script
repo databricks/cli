@@ -1,0 +1,5 @@
+ln -s shared template/linked_dir
+
+trace musterr $CLI bundle init . --config-file input.json --output-dir output
+trace find.py '^output/linked_dir' --expect 0
+rm -rf output
