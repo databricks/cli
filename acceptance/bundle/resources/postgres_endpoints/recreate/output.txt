@@ -159,6 +159,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Fetch endpoint and verify it exists after recreation
+
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]-v2
 "ENDPOINT_TYPE_READ_ONLY"
 

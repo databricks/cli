@@ -12,6 +12,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deployment unbind my_role
 
 === Bind the existing role to take explicit ownership of it
+
 >>> [CLI] bundle deployment bind my_role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role --auto-approve
 Successfully bound postgres_role with an id 'projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role'
 Run 'bundle deploy' to deploy changes to your workspace

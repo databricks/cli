@@ -13,10 +13,8 @@ for task in r["tasks"]:
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev.eu --save
 title "The override block is updated"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

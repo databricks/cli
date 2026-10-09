@@ -14,7 +14,6 @@ Pushed image.
 Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === inferred region and workspace ID requests
-
 >>> print_requests.py --get //api
 {
   "method": "GET",
@@ -35,6 +34,7 @@ tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.localhost/my-catalog.my-schem
 push [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 
 === missing image is pulled for AIR; destination defaults to source
+
 >>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -50,6 +50,7 @@ Pushed image.
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === forced pull and JSON output
+
 >>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull -o json
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -73,6 +74,7 @@ Pushed image.
 }
 
 === daemon failure must not pull
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -83,6 +85,7 @@ Cannot connect to the Docker daemon
 Error: check local source image example/image:v1 (ensure Docker is running and accessible): exit status 1
 
 === inspect failure must not pull
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -94,6 +97,7 @@ Docker inspect failed
 Error: inspect source image example/image:v1: exit status 1
 
 === incompatible local image must not be pushed
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -115,6 +119,7 @@ Docker pull progress
 Error: source image example/image:v1 has platform "linux/arm64"; AIR requires linux/amd64: use --pull to fetch a compatible image, or rebuild the source for linux/amd64
 
 === pull failure must not be pushed
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
@@ -126,6 +131,7 @@ Docker pull failed
 Error: pull source image example/image:v1: exit status 1
 
 === invalid destination and removed flags
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact invalid.name
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Error: invalid artifact name "invalid.name": use lowercase letters and digits separated by one or two underscores or one or more hyphens
@@ -177,6 +183,7 @@ Global Flags:
 
 
 === reject oversized catalog.schema.artifact before Docker operations
+
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Error: invalid image repository name: catalog.schema.artifact must be 255 characters or less

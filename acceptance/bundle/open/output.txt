@@ -18,6 +18,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Use a fake browser that just prints the URL it would have opened
+
 === open after deployment
 >>> [CLI] bundle open foo
 Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]

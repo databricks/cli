@@ -138,6 +138,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Fetch role and verify the new postgres_role value is live
+
 >>> [CLI] postgres get-role [MY_ROLE_ID]
 {
   "name": "[MY_ROLE_ID]",

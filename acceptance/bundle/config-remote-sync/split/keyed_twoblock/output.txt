@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit omega, whose sibling is defined in two blocks
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -13,7 +14,6 @@ Resource: resources.jobs.twoblock_job
 
 
 === Only omega changes; shared is untouched in both blocks
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -23,6 +23,7 @@ Resource: resources.jobs.twoblock_job
 +              timeout_seconds: 303
 
 === Edit a field per block, a field defined in both, and add a new field
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -34,7 +35,6 @@ Resource: resources.jobs.twoblock_job
 
 
 === Each edit lands on the definition that was deployed
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

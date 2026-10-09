@@ -60,6 +60,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan records the deployment_history feature; the service holds the schema at version 1
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],

@@ -23,6 +23,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 }
 
 === Edit cascade_on_destroy true -> false in YAML WITHOUT deploying (config diverges from state)
+
 === Destroy: banner and DELETE both reflect STATE (cascade=true), not the edited YAML
 >>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:

@@ -31,6 +31,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py //jobs/run-now
 
 === touch without content change plans nothing
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
 Files: 1 uploaded, 0 deleted
@@ -39,6 +40,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py //jobs/run-now
 
 === editing the file re-fires
+
 >>> jq .plan["resources.job_runs.my_run"] tmp.plan1.json
 {
   "depends_on": [
@@ -113,6 +115,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === deleting the file warns and re-fires
+
 >>> [CLI] bundle plan -o json
 Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   in databricks.yml:18:29
@@ -194,6 +197,7 @@ Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === restoring the file re-fires again
+
 >>> [CLI] bundle plan -o json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
 Output from job_runs.my_run: id=[MY_RUN_ID_4]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_4]?o=[NUMID]
@@ -216,6 +220,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === removing on_file_change is unchanged and does not run
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

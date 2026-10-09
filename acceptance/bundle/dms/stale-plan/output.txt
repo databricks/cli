@@ -1,5 +1,6 @@
 
 === Save a plan, then deploy it: records version 1
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -58,6 +59,7 @@ Error: plan lineage "" does not match state lineage "[UUID]"; the state may have
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 === Save a plan against the recorded deployment, then move the deployment on
+
 >>> jq {serial} tmp.plan2.json
 {
   "serial": 1

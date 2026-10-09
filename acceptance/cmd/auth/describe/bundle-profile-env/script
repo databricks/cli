@@ -11,5 +11,5 @@ export DATABRICKS_CONFIG_PROFILE=env-profile
 # Inside a bundle root the resolved config labels every attribute "bundle", so
 # before #2303 the profile read "(from bundle)" even though it came from
 # DATABRICKS_CONFIG_PROFILE. describe must attribute it to the env var.
-title "Describe inside a bundle attributes the profile to DATABRICKS_CONFIG_PROFILE (#2303)\n"
+title "Describe inside a bundle attributes the profile to DATABRICKS_CONFIG_PROFILE (#2303)"
 trace $CLI auth describe

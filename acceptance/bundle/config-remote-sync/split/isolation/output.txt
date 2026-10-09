@@ -5,6 +5,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the two-block task on job_a, and edit job_b in the same run
+
 === Sync
 Detected changes in 2 resource(s):
 
@@ -18,7 +19,6 @@ Resource: resources.jobs.job_b
 
 
 === job_b is updated, and job_a's rename is written in both blocks
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

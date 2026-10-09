@@ -8,11 +8,9 @@ cleanup() {
 trap cleanup EXIT
 
 title "Deploy bundle"
-echo
 $CLI bundle deploy
 
 title "Get job ID and modify remote resource"
-echo
 job_id="$(read_id.py test_job)"
 echo "Modify max_concurrent_runs to 5"
 edit_resource.py jobs $job_id <<EOF
@@ -20,11 +18,9 @@ r["max_concurrent_runs"] = 5
 EOF
 
 title "Flush local cache"
-echo
 echo "Removing .databricks directory to simulate flushed cache"
 rm -rf .databricks
 ls -la .databricks 2>&1 || echo "Cache directory removed"
 
 title "Check for changes after cache flush"
-echo
 $CLI bundle config-remote-sync

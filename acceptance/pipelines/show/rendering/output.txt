@@ -1,6 +1,5 @@
 
 === table output: long note truncated, ragged row blank cell
-
 >>> [CLI] pipelines show main.default.people
 name   id  note
 -----  --  ----------------------------------------
@@ -10,7 +9,6 @@ bob    2
 2 rows
 
 === json output: column order preserved, ragged row padded with null
-
 >>> [CLI] pipelines show main.default.people --output json
 [
   {

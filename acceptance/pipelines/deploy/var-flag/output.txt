@@ -8,6 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Verify: Check that variables were substituted correctly
+
 >>> [CLI] pipelines get [UUID]
 {
   "catalog": "custom_catalog",

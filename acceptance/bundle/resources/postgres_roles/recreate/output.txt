@@ -138,6 +138,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Fetch role and verify it exists after recreation
+
 >>> [CLI] postgres get-role [MY_ROLE_ID]-v2
 {
   "name": "[MY_ROLE_ID]-v2",

@@ -10,17 +10,14 @@ client_id = custom-client-id
 Profile existing-profile was successfully saved
 
 === OAuth client ID
-
 >>> print_requests.py //oidc/v1/authorize --get
 json.q.client_id = "custom-client-id";
 
 === Login with a client ID override
-
 >>> [CLI] auth login --profile existing-profile --client-id flag-client-id
 Profile existing-profile was successfully saved
 
 === Overridden OAuth client ID
-
 >>> print_requests.py //oidc/v1/authorize --get
 json.q.client_id = "flag-client-id";
 

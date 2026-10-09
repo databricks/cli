@@ -5,6 +5,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Remove gamma from the top-level block and alpha from the target block
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -15,7 +16,6 @@ Resource: resources.jobs.remove_job
 
 
 === Exactly gamma and alpha are gone; beta survives
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -39,6 +39,7 @@ Resource: resources.jobs.remove_job
            tasks:
 
 === Remove the task defined in BOTH blocks
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -48,7 +49,6 @@ Resource: resources.jobs.twoblock_remove_job
 
 
 === 'both' is gone from both blocks; 'keep' survives
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

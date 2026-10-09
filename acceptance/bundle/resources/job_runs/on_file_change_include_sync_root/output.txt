@@ -1,5 +1,6 @@
 
 === first deploy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-include-sync-root/default/files...
 Created jobs.my_job
@@ -17,6 +18,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === editing the file next to the included YAML re-fires
+
 >>> changes
 {
   "lifecycle.triggers_state.on_file_change['bundle/resources/watched-resources.txt']": {
@@ -34,6 +36,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === editing the file at the bundle root re-fires
+
 >>> changes
 {
   "lifecycle.triggers_state.on_file_change['bundle/watched-bundle.txt']": {
@@ -51,6 +54,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === editing the file at the sync root re-fires
+
 >>> changes
 {
   "lifecycle.triggers_state.on_file_change['shared.txt']": {

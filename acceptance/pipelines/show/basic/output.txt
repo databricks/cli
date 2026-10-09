@@ -1,6 +1,5 @@
 
 === table output
-
 >>> [CLI] pipelines show main.default.people
 id  name
 --  -----
@@ -10,7 +9,6 @@ id  name
 2 rows
 
 === json output
-
 >>> [CLI] pipelines show main.default.people --output json
 [
   {
@@ -24,12 +22,10 @@ id  name
 ]
 
 === invalid table name
-
 >>> [CLI] pipelines show people
 Error: invalid table name "people": expected catalog.schema.table (Unity Catalog) or schema.table (legacy Hive metastore)
 
 === wire SQL pins quoting and default limit
-
 >>> print_requests.py //api/2.0/sql/statements
 {
   "method": "POST",

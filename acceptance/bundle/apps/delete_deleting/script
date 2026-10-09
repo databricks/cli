@@ -15,7 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy the app\n"
+title "Deploy the app"
 trace $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 
@@ -31,7 +31,7 @@ cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
 trace $CLI apps delete "app-$UNIQUE_NAME" &> LOG.apps_delete
 cat LOG.apps_delete | contains.py '!panic' '!internal error' > /dev/null
 
-title "Apply the stale delete plan against the DELETING app\n"
+title "Apply the stale delete plan against the DELETING app"
 trace $CLI bundle deploy --auto-approve --plan plan_delete.json &> LOG.deploy_delete
 cat LOG.deploy_delete | contains.py '!panic' '!internal error' > /dev/null
 

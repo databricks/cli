@@ -1,5 +1,6 @@
 
 === Deploy a cluster with a pypi and a local wheel library
+
 >>> jq .plan["resources.clusters.mycluster"].new_state.value.libraries tmp.plan.json
 [
   {
@@ -35,6 +36,7 @@ OK: cluster created with libraries
 }
 
 === Removing the wheel and redeploying uninstalls it
+
 >>> print_requests.py //libraries/uninstall
 {
   "method": "POST",

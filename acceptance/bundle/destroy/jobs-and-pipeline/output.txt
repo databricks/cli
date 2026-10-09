@@ -20,6 +20,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Assert the pipeline is created
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -73,7 +74,6 @@ Error: Job [NUMID] does not exist.
 Exit code: 1
 
 === Assert destroy leaves the bundle state dir clean:
-
 >>> find .databricks -name terraform -prune -o -print
 .databricks
 .databricks/.gitignore

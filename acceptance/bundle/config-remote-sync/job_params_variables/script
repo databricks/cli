@@ -16,11 +16,9 @@ r["parameters"].append({"name": "region", "default": "us-east-1"})
 EOF
 
 title "Detect and save changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

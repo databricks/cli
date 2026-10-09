@@ -11,6 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] apps get [UNIQUE_NAME] --output json
 
 === Simulate out-of-band deployment with changed command and env
+
 === Plan should detect config drift
 >>> [CLI] bundle plan
 update apps.myapp

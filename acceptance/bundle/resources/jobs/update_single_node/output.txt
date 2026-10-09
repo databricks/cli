@@ -32,6 +32,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Fetch job ID and verify remote state
+
 >>> [CLI] jobs get [FOO_ID]
 {
   "created_time": [UNIX_TIME_MILLIS],

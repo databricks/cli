@@ -185,6 +185,7 @@ Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
 }
 
 === Fetch database and verify it exists after recreation
+
 >>> [CLI] postgres get-database [MY_DATABASE_ID]-v2
 {
   "database_id": "test-database-[UNIQUE_NAME]-v2",

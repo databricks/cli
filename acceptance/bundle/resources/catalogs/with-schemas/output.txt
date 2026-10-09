@@ -26,7 +26,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify schema belongs to the test catalog
+
 === Update catalog comment
+
 === Redeploy with updated catalog
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -61,4 +63,5 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert schema is deleted
+
 === Assert the catalog is deleted

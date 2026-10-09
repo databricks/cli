@@ -15,7 +15,6 @@ pipeline_id="$(read_id.py my_pipeline)"
 
 
 title "Modify the CLI-managed deployment metadata and one user field remotely"
-echo
 # deployment.* is rewritten by the CLI on every deploy (metadata.AnnotateJobs /
 # AnnotatePipelines), so config-remote-sync must never sync it back, even when it
 # differs from the local value. The description / configuration edits are the
@@ -32,11 +31,9 @@ r["configuration"]["key2"] = "value2"
 EOF
 
 title "Detect and save changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

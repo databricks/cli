@@ -2,7 +2,8 @@
 === Upload notebook to a workspace path
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME].py --file test_notebook.py --format AUTO --overwrite
 
-=== Create a job that references the notebookCreated job
+=== Create a job that references the notebook
+Created job
 
 === Generate bundle config from the job
 >>> [CLI] bundle generate job --existing-job-id [JOB_ID] --key out --config-dir resources --source-dir src --force
@@ -18,6 +19,7 @@ include:
 
 
 === Verify generated yaml has expected fields
+
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy-[UNIQUE_NAME]/default/files...

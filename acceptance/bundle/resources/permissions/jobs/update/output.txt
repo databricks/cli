@@ -115,7 +115,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Restore original config
-
 >>> diff.py databricks.yml.saved databricks.yml
 --- databricks.yml.saved
 +++ databricks.yml

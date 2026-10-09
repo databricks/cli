@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit num_workers on the top-level cluster and on the target cluster
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -14,7 +15,6 @@ Resource: resources.pipelines.split_pipeline
 
 
 === default updates top-level, maintenance updates the target block
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -32,6 +32,7 @@ Resource: resources.pipelines.split_pipeline
 +              num_workers: 3
 
 === Remove the target-block cluster (length change)
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -42,7 +43,6 @@ Resource: resources.pipelines.split_pipeline
 
 
 === The top-level cluster is untouched; the target entry is left as a remnant
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

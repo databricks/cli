@@ -20,6 +20,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === (started omitted) -> started: false -> deploy: no start/stop requests
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
 Files: 1 uploaded, 0 deleted
@@ -28,6 +29,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_app_requests
 
 === started: false -> (started omitted) -> deploy: no start/stop requests
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
 Files: 1 uploaded, 0 deleted
@@ -36,6 +38,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_app_requests
 
 === (started omitted) -> started: true -> deploy: app started
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
 Updated apps.mykey
@@ -58,6 +61,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
 Updated apps.mykey
@@ -66,7 +70,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_app_requests
 
-=== (started omitted, app running) -> bundle plan shows no driftPlan: no drift detected
+=== (started omitted, app running) -> bundle plan shows no drift
+Plan: no drift detected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

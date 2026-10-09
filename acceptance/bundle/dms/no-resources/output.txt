@@ -30,6 +30,7 @@ deployment_history_enabled true
 }
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -44,6 +45,7 @@ deployment_history_enabled true
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service lists no resources for the deployment
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 []
 
@@ -96,6 +98,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -110,6 +113,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service still lists no resources
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 []
 

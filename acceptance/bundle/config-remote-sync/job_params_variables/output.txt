@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add new parameter remotely
+
 === Detect and save changes
 Detected changes in 1 resource(s):
 
@@ -13,7 +14,6 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

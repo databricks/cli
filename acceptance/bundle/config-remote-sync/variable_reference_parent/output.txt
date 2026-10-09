@@ -17,7 +17,6 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -30,7 +29,6 @@ Resource: resources.jobs.my_job
          - job_cluster_key: shared
 
 === Telemetry
-
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "save": true,

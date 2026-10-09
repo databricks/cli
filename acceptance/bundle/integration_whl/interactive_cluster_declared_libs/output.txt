@@ -1,8 +1,10 @@
 
 === Deploy the cluster (declares requests and urllib3) and the wheel job that targets it
+
 OK: deployed
 
 === Run the job: its task installs the wheel and pypi 'six' on the shared cluster, out of band
+
 OK: job ran
 
 === Plan: the job's out-of-band 'six' shows as a removal, the declared libraries are unchanged
@@ -19,6 +21,7 @@ OK: job ran
 }
 
 === Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests
+
 >>> plan_pypi_libs
 {
   "libraries[pypi='six;']": {

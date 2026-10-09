@@ -12,10 +12,10 @@ trace $CLI bundle deploy
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
-title "Direct-engine state is now in place; terraform state is backed up\n"
+title "Direct-engine state is now in place; terraform state is backed up"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 
-title "Remote state also reflects the migration (force-pull surfaces workspace state)\n"
+title "Remote state also reflects the migration (force-pull surfaces workspace state)"
 trace $CLI bundle debug states --force-pull
 
 title "Subsequent plan under direct is a no-op"
@@ -31,7 +31,7 @@ trace update_file.py databricks.yml "Test Auto-Migrate Job" "Test Auto-Migrate J
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan_update.json
 
-title "Deploy picks up the update (with and without --plan)\n"
+title "Deploy picks up the update (with and without --plan)"
 $CLI bundle deploy $(readplanarg out.plan_update.json)
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"

@@ -1,6 +1,5 @@
 
 === A cluster tag contradicting a fixed policy value is rejected at create
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy

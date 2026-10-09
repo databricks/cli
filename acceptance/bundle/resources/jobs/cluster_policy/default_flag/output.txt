@@ -21,7 +21,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Neither is drift on a second plan
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

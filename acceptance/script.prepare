@@ -4,6 +4,11 @@
 # or override this in their own script.prepare or script.
 export DATABRICKS_AUTH_STORAGE=plaintext
 
+# Set by `title`, consumed and cleared by `trace`, to suppress the blank line
+# that `trace` otherwise prints before a command when it directly follows a
+# section header.
+_after_title=""
+
 errcode() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e
@@ -32,7 +37,15 @@ musterr() {
 }
 
 trace() {
-    >&2 printf "\n>>> %s\n" "$*"
+    # A section header printed by `title` already ends with a newline, so a
+    # `trace` immediately following it must not add another blank line. Any
+    # other preceding command block still gets the usual leading separator.
+    if [[ -n "$_after_title" ]]; then
+        >&2 printf ">>> %s\n" "$*"
+    else
+        >&2 printf "\n>>> %s\n" "$*"
+    fi
+    _after_title=""
 
     if [[ "$1" == *"="* ]]; then
         # If the first argument contains '=', collect all env vars
@@ -70,7 +83,10 @@ git-repo-init() {
 
 title() {
     local label="$1"
-    printf "\n=== %b" "$label"
+    printf "\n=== %b\n" "$label"
+    # Mark that the last thing printed was a section header so the next `trace`
+    # can skip its leading blank line (see trace above).
+    _after_title=1
 }
 
 withdir() {
@@ -181,3 +197,15 @@ readplanarg() {
         printf ""
     fi
 }
+
+# Clear _after_title before any top-level command other than a `trace` (possibly
+# wrapped in errcode/musterr), so that only a `trace` *immediately* following a
+# `title` drops its leading blank line; a `trace` after intervening output still
+# gets its usual separator. The main script runs in a subshell (see
+# readMergedScriptContents in acceptance_test.go), so `set -T` is required for the
+# DEBUG trap to be inherited there. The `FUNCNAME` guard restricts clearing to the
+# script's top level, so the trap never interferes with the helpers' own internals
+# (where it would otherwise clear the flag before `trace` reads it). bash preserves
+# $? across the trap.
+set -T
+trap '[[ -z "${FUNCNAME:-}" ]] && { case "$BASH_COMMAND" in trace\ *|errcode\ trace\ *|musterr\ trace\ *) ;; *) _after_title="" ;; esac; }' DEBUG

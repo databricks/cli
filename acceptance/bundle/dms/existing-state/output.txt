@@ -35,6 +35,7 @@ Update experimental.deployment_history to match the existing deployment, or run 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Wiping the local cache still refuses after pulling the non-DMS state from the workspace
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Error: deployment history setting (true) does not match the existing state (false)
 
@@ -42,11 +43,13 @@ Update experimental.deployment_history to match the existing deployment, or run 
 
 
 === A leftover local WAL with the wrong lineage is still refused
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("stale") does not match state lineage ("[UUID]")
 
 
 === Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.one

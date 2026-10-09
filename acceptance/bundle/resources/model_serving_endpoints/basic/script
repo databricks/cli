@@ -28,7 +28,7 @@ get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
 endpoint_id=$(echo "$get_output" | jq -r '.id')
 add_repl "$endpoint_id" ENDPOINT_ID_1
 
-title "Print the GET endpoint details\n"
+title "Print the GET endpoint details"
 echo "$get_output" | jq '{name, creator}'
 
 export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
@@ -44,5 +44,5 @@ get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
 endpoint_id=$(echo "$get_output" | jq -r '.id')
 add_repl "$endpoint_id" ENDPOINT_ID_2
 
-title "Print the GET endpoint details\n"
+title "Print the GET endpoint details"
 echo "$get_output" | jq '{name, creator}'

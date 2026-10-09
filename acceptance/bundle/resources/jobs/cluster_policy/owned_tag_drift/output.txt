@@ -14,7 +14,6 @@ update jobs.my_job
 Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 === Removing a config-owned tag is a change the user asked for, not a backend addition
-
 >>> update_file.py databricks.yml Mine: mine Other: other
 
 >>> [CLI] bundle plan -o json

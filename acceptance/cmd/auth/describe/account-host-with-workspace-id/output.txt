@@ -1,6 +1,5 @@
 
 === Describe falls back to the account endpoint when the workspace check fails
-
 >>> [CLI] auth describe --profile acct-with-ws
 Host: [DATABRICKS_URL]
 Account ID: acct-123

@@ -1,6 +1,5 @@
 
 === clusters create requires a positional arg (or --json)
-
 >>> musterr [CLI] clusters create
 Error: accepts 1 arg(s), received 0
 
@@ -52,6 +51,5 @@ Global Flags:
 
 
 === alerts-legacy create only accepts JSON input
-
 >>> musterr [CLI] alerts-legacy create
 Error: please provide command input in JSON format by specifying the --json flag

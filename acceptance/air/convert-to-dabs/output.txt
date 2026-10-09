@@ -159,6 +159,7 @@ resources:
             environment_version: "6"
 
 === the current SDK recognizes B300 so bundle validation is clean
+
 >>> [CLI] bundle validate
 Name: b300-smoke-test
 Target: dev

@@ -1,6 +1,5 @@
 
 === Describe inside a bundle attributes the profile to DATABRICKS_CONFIG_PROFILE (#2303)
-
 >>> [CLI] auth describe
 Host: [DATABRICKS_URL]
 User: [USERNAME]

@@ -11,7 +11,6 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 >>> print_migration_telemetry
 
 === Nothing durable written: still on terraform (local state files + remote), no direct state / migrating temp / WAL
-
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
 

@@ -19,6 +19,7 @@ create postgres_databases.my_database
 Plan: 1 to add, 0 to change, 0 to delete, 3 unchanged
 
 === Re-deploy: replace_existing adopts the already-existing database instead of erroring
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default/files...
 Created postgres_databases.my_database

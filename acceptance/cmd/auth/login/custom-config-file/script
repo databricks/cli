@@ -9,7 +9,7 @@ export DATABRICKS_CONFIG_FILE="./home/custom.databrickscfg"
 
 # home/custom.databrickscfg is a checked-in input: an existing custom config file
 # with a DIFFERENT host. Since --profile and --host conflict, the CLI should error.
-title "Initial custom config file (with old host)\n"
+title "Initial custom config file (with old host)"
 cat "./home/custom.databrickscfg"
 
 title "Login with conflicting host (should error)"

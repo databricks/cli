@@ -4,6 +4,7 @@ Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit a task defined in the second included file
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -13,15 +14,12 @@ Resource: resources.jobs.multifile_job
 
 
 === databricks.yml is untouched
-
 >>> diff.py databricks.yml.backup databricks.yml
 
 === overrides/10-first.yml is untouched
-
 >>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
 
 === overrides/20-second.yml gains timeout_seconds: 777
-
 >>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
 --- overrides/20-second.yml.backup
 +++ overrides/20-second.yml
@@ -33,6 +31,7 @@ Resource: resources.jobs.multifile_job
                timeout_seconds: 30
 
 === Edit one field per file on the task declared in both override files
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -43,7 +42,6 @@ Resource: resources.jobs.multifile_job
 
 
 === max_retries updates the first file, timeout_seconds the second
-
 >>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
 --- overrides/10-first.yml.backup
 +++ overrides/10-first.yml
@@ -67,6 +65,7 @@ Resource: resources.jobs.multifile_job
                max_retries: 2
 
 === Edit a field that both override files define
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -76,7 +75,6 @@ Resource: resources.jobs.multifile_job
 
 
 === The winning file is updated; the shadowed copy is left alone
-
 >>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
 
 >>> diff.py overrides/20-second.yml.backup overrides/20-second.yml

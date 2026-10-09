@@ -1,8 +1,10 @@
 
 === Deploy a cluster that declares no libraries
+
 OK: cluster created
 
 === Out of band: a job run (or the UI) installs 'six' on the shared cluster
+
 >>> print_requests.py //libraries/install
 {
   "method": "POST",
@@ -20,6 +22,7 @@ OK: cluster created
 }
 
 === No libraries section: six is skipped as unmanaged, not drift
+
 >>> plan_libs
 {
   "libraries": {
@@ -36,6 +39,7 @@ OK: cluster created
 }
 
 === Declare 'requests': plan installs it and uninstalls the out-of-band six
+
 >>> plan_libs
 {
   "libraries": {
@@ -104,6 +108,7 @@ OK: cluster created
 }
 
 === Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library
+
 >>> print_requests.py //libraries/uninstall
 {
   "method": "POST",
@@ -158,6 +163,7 @@ OK: cluster created
 }
 
 === Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall
+
 >>> plan_libs
 {
   "libraries": {
@@ -183,6 +189,7 @@ OK: cluster created
 >>> print_requests.py //libraries/uninstall //libraries/install
 
 === No-op redeploy: libraries are unmanaged and nothing changes
+
 >>> plan_libs
 {
   "libraries": {

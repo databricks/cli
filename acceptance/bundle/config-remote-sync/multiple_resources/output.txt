@@ -10,6 +10,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 7 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify both jobs
+
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -24,7 +25,6 @@ Resource: resources.jobs.job_two
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

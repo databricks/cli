@@ -15,9 +15,7 @@ job_id="$(read_id.py test_job)"
 # "status" so the workspace caller can tell a benign no-op apart from an error.
 
 title "A selector that matches nothing is reported as skipped, exit 0"
-echo
 errcode $CLI bundle config-remote-sync --select-ids "jobs:no-such-id-999" -o json
 
 title "A malformed selector is reported as failed, exit 0"
-echo
 errcode $CLI bundle config-remote-sync --select-ids "no-such-id-999" -o json

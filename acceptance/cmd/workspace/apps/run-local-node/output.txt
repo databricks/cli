@@ -11,12 +11,10 @@ Running command: node -e console.log('Hello, world')
 Hello, world
 
 === Proxy forwards to the app
-
 >>> retry --until Hello From App curl -sS http://127.0.0.1:[PROXY_PORT]
 {"message":"Hello From App"}
 
 === Debug mode reports the debugger port, and node listens on it
-
 >>> retry grep -x To debug your app, attach a debugger to port [DEBUG_PORT] LOG.run
 To debug your app, attach a debugger to port [DEBUG_PORT]
 
@@ -24,5 +22,4 @@ To debug your app, attach a debugger to port [DEBUG_PORT]
 Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/[UUID]
 
 === Shutting the app down
-
 >>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown

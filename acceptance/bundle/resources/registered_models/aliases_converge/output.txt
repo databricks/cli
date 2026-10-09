@@ -32,6 +32,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Edit the comment: an in-place update, not a recreate
+
 >>> [CLI] bundle plan
 update registered_models.my_registered_model
 

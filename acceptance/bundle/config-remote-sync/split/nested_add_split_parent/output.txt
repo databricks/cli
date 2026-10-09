@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add a task, then depend on it from the split task zzz_shared
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -14,7 +15,6 @@ Resource: resources.jobs.nested_add_job
 
 
 === The dependency lands on zzz_shared, in the block that defines it
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

@@ -6,6 +6,7 @@
 }
 
 === Create a pre-defined volume:
+
 >>> [CLI] bundle deployment bind volume1 main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME] --auto-approve
 Successfully bound volume with an id 'main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace

@@ -14,7 +14,6 @@
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit
 
 === Bundle deploy should send telemetry values
-
 >>> [CLI] bundle deploy -p dogfood
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/exploratory-cache-test/default/files...
 Files: 3 uploaded, 0 deleted

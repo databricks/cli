@@ -5,9 +5,13 @@ Files: 8 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify job_one: max_concurrent_runs, rename c_task
+
 === Add synced_task to job_one (notebook in sync root, resource in subdirectory)
+
 === Modify job_two: max_concurrent_runs, rename first task, add extra_task
+
 === Add extra_task to local config (not in saved state, triggers entity-level replace)
+
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -29,7 +33,6 @@ Resource: resources.jobs.job_two
 
 
 === Changes in job1.yml
-
 >>> diff.py resources/job1.yml.backup resources/job1.yml
 --- resources/job1.yml.backup
 +++ resources/job1.yml
@@ -54,7 +57,6 @@ Resource: resources.jobs.job_two
 +          task_key: synced_task
 
 === Changes in job2.yml
-
 >>> diff.py resources/job2.yml.backup resources/job2.yml
 --- resources/job2.yml.backup
 +++ resources/job2.yml

@@ -5,7 +5,9 @@ Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify pipeline_task full_refresh to True
+
 === Modify pipeline continuous to True
+
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -18,7 +20,6 @@ Resource: resources.pipelines.my_pipeline
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

@@ -7,6 +7,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === destroy without --force-lock (lock write hits the node limit: aborts)
+
 >>> errcode [CLI] bundle destroy --auto-approve
 Error: Failed to acquire deployment lock: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
 Error: Failed to update, encountered possible permission error: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
@@ -20,6 +21,7 @@ Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html f
 Exit code: 1
 
 === destroy with --force-lock (tolerates the node limit: proceeds and completes)
+
 >>> [CLI] bundle destroy --force-lock --auto-approve
 Warn: Proceeding with destroy without a deployment lock: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
 The following resources will be deleted:

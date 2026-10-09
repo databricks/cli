@@ -8,18 +8,15 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 === Empty state migrated: resources.json written, local terraform state backed up
-
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Migration is recorded in telemetry as via-config
-
 >>> print_migration_telemetry
 direct_migrated_via_config true
 
 === The remote had no terraform state, so nothing terraform-related is backed up remotely
-
 >>> print_requests.py //workspace-files/import-file //workspace/delete --sort
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
@@ -32,7 +29,6 @@ direct_migrated_via_config true
 "POST /api/2.0/workspace/delete"
 
 === debug states confirms no terraform.tfstate anywhere; only the local .backup remains
-
 >>> [CLI] bundle debug states --force-pull
 resources.json: remote direct state serial=2 lineage="test-lineage"
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="test-lineage"

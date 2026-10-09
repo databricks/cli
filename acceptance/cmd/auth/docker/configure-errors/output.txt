@@ -1,6 +1,5 @@
 
 === Unsupported inherited flags
-
 >>> musterr [CLI] auth docker configure docker-test --host https://other.cloud.databricks.test
 Error: --host is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
 
@@ -11,12 +10,10 @@ Error: --account-id is not supported for auth docker configure. Select the works
 Error: --workspace-id is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
 
 === Profile argument and flag
-
 >>> musterr [CLI] auth docker configure docker-test --profile docker-test
 Error: argument "docker-test" cannot be combined with --profile. Use --profile instead
 
 === Invalid explicit region
-
 >>> musterr [CLI] auth docker configure docker-test --region=
 Flag --region has been deprecated, --region will be fully removed in the next release
 Error: region is required
@@ -30,12 +27,10 @@ Flag --region has been deprecated, --region will be fully removed in the next re
 Error: invalid region "invalid_region"
 
 === Unsupported workspace host
-
 >>> musterr [CLI] auth docker configure unsupported-host
 Error: profile "unsupported-host" does not target a supported Databricks workspace host. Select a workspace profile, or create one with databricks auth login --host <workspace-url> --profile <name>
 
 === Unsupported authentication profiles
-
 >>> musterr [CLI] auth docker configure pat
 Error: profile "pat" uses auth_type "pat". Docker credential helper requires a profile created by databricks auth login
 
@@ -46,7 +41,6 @@ Error: profile "m2m" uses client credentials. Docker credential helper requires 
 Error: profile "blank-auth" uses auth_type "". Docker credential helper requires a profile created by databricks auth login
 
 === Another profile already maps to the workspace
-
 >>> musterr [CLI] auth docker configure docker-test
 Error: multiple Databricks profiles match workspace ID [NUMID]: duplicate and docker-test. Remove duplicate workspace_id entries before using Docker credential helper
 

@@ -1,5 +1,6 @@
 
 === Create accepts a minimal body; the server materializes the rest
+
 >>> [CLI] postgres get-project projects/factcheck-star-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
@@ -45,6 +46,7 @@ Exit code: 1
 }
 
 === Set default_endpoint_settings to a non-default value (leaf mask)
+
 >>> [CLI] postgres get-project projects/factcheck-star-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-star-[UNIQUE_NAME]",

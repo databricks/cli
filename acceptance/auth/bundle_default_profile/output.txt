@@ -1,6 +1,5 @@
 
 === Bundle without workspace.host: default_profile is honored
-
 >>> [CLI] bundle validate -o json
 {
   "host": null,
@@ -8,7 +7,6 @@
 }
 
 === --profile overrides default_profile (negative case)
-
 >>> errcode [CLI] bundle validate -p other -o json
 Warn: [hostmetadata] failed to fetch host metadata for https://other.test, will skip for 1m0s
 Error: Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)
@@ -21,7 +19,6 @@ Exit code: 1
 }
 
 === Bundle with workspace.host: default_profile is NOT applied
-
 >>> errcode [CLI] bundle validate -o json
 {
   "host": "[DATABRICKS_URL]",
@@ -29,7 +26,6 @@ Exit code: 1
 }
 
 === Bundle with workspace.profile: pinned profile wins over default_profile
-
 >>> errcode [CLI] bundle validate -o json
 Error: Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)
 

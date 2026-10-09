@@ -16,7 +16,6 @@ Resource: resources.jobs.job1
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

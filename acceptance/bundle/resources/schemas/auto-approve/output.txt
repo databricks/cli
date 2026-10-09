@@ -14,6 +14,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Assert the pipeline is created and uses the schema
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -82,4 +83,5 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert the schema is deleted
+
 Exit code: 1

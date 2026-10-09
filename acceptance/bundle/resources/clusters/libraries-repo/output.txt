@@ -1,5 +1,6 @@
 
 === Deploy creates the cluster and installs the pypi library
+
 OK: cluster created with pypi library
 
 === Plan is a no-op after deploy: the repo round-trips
@@ -7,6 +8,7 @@ OK: cluster created with pypi library
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Changing only the repo is planned as an update
+
 >>> [CLI] bundle plan
 update clusters.mycluster
 

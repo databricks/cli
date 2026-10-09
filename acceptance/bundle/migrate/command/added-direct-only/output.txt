@@ -23,6 +23,7 @@ create instance_pools.pool
 Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Deploy creates it; verify via recorded requests
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created instance_pools.pool

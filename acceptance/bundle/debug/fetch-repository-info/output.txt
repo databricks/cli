@@ -1,6 +1,5 @@
 
 === the root of a Git folder under /Repos
-
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]
 {
   "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
@@ -10,7 +9,6 @@
 }
 
 === a subdirectory of it, which resolves to the same root
-
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]/subdir
 {
   "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
@@ -20,7 +18,6 @@
 }
 
 === the root of a Git folder outside /Repos
-
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]
 {
   "worktree_root": "/Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]",
@@ -30,7 +27,6 @@
 }
 
 === a path in no Git folder at all
-
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]
 {
   "worktree_root": "",

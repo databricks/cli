@@ -17,13 +17,11 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 direct_migrated_via_config true
 
 === Direct-engine state is now in place; terraform state is backed up
-
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Remote state also reflects the migration (force-pull surfaces workspace state)
-
 >>> [CLI] bundle debug states --force-pull
 resources.json: remote direct state serial=3 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"

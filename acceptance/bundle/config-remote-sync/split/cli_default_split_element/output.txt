@@ -8,6 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 1
 
 === Edit that locationless field remotely on a two-block task
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -17,7 +18,6 @@ Resource: resources.jobs.cli_default_job
 
 
 === The field is added to the block declaring the resource
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

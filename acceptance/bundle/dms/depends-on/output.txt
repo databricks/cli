@@ -1,5 +1,6 @@
 
 === Plan before first deploy: no deployment yet, so serial is still 0
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -54,6 +55,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op now and records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -69,6 +71,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === The service lists both jobs, each recorded at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 [
   {

@@ -6,31 +6,31 @@ selection() {
 
 # Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved.
 
-title "Changing a test\n"
+title "Changing a test"
 trace selection M:acceptance/selftest/basic/script
 
-title "Adding a test\n"
+title "Adding a test"
 trace selection A:acceptance/selftest/basic/script
 
-title "A regenerated golden scores below a changed fixture\n"
+title "A regenerated golden scores below a changed fixture"
 trace selection M:acceptance/selftest/basic/output.txt M:acceptance/selftest/diff/script
 
-title "Moving a test scores lowest\n"
+title "Moving a test scores lowest"
 trace selection R100:acceptance/selftest/old/script:acceptance/selftest/basic/script M:acceptance/selftest/diff/script
 
-title "Touching an invariant config runs every invariant test, for that config only\n"
+title "Touching an invariant config runs every invariant test, for that config only"
 trace selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
-title "Adding one invariant config and touching another: only the new variant is new\n"
+title "Adding one invariant config and touching another: only the new variant is new"
 trace selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
-title "A config an invariant test excludes does not select that test\n"
+title "A config an invariant test excludes does not select that test"
 # continue_293 pins an old CLI that has no Vector Search support, so it excludes this config;
 # selecting it would spend the limit on a test whose every variant is skipped.
 trace selection M:acceptance/bundle/invariant/configs/vector_search_index.yml.tmpl
 
-title "Renaming a fixture out of a test selects the test that lost it\n"
+title "Renaming a fixture out of a test selects the test that lost it"
 trace selection R100:acceptance/selftest/basic/output.txt:docs/example.txt
 
-title "The limit keeps the highest scoring tests\n"
+title "The limit keeps the highest scoring tests"
 trace selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

@@ -1,6 +1,5 @@
 
 === Describe with --profile overrides auth env vars (#5096)
-
 >>> [CLI] auth describe --profile my-workspace
 Host: [DATABRICKS_URL]
 User: [USERNAME]
@@ -18,7 +17,6 @@ Current configuration:
   ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
 
 === Describe with a host-only --profile fills the token from the environment (#5096)
-
 >>> [CLI] auth describe --profile host-only
 Host: [DATABRICKS_URL]
 User: [USERNAME]

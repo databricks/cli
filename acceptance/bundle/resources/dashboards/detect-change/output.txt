@@ -17,6 +17,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert that the dashboard exists at the expected path and is, indeed, a dashboard:
+
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json
 {
   "object_type": "DASHBOARD",
@@ -38,7 +39,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
-=== Load the dashboard by its ID and confirm its display name: {
+=== Load the dashboard by its ID and confirm its display name: 
+{
   "display_name": "test-dashboard-[UNIQUE_NAME]",
   "page_display_name": "New Page"
 }

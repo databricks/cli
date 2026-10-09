@@ -11,7 +11,7 @@ cleanup() {
   title "Assert pipeline is deleted"
   trace errcode $CLI pipelines get "${PIPELINE_ID}"
 
-  title "Assert job is deleted:\n"
+  title "Assert job is deleted:"
   errcode $CLI jobs get "${JOB_ID}" 2>&1
 
   # Print the whole state tree so a lingering snapshot file or an empty scaffolding
@@ -19,7 +19,7 @@ cleanup() {
   # pruned: its contents differ by engine and embed the provider version and OS/arch,
   # which would make the golden fragile. The bundle scaffolding we care about lives
   # directly under the target dir, so it is still covered.
-  title "Assert destroy leaves the bundle state dir clean:\n"
+  title "Assert destroy leaves the bundle state dir clean:"
   trace find .databricks -name terraform -prune -o -print | sort
 
   title "Assert bundle deployment path is deleted"
@@ -27,7 +27,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Assert the snapshot file does not exist:\n"
+title "Assert the snapshot file does not exist:"
 if [[ ! -d ".databricks/bundle/default/sync-snapshots" ]]; then
     echo "Directory does not exist"
 else
@@ -46,6 +46,6 @@ title "Assert the pipeline is created"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
 trace $CLI pipelines get "${PIPELINE_ID}" | nostamp | jq "{spec}"
 
-title "Assert the job is created:\n"
+title "Assert the job is created:"
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
 $CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

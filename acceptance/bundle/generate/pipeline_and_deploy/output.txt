@@ -4,9 +4,11 @@
 
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py --file test.py --format AUTO --overwrite
 
-=== Create a pipeline that references the filesCreated pipeline
+=== Create a pipeline that references the files
+Created pipeline
 
-=== Generate bundle config from the pipelineFile successfully saved to src/notebook-[UNIQUE_NAME].py
+=== Generate bundle config from the pipeline
+File successfully saved to src/notebook-[UNIQUE_NAME].py
 File successfully saved to src/test-[UNIQUE_NAME].py
 Pipeline configuration successfully saved to resources/out.pipeline.yml
 Warning: Generated configuration is not included in the bundle
@@ -19,6 +21,7 @@ include:
 
 
 === Verify generated yaml has expected fields
+
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...

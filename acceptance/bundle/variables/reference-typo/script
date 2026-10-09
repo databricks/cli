@@ -1,17 +1,17 @@
-title "Typo of a defined variable: single suggestion\n"
+title "Typo of a defined variable: single suggestion"
 withdir single musterr trace $CLI bundle validate
 
-title "Typo close to two defined variables: multiple suggestions\n"
+title "Typo close to two defined variables: multiple suggestions"
 withdir multiple musterr trace $CLI bundle validate
 
-title "Typo in a non-variable reference (workspace field): multiple suggestions\n"
+title "Typo in a non-variable reference (workspace field): multiple suggestions"
 withdir non-var-multiple musterr trace $CLI bundle validate
 
-title "Nested complex variable with multiple typos: only the first is reported\n"
+title "Nested complex variable with multiple typos: only the first is reported"
 withdir multiple-typos musterr trace $CLI bundle validate
 
-title "Two typos in one reference: lookup fails at the outermost key\n"
+title "Two typos in one reference: lookup fails at the outermost key"
 withdir double-nested-typo musterr trace $CLI bundle validate
 
-title "Two typos in one reference, outermost close to two variables: multiple suggestions\n"
+title "Two typos in one reference, outermost close to two variables: multiple suggestions"
 withdir double-nested-typo-multiple musterr trace $CLI bundle validate

@@ -60,6 +60,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op now and records the deployment_history feature; the service holds the schema at version 1
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -104,6 +105,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A destructive change without --auto-approve is declined: this console cannot prompt
+
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
 >>> musterr [CLI] bundle deploy
@@ -129,6 +131,7 @@ Files: 2 uploaded, 0 deleted
 }
 
 === The recorded resources are unchanged by the decline: the schema is still at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 [
   {

@@ -27,7 +27,6 @@ Resource: resources.pipelines.pipeline1
 
 
 === Configuration changes
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

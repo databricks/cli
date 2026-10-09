@@ -11,6 +11,7 @@ Validation OK!
 >>> [CLI] bundle deploy -qq
 
 === Assert the volume is created successfully
+
 >>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
 {
   "catalog_name": "main",

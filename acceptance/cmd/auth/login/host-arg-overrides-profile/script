@@ -1,7 +1,7 @@
 sethome "./home"
 
 # home/.databrickscfg is a checked-in input: an existing profile with a DIFFERENT host.
-title "Initial profile with old host\n"
+title "Initial profile with old host"
 cat "./home/.databrickscfg"
 
 # Login with --profile and --host where the profile has a different host.

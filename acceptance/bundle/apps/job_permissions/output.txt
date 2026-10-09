@@ -39,6 +39,7 @@ Add the following section to the jobs permissions:
 false
 
 === Apply fix and redeploy
+
 >>> [CLI] bundle deploy -qq
 
 >>> has_manage_run

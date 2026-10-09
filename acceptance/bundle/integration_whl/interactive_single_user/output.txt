@@ -46,6 +46,7 @@ Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS
 
 === Make a change to code without version change and run the job again
+
 >>> [CLI] bundle deploy -qq
 
 >>> [CLI] bundle run some_other_job

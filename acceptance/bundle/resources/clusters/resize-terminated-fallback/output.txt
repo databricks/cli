@@ -19,7 +19,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Apply saved plan: resize fails with INVALID_STATE, falls back to edit
-
 >>> [CLI] bundle deploy --plan plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Resized clusters.test_cluster
@@ -49,7 +48,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Cluster should have new num_workers
-
 >>> [CLI] clusters get [CLUSTER_ID]
 {
   "cluster_name": "test-cluster-[UNIQUE_NAME]",

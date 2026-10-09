@@ -63,6 +63,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update external location comment
+
 === Redeploy with updated comment
 >>> [CLI] bundle plan
 update external_locations.test_location
@@ -83,6 +84,7 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 }
 
 === Update catalog comment
+
 === Redeploy with updated catalog comment
 >>> [CLI] bundle plan
 update catalogs.test_catalog

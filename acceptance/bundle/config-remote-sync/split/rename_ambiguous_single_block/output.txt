@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename alpha -> zzz and beta -> aaa, and point gamma at the new keys
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -20,7 +21,6 @@ Resource: resources.jobs.ambiguous_single_block_job
 
 
 === Both renames apply and depends_on follows them
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

@@ -5,6 +5,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename a task defined in both blocks and a target-only task
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -17,7 +18,6 @@ Resource: resources.jobs.rename_job
 
 
 === Both blocks get the new key; each field keeps its own scope
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -46,6 +46,7 @@ Resource: resources.jobs.rename_job
 1
 
 === Remove a task and rename a later one in the same run, single block
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -57,7 +58,6 @@ Resource: resources.jobs.shift_job
 
 
 === aaa is gone, mmm became mmm2, zzz keeps its name and its max_retries
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
@@ -75,6 +75,7 @@ Resource: resources.jobs.shift_job
 1
 
 === Rename the two-block task AND edit one of its fields in the same run
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -86,7 +87,6 @@ Resource: resources.jobs.rename_job
 
 
 === Left unapplied: the split is intact and timeout_seconds stays target-scoped
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

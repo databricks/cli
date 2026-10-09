@@ -1,5 +1,6 @@
 
 === E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
+
 === Initialize pipeline project
 >>> [CLI] pipelines init --output-dir output
 Welcome to the template for Lakeflow Spark Declarative Pipelines!
@@ -15,6 +16,7 @@ Note that [DATABRICKS_URL] is used for initialization
 Please refer to the README.md file for "getting started" instructions.
 
 === Deploy pipeline
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Created jobs.sample_job
@@ -40,6 +42,7 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Edit project by creating and running a new second pipeline
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Created pipelines.lakeflow_project_etl_2
@@ -50,6 +53,7 @@ View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?
 View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Assert the second pipeline is created
+
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name": "[USERNAME]",

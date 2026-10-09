@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Two identical tasks, one in each block; DELETE one (remote), RENAME the other
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -15,7 +16,6 @@ Resource: resources.jobs.two_removes_job
 
 
 === Neither block is rewritten: the pairing is not forced
-
 >>> diff.py databricks.yml.backup databricks.yml
 
 

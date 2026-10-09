@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the notebook inside a target-block field that uses a variable
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -13,7 +14,6 @@ Resource: resources.jobs.var_job
 
 
 === zzz keeps its own variable, and aaa is untouched
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

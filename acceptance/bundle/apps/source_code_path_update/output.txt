@@ -7,7 +7,9 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Run app to redeploy (reproduces the issue precondition of having an active deployment)
+
 === Redeploy from saved plan after description change
+
 >>> [CLI] bundle deploy --plan plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-scp-update-[UNIQUE_NAME]/files...
 Updated apps.my_app

@@ -6,7 +6,9 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Make local change: run_as user -> changed@example.test
+
 === Force remote run_as to match the new config value
+
 >>> [CLI] bundle plan
 update pipelines.my_pipeline
 

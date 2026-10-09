@@ -8,6 +8,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Add permissions and redeploy
+
 >>> [CLI] bundle deploy
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
@@ -21,9 +22,9 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:22:3
 
+Created jobs.my_job.permissions
 Recreated internal_immutable_snapshots.immutable
 Updated jobs.my_job
-Created jobs.my_job.permissions
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 1 changed, 1 deleted, 0 unchanged
 Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py

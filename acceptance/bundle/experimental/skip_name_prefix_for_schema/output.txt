@@ -10,6 +10,7 @@
 "my_schema"
 
 === experimental.skip_name_prefix_for_schema is true
+
 >>> [CLI] bundle validate -o json -t one
 "my_schema"
 

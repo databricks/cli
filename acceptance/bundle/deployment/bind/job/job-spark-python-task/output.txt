@@ -63,4 +63,5 @@ Destroy: 0 deleted
   }
 }
 
-=== Delete the pre-defined job [NUMID]:0
+=== Delete the pre-defined job [NUMID]:
+0

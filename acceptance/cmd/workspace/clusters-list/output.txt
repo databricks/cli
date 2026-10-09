@@ -1,6 +1,5 @@
 
 === clusters list renders the ID/Name/State columns
-
 >>> [CLI] clusters list
 ID    Name                State
 4321  some-test-cluster   

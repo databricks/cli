@@ -33,6 +33,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Get app details and verify git_source configuration
+
 >>> [CLI] bundle summary --output json
 
 >>> [CLI] apps get [APP_NAME] --output json
@@ -51,6 +52,7 @@ You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Run the app to verify it works
+
 >>> cat tmp.app-run
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
@@ -59,6 +61,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Update git_source branch and redeploy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
 Files: 3 uploaded, 0 deleted

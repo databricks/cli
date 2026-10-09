@@ -1,5 +1,6 @@
 
 === Deploying from a git repo records where the source came from: the version carries git_info, workspace_info and the target's deployment_mode
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/files...
 Created jobs.foo
@@ -52,6 +53,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op and records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -67,6 +69,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version
+
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]
 {
   "target_name": "dev",

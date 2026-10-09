@@ -1,16 +1,28 @@
 
 === Set up the parent project
+
 === create-branch --ttl: API (604800s), Go (168h) and day (7d) forms all go on the wire as seconds
+
 === create-branch --no-expiry
+
 === create-branch --ttl combined with a --json spec: the flag's ttl survives the json merge
+
 === the pre-existing flags still work alongside --ttl: --name (body), --replace-existing (query), --timeout (wait)
+
 === the --no-wait path still works alongside --no-expiry
+
 === An expiration is required: no flag fails before any API call (no request recorded)
+
 === Conflicting flags fail before any API call (no request recorded)
+
 === --no-expiry with a --json that also sets spec.no_expiry is a conflict, not a silent override
+
 === Malformed --json fails client-side
+
 === An empty spec.ttl in --json fails client-side
-=== Recorded create-branch request bodies{
+
+=== Recorded create-branch request bodies
+{
   "method": "POST",
   "path": "/api/2.0/postgres/projects/acc-proj/branches",
   "q": {

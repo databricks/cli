@@ -1,4 +1,4 @@
-title "Create a pre-defined job:\n"
+title "Create a pre-defined job:"
 
 PYTHON_NOTEBOOK_DIR="/Workspace/Users/${CURRENT_USER_NAME}/python-${UNIQUE_NAME}"
 PYTHON_NOTEBOOK="${PYTHON_NOTEBOOK_DIR}/test"

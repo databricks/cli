@@ -23,6 +23,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 }
 
 === Change only cascade_on_destroy (false -> true): expect a state-only update, no pipeline update API call
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline
@@ -33,6 +34,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 >>> print_requests.py //api/2.0/pipelines
 
 === Set cascade_on_destroy back to false and deploy so state reflects it before destroy
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline
@@ -43,6 +45,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 >>> print_requests.py //api/2.0/pipelines
 
 === Unset cascade_on_destroy entirely: expect a state-only update that persists nil to state
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline

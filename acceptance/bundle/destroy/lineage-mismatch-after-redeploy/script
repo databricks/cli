@@ -8,7 +8,7 @@
 # state is deleted), the lingering local lineage no longer matches the new one a fresh
 # redeploy mints, and every command that pulls remote state fails. Cover both cases.
 
-title "Machine A: deploy, then destroy\n"
+title "Machine A: deploy, then destroy"
 trace $CLI bundle deploy
 
 # Snapshot machine A's local state (lineage L1) while it exists, so the lingering-state
@@ -19,7 +19,7 @@ cp -r .databricks .databricks.machineA
 
 trace $CLI bundle destroy --auto-approve
 
-title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
+title "A clean destroy removes the local state file, so no stale lineage is left behind:"
 trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
 # Print the whole state tree so any empty scaffolding dir or stray file shows up. The
@@ -27,13 +27,13 @@ trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.t
 # version and OS/arch, which would make the golden fragile (the state file it holds is
 # already asserted gone above). The bundle scaffolding we care about lives directly
 # under the target dir, so it is still covered.
-title "and leaves the bundle state dir clean, with no empty scaffolding directories:\n"
+title "and leaves the bundle state dir clean, with no empty scaffolding directories:"
 trace find .databricks -name terraform -prune -o -print | sort
 
 # Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
 
-title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
+title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)"
 trace $CLI bundle deploy
 
 # Mask machine B's (remote) lineage.
@@ -45,7 +45,7 @@ add_repl "$LINEAGE_B" LINEAGE_B
 rm -rf .databricks
 mv .databricks.machineA .databricks
 
-title "Machine A with a lingering local state: any command that pulls remote state now fails\n"
+title "Machine A with a lingering local state: any command that pulls remote state now fails"
 trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
 trace musterr $CLI bundle destroy --auto-approve

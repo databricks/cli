@@ -5,6 +5,7 @@
 >>> print_migration_telemetry
 
 === Change immutable storage_root; without --auto-approve the recreate is refused
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

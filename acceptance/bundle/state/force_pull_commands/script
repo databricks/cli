@@ -8,22 +8,22 @@ export BROWSER="echo_browser.py"
 # --force-pull make zero HTTP requests, so the file is never created and
 # print_requests.py would otherwise exit with "File not found".
 
-title "bundle summary without --force-pull: no remote state read\n"
+title "bundle summary without --force-pull: no remote state read"
 trace $CLI bundle summary > /dev/null
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export
 
-title "bundle summary --force-pull: remote state read\n"
+title "bundle summary --force-pull: remote state read"
 trace $CLI bundle summary --force-pull > /dev/null
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export
 
-title "bundle open without --force-pull: no remote state read\n"
+title "bundle open without --force-pull: no remote state read"
 trace $CLI bundle open foo > /dev/null
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export
 
-title "bundle open --force-pull: remote state read\n"
+title "bundle open --force-pull: remote state read"
 trace $CLI bundle open foo --force-pull > /dev/null
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export

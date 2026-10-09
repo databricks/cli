@@ -7,12 +7,10 @@ Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Policy-supplied spark_version and custom_tags are not drift at any cluster-spec location
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Each is classified remote_addition
-
 >>> [CLI] bundle plan -o json
 {
   "job_clusters[job_cluster_key='job_cluster'].new_cluster.custom_tags": {

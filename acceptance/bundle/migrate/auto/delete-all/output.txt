@@ -3,6 +3,7 @@
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Remove all resources, then deploy on direct: migrate and delete
+
 >>> [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

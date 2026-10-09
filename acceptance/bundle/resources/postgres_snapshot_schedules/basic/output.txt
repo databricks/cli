@@ -1,5 +1,6 @@
 
 === Create with a snapshot schedule
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-basic-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
@@ -21,6 +22,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update the schedule cadence
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-basic-[UNIQUE_NAME]/default/files...
 Updated postgres_snapshot_schedules.main_schedule
@@ -41,6 +43,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Remove the snapshot schedule resource (disables automatic snapshots)
+
 >>> cat databricks.yml
 bundle:
   name: deploy-pg-ss-basic-[UNIQUE_NAME]

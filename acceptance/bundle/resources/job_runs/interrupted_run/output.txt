@@ -32,6 +32,7 @@ Exit code: 1
 }
 
 === a run that is still going is skipped
+
 >>> jq .plan["resources.job_runs.my_run"] tmp.plan.json
 {
   "depends_on": [

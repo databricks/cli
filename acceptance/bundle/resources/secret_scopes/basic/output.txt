@@ -52,6 +52,7 @@
 }
 
 === update the name of the scope (should recreate)
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy -qq

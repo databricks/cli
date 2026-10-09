@@ -1,5 +1,6 @@
 
 === Step 1: Deploy bundle A
+
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
 Created jobs.test_job
@@ -7,12 +8,14 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Step 2: Deploy bundle B
+
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Step 3: Deploy bundle A again (should use remote state)
+
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
 Files: 2 uploaded, 0 deleted
@@ -25,7 +28,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === Cleanup - destroy bundle A (bundle B does not have an active deployment)
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.test_job

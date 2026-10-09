@@ -1,5 +1,6 @@
 
 === Initial deployment with STANDARD endpoint_type
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint

@@ -33,31 +33,31 @@ workspace_id = 333444555
 ENDCFG
 cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
 
-title "Unsupported inherited flags\n"
+title "Unsupported inherited flags"
 trace musterr $CLI auth docker configure docker-test --host https://other.cloud.databricks.test
 trace musterr $CLI auth docker configure docker-test --account-id 00000000-0000-0000-0000-000000000000
 trace musterr $CLI auth docker configure docker-test --workspace-id 900800700600
 
-title "Profile argument and flag\n"
+title "Profile argument and flag"
 trace musterr $CLI auth docker configure docker-test --profile docker-test
 
-title "Invalid explicit region\n"
+title "Invalid explicit region"
 trace musterr $CLI auth docker configure docker-test --region=
 trace configure_with_whitespace_region
 trace musterr $CLI auth docker configure docker-test --region=invalid_region
 
-title "Unsupported workspace host\n"
+title "Unsupported workspace host"
 trace musterr $CLI auth docker configure unsupported-host
 
-title "Unsupported authentication profiles\n"
+title "Unsupported authentication profiles"
 trace musterr $CLI auth docker configure pat
 trace musterr $CLI auth docker configure m2m
 trace musterr $CLI auth docker configure blank-auth
 
-title "Another profile already maps to the workspace\n"
+title "Another profile already maps to the workspace"
 trace musterr $CLI auth docker configure docker-test
 
-title "Nothing changed\n"
+title "Nothing changed"
 assert_not_exists.py "$DOCKER_CONFIG/config.json"
 cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"
 printf 'Docker config not created; profiles unchanged\n'

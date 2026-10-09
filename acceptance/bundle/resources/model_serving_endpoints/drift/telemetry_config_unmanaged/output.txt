@@ -7,6 +7,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Configure telemetry out of band
+
 === Remote-only telemetry_config is not drift
 >>> [CLI] bundle plan --output json
 {

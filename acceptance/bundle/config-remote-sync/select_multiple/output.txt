@@ -6,6 +6,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify all three jobs remotely
+
 === Comma-separated selectors preview two of three resources
 Detected changes in 2 resource(s):
 
@@ -37,7 +38,6 @@ Resource: resources.jobs.job_b
 
 
 === job_a and job_b are updated, job_c is untouched
-
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml

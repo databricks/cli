@@ -14,6 +14,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 [MY_RUN_ID]
 
 === the downstream job was created with the run's result_state
+
 >>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
 SUCCESS
 

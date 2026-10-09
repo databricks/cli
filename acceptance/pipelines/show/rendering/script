@@ -1,5 +1,5 @@
-title "table output: long note truncated, ragged row blank cell\n"
+title "table output: long note truncated, ragged row blank cell"
 trace $CLI pipelines show main.default.people
 
-title "json output: column order preserved, ragged row padded with null\n"
+title "json output: column order preserved, ragged row padded with null"
 trace $CLI pipelines show main.default.people --output json

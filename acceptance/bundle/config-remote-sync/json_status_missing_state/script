@@ -5,5 +5,4 @@ envsubst < databricks.yml.tmpl > databricks.yml
 # No deploy, so the terraform state snapshot does not exist: in JSON mode the
 # sync is reported as skipped with exit 0, not a hard failure.
 title "Missing tf state is reported as skipped, exit 0"
-echo
 errcode $CLI bundle config-remote-sync -o json

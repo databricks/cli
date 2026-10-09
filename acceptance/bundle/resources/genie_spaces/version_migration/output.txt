@@ -9,7 +9,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== serialized_space: local version 1, remote version 2, skipped (etag_based){
+=== serialized_space: local version 1, remote version 2, skipped (etag_based)
+{
   "action": "skip",
   "reason": "etag_based",
   "local_version": 1,

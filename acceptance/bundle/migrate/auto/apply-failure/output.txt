@@ -5,6 +5,7 @@
 >>> update_file.py databricks.yml Test Auto-Migrate Apply Failure Test Auto-Migrate Apply Failure (updated)
 
 === Migrating deploy: migration commits (point of no return), then the job apply fails
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -24,7 +25,6 @@ Exit code: 1
 direct_migrated_via_env true
 
 === On direct despite the failed apply: resources.json present, terraform state retired
-
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup
@@ -45,7 +45,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_migration_telemetry
 
 === Local state remains direct
-
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup

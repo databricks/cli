@@ -169,7 +169,8 @@ Updated jobs.my_job
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
-=== Check that job uses a new snapshot: Snapshot changed as expected
+=== Check that job uses a new snapshot: 
+Snapshot changed as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -51,6 +51,7 @@ Exit code: [KILLED]
 }
 
 === Any other command recovers state
+
 >>> assert_exists.py .databricks/bundle/default/resources.json
 
 >>> assert_not_exists.py .databricks/bundle/default/resources.json.wal

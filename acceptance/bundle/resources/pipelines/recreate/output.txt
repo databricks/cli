@@ -7,6 +7,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the pipeline is created with catalog
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {

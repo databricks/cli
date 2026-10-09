@@ -1,21 +1,17 @@
 
 === Profile required
-
 >>> musterr [CLI] auth docker host
 Error: --profile is required for auth docker host
 
 === Workspace profile required
-
 >>> musterr [CLI] auth docker host --profile account
 Error: profile "account" does not target a workspace. Run databricks auth login --host <workspace-url> and retry with that profile
 
 === Unsupported workspace host
-
 >>> musterr [CLI] auth docker host --profile unsupported-host
 Error: profile "unsupported-host" does not target a supported Databricks workspace host. Select a workspace profile, or create one with databricks auth login --host <workspace-url> --profile <name>
 
 === Other authentication flags not supported
-
 >>> musterr [CLI] auth docker host --profile docker-test --host https://other.cloud.databricks.test
 Error: --host is not supported for auth docker host. Select the workspace with --profile instead
 
@@ -26,7 +22,6 @@ Error: --account-id is not supported for auth docker host. Select the workspace 
 Error: --workspace-id is not supported for auth docker host. Select the workspace with --profile instead
 
 === Credential helper not configured
-
 >>> [CLI] auth docker host --profile docker-test
 Registry host: [NUMID].container.us-west-2.localhost
 Credential helper configured: NO

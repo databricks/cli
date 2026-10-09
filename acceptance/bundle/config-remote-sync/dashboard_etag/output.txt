@@ -9,7 +9,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Detect changes: etag drift must not be reported
-
 >>> [CLI] bundle config-remote-sync
 No changes detected.
 

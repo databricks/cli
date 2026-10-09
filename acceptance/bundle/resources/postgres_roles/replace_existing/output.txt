@@ -18,6 +18,7 @@ create postgres_roles.my_role
 Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Re-deploy: replace_existing adopts the already-existing role instead of erroring
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default/files...
 Created postgres_roles.my_role

@@ -18,6 +18,7 @@ Got arguments:
 ['my_test_code', 'one', 'two']
 
 === Make a change to code without version change and run the job again
+
 >>> [CLI] bundle deploy -qq
 
 >>> [CLI] bundle run some_other_job

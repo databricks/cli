@@ -58,4 +58,5 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert the catalog is deleted
+
 Exit code: 1
