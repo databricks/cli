@@ -250,6 +250,47 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 	}
 }
 
+func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
+	tests := []struct {
+		status  int
+		wantErr error
+	}{
+		{http.StatusBadRequest, apierr.ErrBadRequest},
+		{http.StatusUnauthorized, apierr.ErrUnauthenticated},
+		{http.StatusForbidden, apierr.ErrPermissionDenied},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/oidc/.well-known/oauth-authorization-server":
+					_ = json.NewEncoder(w).Encode(map[string]string{"token_endpoint": "http://" + r.Host + "/token"})
+				case "/token":
+					w.WriteHeader(tt.status)
+					_, _ = w.Write([]byte(`{"error":"invalid_client"}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:         srv.URL,
+				ClientID:     "client-id",
+				ClientSecret: "client-secret",
+				AuthType:     "oauth-m2m",
+				DiscoveryURL: srv.URL + "/oidc/.well-known/oauth-authorization-server",
+				HostMetadataResolver: func(context.Context, string) (*sdkconfig.HostMetadata, error) {
+					return &sdkconfig.HostMetadata{}, nil
+				},
+			})
+			require.NoError(t, err)
+
+			err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
 	releaseRequest := make(chan struct{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +327,7 @@ func TestPreflightValidationPropagatesCancellation(t *testing.T) {
 	require.ErrorIs(t, err, context.Canceled)
 }
 
-func TestPreflightValidationPropagatesCancellationWhileReadingResponse(t *testing.T) {
+func TestPreflightValidationPropagatesCancellationWhileReadingErrorResponse(t *testing.T) {
 	validationStarted := make(chan struct{})
 	w := validationTestWorkspaceClientWithTransport(t, func(req *http.Request) (*http.Response, error) {
 		body := io.NopCloser(strings.NewReader(`{}`))
@@ -295,7 +336,7 @@ func TestPreflightValidationPropagatesCancellationWhileReadingResponse(t *testin
 			body = validationContextReadCloser{ctx: req.Context()}
 		}
 		return &http.Response{
-			StatusCode: http.StatusOK,
+			StatusCode: http.StatusServiceUnavailable,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
 			Body:       body,
 			Request:    req,
@@ -342,7 +383,6 @@ func TestClassifyValidationFailure(t *testing.T) {
 		{"canceled", context.Canceled, false, false},
 		{"deadline", context.DeadlineExceeded, true, true},
 		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
-		{"OAuth rejection", &url.Error{Op: "Post", URL: "https://accounts.example.test", Err: &apierr.APIError{StatusCode: http.StatusUnauthorized}}, false, false},
 		{"unknown", errors.New("authentication visitor failed"), false, false},
 		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
 		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},

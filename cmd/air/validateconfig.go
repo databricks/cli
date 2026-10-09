@@ -59,6 +59,13 @@ type validateConfigResponse struct {
 	Errors []configFieldError `json:"errors"`
 }
 
+type validationAuthenticationError struct {
+	err error
+}
+
+func (e *validationAuthenticationError) Error() string { return e.err.Error() }
+func (e *validationAuthenticationError) Unwrap() error { return e.err }
+
 // validationUnavailableError means the backend check could not finish.
 type validationUnavailableError struct {
 	err       error
@@ -121,12 +128,12 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 		default:
 			token, err := w.Config.GetTokenSource().Token(req.Context())
 			if err != nil {
-				return fmt.Errorf("failed to validate config: %w", err)
+				return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
 			}
 			token.SetAuthHeader(req)
 		}
 		if err := clientCfg.AuthVisitor(req); err != nil {
-			return fmt.Errorf("failed to validate config: %w", err)
+			return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
 		}
 	}
 	for _, visitor := range clientCfg.Visitors {
@@ -156,6 +163,9 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	responseBody, err := common.NewResponseWrapper(resp, requestBody)
 	if err != nil {
 		err = fmt.Errorf("failed to validate config: %w", err)
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
 		if resp.StatusCode >= 400 {
 			return &apierr.APIError{
 				StatusCode: resp.StatusCode,
@@ -240,6 +250,9 @@ func classifyValidationFailure(err error) (unavailable, retryable bool) {
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return true, true
+	}
+	if _, ok := errors.AsType[*validationAuthenticationError](err); ok {
+		return false, false
 	}
 	if _, ok := errors.AsType[*url.Error](err); ok {
 		if _, ok := errors.AsType[*apierr.APIError](err); !ok {
