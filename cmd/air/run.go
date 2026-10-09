@@ -25,7 +25,7 @@ import (
 const dryRunValidationTimeout = 15 * time.Second
 
 // Bounds the workspace lookup performed by config help.
-const computeOptionsHelpTimeout = 5 * time.Second
+const computeOptionsHelpTimeout = 3 * time.Second
 
 // runResult is the JSON payload for `air run`.
 type runResult struct {
@@ -295,10 +295,8 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 		}
 		return fallbackComputeOptions()
 	}
-	options = filterKnownComputeOptions(options)
-	if len(options) == 0 {
-		cmd.PrintErrln("Warning: the workspace reported no supported accelerator types; showing the built-in list instead")
-		return fallbackComputeOptions()
+	if options == nil {
+		return []computeOption{}
 	}
 	return options
 }
