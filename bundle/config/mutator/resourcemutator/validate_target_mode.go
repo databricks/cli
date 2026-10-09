@@ -54,9 +54,9 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	// historically allowed.)
 	if p.TriggerPauseStatus == config.Unpaused {
 		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
-			Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "trigger_pause_status"))},
+			Severity: diag.Error,
+			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
+			Paths:    structpath.NewPathSlice("presets", "trigger_pause_status"),
 		})
 	}
 
@@ -76,9 +76,9 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		// it's a pitfall for users if they don't include it and later find out that
 		// only a single user can do development deployments.
 		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
-			Locations: []diag.Location{b.Config.NearestLocation(structpath.NewPath(nil, "presets", "name_prefix"))},
+			Severity: diag.Error,
+			Summary:  "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
+			Paths:    structpath.NewPathSlice("presets", "name_prefix"),
 		})
 	}
 	return diags

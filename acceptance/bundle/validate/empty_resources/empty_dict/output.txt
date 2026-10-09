@@ -148,6 +148,7 @@ Warning: required field "name" is not set
   in databricks.yml:6:12
 
 Error: Missing app source code path or git source
+  at resources.apps.rname
   in databricks.yml:6:12
 
 app resource 'rname' should have either source_code_path or git_source field
