@@ -833,6 +833,26 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	return state, err
 }
 
+// Discard closes the state without persisting it and removes its file and WAL. It is for
+// temporary states, such as a migration's, that must not outlive a failure: the open WAL handle
+// is closed first, without which the removal fails on Windows.
+func (db *DeploymentState) Discard() {
+	db.mu.Lock()
+	path := db.Path
+	db.reset()
+	db.mu.Unlock()
+
+	if path != "" {
+		RemoveFiles(path)
+	}
+}
+
+// RemoveFiles removes the state file at path and its WAL. Missing files are ignored.
+func RemoveFiles(path string) {
+	_ = os.Remove(path)
+	_ = os.Remove(path + walSuffix)
+}
+
 // UpgradeToWrite transitions from read mode to write mode without re-reading state.
 // State must already be open for read. This initializes the WAL for writing.
 func (db *DeploymentState) UpgradeToWrite() error {
