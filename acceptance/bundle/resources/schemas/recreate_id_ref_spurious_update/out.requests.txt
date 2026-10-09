@@ -1,0 +1,24 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.referent",
+  "q": {
+    "force": "true"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.consumer",
+  "body": {
+    "comment": "refers to main.referent",
+    "custom_max_retention_hours": 0
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "referent",
+    "storage_root": "s3://my-bucket/v2"
+  }
+}
