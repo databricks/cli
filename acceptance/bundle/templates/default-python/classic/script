@@ -14,11 +14,16 @@ rm "$OUT_REQUESTS"
 # With --plan variant we don't build artifacts, so we can filter out relevant log lines
 $CLI bundle deploy -t dev $(readplanarg ../../out.plan_dev.json) 2>&1 | grep -vE '^Building python_artifact|^Uploading .databricks'
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.txt
+read_id.py -t dev sample_job > /dev/null
 trace $CLI bundle plan -t dev  # check if if there is drift
 trace $CLI bundle plan -t dev -o json | nostamp > ../../out.plan_after_deploy_dev.json
 
 $CLI bundle deploy -t prod $(readplanarg ../../out.plan_prod.json) 2>&1 | grep -vE '^Building python_artifact|^Uploading dist'
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.prod.txt
+read_id.py -t prod sample_job > /dev/null
+# Extracted with python, not jq: the id exceeds 2^53 and jq 1.6 rounds it.
+root_dir_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/my_default_python/prod" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$root_dir_id" PROD_ROOT_DIR_ID
 trace $CLI bundle plan -t prod  # check if there is drift
 trace $CLI bundle plan -t prod -o json | nostamp > ../../out.plan_after_deploy_prod.json
 

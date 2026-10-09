@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dest
 Created pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 >>> print_requests.py //api/2.0/pipelines
 {
@@ -28,7 +28,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dest
 Updated pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 >>> print_requests.py //api/2.0/pipelines
 
@@ -38,7 +38,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dest
 Updated pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 >>> print_requests.py //api/2.0/pipelines
 
@@ -48,7 +48,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dest
 Updated pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 >>> print_requests.py //api/2.0/pipelines
 

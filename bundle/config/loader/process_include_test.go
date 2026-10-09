@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,10 +72,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/single_job.pipeline.yaml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/single_job.pipeline.yaml", Line: 4, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.jobs.job1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.jobs.job1",
+					"targets.target1.resources.jobs.job1",
+				),
 			},
 		},
 		"job_and_pipeline.job.yml": {
@@ -86,10 +87,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/job_and_pipeline.job.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/job_and_pipeline.job.yml", Line: 4, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.pipelines.pipeline1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.pipelines.pipeline1",
+					"targets.target1.resources.jobs.job1",
+				),
 			},
 		},
 		"job_and_pipeline.experiment.yml": {
@@ -101,10 +102,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/job_and_pipeline.experiment.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/job_and_pipeline.experiment.yml", Line: 4, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.pipelines.pipeline1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.pipelines.pipeline1",
+					"targets.target1.resources.jobs.job1",
+				),
 			},
 		},
 		"two_jobs.job.yml": {
@@ -116,10 +117,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/two_jobs.job.yml", Line: 4, Column: 7},
 					{File: "testdata/format_not_match/two_jobs.job.yml", Line: 7, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.jobs.job1"),
-					dyn.MustPathFromString("resources.jobs.job2"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.jobs.job1",
+					"resources.jobs.job2",
+				),
 			},
 		},
 		"second_job_in_target.job.yml": {
@@ -131,10 +132,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/second_job_in_target.job.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/second_job_in_target.job.yml", Line: 4, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.jobs.job1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.jobs.job1",
+					"targets.target1.resources.jobs.job2",
+				),
 			},
 		},
 		"two_jobs_in_target.job.yml": {
@@ -146,10 +147,10 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/two_jobs_in_target.job.yml", Line: 6, Column: 11},
 					{File: "testdata/format_not_match/two_jobs_in_target.job.yml", Line: 8, Column: 11},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
-				},
+				Paths: structpath.MustParsePaths(
+					"targets.target1.resources.jobs.job1",
+					"targets.target1.resources.jobs.job2",
+				),
 			},
 		},
 		"multiple_resources.model_serving_endpoint.yml": {
@@ -182,19 +183,19 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 					{File: "testdata/format_not_match/multiple_resources.model_serving_endpoint.yml", Line: 4, Column: 7},
 					{File: "testdata/format_not_match/multiple_resources.model_serving_endpoint.yml", Line: 8, Column: 7},
 				},
-				Paths: []dyn.Path{
-					dyn.MustPathFromString("resources.experiments.experiment1"),
-					dyn.MustPathFromString("resources.jobs.job1"),
-					dyn.MustPathFromString("resources.jobs.job2"),
-					dyn.MustPathFromString("resources.model_serving_endpoints.model_serving_endpoint1"),
-					dyn.MustPathFromString("resources.models.model1"),
-					dyn.MustPathFromString("resources.pipelines.pipeline1"),
-					dyn.MustPathFromString("resources.pipelines.pipeline2"),
-					dyn.MustPathFromString("resources.schemas.schema1"),
-					dyn.MustPathFromString("targets.target1.resources.jobs.job3"),
-					dyn.MustPathFromString("targets.target1.resources.quality_monitors.quality_monitor1"),
-					dyn.MustPathFromString("targets.target1.resources.registered_models.registered_model1"),
-				},
+				Paths: structpath.MustParsePaths(
+					"resources.experiments.experiment1",
+					"resources.jobs.job1",
+					"resources.jobs.job2",
+					"resources.model_serving_endpoints.model_serving_endpoint1",
+					"resources.models.model1",
+					"resources.pipelines.pipeline1",
+					"resources.pipelines.pipeline2",
+					"resources.schemas.schema1",
+					"targets.target1.resources.jobs.job3",
+					"targets.target1.resources.quality_monitors.quality_monitor1",
+					"targets.target1.resources.registered_models.registered_model1",
+				),
 			},
 		},
 	} {

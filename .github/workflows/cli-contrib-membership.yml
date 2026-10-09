@@ -1,0 +1,58 @@
+name: Fork Contribution Notice
+
+# WARNING:
+# THIS WORKFLOW ALWAYS RUNS FOR EXTERNAL CONTRIBUTORS WITHOUT ANY APPROVAL.
+# THIS WORKFLOW RUNS FROM MAIN BRANCH, NOT FROM THE PR BRANCH.
+# DO NOT PULL THE PR OR EXECUTE ANY CODE FROM THE PR.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches:
+      - main
+
+jobs:
+  fork-contribution-notice:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      pull-requests: write
+
+    # Only run this job for PRs from forks. Databricks org members should
+    # contribute from a branch in this repository instead (see the notice).
+    if: "${{ github.event.pull_request.head.repo.fork }}"
+
+    # No checkout: the job only talks to the GitHub API via gh, so it never
+    # pulls or runs code from the PR. GH_REPO gives gh the repo context that a
+    # checkout would otherwise provide.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Check for existing notice
+        id: check
+        run: |
+          # Skip posting if the notice is already present, so a close/reopen
+          # doesn't add a duplicate comment.
+          existing=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- CLI_CONTRIB_FORK_NOTICE -->")) | .id')
+          if [ -n "$existing" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post contribution notice
+        if: steps.check.outputs.exists == 'false'
+        run: |-
+          gh pr comment ${{ github.event.pull_request.number }} --body \
+          "<!-- CLI_CONTRIB_FORK_NOTICE -->
+          Thanks for the contribution! This pull request was opened from a fork.
+
+          If you're a member of the Databricks organization, please request access to the [\`cli-contrib\` team](https://github.com/orgs/databricks/teams/cli-contrib) and open your pull request from a branch in this repository instead of a fork — fork PRs don't run integration tests automatically and have reduced CI access.
+
+          If you're an external contributor, no action is needed; a maintainer will review your pull request.
+          "

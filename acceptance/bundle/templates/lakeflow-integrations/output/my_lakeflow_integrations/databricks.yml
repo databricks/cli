@@ -17,7 +17,7 @@ artifacts:
     build: >
       uv run python -c "import shutil;
       shutil.rmtree('__generated__', ignore_errors=True);
-      from databricks.lakeflow.integrations.generate import main;
+      from databricks.lakeflow.integrations.generator.generate import main;
       main([
         '--package-module', 'my_lakeflow_integrations',
         '--output-dir', '__generated__',

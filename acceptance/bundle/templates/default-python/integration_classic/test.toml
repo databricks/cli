@@ -16,9 +16,18 @@ EnvMatrix.UV_PYTHON = [
 EnvRepl.UV_PYTHON = true
 
 [[Repls]]
-# for some reason leading number is lost converting "%H%M%S" 061234 to 61234
-Old = '\d{5,}'
-New = '[NUMID]'
+# The patched wheel version carries a build timestamp.
+Old = '0\.0\.1\+\d+'
+New = '0.0.1+[WHEEL_BUILD]'
+
+# Job ids; the resource keys embed $UNIQUE_NAME, so replace_ids.py names would vary per run.
+[[Repls]]
+Old = '/jobs/\d+'
+New = '/jobs/[JOB_ID]'
+
+[[Repls]]
+Old = '"id": "\d+"'
+New = '"id": "[JOB_ID]"'
 
 [[Repls]]
 Old = 'Standard_D3_v2'
@@ -35,7 +44,7 @@ New = "python3 setup.py bdist_wheel"
 
 [[Repls]]
 # clean up ?[ow]=<num> suffix after URL since not all workspaces have that
-Old = '\?[ow]=\[NUMID\]'
+Old = '\?[ow]=\[WORKSPACE_ID\]'
 New = ''
 Order = 1000
 

@@ -2,6 +2,51 @@
 === Replay a prior terraform deployment
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
+=== Summary works with engine: terraform and shows the deployed job's ID and URL
+>>> update_file.py databricks.yml {name: test-bundle} {name: test-bundle, engine: terraform}
+
+>>> [CLI] bundle summary
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:1:37
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    test_job:
+      Name: Test Auto-Migrate Job
+      URL:  [DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle summary -o json
+Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  in databricks.yml:1:37
+
+Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
+See https://docs.databricks.com/dev-tools/bundles/direct for details
+
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+{
+  "engine": "terraform",
+  "id": "[TEST_JOB_ID]",
+  "url": "[DATABRICKS_URL]/jobs/[TEST_JOB_ID]?w=[WORKSPACE_ID]"
+}
+
+=== Summary does not migrate: no state writes, terraform state is left untouched
+
+>>> print_requests.py
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/terraform/terraform.tfstate
+
+>>> update_file.py databricks.yml {name: test-bundle, engine: terraform} {name: test-bundle}
+
 === Redeploy with nothing set: direct is the default, so auto-migration triggers
 >>> [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).

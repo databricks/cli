@@ -30,6 +30,7 @@
 /cmd/workspace/apps/                    @databricks/eng-deco-cli @databricks/eng-apps-devex
 /libs/apps/                             @databricks/eng-deco-cli @databricks/eng-apps-devex
 /acceptance/apps/                       @databricks/eng-deco-cli @databricks/eng-apps-devex
+/.nextchanges/cli/apps-*.md             @databricks/eng-deco-cli @databricks/eng-apps-devex
 
 # Sandbox
 /cmd/sandbox/                           @databricks/eng-deco-cli @databricks/eng-sandbox

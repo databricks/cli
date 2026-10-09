@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // This mutator validates that:
@@ -36,7 +37,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 	type metadata struct {
 		locations []dyn.Location
-		paths     []dyn.Path
+		paths     []*structpath.PathNode
 	}
 
 	// Maps of key to the paths and locations the resource / script is defined at.
@@ -50,7 +51,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			}
 		}
 
-		mv.paths = append(mv.paths, dyn.NewPath(dyn.Key(prefix)).Append(p...))
+		mv.paths = append(mv.paths, dyn.ToStructPath(dyn.NewPath(dyn.Key(prefix)).Append(p...)))
 		mv.locations = append(mv.locations, v.Locations()...)
 
 		resourceAndScriptMetadata[k] = mv
@@ -109,7 +110,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			}
 			return cmp.Compare(a.Column, b.Column)
 		})
-		slices.SortFunc(v.paths, func(a, b dyn.Path) int {
+		slices.SortFunc(v.paths, func(a, b *structpath.PathNode) int {
 			return cmp.Compare(a.String(), b.String())
 		})
 

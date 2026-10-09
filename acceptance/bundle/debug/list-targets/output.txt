@@ -3,6 +3,8 @@
 dev (default) development https://dev.example.com
 prod production https://prod.example.com
 staging
+uses_direct
+uses_terraform engine:terraform
 with_vars ${var.target_mode} ${var.target_host}
 
 >>> [CLI] bundle debug list-targets --output json
@@ -21,6 +23,13 @@ with_vars ${var.target_mode} ${var.target_host}
     },
     {
       "name": "staging"
+    },
+    {
+      "name": "uses_direct"
+    },
+    {
+      "name": "uses_terraform",
+      "engine": "terraform"
     },
     {
       "name": "with_vars",

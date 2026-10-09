@@ -7,12 +7,14 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/testproxy"
@@ -67,16 +69,13 @@ func isTruePtr(value *bool) bool {
 
 // staleOnceEnabled reports whether the testserver should simulate eventual
 // consistency (the first GET after a create returns 404). It is opt-in via
-// INJECT_STALE_ON_DIRECT=1 and only applies to the direct engine.
+// INJECT_STALE_ON_DIRECT=1.
 //
 // testEnv carries the per-variant EnvMatrix values, which are not visible via
 // os/env because matrix variants run in parallel and only reach the CLI subprocess.
 func staleOnceEnabled(testEnv []string) bool {
-	if v, _ := lookupEnv(testEnv, "INJECT_STALE_ON_DIRECT"); v != "1" {
-		return false
-	}
-	engine, _ := lookupEnv(testEnv, "DATABRICKS_BUNDLE_ENGINE")
-	return engine == "direct"
+	v, _ := lookupEnv(testEnv, "INJECT_STALE_ON_DIRECT")
+	return v == "1"
 }
 
 func lookupEnv(testEnv []string, key string) (string, bool) {
@@ -89,7 +88,7 @@ func lookupEnv(testEnv []string, key string) (string, bool) {
 	return "", false
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User) {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User, string) {
 	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
@@ -119,6 +118,9 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		user, err := iamutil.GetCurrentUser(t.Context(), w)
 		require.NoError(t, err, "Failed to get current user")
 
+		workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
+		require.NoError(t, err, "Failed to get current workspace id")
+
 		cfg := w.Config
 
 		// If we are running in a cloud environment AND we need to intercept requests
@@ -138,7 +140,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			}
 		}
 
-		return cfg, *user
+		return cfg, *user, workspaceID
 	}
 
 	// Same topology as cloud, with the testserver as the upstream. Both servers see
@@ -155,7 +157,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			Token: token,
 		}
 
-		return cfg, testUser
+		return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 	}
 
 	// If we are not recording requests, and no custom server stubs are configured,
@@ -166,7 +168,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			Token: token,
 		}
 
-		return cfg, testUser
+		return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 	}
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
@@ -179,7 +181,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overridden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-	return cfg, testUser
+	return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 }
 
 func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {

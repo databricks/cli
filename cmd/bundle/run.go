@@ -138,6 +138,9 @@ Example usage:
 		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
 			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 				SkipInitialize: true,
+				InitFunc: func(b *bundle.Bundle) {
+					b.AllowTerraformEngineConfig = true
+				},
 			})
 			if err != nil {
 				return err
@@ -154,6 +157,10 @@ Example usage:
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			AlwaysPull:        true,
 			ErrorOnEmptyState: true,
+			// Let users run a bundle that pins the removed Terraform engine.
+			InitFunc: func(b *bundle.Bundle) {
+				b.AllowTerraformEngineConfig = true
+			},
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, runArgs, err = resolveRunArgument(ctx, b, args)

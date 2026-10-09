@@ -1,1 +1,0 @@
-* Fixed `databricks api` corrupting integers larger than 2^53 (such as job and pipeline ids) — request bodies and responses now preserve them exactly. ([#6884](https://github.com/databricks/cli/pull/6884))

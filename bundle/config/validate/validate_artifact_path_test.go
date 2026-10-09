@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -56,10 +57,10 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 			{File: "file", Line: 1, Column: 1},
 			{File: "file", Line: 2, Column: 2},
 		},
-		Paths: []dyn.Path{
-			dyn.MustPathFromString("workspace.artifact_path"),
-			dyn.MustPathFromString("resources.volumes.foo"),
-		},
+		Paths: structpath.MustParsePaths(
+			"workspace.artifact_path",
+			"resources.volumes.foo",
+		),
 		Detail: `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
@@ -83,7 +84,7 @@ func TestValidateArtifactPath(t *testing.T) {
 			Severity:  diag.Error,
 			Summary:   expected,
 			Locations: []dyn.Location{{File: "file", Line: 1, Column: 1}},
-			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 
@@ -170,7 +171,7 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 			Severity:  diag.Error,
 			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
-			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 }

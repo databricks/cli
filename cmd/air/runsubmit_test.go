@@ -781,6 +781,16 @@ code_source:
 	// zero new import-file calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(false), second.UsesGit)
+	assert.Equal(t, new(modePlainTar), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -837,6 +847,16 @@ code_source:
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(true), second.UsesGit)
+	assert.Equal(t, new(modeGitArchive), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // When enabled, a code source uploads provenance sidecars (git_state.json and
@@ -877,6 +897,8 @@ code_source:
 
 	assert.Empty(t, snap.GitStatePath)
 	assert.Empty(t, snap.GitDiffPath)
+	assert.Equal(t, new(true), snap.UsesGit)
+	assert.Equal(t, new(modePlainTar), snap.PackagingMode)
 
 	_, err = sidecarStore.Read(ctx, gitStateName)
 	assert.ErrorIs(t, err, fs.ErrNotExist)

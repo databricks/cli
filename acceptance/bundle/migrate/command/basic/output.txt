@@ -2,7 +2,7 @@
 >>> musterr [CLI] bundle deployment migrate
 Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
-To start using direct engine, set "engine: direct" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.
+New bundles use the direct engine automatically, no migration is needed.
 
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate -t dev
 
@@ -42,7 +42,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 {
@@ -54,7 +54,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
   "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
-    "job_id": "[NUMID]"
+    "job_id": "[TEST_JOB_ID]"
   }
 }
 

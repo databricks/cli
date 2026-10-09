@@ -31,20 +31,10 @@ SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
 # datetime.datetime(2030, 3, 17, 18, 46, 40)
 
 [[Repls]]
-Old = '\d{20,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{17}'
+Old = '\b1[78]\d{17}\b'
 New = '[UNIX_TIME_NANOS]'
 Order = 10
 Distinct = true
-
-[[Repls]]
-Old = '\d{17,}'
-New = "[NUMID]"
-Order = 10
 
 #[[Repls]]
 # This makes certain integration tests flaky as experiment IDs overlap in range with this regex
@@ -53,29 +43,14 @@ Order = 10
 #Order = 10
 
 [[Repls]]
-Old = '\d{14,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{11}'
+Old = '\b1[78]\d{11}\b'
 New = '[UNIX_TIME_MILLIS]'
 Order = 10
 Distinct = true
 
 [[Repls]]
-Old = '\d{11,}'
-New = "[NUMID]"
-Order = 10
-
-[[Repls]]
-Old = '1[78]\d{8}'
+Old = '\b1[78]\d{8}\b'
 New = '[UNIX_TIME_S]'
-Order = 10
-
-[[Repls]]
-Old = '\d{8,}'
-New = "[NUMID]"
 Order = 10
 
 [[Repls]]

@@ -1,4 +1,5 @@
 trace $CLI bundle deploy --select jobs.foo --auto-approve
+replace_ids.py
 # bundle run resolves ${resources.*} only within the resource being run, so unrelated_job's
 # reference to the not-deployed bar is left untouched and no longer breaks the run.
 trace $CLI bundle run foo

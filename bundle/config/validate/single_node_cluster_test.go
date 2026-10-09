@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -122,7 +123,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []dyn.Location{{File: "a.yml", Line: 1, Column: 1}},
-					Paths:     []dyn.Path{dyn.NewPath(dyn.Key("resources"), dyn.Key("clusters"), dyn.Key("foo"))},
+					Paths:     structpath.NewPathSlice("resources", "clusters", "foo"),
 				},
 			}, diags)
 		})
@@ -171,7 +172,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []dyn.Location{{File: "b.yml", Line: 1, Column: 1}},
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.jobs.foo.job_clusters[0].new_cluster")},
+					Paths:     structpath.MustParsePaths("resources.jobs.foo.job_clusters[0].new_cluster"),
 				},
 			}, diags)
 		})
@@ -220,7 +221,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []dyn.Location{{File: "c.yml", Line: 1, Column: 1}},
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.jobs.foo.tasks[0].new_cluster")},
+					Paths:     structpath.MustParsePaths("resources.jobs.foo.tasks[0].new_cluster"),
 				},
 			}, diags)
 		})
@@ -266,7 +267,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []dyn.Location{{File: "d.yml", Line: 1, Column: 1}},
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.pipelines.foo.clusters[0]")},
+					Paths:     structpath.MustParsePaths("resources.pipelines.foo.clusters[0]"),
 				},
 			}, diags)
 		})
@@ -319,7 +320,7 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 					Summary:   singleNodeWarningSummary,
 					Detail:    singleNodeWarningDetail,
 					Locations: []dyn.Location{{File: "e.yml", Line: 1, Column: 1}},
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.jobs.foo.tasks[0].for_each_task.task.new_cluster")},
+					Paths:     structpath.MustParsePaths("resources.jobs.foo.tasks[0].for_each_task.task.new_cluster"),
 				},
 			}, diags)
 		})

@@ -18,41 +18,12 @@ EXTRA_REQUIRED_FIELDS: dict[str, list[str]] = {
     "jobs.SparkJarTask": ["main_class_name"],
 }
 
-# Burn-down list of upstream API descriptions that aren't valid reStructuredText
-# and break the Sphinx docs build. Each entry is a temporary override until the
-# proto comment is fixed upstream; remove it once the fix lands (the no-op guard
-# in override_descriptions flags entries that upstream has already fixed).
-#
-# sql.SpotInstancePolicy: the upstream comment is a hard-wrapped ASCII grid table
-# that docutils rejects as malformed. Rewritten as a list-table.
-# See sqlgateway/scheduler/api/proto/endpoint_common.proto.
-DESCRIPTIONS: dict[str, str] = {
-    "sql.SpotInstancePolicy": (
-        "EndpointSpotInstancePolicy configures whether the endpoint should use spot instances.\n"
-        "\n"
-        "The breakdown of how the EndpointSpotInstancePolicy converts to per cloud configurations is:\n"
-        "\n"
-        ".. list-table::\n"
-        "   :header-rows: 1\n"
-        "\n"
-        "   * - Cloud\n"
-        "     - COST_OPTIMIZED\n"
-        "     - RELIABILITY_OPTIMIZED\n"
-        "   * - AWS\n"
-        "     - On Demand Driver with Spot Executors\n"
-        "     - On Demand Driver and Executors\n"
-        "   * - AZURE\n"
-        "     - On Demand Driver and Executors\n"
-        "     - On Demand Driver and Executors\n"
-    ),
-}
-
-# Field-level counterpart to DESCRIPTIONS. Some upstream property descriptions
-# aren't valid reStructuredText and break the Sphinx docs build. We can't render
-# them and don't want to maintain a hand-copied RST version, so drop the
-# description entirely until the proto comment is fixed upstream. Keyed by schema
-# name, then the field names whose descriptions to drop. drop_field_descriptions
-# flags entries that upstream has already fixed (the description is now empty).
+# Burn-down list of upstream property descriptions that aren't valid
+# reStructuredText and break the Sphinx docs build. We can't render them and don't
+# want to maintain a hand-copied RST version, so drop the description entirely
+# until the proto comment is fixed upstream. Keyed by schema name, then the field
+# names whose descriptions to drop. drop_field_descriptions flags entries that
+# upstream has already fixed (the description is now empty).
 #
 # jobs.DeploymentSpec.command_path: embeds a Markdown ```bash code fence, which
 # docutils parses as an unterminated inline literal.
@@ -80,25 +51,6 @@ def add_extra_required_fields(schemas: dict[str, Schema]):
             new_schema = replace(schema, required=new_required)
 
             output[name] = new_schema
-        else:
-            output[name] = schema
-
-    return output
-
-
-def override_descriptions(schemas: dict[str, Schema]):
-    if missing := DESCRIPTIONS.keys() - schemas.keys():
-        raise ValueError(f"Cannot override description for unknown schemas: {missing}")
-
-    output = {}
-    for name, schema in schemas.items():
-        if override := DESCRIPTIONS.get(name):
-            if schema.description == override:
-                raise ValueError(
-                    f"Description override for {name} is a no-op; the upstream "
-                    "description was fixed, so remove the override"
-                )
-            output[name] = replace(schema, description=override)
         else:
             output[name] = schema
 

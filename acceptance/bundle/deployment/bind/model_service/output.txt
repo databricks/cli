@@ -13,7 +13,7 @@ Resources:
   Model services:
     ms1:
       Name: mysvc
-      URL:  [DATABRICKS_URL]/explore/data/model-services/main/myschema/mysvc?w=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/model-services/main/myschema/mysvc?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle deployment unbind ms1
 

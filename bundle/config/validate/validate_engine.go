@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type validateEngine struct{ bundle.RO }
@@ -30,7 +31,7 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Severity:  diag.Warning,
 			Summary:   "bundle.terraform is deprecated and has no effect: " + engine.TerraformRemovedSummary,
 			Locations: tf.Locations(),
-			Paths:     []dyn.Path{dyn.MustPathFromString("bundle.terraform")},
+			Paths:     structpath.NewPathSlice("bundle", "terraform"),
 		})
 	}
 
@@ -51,8 +52,12 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if parsed == engine.EngineTerraform {
+		severity := diag.Error
+		if b.AllowTerraformEngineConfig {
+			severity = diag.Warning
+		}
 		return diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
+			Severity:  severity,
 			Summary:   engine.TerraformRemovedSummary,
 			Detail:    engine.TerraformRemovedConfigDetail,
 			Locations: []dyn.Location{loc},

@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -136,7 +137,7 @@ func CleanupTerraformStateAfterMigration(ctx context.Context, b *bundle.Bundle) 
 // in place, so the migration is not committed and a retry can complete it. Destroy does not call
 // this: it commits the migration as part of its teardown (files.Delete owns the remote terraform
 // state, and a destroy that migrates only to tear down is not adoption worth recording).
-func CommitMigration(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting) {
+func CommitMigration(ctx context.Context, b *bundle.Bundle) {
 	count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
 	if err := b.DeploymentBundle.StateDB.Persist(); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
@@ -147,7 +148,7 @@ func CommitMigration(ctx context.Context, b *bundle.Bundle, requiredEngine engin
 		return
 	}
 	CleanupTerraformStateAfterMigration(ctx, b)
-	recordAutoMigrateSource(b, requiredEngine)
+	recordAutoMigrateSource(ctx, b)
 
 	suffix := "s"
 	if count == 1 {
@@ -157,24 +158,24 @@ func CommitMigration(ctx context.Context, b *bundle.Bundle, requiredEngine engin
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry keys, per how
-// the direct engine was selected. ConfigType is set only when bundle.engine populated it,
-// so it distinguishes a durable opt-in (via_config) from an env-var-only one (via_env);
-// IsDefault covers the population that asked for nothing.
-func recordAutoMigrateSource(b *bundle.Bundle, requiredEngine engine.EngineSetting) {
+// the direct engine was selected: a durable opt-in in bundle.engine (via_config), an
+// env-var-only one (via_env), or nothing at all (via_default). The setting was already
+// validated, so a set value can only be "direct", and bundle.engine wins over the env var.
+func recordAutoMigrateSource(ctx context.Context, b *bundle.Bundle) {
 	switch {
-	case requiredEngine.IsDefault:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
-	case requiredEngine.ConfigType == engine.EngineDirect:
+	case b.Config.Bundle.Engine != engine.EngineNotSet:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
-	default:
+	case env.Get(ctx, engine.EnvVar) != "":
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
+	default:
+		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
 	}
 }
 
 // checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
-// runs a full plan against it, and returns the plan (and a non-nil error if the
-// plan fails). Individual planning errors are emitted as warnings with warnPrefix
-// so they are visible without failing the deploy. The plan is run in an isolated
+// runs a full plan against it, and returns the plan, or a non-nil error if the
+// plan fails (the caller fails the migration on it). Diagnostics collected while planning
+// are additionally logged as warnings with warnPrefix for visibility. The plan is run in an isolated
 // context so its diagnostics do not affect the deploy's own error state. The
 // returned plan lets the caller inspect the planned actions (e.g. reject a
 // migration that would recreate a resource).
@@ -258,16 +259,6 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
 
-	// An empty terraform state seeds and builds no WAL entries below, so Finalize would persist
-	// no file. Write the base file now so the migration always yields one; the deferred commit
-	// builds on it and a crash mid-apply stays recoverable. The header-only Finalize leaves it
-	// intact.
-	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		if err := stateDB.Persist(); err != nil {
-			return tempStatePath, false, nil, fmt.Errorf("persisting empty migrated state: %w", err)
-		}
-	}
-
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
 	// the migrated state and config agree on .permissions entries.
@@ -300,17 +291,8 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	// Seed every terraform-state resource into the WAL so the migrated state persists
-	// all deployed resources, including ones the current config no longer declares.
-	// BuildStateFromTF overwrites the config-declared entries below with their full
-	// state (the later WAL entry wins on replay); the rest keep this minimal entry,
-	// which is enough for the first direct plan to delete them. Without this, a config
-	// that dropped every resource would record no WAL entries at all, so Finalize would
-	// persist no state file and the migration would fail with a missing resources.json.
-	for key, id := range tfState.IDs {
-		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
-			return tempStatePath, false, nil, fmt.Errorf("seeding migrated state for %s: %w", key, err)
-		}
+	if err := migrate.SeedState(ctx, &stateDB, tfState); err != nil {
+		return tempStatePath, false, nil, err
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.

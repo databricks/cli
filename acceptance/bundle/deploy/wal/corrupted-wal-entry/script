@@ -11,6 +11,7 @@ envsubst < resources.json.wal.tmpl > .databricks/bundle/default/resources.json.w
 
 trace cat .databricks/bundle/default/resources.json.wal
 trace $CLI bundle deploy
+replace_ids.py
 trace $CLI bundle summary
 trace cat .databricks/bundle/default/resources.json.wal.corrupted
 
