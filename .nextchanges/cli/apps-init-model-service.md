@@ -1,1 +1,1 @@
-* `databricks apps init` now supports `model_service` (Unity AI Gateway model service) resources, with a catalog, schema, and model service picker, bound as a `uc_securable` with `securable_type: MODEL_SERVICE` and `EXECUTE` permission.
+* `databricks apps init` now supports `model_service` (Unity AI Gateway model service) resources, with a catalog, schema, and model service picker, bound as a `uc_securable` with `securable_type: MODEL_SERVICE` and `EXECUTE` permission. ([#6998](https://github.com/databricks/cli/pull/6998))
