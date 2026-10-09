@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -114,8 +115,14 @@ type fakeDiscoveryClient struct {
 	oauthArgErr       error
 	persistentAuth    discoveryPersistentAuth
 	persistentAuthErr error
-	introspection     *auth.IntrospectionResult
-	introspectionErr  error
+	// followUpAuths, when set, serve NewPersistentAuth calls after the first
+	// (e.g. the second login at a workspace's primary URL), in order.
+	followUpAuths []discoveryPersistentAuth
+	// newFollowUpAuth, when set, serves NewPersistentAuth calls after the
+	// first and receives their options.
+	newFollowUpAuth  func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error)
+	introspection    *auth.IntrospectionResult
+	introspectionErr error
 	// For assertions
 	introspectHost        string
 	introspectToken       string
@@ -134,6 +141,14 @@ func (f *fakeDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m
 		return nil, f.persistentAuthErr
 	}
 	f.newPersistentAuthCall++
+	if f.newPersistentAuthCall > 1 && f.newFollowUpAuth != nil {
+		return f.newFollowUpAuth(ctx, opts...)
+	}
+	if f.newPersistentAuthCall > 1 && len(f.followUpAuths) > 0 {
+		next := f.followUpAuths[0]
+		f.followUpAuths = f.followUpAuths[1:]
+		return next, nil
+	}
 	return f.persistentAuth, nil
 }
 
@@ -1650,7 +1665,6 @@ func TestShouldResolveWorkspacePrimaryURL(t *testing.T) {
 		{"workspace host without account id", auth.AuthArguments{Host: "https://dbc-abc.cloud.databricks.com", WorkspaceID: "123"}, false},
 		{"classic account host", auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountID: "acc", WorkspaceID: "123"}, false},
 		{"unified host", auth.AuthArguments{Host: "https://acme.databricks.com", AccountID: "acc", WorkspaceID: "123", DiscoveryURL: "https://acme.databricks.com/oidc/accounts/acc/.well-known/oauth-authorization-server"}, false},
-		{"spog workspace host", auth.AuthArguments{Host: "https://acme.databricks.com", AccountID: "acc", WorkspaceID: "123", DiscoveryURL: auth.SpogWorkspaceDiscoveryURL("https://acme.databricks.com", "123")}, false},
 		{"empty host", auth.AuthArguments{AccountID: "acc", WorkspaceID: "123"}, false},
 	}
 	for _, tt := range tests {
@@ -1728,251 +1742,6 @@ func newSpogWorkspacePair(t *testing.T) (workspace, spog *httptest.Server) {
 	return workspace, spog
 }
 
-func TestSpogWorkspaceForHost_SwitchesToPrimaryURL(t *testing.T) {
-	workspace, spog := newSpogWorkspacePair(t)
-
-	tests := []struct {
-		name        string
-		workspaceID string
-	}{
-		{"workspace id from discovery", "12345"},
-		// A re-login with --host <new workspace> can inherit another
-		// workspace's ID from the existing profile.
-		{"workspace id inherited from another workspace", "67890"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			spogHost, workspaceID, discoveryURL, ok := spogWorkspaceForHost(t.Context(), &auth.AuthArguments{
-				Host:        workspace.URL,
-				AccountID:   "spog-account",
-				WorkspaceID: tt.workspaceID,
-			})
-			require.True(t, ok)
-			assert.Equal(t, spog.URL, spogHost)
-			assert.Equal(t, "12345", workspaceID)
-			assert.Equal(t, auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345"), discoveryURL)
-		})
-	}
-}
-
-func TestSpogWorkspaceForHost_KeepsWorkspaceHost(t *testing.T) {
-	tests := []struct {
-		name      string
-		workspace func(t *testing.T) string
-	}{
-		{
-			name: "no primary url",
-			workspace: func(t *testing.T) string {
-				return newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345"}).URL
-			},
-		},
-		{
-			name: "primary url is not a unified host",
-			workspace: func(t *testing.T) string {
-				notUnified := newDiscoveryServer(t, map[string]any{"workspace_id": "999"})
-				return newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345", "primary_url": notUnified.URL}).URL
-			},
-		},
-		{
-			name: "primary url lookup fails",
-			workspace: func(t *testing.T) string {
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusInternalServerError)
-				}))
-				t.Cleanup(server.Close)
-				return server.URL
-			},
-		},
-		{
-			name: "primary url serves the workspace's tokens from another host",
-			workspace: func(t *testing.T) string {
-				spog := newSpogServer(t, func() string { return "https://other-workspace.test" })
-				return newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345", "primary_url": spog.URL}).URL
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, _, _, ok := spogWorkspaceForHost(t.Context(), &auth.AuthArguments{
-				Host:        tt.workspace(t),
-				AccountID:   "spog-account",
-				WorkspaceID: "12345",
-			})
-			assert.False(t, ok)
-		})
-	}
-}
-
-func TestSetLoginHostAndAccountId_SpogWorkspaceOAuth(t *testing.T) {
-	workspace, spog := newSpogWorkspacePair(t)
-	spogWorkspaceDiscoveryURL := auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345")
-
-	tests := []struct {
-		name                 string
-		host                 string
-		workspaceID          string
-		existingProfile      *profile.Profile
-		wantWorkspaceScoped  bool
-		wantHost             string
-		wantWorkspaceIDSaved string
-	}{
-		{
-			name:                 "workspace from ?o= gets workspace oauth",
-			host:                 spog.URL + "?o=12345",
-			wantWorkspaceScoped:  true,
-			wantHost:             spog.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-		{
-			name:                 "workspace from --workspace-id gets workspace oauth",
-			host:                 spog.URL,
-			workspaceID:          "12345",
-			wantWorkspaceScoped:  true,
-			wantHost:             spog.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-		{
-			name:     "no workspace stays account level",
-			host:     spog.URL,
-			wantHost: spog.URL,
-		},
-		{
-			name:                 "workspace inherited from an account-level profile stays account level",
-			host:                 spog.URL,
-			existingProfile:      &profile.Profile{Name: "P", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345"},
-			wantHost:             spog.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-		{
-			name:                 "workspace inherited from a workspace-scoped profile keeps workspace oauth",
-			host:                 spog.URL,
-			existingProfile:      &profile.Profile{Name: "P", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345", DiscoveryURL: spogWorkspaceDiscoveryURL},
-			wantWorkspaceScoped:  true,
-			wantHost:             spog.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-		{
-			name:                 "?o= on an account-level profile's host stays account level",
-			host:                 "",
-			existingProfile:      &profile.Profile{Name: "P", Host: spog.URL + "?o=12345", AccountID: "spog-account"},
-			wantHost:             spog.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-		{
-			name:                 "canonical workspace host logs in as before",
-			host:                 workspace.URL,
-			wantHost:             workspace.URL,
-			wantWorkspaceIDSaved: "12345",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := &auth.AuthArguments{Host: tt.host, WorkspaceID: tt.workspaceID}
-			err := setLoginHostAndAccountId(t.Context(), tt.existingProfile, args, []string{})
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.wantHost, args.Host)
-			assert.Equal(t, tt.wantWorkspaceIDSaved, args.WorkspaceID)
-			if tt.wantWorkspaceScoped {
-				assert.Equal(t, spogWorkspaceDiscoveryURL, args.DiscoveryURL)
-			} else {
-				assert.False(t, auth.IsSpogWorkspaceDiscoveryURL(args.DiscoveryURL), "discovery URL %q", args.DiscoveryURL)
-			}
-		})
-	}
-}
-
-func TestDiscoveryLogin_WorkspaceSelectionSavesSpogWorkspaceProfile(t *testing.T) {
-	workspace, spog := newSpogWorkspacePair(t)
-
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, ".databrickscfg")
-	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
-	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
-
-	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
-	require.NoError(t, err)
-	oauthArg.SetDiscoveredHost(workspace.URL)
-
-	dc := &fakeDiscoveryClient{
-		oauthArg:       oauthArg,
-		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "workspace-token"}},
-		introspection:  &auth.IntrospectionResult{},
-	}
-	store := &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
-
-	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, discoveryLoginInputs{
-		dc:          dc,
-		profileName: "DISCOVERY",
-		timeout:     5 * time.Second,
-		browserFunc: func(string) error { return nil },
-		tokenStore:  store,
-	})
-	require.NoError(t, err)
-
-	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
-	require.NoError(t, err)
-	require.NotNil(t, savedProfile)
-	assert.Equal(t, spog.URL, savedProfile.Host)
-	assert.Equal(t, "spog-account", savedProfile.AccountID)
-	assert.Equal(t, "12345", savedProfile.WorkspaceID)
-	assert.Equal(t, auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345"), savedProfile.DiscoveryURL)
-	require.Contains(t, store.Tokens, "DISCOVERY")
-	assert.Equal(t, "workspace-token", store.Tokens["DISCOVERY"].AccessToken)
-	assert.Equal(t, 1, dc.newPersistentAuthCall, "the discovery login is the only login")
-}
-
-func TestSetHostAndAccountId_FollowsProfileTokenType(t *testing.T) {
-	_, spog := newSpogWorkspacePair(t)
-	spogWorkspaceDiscoveryURL := auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345")
-
-	tests := []struct {
-		name                string
-		host                string
-		workspaceID         string
-		existingProfile     *profile.Profile
-		wantWorkspaceScoped bool
-	}{
-		{
-			name: "?o= on the host stays account level",
-			host: spog.URL + "?o=12345",
-		},
-		{
-			name:        "--workspace-id stays account level",
-			host:        spog.URL,
-			workspaceID: "12345",
-		},
-		{
-			name:            "account-level profile with ?o= in its host stays account level",
-			existingProfile: &profile.Profile{Name: "P", Host: spog.URL + "?o=12345", AccountID: "spog-account"},
-		},
-		{
-			name:                "workspace-scoped profile keeps workspace oauth",
-			existingProfile:     &profile.Profile{Name: "P", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345", DiscoveryURL: spogWorkspaceDiscoveryURL},
-			wantWorkspaceScoped: true,
-		},
-		{
-			name:            "workspace-scoped profile targeted at another workspace stays account level",
-			workspaceID:     "67890",
-			existingProfile: &profile.Profile{Name: "P", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345", DiscoveryURL: spogWorkspaceDiscoveryURL},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := &auth.AuthArguments{Host: tt.host, WorkspaceID: tt.workspaceID}
-			err := setHostAndAccountId(t.Context(), tt.existingProfile, args, []string{})
-			require.NoError(t, err)
-
-			if tt.wantWorkspaceScoped {
-				assert.Equal(t, spogWorkspaceDiscoveryURL, args.DiscoveryURL)
-			} else {
-				assert.True(t, auth.HasUnifiedHostSignal(args.DiscoveryURL), "discovery URL %q", args.DiscoveryURL)
-			}
-		})
-	}
-}
-
 func TestSetHostAndAccountId_DoesNotSwitchToPrimaryURL(t *testing.T) {
 	// setHostAndAccountId also serves auth token, which must keep the profile's
 	// host so the cached token is found and refreshed where it was issued.
@@ -1991,26 +1760,364 @@ func TestSetHostAndAccountId_DoesNotSwitchToPrimaryURL(t *testing.T) {
 	assert.False(t, auth.HasUnifiedHostSignal(args.DiscoveryURL), "discovery URL %q", args.DiscoveryURL)
 }
 
-func TestUseSpogWorkspaceOAuth(t *testing.T) {
-	const spogDiscoveryURL = "https://acme.databricks.test/oidc/accounts/abc/.well-known/oauth-authorization-server"
-	const accountsDiscoveryURL = "https://accounts.cloud.databricks.com/oidc/accounts/abc/.well-known/oauth-authorization-server"
+func TestDiscoveryLogin_WorkspaceSelectionLogsInAtPrimaryURL(t *testing.T) {
+	spog := newUnifiedHostServer(t)
+	workspace := newDiscoveryServer(t, map[string]any{
+		"account_id":   "spog-account",
+		"workspace_id": "12345",
+		"primary_url":  spog.URL,
+	})
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost(workspace.URL)
+
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "workspace-token"}},
+		followUpAuths:  []discoveryPersistentAuth{&fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "spog-token"}}},
+		introspection:  &auth.IntrospectionResult{},
+	}
+	store := &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     5 * time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  store,
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, dc.newPersistentAuthCall, "expected a second login at the primary URL")
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, spog.URL, savedProfile.Host)
+	assert.Equal(t, "spog-account", savedProfile.AccountID)
+	assert.Equal(t, "12345", savedProfile.WorkspaceID)
+	require.Contains(t, store.Tokens, "DISCOVERY")
+	assert.Equal(t, "spog-token", store.Tokens["DISCOVERY"].AccessToken)
+}
+
+func TestDiscoveryLogin_PrimaryURLLoginFailureKeepsWorkspace(t *testing.T) {
+	spog := newUnifiedHostServer(t)
+	workspace := newDiscoveryServer(t, map[string]any{
+		"account_id":   "spog-account",
+		"workspace_id": "12345",
+		"primary_url":  spog.URL,
+	})
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost(workspace.URL)
+
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "workspace-token"}},
+		followUpAuths:  []discoveryPersistentAuth{&fakeDiscoveryPersistentAuth{challengeErr: errors.New("browser closed")}},
+		introspection:  &auth.IntrospectionResult{},
+	}
+	store := &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     5 * time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  store,
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, workspace.URL, savedProfile.Host)
+	assert.Equal(t, "12345", savedProfile.WorkspaceID)
+	require.Contains(t, store.Tokens, "DISCOVERY")
+	assert.Equal(t, "workspace-token", store.Tokens["DISCOVERY"].AccessToken)
+}
+
+type unifiedPathEndpointSupplier struct {
+	MockApiClient
+}
+
+func (*unifiedPathEndpointSupplier) GetUnifiedOAuthEndpoints(_ context.Context, host, accountID string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
+		AuthorizationEndpoint: host + "/oidc/accounts/" + accountID + "/v1/authorize",
+		TokenEndpoint:         host + "/oidc/accounts/" + accountID + "/v1/token",
+	}, nil
+}
+
+func declineInBrowser(t *testing.T, authorizeURL *string) func(string) error {
+	return func(rawURL string) error {
+		*authorizeURL = rawURL
+		u, err := url.Parse(rawURL)
+		require.NoError(t, err)
+		q := u.Query()
+		callback := q.Get("redirect_uri") + "?" + url.Values{
+			"error":             {"access_denied"},
+			"error_description": {"declined in test"},
+			"state":             {q.Get("state")},
+		}.Encode()
+		go func() {
+			resp, err := http.Get(callback)
+			if err == nil {
+				resp.Body.Close()
+			}
+		}()
+		return nil
+	}
+}
+
+func hostOfURL(t *testing.T, rawURL string) string {
+	t.Helper()
+	u, err := url.Parse(rawURL)
+	require.NoError(t, err)
+	return u.Host
+}
+
+func TestDiscoveryLogin_PrimaryURLLoginUsesAccountLevelOAuthAndLoginOptions(t *testing.T) {
+	spog := newUnifiedHostServer(t)
+	workspace := newDiscoveryServer(t, map[string]any{
+		"account_id":   "spog-account",
+		"workspace_id": "12345",
+		"primary_url":  spog.URL,
+	})
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost(workspace.URL)
+
+	// The second login runs a real PersistentAuth with the options discoveryLogin
+	// passes, so the authorize URL shows which OAuth endpoints, client ID and
+	// scopes it would use.
+	var authorizeURL string
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "workspace-token"}},
+		newFollowUpAuth: func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+			return u2m.NewPersistentAuth(ctx, append(opts, u2m.WithOAuthEndpointSupplier(&unifiedPathEndpointSupplier{}))...)
+		},
+		introspection: &auth.IntrospectionResult{},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     10 * time.Second,
+		scopes:      "sql,jobs",
+		clientID:    "custom-client",
+		browserFunc: declineInBrowser(t, &authorizeURL),
+		tokenStore:  newTestStore(),
+	})
+	require.NoError(t, err)
+
+	require.NotEmpty(t, authorizeURL, "the second login should open the browser")
+	u, err := url.Parse(authorizeURL)
+	require.NoError(t, err)
+	assert.Equal(t, hostOfURL(t, spog.URL), u.Host)
+	assert.Equal(t, "/oidc/accounts/spog-account/v1/authorize", u.Path)
+	assert.Equal(t, "custom-client", u.Query().Get("client_id"))
+	scopes := strings.Fields(u.Query().Get("scope"))
+	assert.Contains(t, scopes, "sql")
+	assert.Contains(t, scopes, "jobs")
+
+	// Declining the second login keeps the workspace profile.
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, workspace.URL, savedProfile.Host)
+}
+
+func TestDiscoveryLogin_PrimaryURLLoginSetupFailureKeepsWorkspace(t *testing.T) {
 	tests := []struct {
-		name        string
-		args        auth.AuthArguments
-		workspaceID string
-		want        bool
+		name string
+		// primaryURL maps the SPOG server's URL to the primary_url the workspace reports.
+		primaryURL      func(spogURL string) string
+		followUpErr     error
+		wantFollowUpRun bool
 	}{
-		{"spog host with a workspace", auth.AuthArguments{Host: "https://acme.databricks.test", DiscoveryURL: spogDiscoveryURL}, "123", true},
-		{"spog host without a workspace", auth.AuthArguments{Host: "https://acme.databricks.test", DiscoveryURL: spogDiscoveryURL}, "", false},
-		{"spog host with the none workspace", auth.AuthArguments{Host: "https://acme.databricks.test", DiscoveryURL: spogDiscoveryURL}, auth.WorkspaceIDNone, false},
-		{"classic account host with a workspace", auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", DiscoveryURL: accountsDiscoveryURL}, "123", false},
-		{"workspace host", auth.AuthArguments{Host: "https://dbc-123.cloud.databricks.test"}, "123", false},
+		{
+			name:            "second login can't be set up",
+			primaryURL:      func(spogURL string) string { return spogURL },
+			followUpErr:     errors.New("setup failed"),
+			wantFollowUpRun: true,
+		},
+		{
+			// OAuth arguments only accept http for 127.0.0.1, so a localhost
+			// primary URL passes discovery but fails ToOAuthArgument.
+			name:       "oauth argument for the primary URL can't be built",
+			primaryURL: func(spogURL string) string { return strings.Replace(spogURL, "127.0.0.1", "localhost", 1) },
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.args
-			useSpogWorkspaceOAuth(&args, tt.workspaceID)
-			assert.Equal(t, tt.want, auth.IsSpogWorkspaceDiscoveryURL(args.DiscoveryURL), "discovery URL %q", args.DiscoveryURL)
+			spog := newUnifiedHostServer(t)
+			workspace := newDiscoveryServer(t, map[string]any{
+				"account_id":   "spog-account",
+				"workspace_id": "12345",
+				"primary_url":  tt.primaryURL(spog.URL),
+			})
+
+			tmpDir := t.TempDir()
+			configPath := filepath.Join(tmpDir, ".databrickscfg")
+			require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+			oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+			require.NoError(t, err)
+			oauthArg.SetDiscoveredHost(workspace.URL)
+
+			followUpRun := false
+			dc := &fakeDiscoveryClient{
+				oauthArg:       oauthArg,
+				persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "workspace-token"}},
+				newFollowUpAuth: func(context.Context, ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+					followUpRun = true
+					return nil, tt.followUpErr
+				},
+				introspection: &auth.IntrospectionResult{},
+			}
+			store := &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
+
+			ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+			err = discoveryLogin(ctx, discoveryLoginInputs{
+				dc:          dc,
+				profileName: "DISCOVERY",
+				timeout:     5 * time.Second,
+				browserFunc: func(string) error { return nil },
+				tokenStore:  store,
+			})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantFollowUpRun, followUpRun)
+			savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+			require.NoError(t, err)
+			require.NotNil(t, savedProfile)
+			assert.Equal(t, workspace.URL, savedProfile.Host)
+			require.Contains(t, store.Tokens, "DISCOVERY")
+			assert.Equal(t, "workspace-token", store.Tokens["DISCOVERY"].AccessToken)
+		})
+	}
+}
+
+func TestSwitchToWorkspacePrimaryURL(t *testing.T) {
+	spog := newUnifiedHostServer(t)
+	notUnified := newDiscoveryServer(t, map[string]any{"workspace_id": "999"})
+	lookupFails := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(lookupFails.Close)
+
+	tests := []struct {
+		name            string
+		host            string
+		workspaceID     string
+		wantSwitched    bool
+		wantWorkspaceID string
+	}{
+		{
+			name:            "switches to the primary url",
+			host:            newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345", "primary_url": spog.URL + "/"}).URL,
+			workspaceID:     "12345",
+			wantSwitched:    true,
+			wantWorkspaceID: "12345",
+		},
+		{
+			// A workspace_id inherited from an existing profile can belong to
+			// another workspace; on SPOG it decides routing.
+			name:            "uses the host's workspace id over an inherited one",
+			host:            newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345", "primary_url": spog.URL}).URL,
+			workspaceID:     "67890",
+			wantSwitched:    true,
+			wantWorkspaceID: "12345",
+		},
+		{
+			name:            "no primary url",
+			host:            newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345"}).URL,
+			workspaceID:     "12345",
+			wantWorkspaceID: "12345",
+		},
+		{
+			name:            "primary url is not a unified host",
+			host:            newDiscoveryServer(t, map[string]any{"account_id": "spog-account", "workspace_id": "12345", "primary_url": notUnified.URL}).URL,
+			workspaceID:     "12345",
+			wantWorkspaceID: "12345",
+		},
+		{
+			name:            "lookup fails",
+			host:            lookupFails.URL,
+			workspaceID:     "12345",
+			wantWorkspaceID: "12345",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := &auth.AuthArguments{Host: tt.host, AccountID: "spog-account", WorkspaceID: tt.workspaceID}
+			switchToWorkspacePrimaryURL(t.Context(), args)
+
+			if tt.wantSwitched {
+				assert.Equal(t, spog.URL, args.Host)
+				assert.True(t, auth.HasUnifiedHostSignal(args.DiscoveryURL), "discovery URL %q", args.DiscoveryURL)
+			} else {
+				assert.Equal(t, tt.host, args.Host)
+			}
+			assert.Equal(t, "spog-account", args.AccountID)
+			assert.Equal(t, tt.wantWorkspaceID, args.WorkspaceID)
+		})
+	}
+}
+
+func TestSetLoginHostAndAccountId_Resources(t *testing.T) {
+	workspace, spog := newSpogWorkspacePair(t)
+	// A unified host that serves no workspace-level OAuth metadata.
+	spogWithoutWorkspaceOAuth := newUnifiedHostServer(t)
+	resources := []string{workspace.URL + "/ai-gateway/mcp-services/system.ai.github"}
+
+	tests := []struct {
+		name        string
+		host        string
+		workspaceID string
+		resources   []string
+		wantHost    string
+		wantErr     string
+	}{
+		{name: "spog host with ?o= logs in at the workspace host", host: spog.URL + "?o=12345", resources: resources, wantHost: workspace.URL},
+		{name: "spog host with --workspace-id logs in at the workspace host", host: spog.URL, workspaceID: "12345", resources: resources, wantHost: workspace.URL},
+		{name: "spog host without a workspace", host: spog.URL, resources: resources, wantErr: "--resource on a unified host needs a workspace"},
+		{name: "spog host that doesn't serve the workspace", host: spogWithoutWorkspaceOAuth.URL + "?o=12345", resources: resources, wantErr: "Pass the workspace URL with --host instead"},
+		{name: "workspace host is kept", host: workspace.URL, resources: resources, wantHost: workspace.URL},
+		{name: "spog host without resources is kept", host: spog.URL + "?o=12345", wantHost: spog.URL},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := &auth.AuthArguments{Host: tt.host, WorkspaceID: tt.workspaceID}
+			err := setLoginHostAndAccountId(cmdio.MockDiscard(t.Context()), nil, args, []string{}, tt.resources)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantHost, args.Host)
 		})
 	}
 }

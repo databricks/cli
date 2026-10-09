@@ -231,9 +231,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		} else {
 			matchFn = profile.WithHost(args.authArguments.Host)
 		}
-		if args.authArguments.WorkspaceID == "" {
-			matchFn = withoutSpogWorkspaceToken(matchFn)
-		}
 
 		matchingProfiles, err := args.profiler.LoadProfiles(ctx, matchFn)
 		if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
@@ -281,10 +278,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			args.profileName,
 		)
 	}
-
-	// The profile may have been resolved from --host above, after
-	// setHostAndAccountId ran.
-	useProfileSpogWorkspaceOAuth(args.authArguments, existingProfile)
 
 	args.authArguments.Profile = args.profileName
 
@@ -525,13 +518,4 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		return "", nil, err
 	}
 	return profileName, p, nil
-}
-
-// withoutSpogWorkspaceToken narrows matchFn to profiles that don't hold a
-// workspace-scoped SPOG token. A host lookup without a workspace ID asks for
-// an account-level token, which such a profile can't refresh.
-func withoutSpogWorkspaceToken(matchFn profile.ProfileMatchFunction) profile.ProfileMatchFunction {
-	return func(p profile.Profile) bool {
-		return matchFn(p) && !auth.IsSpogWorkspaceDiscoveryURL(p.DiscoveryURL)
-	}
 }

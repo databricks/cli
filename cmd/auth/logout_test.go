@@ -380,43 +380,6 @@ auth_type = databricks-cli
 	assert.Nil(t, tokenStore.Tokens[hostKey])
 }
 
-func TestLogoutSpogWorkspaceScopedProfileKeepsHostToken(t *testing.T) {
-	spogServer := newWellKnownServer(t, true, "spog-acct")
-
-	ctx := cmdio.MockDiscard(t.Context())
-	configPath := writeTempConfig(t, `[DEFAULT]
-[spog-ws]
-host = `+spogServer.URL+`
-account_id = spog-acct
-workspace_id = 123
-auth_type = databricks-cli
-discovery_url = `+spogServer.URL+`/oidc/.well-known/oauth-authorization-server?o=123
-`)
-	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
-
-	// The host key holds an account-level login's token, which logging out
-	// of a workspace-scoped profile must not remove.
-	hostKey := spogServer.URL + "/oidc/accounts/spog-acct"
-	tokenStore := &inMemoryStore{
-		Tokens: map[string]*oauth2.Token{
-			"spog-ws": {AccessToken: "workspace-token"},
-			hostKey:   {AccessToken: "account-token"},
-		},
-	}
-
-	err := runLogout(ctx, logoutArgs{
-		profileName:    "spog-ws",
-		autoApprove:    true,
-		profiler:       profile.DefaultProfiler,
-		tokenStore:     tokenStore,
-		configFilePath: configPath,
-	})
-	require.NoError(t, err)
-
-	assert.Nil(t, tokenStore.Tokens["spog-ws"])
-	assert.NotNil(t, tokenStore.Tokens[hostKey])
-}
-
 func TestHostCacheKeyAndMatchFn(t *testing.T) {
 	wsServer := newWellKnownServer(t, false, "ws-account")
 	spogServer := newWellKnownServer(t, true, "spog-account")

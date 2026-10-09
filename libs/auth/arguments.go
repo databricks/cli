@@ -69,11 +69,5 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// A SPOG host that targets one workspace with a workspace-scoped token:
-	// OAuth runs against the endpoints served by the workspace discovery URL.
-	if IsSpogWorkspaceDiscoveryURL(cfg.DiscoveryURL) {
-		return u2m.NewProfileWorkspaceOAuthArgumentWithDiscoveryURL(host, cfg.DiscoveryURL, a.Profile)
-	}
-
 	return u2m.NewProfileWorkspaceOAuthArgument(host, a.Profile)
 }

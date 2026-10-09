@@ -625,11 +625,7 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	var err error
 	switch argg := a.oAuthArgument.(type) {
 	case WorkspaceOAuthArgument:
-		if d, ok := argg.(DiscoveryURLProvider); ok && d.GetDiscoveryURL() != "" {
-			endpoints, err = a.endpointSupplier.GetEndpointsFromURL(a.ctx, d.GetDiscoveryURL())
-		} else {
-			endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
-		}
+		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
 	case AccountOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetAccountOAuthEndpoints(
 			a.ctx, argg.GetAccountHost(), argg.GetAccountId(),

@@ -21,7 +21,6 @@ type Profile struct {
 	Scopes               string
 	Resources            string
 	AuthType             string
-	DiscoveryURL         string
 }
 
 func (p Profile) Cloud() string {

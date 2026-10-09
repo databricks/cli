@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"net/url"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -51,11 +50,6 @@ func ResolveConfigType(cfg *config.Config) config.ConfigType {
 		return configType
 	}
 
-	// A workspace-scoped SPOG token only reaches its workspace.
-	if IsSpogWorkspaceDiscoveryURL(cfg.DiscoveryURL) {
-		return config.WorkspaceConfig
-	}
-
 	if !IsSPOG(cfg, cfg.AccountID) {
 		return configType
 	}
@@ -64,39 +58,4 @@ func ResolveConfigType(cfg *config.Config) config.ConfigType {
 		return config.WorkspaceConfig
 	}
 	return config.AccountConfig
-}
-
-// spogWorkspaceDiscoveryPath is the authorization server metadata path for
-// workspace-level OAuth. On a SPOG host the workspace is selected with the
-// o=<workspace_id> query parameter, and the served endpoints are those of the
-// workspace's canonical host.
-const spogWorkspaceDiscoveryPath = "/oidc/.well-known/oauth-authorization-server"
-
-// SpogWorkspaceDiscoveryURL returns the workspace-level OAuth metadata URL for
-// workspaceID on the SPOG host. Saved as a profile's discovery_url, it marks
-// the profile as holding a workspace-scoped token: OAuth runs against the
-// workspace's own endpoints while API calls go to the SPOG host.
-func SpogWorkspaceDiscoveryURL(spogHost, workspaceID string) string {
-	return strings.TrimSuffix(spogHost, "/") + spogWorkspaceDiscoveryPath + "?" + url.Values{"o": {workspaceID}}.Encode()
-}
-
-// IsSpogWorkspaceDiscoveryURL reports whether discoveryURL selects one
-// workspace on a SPOG host, as produced by [SpogWorkspaceDiscoveryURL].
-// Canonical workspace discovery URLs never carry the o= parameter.
-func IsSpogWorkspaceDiscoveryURL(discoveryURL string) bool {
-	u, err := url.Parse(discoveryURL)
-	if err != nil {
-		return false
-	}
-	return u.Path == spogWorkspaceDiscoveryPath && u.Query().Get("o") != ""
-}
-
-// SpogWorkspaceIDFromDiscoveryURL returns the workspace ID selected by a
-// discovery URL produced by [SpogWorkspaceDiscoveryURL], or "" for any other URL.
-func SpogWorkspaceIDFromDiscoveryURL(discoveryURL string) string {
-	if !IsSpogWorkspaceDiscoveryURL(discoveryURL) {
-		return ""
-	}
-	u, _ := url.Parse(discoveryURL)
-	return u.Query().Get("o")
 }

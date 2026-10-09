@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -325,14 +324,4 @@ func TestAppendAccountHostHintComposesWithEnrichAuthError(t *testing.T) {
 	assert.Contains(t, msg, "Next steps:")
 	assert.Contains(t, msg, "Note: profile \"acc\" points to a Databricks account console host")
 	assert.Less(t, strings.Index(msg, "Next steps:"), strings.Index(msg, "Note:"))
-}
-
-func TestBuildLoginCommand_SpogWorkspaceArgumentNamesWorkspace(t *testing.T) {
-	arg, err := u2m.NewProfileWorkspaceOAuthArgumentWithDiscoveryURL("https://acme.databricks.test", SpogWorkspaceDiscoveryURL("https://acme.databricks.test", "123"), "")
-	require.NoError(t, err)
-	assert.Equal(t, "databricks auth login --host https://acme.databricks.test --workspace-id 123", BuildLoginCommand(t.Context(), "", arg))
-
-	plain, err := u2m.NewProfileWorkspaceOAuthArgument("https://dbc-123.cloud.databricks.test", "")
-	require.NoError(t, err)
-	assert.Equal(t, "databricks auth login --host https://dbc-123.cloud.databricks.test", BuildLoginCommand(t.Context(), "", plain))
 }

@@ -125,7 +125,7 @@ func TestLookupOAuthTokenEndpoint(t *testing.T) {
 	}))
 	defer server.Close()
 
-	endpoint, err := LookupOAuthTokenEndpoint(t.Context(), SpogWorkspaceDiscoveryURL(server.URL, "123"), nil)
+	endpoint, err := LookupOAuthTokenEndpoint(t.Context(), server.URL+"/oidc/.well-known/oauth-authorization-server?o=123", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "https://dbc-123.cloud.databricks.test/oidc/v1/token", endpoint)
 }
