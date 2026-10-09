@@ -36,10 +36,9 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 				}
 				p := structpath.NewPath(prefix, group.Description.PluralName, key)
 				diags = append(diags, diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
-					Locations: b.Config.LocationsAt(p),
-					Paths:     []*structpath.PathNode{p},
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("resource key %q must not contain variable references", key),
+					Paths:    []*structpath.PathNode{p},
 				})
 			}
 		}

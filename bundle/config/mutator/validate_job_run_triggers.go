@@ -30,34 +30,34 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 			path := structpath.NewPath(nil, "resources", "job_runs", name, "lifecycle", "triggers", i)
 			if t.OnBundleDeploy == nil && t.OnFileChange == nil {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
-					Locations: b.Config.GetLocationsOf(path),
+					Severity: diag.Error,
+					Summary:  "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+					Paths:    []*structpath.PathNode{path},
 				})
 				continue
 			}
 			if t.OnBundleDeploy != nil && t.OnFileChange != nil {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
-					Locations: b.Config.GetLocationsOf(path),
+					Severity: diag.Error,
+					Summary:  "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+					Paths:    []*structpath.PathNode{path},
 				})
 				continue
 			}
 			if t.OnBundleDeploy != nil && !*t.OnBundleDeploy {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers.on_bundle_deploy must be true when set",
-					Locations: b.Config.GetLocationsOf(structpath.NewPath(path, "on_bundle_deploy")),
+					Severity: diag.Error,
+					Summary:  "lifecycle.triggers.on_bundle_deploy must be true when set",
+					Paths:    []*structpath.PathNode{structpath.NewPath(path, "on_bundle_deploy")},
 				})
 			}
 			if t.OnFileChange != nil {
 				onFileChange := structpath.NewPath(path, "on_file_change")
 				if strings.TrimSpace(*t.OnFileChange) == "" {
 					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Error,
-						Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
-						Locations: b.Config.GetLocationsOf(onFileChange),
+						Severity: diag.Error,
+						Summary:  "lifecycle.triggers.on_file_change must be non-empty when set",
+						Paths:    []*structpath.PathNode{onFileChange},
 					})
 					continue
 				}

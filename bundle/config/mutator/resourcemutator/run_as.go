@@ -55,9 +55,9 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	}
 	if identityCount != 1 {
 		return diag.Diagnostics{{
-			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
-			Locations: []diag.Location{b.Config.GetLocation("run_as")},
-			Severity:  diag.Error,
+			Summary:  "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
+			Paths:    structpath.NewPathSlice("run_as"),
+			Severity: diag.Error,
 		}}
 	}
 
@@ -236,10 +236,9 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		setRunAsForJobs(b)
 		return diag.Diagnostics{
 			{
-				Severity:  diag.Warning,
-				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
-				Paths:     structpath.NewPathSlice("experimental", "use_legacy_run_as"),
-				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
+				Severity: diag.Warning,
+				Summary:  "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
+				Paths:    structpath.NewPathSlice("experimental", "use_legacy_run_as"),
 			},
 		}
 	}

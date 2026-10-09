@@ -35,11 +35,10 @@ func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	for _, check := range pathChecks {
 		if check.path != "" && strings.HasPrefix(check.path, "/Volumes/") {
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("%s %s starts with /Volumes. /Volumes can only be used with workspace.artifact_path.", check.configPath, check.path),
-				Detail:    "For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace",
-				Locations: b.Config.GetLocationsOf(check.configPath),
-				Paths:     []*structpath.PathNode{check.configPath},
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("%s %s starts with /Volumes. /Volumes can only be used with workspace.artifact_path.", check.configPath, check.path),
+				Detail:   "For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace",
+				Paths:    []*structpath.PathNode{check.configPath},
 			})
 
 			// Return early for root path validation

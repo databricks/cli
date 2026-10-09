@@ -115,6 +115,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 === deleting the file warns and re-fires
 >>> [CLI] bundle plan -o json
 Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:18:29
 
 
@@ -168,6 +169,7 @@ Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   }
 }
 Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:18:29
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
@@ -189,6 +191,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle plan
 Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:18:29
 
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

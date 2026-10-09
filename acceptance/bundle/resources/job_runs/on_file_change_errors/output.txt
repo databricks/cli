@@ -2,6 +2,7 @@
 === a pattern that escapes the sync root is rejected
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_file_change: pattern "../shared/*.txt" is not under the sync root
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -15,6 +16,7 @@ Found 1 error
 === a glob that only matches directories warns
 >>> [CLI] bundle validate
 Warning: lifecycle.triggers.on_file_change: no synced files match "dirs/*"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -28,6 +30,7 @@ Found 1 warning
 === a glob matching a directory and an excluded file warns
 >>> [CLI] bundle validate
 Warning: lifecycle.triggers.on_file_change: no synced files match "mixed/*"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -41,6 +44,7 @@ Found 1 warning
 === a glob matching only excluded files warns
 >>> [CLI] bundle validate
 Warning: lifecycle.triggers.on_file_change: no synced files match "allexcluded/*"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -54,6 +58,7 @@ Found 1 warning
 === a pattern that matches nothing warns
 >>> [CLI] bundle validate
 Warning: lifecycle.triggers.on_file_change: no synced files match "missing/*.txt"
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -67,6 +72,7 @@ Found 1 warning
 === ** is not supported
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_file_change: ** in "src/**" is not supported; use * for a single directory level
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -80,6 +86,7 @@ Found 1 error
 === an absolute pattern is rejected
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_file_change: pattern "/tmp/seed.txt" must be relative to the defining YAML file
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_file_change
   in databricks.yml:18:29
 
 Name: job-runs-on-file-change-errors

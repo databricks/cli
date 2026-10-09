@@ -77,11 +77,10 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 		path := structpath.MustParsePath("workspace.file_path")
 		diags = diags.Append(
 			diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   "workspace.file_path setting will be ignored in source-linked deployment mode",
-				Detail:    "In source-linked deployment files are not copied to the destination and resources use source files instead",
-				Paths:     []*structpath.PathNode{path},
-				Locations: b.Config.GetLocationsOf(path),
+				Severity: diag.Warning,
+				Summary:  "workspace.file_path setting will be ignored in source-linked deployment mode",
+				Detail:   "In source-linked deployment files are not copied to the destination and resources use source files instead",
+				Paths:    []*structpath.PathNode{path},
 			},
 		)
 	}

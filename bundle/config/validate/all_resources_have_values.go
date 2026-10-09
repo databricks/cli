@@ -39,10 +39,9 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 
 			p := structpath.NewPath(nil, "resources", group.Description.PluralName, rName)
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
-				Locations: b.Config.LocationsAt(p),
-				Paths:     []*structpath.PathNode{p},
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("%s %s is not defined", rType, rName),
+				Paths:    []*structpath.PathNode{p},
 			})
 		}
 	}

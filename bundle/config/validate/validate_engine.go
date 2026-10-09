@@ -40,14 +40,14 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
-	loc := b.Config.GetLocation("bundle.engine")
-
 	parsed, ok := engine.Parse(string(configEngine))
 	if !ok {
 		return diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
-			Locations: []diag.Location{loc},
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
+			Paths:    structpath.NewPathSlice("bundle", "engine"),
+			// Only the effective location; the automatic lookup would also add overridden ones.
+			Locations: []diag.Location{b.Config.GetLocation("bundle.engine")},
 		})
 	}
 
@@ -57,10 +57,12 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			severity = diag.Warning
 		}
 		return diags.Append(diag.Diagnostic{
-			Severity:  severity,
-			Summary:   engine.TerraformRemovedSummary,
-			Detail:    engine.TerraformRemovedConfigDetail,
-			Locations: []diag.Location{loc},
+			Severity: severity,
+			Summary:  engine.TerraformRemovedSummary,
+			Detail:   engine.TerraformRemovedConfigDetail,
+			Paths:    structpath.NewPathSlice("bundle", "engine"),
+			// Only the effective location; the automatic lookup would also add overridden ones.
+			Locations: []diag.Location{b.Config.GetLocation("bundle.engine")},
 		})
 	}
 

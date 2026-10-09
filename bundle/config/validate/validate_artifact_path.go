@@ -83,10 +83,9 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 	wrapErrorMsg := func(s string) diag.Diagnostics {
 		return diag.Diagnostics{
 			{
-				Summary:   s,
-				Severity:  diag.Error,
-				Locations: b.Config.GetLocations("workspace.artifact_path"),
-				Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
+				Summary:  s,
+				Severity: diag.Error,
+				Paths:    structpath.NewPathSlice("workspace", "artifact_path"),
 			},
 		}
 	}

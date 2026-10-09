@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle validate
 Error: invalid value "invalid_engine" for bundle.engine (expected "direct")
+  at bundle.engine
   in databricks.yml:3:11
 
 Name: test-engine-config

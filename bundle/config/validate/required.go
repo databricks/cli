@@ -48,10 +48,9 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			vv := v.Get(field)
 			if vv.Kind() == structvar.KindInvalid || vv.Kind() == structvar.KindNil {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("required field %q is not set", field),
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Warning,
+					Summary:  fmt.Sprintf("required field %q is not set", field),
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 		}
@@ -75,13 +74,12 @@ func sortDiagnostics(diags diag.Diagnostics) {
 			return n
 		}
 
-		// Then sort by locations as a tie breaker if summaries are the same.
-		if n := cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations)); n != 0 {
+		// Then by path: locations are filled in from paths only when the diagnostics are
+		// logged, after sorting.
+		if n := cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths)); n != 0 {
 			return n
 		}
-
-		// Sibling entries can share a location; fall back to path for a stable order.
-		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
+		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
 }
 
@@ -128,10 +126,9 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		if strings.TrimSpace(warehouse.Name) == "" {
 			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocationsOf(path),
-				Paths:     []*structpath.PathNode{path},
+				Severity: diag.Error,
+				Summary:  "sql_warehouse name is required",
+				Paths:    []*structpath.PathNode{path},
 			})
 		}
 	}
@@ -155,18 +152,16 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		func(np *structpath.PathNode, v structvar.View) error {
 			if isMissingOrEmptyString(v.Get("principal")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "grant principal is required",
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Error,
+					Summary:  "grant principal is required",
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 			if isMissingOrEmptySequence(v.Get("privileges")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "grant privileges is required",
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Error,
+					Summary:  "grant privileges is required",
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 			return nil

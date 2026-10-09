@@ -34,10 +34,9 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 		// the run is deleted and break the next deploy.
 		path := structpath.NewPath(nil, "resources", "job_runs", name, "idempotency_token")
 		diags = append(diags, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "idempotency_token must not be set in bundle configuration; the CLI sets it on each run-now request",
-			Paths:     []*structpath.PathNode{path},
-			Locations: b.Config.GetLocationsOf(path),
+			Severity: diag.Error,
+			Summary:  "idempotency_token must not be set in bundle configuration; the CLI sets it on each run-now request",
+			Paths:    []*structpath.PathNode{path},
 		})
 	}
 

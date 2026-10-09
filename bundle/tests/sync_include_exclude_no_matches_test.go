@@ -3,6 +3,7 @@ package config_tests
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -25,10 +26,12 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Len(t, diags[0].Paths, 1)
 	require.Equal(t, "sync.exclude[0]", diags[0].Paths[0].String())
 
-	assert.Len(t, diags[0].Locations, 1)
-	require.Equal(t, diags[0].Locations[0].File, path.Join("sync", "override", "databricks.yml"))
-	require.Equal(t, 17, diags[0].Locations[0].Line)
-	require.Equal(t, 11, diags[0].Locations[0].Column)
+	// Locations are filled from Paths by logdiag when the diagnostic is logged.
+	locations := b.Config.GetLocationsOf(diags[0].Paths[0])
+	assert.Len(t, locations, 1)
+	require.Equal(t, path.Join("sync", "override", "databricks.yml"), filepath.ToSlash(locations[0].File))
+	require.Equal(t, 17, locations[0].Line)
+	require.Equal(t, 11, locations[0].Column)
 
 	summaries := []string{
 		fmt.Sprintf("Pattern %s does not match any files", path.Join("src", "*")),

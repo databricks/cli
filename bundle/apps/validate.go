@@ -25,30 +25,30 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	for key, app := range b.Config.Resources.Apps {
 		if app.SourceCodePath == "" && app.GitSource == nil {
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Missing app source code path or git source",
-				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
+				Severity: diag.Error,
+				Summary:  "Missing app source code path or git source",
+				Detail:   fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
+				Paths:    structpath.NewPathSlice("resources", "apps", key),
 			})
 			continue
 		}
 
 		if app.SourceCodePath != "" && app.GitSource != nil {
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Both source_code_path and git_source fields are set",
-				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key)),
+				Severity: diag.Error,
+				Summary:  "Both source_code_path and git_source fields are set",
+				Detail:   fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
+				Paths:    structpath.NewPathSlice("resources", "apps", key),
 			})
 			continue
 		}
 
 		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Duplicate app source code path",
-				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
+				Severity: diag.Error,
+				Summary:  "Duplicate app source code path",
+				Detail:   fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
+				Paths:    structpath.NewPathSlice("resources", "apps", key, "source_code_path"),
 			})
 		}
 		usedSourceCodePaths[app.SourceCodePath] = key
@@ -167,8 +167,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				ref.permission,
 				appKey,
 			),
-			Paths:     []*structpath.PathNode{appPath},
-			Locations: b.Config.GetLocationsOf(appPath),
+			Paths: []*structpath.PathNode{appPath},
 		})
 	}
 

@@ -2,9 +2,11 @@
 >>> [CLI] bundle validate
 Warning: invalid value "12" for enum field. Valid values are [READ WRITE MANAGE]
   at resources.secret_scopes.bad_levels.permissions[0].level
+  in databricks.yml:7:7
 
 Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
   at resources.secret_scopes.bad_levels.permissions[1].level
+  in databricks.yml:7:7
 
 Name: test-bundle
 Target: default
@@ -17,9 +19,11 @@ Found 2 warnings
 >>> [CLI] bundle validate --strict
 Warning: invalid value "12" for enum field. Valid values are [READ WRITE MANAGE]
   at resources.secret_scopes.bad_levels.permissions[0].level
+  in databricks.yml:7:7
 
 Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
   at resources.secret_scopes.bad_levels.permissions[1].level
+  in databricks.yml:7:7
 
 Name: test-bundle
 Target: default

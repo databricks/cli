@@ -34,14 +34,14 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		for taskIndex, task := range job.Tasks {
 			taskPath := structpath.NewPath(resourcePath, "tasks", taskIndex)
 
-			diags = diags.Extend(validateJobTask(b, task, taskPath))
+			diags = diags.Extend(validateJobTask(task, taskPath))
 		}
 	}
 
 	return diags
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.PathNode) diag.Diagnostics {
+func validateJobTask(task jobs.Task, taskPath *structpath.PathNode) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string
@@ -74,7 +74,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.Path
 	if task.ForEachTask != nil {
 		forEachTaskPath := structpath.NewPath(taskPath, "for_each_task", "task")
 
-		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
+		diags = diags.Extend(validateJobTask(task.ForEachTask.Task, forEachTaskPath))
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -89,11 +89,10 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.Path
 			)
 
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Missing required cluster or environment settings",
-				Detail:    detail,
-				Locations: b.Config.GetLocationsOf(taskPath),
-				Paths:     []*structpath.PathNode{taskPath},
+				Severity: diag.Error,
+				Summary:  "Missing required cluster or environment settings",
+				Detail:   detail,
+				Paths:    []*structpath.PathNode{taskPath},
 			})
 		}
 	}
