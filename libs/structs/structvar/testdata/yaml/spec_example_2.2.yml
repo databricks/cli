@@ -1,0 +1,5 @@
+# Example 2.2 Mapping Scalars to Scalars (player statistics)
+
+hr:  65    # Home runs
+avg: 0.278 # Batting average
+rbi: 147   # Runs Batted In
