@@ -19,15 +19,6 @@
     "toolchain": {
         "required": [
             "go"
-        ],
-        "post_generate": [
-            "git checkout -- .gitattributes",
-            "rm .github/workflows/next-changelog.yml",
-            "mv tagging.py internal/genkit/tagging.py",
-            "mv tagging.py.lock internal/genkit/tagging.py.lock",
-            "if [ \"$(uname)\" = \"Darwin\" ]; then sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml; else sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml; fi",
-            "if [ \"$(uname)\" = \"Darwin\" ]; then sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\\{0,1\\}|https://pypi.org/simple|g' internal/genkit/*.py.lock; else sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\\{0,1\\}|https://pypi.org/simple|g' internal/genkit/*.py.lock; fi",
-            "go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml"
         ]
     }
 }
