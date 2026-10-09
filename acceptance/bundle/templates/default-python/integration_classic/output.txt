@@ -34,7 +34,7 @@ Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UN
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Created jobs.sample_job
 Created pipelines.project_name_[UNIQUE_NAME]_etl
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t dev
@@ -294,7 +294,7 @@ Created jobs.sample_job
 Created jobs.sample_job.permissions
 Created pipelines.project_name_[UNIQUE_NAME]_etl
 Created pipelines.project_name_[UNIQUE_NAME]_etl.permissions
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t prod
