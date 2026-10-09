@@ -128,10 +128,9 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		if strings.TrimSpace(warehouse.Name) == "" {
 			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocationsOf(path),
-				Paths:     []*structpath.PathNode{path},
+				Severity: diag.Error,
+				Summary:  "sql_warehouse name is required",
+				Paths:    []*structpath.PathNode{path},
 			})
 		}
 	}

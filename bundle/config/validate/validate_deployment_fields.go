@@ -32,10 +32,9 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 		}
 		path := structpath.NewPath(resource, "deployment", field)
 		diags = append(diags, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
-			Paths:     []*structpath.PathNode{path},
-			Locations: b.Config.GetLocationsOf(path),
+			Severity: diag.Error,
+			Summary:  field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
+			Paths:    []*structpath.PathNode{path},
 		})
 	}
 
