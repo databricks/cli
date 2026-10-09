@@ -638,6 +638,13 @@ func isGitCliFolder(repoPath string) bool {
 }
 
 func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo bool) Response {
+	if !strings.HasPrefix(requestPath, "/") {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": fmt.Sprintf("Path (%s) doesn't start with '/'", requestPath)},
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	// The real API collapses duplicate slashes, so look up the cleaned path.

@@ -2,14 +2,18 @@ package phases
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -71,7 +75,11 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
 	w := b.WorkspaceClient(ctx)
-	metadata := deploymentMetadata(b)
+	metadata, err := deploymentMetadata(b)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("failed to compute deployment metadata: %w", err))
+		return
+	}
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
 		dep := metadata.Deployment()
@@ -180,7 +188,7 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
 
 // deploymentMetadata describes the bundle this deploy came from and where it
 // landed, mirroring what bundle/deploy/metadata computes for the metadata file.
-func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
+func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 	p := dms.Metadata{
 		DisplayName: b.Config.Bundle.Name,
 		TargetName:  b.Config.Bundle.Target,
@@ -190,6 +198,15 @@ func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
 	ws := &bundledeployments.WorkspaceInfo{
 		RootPath: b.Config.Workspace.RootPath,
 		FilePath: b.Config.Workspace.FilePath,
+	}
+	// With an immutable folder, file_path is a reference to the snapshot, which only
+	// resolves once the snapshot is uploaded. Its path is already known from the plan.
+	if b.IsImmutableFolder() {
+		snapshotPath, err := immutableSnapshotPath(b)
+		if err != nil {
+			return dms.Metadata{}, err
+		}
+		ws.FilePath = path.Join(snapshotPath, "files")
 	}
 	// In a source-linked deployment files are not copied, so resources read them
 	// from the sync root instead of file_path (see bundle/deploy/metadata.Compute).
@@ -204,7 +221,31 @@ func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
 		ws.BundleRootPath = b.Config.Bundle.Git.BundleRootPath
 	}
 	p.Workspace = ws
-	return p
+	return p, nil
+}
+
+// immutableSnapshotPath returns the workspace path of the immutable folder snapshot. The
+// snapshot is not uploaded yet at this point, but its content-addressed path is already known.
+func immutableSnapshotPath(b *bundle.Bundle) (string, error) {
+	if sv, ok := b.DeploymentBundle.StateCache.Load(resources.SnapshotKey); ok {
+		state, ok := sv.Value.(*dresources.SnapshotState)
+		if !ok {
+			return "", fmt.Errorf("unexpected state type %T for %s", sv.Value, resources.SnapshotKey)
+		}
+		return state.FullPath, nil
+	}
+
+	// An unchanged snapshot has no planned state when deploying from a saved plan. Its
+	// recorded state is what the plan would have held.
+	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
+	if !ok {
+		return "", fmt.Errorf("no state for %s", resources.SnapshotKey)
+	}
+	var state dresources.SnapshotState
+	if err := json.Unmarshal(entry.State, &state); err != nil {
+		return "", fmt.Errorf("failed to read state of %s: %w", resources.SnapshotKey, err)
+	}
+	return state.FullPath, nil
 }
 
 // deploymentModeToSDK maps the bundle target's mode to the DMS enum. An unset mode
