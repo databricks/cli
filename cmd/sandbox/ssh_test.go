@@ -55,13 +55,24 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			wantStatus:    "Running",
 		},
 		{
-			name:          "stopped after start remains an error",
+			name:          "transient stopped after start is tolerated",
 			initialStatus: "Stopped",
 			steps: []requestStep{
 				{method: http.MethodPost, path: sandboxPath("test-id") + "/start", status: "Pending"},
 				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Stopped"},
+				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Running"},
 			},
-			wantErr:    `sandbox test-id reached unexpected state "Stopped" while starting`,
+			wantStatus: "Running",
+			wantStarts: 1,
+		},
+		{
+			name:          "failed after start remains an error",
+			initialStatus: "Stopped",
+			steps: []requestStep{
+				{method: http.MethodPost, path: sandboxPath("test-id") + "/start", status: "Pending"},
+				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Failed"},
+			},
+			wantErr:    `sandbox test-id reached unexpected state "Failed" while starting`,
 			wantStarts: 1,
 		},
 	} {
