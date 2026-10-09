@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
@@ -95,6 +97,8 @@ func mergeDescriptor(a, b annotation.Descriptor) annotation.Descriptor {
 		case g.IsZero():
 		case f.Kind() == reflect.Slice:
 			f.Set(reflect.AppendSlice(reflect.AppendSlice(reflect.Zero(f.Type()), f), g))
+		case f.Kind() == reflect.Interface:
+			f.Set(reflect.ValueOf(mergeAny(f.Interface(), g.Interface())))
 		case f.Kind() == reflect.Map:
 			m := reflect.MakeMap(f.Type())
 			for _, v := range []reflect.Value{f, g} {
@@ -108,6 +112,28 @@ func mergeDescriptor(a, b annotation.Descriptor) annotation.Descriptor {
 		}
 	}
 	return a
+}
+
+// mergeAny merges b over a like mergeDescriptor merges fields: maps merge by key
+// (recursively), sequences concatenate and other values are replaced.
+func mergeAny(a, b any) any {
+	switch bv := b.(type) {
+	case map[string]any:
+		av, ok := a.(map[string]any)
+		if !ok {
+			return b
+		}
+		out := maps.Clone(av)
+		for k, v := range bv {
+			out[k] = mergeAny(av[k], v)
+		}
+		return out
+	case []any:
+		if av, ok := a.([]any); ok {
+			return slices.Concat(av, bv)
+		}
+	}
+	return b
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {

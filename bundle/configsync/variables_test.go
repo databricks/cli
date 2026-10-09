@@ -85,6 +85,15 @@ func TestRestoreFromSiblings_ValueMatchesVariableButDifferentPath(t *testing.T) 
 // TestRestoreFromSiblings_AmbiguousAcrossSiblings fences the multi-variable
 // same-value rule: when two siblings use different variables at the same
 // relative path that both resolve to the same value, restoration is skipped.
+func TestRestoreFromSiblings_IntVariableMatchesInt64Field(t *testing.T) {
+	// The variable decodes from YAML as int; the remote field is a typed int64.
+	siblings := tasksView(t, `task_key: main, max_retries: "${var.retry_count}"`)
+	resolved := variablesConfig(t, map[string]any{"retry_count": 5})
+	value := map[string]any{"task_key": "other", "max_retries": int64(5)}
+	result := restoreFromSiblings(value, siblings, resolved, &RestoreStats{}).(map[string]any)
+	assert.Equal(t, "${var.retry_count}", result["max_retries"])
+}
+
 func TestRestoreFromSiblings_AmbiguousAcrossSiblings(t *testing.T) {
 	siblings := tasksView(t, `task_key: "${var.landing_schema}"`, `task_key: "${var.curated_schema}"`)
 	resolved := variablesConfig(t, map[string]any{"landing_schema": "raw_data", "curated_schema": "raw_data"})
