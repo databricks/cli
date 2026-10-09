@@ -270,3 +270,16 @@ func TestBuildEnumDescriptions(t *testing.T) {
 		assert.Equal(t, []string{"[Public Preview]", "", "[Beta]"}, got)
 	})
 }
+
+func TestMergeAnnotationFilesMergesDefaults(t *testing.T) {
+	a := annotation.File{}
+	a.SetField("t", "f", annotation.Descriptor{Default: map[string]any{"a": 1, "nested": map[string]any{"x": 1}}})
+	a.SetField("t", "g", annotation.Descriptor{Default: []any{1}})
+	b := annotation.File{}
+	b.SetField("t", "f", annotation.Descriptor{Default: map[string]any{"b": 2, "nested": map[string]any{"y": 2}}})
+	b.SetField("t", "g", annotation.Descriptor{Default: []any{2}})
+
+	merged := mergeAnnotationFiles(a, b)
+	assert.Equal(t, map[string]any{"a": 1, "b": 2, "nested": map[string]any{"x": 1, "y": 2}}, merged["t"].Fields["f"].Default)
+	assert.Equal(t, []any{1, 2}, merged["t"].Fields["g"].Default)
+}
