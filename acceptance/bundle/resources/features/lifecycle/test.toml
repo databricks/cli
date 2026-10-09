@@ -1,4 +1,8 @@
-Cloud = true
+# Cloud = false until the feature-engineering service reaches the production stages: the cloud
+# test environments are production workspaces and still serve a build that rejects the create
+# payload this resource sends. Verified passing against a staging workspace running a build that
+# carries the fix. Re-enable once production has it.
+Cloud = false
 
 Ignore = [
     ".databricks",
