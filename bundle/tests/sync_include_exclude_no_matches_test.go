@@ -3,6 +3,7 @@ package config_tests
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -28,7 +29,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	// Locations are filled from Paths by logdiag when the diagnostic is logged.
 	locations := b.Config.GetLocationsOf(diags[0].Paths[0])
 	assert.Len(t, locations, 1)
-	require.Equal(t, locations[0].File, path.Join("sync", "override", "databricks.yml"))
+	require.Equal(t, path.Join("sync", "override", "databricks.yml"), filepath.ToSlash(locations[0].File))
 	require.Equal(t, 17, locations[0].Line)
 	require.Equal(t, 11, locations[0].Column)
 

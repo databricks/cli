@@ -44,6 +44,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:23:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared/files...
@@ -107,6 +108,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:47:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...

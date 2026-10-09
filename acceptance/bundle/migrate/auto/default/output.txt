@@ -7,6 +7,7 @@
 
 >>> [CLI] bundle summary
 Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  at bundle.engine
   in databricks.yml:1:37
 
 Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
@@ -26,6 +27,7 @@ Resources:
 
 >>> [CLI] bundle summary -o json
 Warning: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  at bundle.engine
   in databricks.yml:1:37
 
 Remove the "bundle.engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, revert to Databricks CLI v1.19.x.
