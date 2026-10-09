@@ -70,16 +70,15 @@ func validateScriptContent(b *bundle.Bundle, key, content string, p *structpath.
 		Severity: diag.Error,
 		Summary:  fmt.Sprintf("Found %s in script %s.content. Interpolation syntax ${...} is not supported in script content", first, key),
 		Detail: `The ${...} syntax is not allowed in script content. To use a bundle value,
-declare an environment variable in the script's "env:" section and reference it
-from "content" with $NAME:
+	declare an environment variable in the script's "env:" section and reference it
+	from "content" with $NAME:
 
-  scripts:
-    ` + key + `:
-      env:
-        MY_VAR: ${var.foo}
-      content: echo "$MY_VAR"`,
-		Locations: b.Config.ExactLocations(p),
-		Paths:     []*structpath.PathNode{p},
+	  scripts:
+	    ` + key + `:
+	      env:
+	        MY_VAR: ${var.foo}
+	      content: echo "$MY_VAR"`,
+		Paths: []*structpath.PathNode{p},
 	}}
 }
 
@@ -100,10 +99,9 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 				continue
 			}
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("${%s} cannot be used in scripts.%s.env.%s; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute", refPath, key, name),
-				Locations: b.Config.ExactLocations(envValuePath),
-				Paths:     []*structpath.PathNode{envValuePath},
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("${%s} cannot be used in scripts.%s.env.%s; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute", refPath, key, name),
+				Paths:    []*structpath.PathNode{envValuePath},
 			})
 		}
 	}

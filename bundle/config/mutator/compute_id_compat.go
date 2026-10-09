@@ -57,10 +57,9 @@ func rewriteComputeIdToClusterId(b *bundle.Bundle, p *structpath.PathNode, v str
 	}
 
 	diags = diags.Append(diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   "compute_id is deprecated, please use cluster_id instead",
-		Locations: computeId.Locations(),
-		Paths:     []*structpath.PathNode{structpath.NewStringKey(p, "compute_id")},
+		Severity: diag.Warning,
+		Summary:  "compute_id is deprecated, please use cluster_id instead",
+		Paths:    []*structpath.PathNode{structpath.NewStringKey(p, "compute_id")},
 	})
 
 	err := b.Config.Assign(structpath.NewStringKey(p, "cluster_id"), computeId)

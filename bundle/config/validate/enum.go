@@ -61,10 +61,9 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		if !validValue {
 			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
-				Locations: v.Locations(),
-				Paths:     []*structpath.PathNode{np},
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
+				Paths:    []*structpath.PathNode{np},
 			})
 		}
 
