@@ -14,6 +14,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
@@ -31,6 +32,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
@@ -55,6 +57,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -70,6 +73,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 
@@ -84,6 +88,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  at permissions
   in databricks.yml:5:3
 
 The following resources will be deleted:
