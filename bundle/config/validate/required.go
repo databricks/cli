@@ -74,13 +74,12 @@ func sortDiagnostics(diags diag.Diagnostics) {
 			return n
 		}
 
-		// Then sort by locations as a tie breaker if summaries are the same.
-		if n := cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations)); n != 0 {
+		// Then by path: locations are filled in from paths only when the diagnostics are
+		// logged, after sorting.
+		if n := cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths)); n != 0 {
 			return n
 		}
-
-		// Sibling entries can share a location; fall back to path for a stable order.
-		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
+		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
 }
 

@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"maps"
@@ -73,16 +72,7 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	// Sort diagnostics to make them deterministic
-	slices.SortFunc(diags, func(a, b diag.Diagnostic) int {
-		// First sort by summary
-		if n := cmp.Compare(a.Summary, b.Summary); n != 0 {
-			return n
-		}
-
-		// Then sort by locations as a tie breaker if summaries are the same.
-		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
-	})
+	sortDiagnostics(diags)
 
 	return diags
 }
