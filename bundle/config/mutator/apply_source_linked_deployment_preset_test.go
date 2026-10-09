@@ -138,12 +138,12 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 
 			if tt.expectedWarning != "" {
 				require.Equal(t, tt.expectedWarning, diags[0].Summary)
-				require.NotEmpty(t, diags[0].Locations)
+				require.NotEmpty(t, diags[0].Paths)
 			}
 
 			if tt.expectedError != "" {
 				require.Equal(t, tt.expectedError, diags[0].Summary)
-				require.NotEmpty(t, diags[0].Locations)
+				require.NotEmpty(t, diags[0].Paths)
 			}
 
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)

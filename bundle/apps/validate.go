@@ -159,8 +159,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 				ref.permission,
 				appKey,
 			),
-			Paths:     []*structpath.PathNode{appPath},
-			Locations: b.Config.NearestLocations(appPath),
+			Paths: []*structpath.PathNode{appPath},
 		})
 	}
 

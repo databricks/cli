@@ -242,7 +242,7 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 // The closure reads b.Config at log time, so later configuration changes are seen.
 func setLocationsOf(ctx context.Context, b *Bundle) {
 	logdiag.SetLocationsOf(ctx, func(p *structpath.PathNode) []diag.Location {
-		return b.Config.GetLocationsOf(p)
+		return b.Config.NearestLocations(p)
 	})
 }
 
