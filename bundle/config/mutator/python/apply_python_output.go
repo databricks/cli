@@ -33,14 +33,6 @@ func applyPythonOutput(root, output structvar.View) (*structvar.OverridePlan, ap
 	return plan, result, nil
 }
 
-// addResourceKeys adds the keys of the resources in root that match pattern.
-func addResourceKeys(set resourcemutator.ResourceKeySet, pattern *structpath.PatternNode, root structvar.View) error {
-	return structvar.ForEach(root, pattern, func(np *structpath.PathNode, _ structvar.View) error {
-		set.AddResourceKey(resourcemutator.ResourceKey{Type: np.KeyAt(1), Name: np.KeyAt(2)})
-		return nil
-	})
-}
-
 func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutputResult, structvar.OverrideVisitor) {
 	resourcesPath := structpath.MustParsePath("resources")
 	deleted := resourcemutator.NewResourceKeySet()
@@ -66,7 +58,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ..., "resources": ...},
 				// rightRoot: {"bundle": ...}
 
-				return addResourceKeys(deleted,
+				return deleted.AddPattern(
 					structpath.MustParsePattern("resources.*.*"),
 					leftRoot,
 				)
@@ -77,7 +69,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": { "jobs": ..., "pipeline": ...}}},
 				// rightRoot: {"resources": { "jobs": ...}}},
 
-				return addResourceKeys(deleted,
+				return deleted.AddPattern(
 					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
 					leftRoot,
 				)
@@ -109,7 +101,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ...,                    }
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
-				return addResourceKeys(added,
+				return added.AddPattern(
 					structpath.MustParsePattern("resources.*.*"),
 					rightRoot,
 				)
@@ -120,7 +112,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": {               }}
 				// rightRoot: {"resources": { "jobs": {...} }}
 
-				return addResourceKeys(added,
+				return added.AddPattern(
 					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
 					rightRoot,
 				)
@@ -156,7 +148,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"bundle": ..., "resources": null  }
 				// rightRoot: {"bundle": ..., "resources": {...} }
 
-				return addResourceKeys(added,
+				return added.AddPattern(
 					structpath.MustParsePattern("resources.*.*"),
 					rightRoot,
 				)
@@ -167,7 +159,7 @@ func createOverrideVisitor(leftRoot, rightRoot structvar.View) (applyPythonOutpu
 				// leftRoot:  {"resources": { "jobs": null  }}
 				// rightRoot: {"resources": { "jobs": {...} }}
 
-				return addResourceKeys(added,
+				return added.AddPattern(
 					structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), np.KeyAt(1))),
 					rightRoot,
 				)
