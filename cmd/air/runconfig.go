@@ -896,16 +896,6 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
 }
 
-func filterKnownComputeOptions(options []computeOption) []computeOption {
-	result := make([]computeOption, 0, len(options))
-	for _, option := range options {
-		if _, err := parseGPUType(option.HardwareAccelerator); err == nil {
-			result = append(result, option)
-		}
-	}
-	return result
-}
-
 func fallbackComputeOptions() []computeOption {
 	options := make([]computeOption, 0, len(gpuTypes))
 	for _, acceleratorType := range gpuTypes {

@@ -295,7 +295,6 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 		}
 		return fallbackComputeOptions()
 	}
-	options = filterKnownComputeOptions(options)
 	if len(options) == 0 {
 		cmd.PrintErrln("Warning: the workspace reported no supported accelerator types; showing the built-in list instead")
 		return fallbackComputeOptions()
