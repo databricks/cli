@@ -7,7 +7,6 @@
 The agent instructions live in AGENTS.md and .agents/ (rules, skills). Most agents
 reach them through a single committed symlink that needs no per-rule upkeep:
 
-  - CLAUDE.md                      -> AGENTS.md
   - .github/custom-instructions.md -> AGENTS.md
   - .claude/rules, .claude/skills  -> .agents/rules, .agents/skills  (directory links)
 
