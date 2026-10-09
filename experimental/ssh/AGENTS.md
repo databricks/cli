@@ -1,7 +1,7 @@
 # Working on `experimental/ssh`
 
 This file provides guidance to AI assistants working on the SSH tunnel. See the
-repository root `CLAUDE.md` for project-wide rules.
+repository root `AGENTS.md` for project-wide rules.
 
 ## Testing an `ssh connect` change against real compute
 
