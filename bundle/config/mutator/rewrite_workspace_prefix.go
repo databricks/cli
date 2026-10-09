@@ -61,11 +61,10 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 
 			newPath = strings.ReplaceAll(newPath, rewrite.pattern, rewrite.replacement)
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", rewrite.pattern, vv, newPath),
-				Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
-				Locations: v.Locations(),
-				Paths:     []*structpath.PathNode{p},
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("substring %q found in %q. Please update this to %q.", rewrite.pattern, vv, newPath),
+				Detail:   "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
+				Paths:    []*structpath.PathNode{p},
 			})
 		}
 

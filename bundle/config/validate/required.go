@@ -48,10 +48,9 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			vv := v.Get(field)
 			if vv.Kind() == structvar.KindInvalid || vv.Kind() == structvar.KindNil {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("required field %q is not set", field),
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Warning,
+					Summary:  fmt.Sprintf("required field %q is not set", field),
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 		}
@@ -154,18 +153,16 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		func(np *structpath.PathNode, v structvar.View) error {
 			if isMissingOrEmptyString(v.Get("principal")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "grant principal is required",
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Error,
+					Summary:  "grant principal is required",
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 			if isMissingOrEmptySequence(v.Get("privileges")) {
 				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "grant privileges is required",
-					Locations: v.Locations(),
-					Paths:     []*structpath.PathNode{np},
+					Severity: diag.Error,
+					Summary:  "grant privileges is required",
+					Paths:    []*structpath.PathNode{np},
 				})
 			}
 			return nil

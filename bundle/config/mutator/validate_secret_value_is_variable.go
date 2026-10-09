@@ -29,11 +29,10 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 		val := b.Config.View().Lookup(p)
 		if !val.IsValid() {
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Secret value must be a string",
-				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
-				Locations: val.Locations(),
-				Paths:     []*structpath.PathNode{p},
+				Severity: diag.Error,
+				Summary:  "Secret value must be a string",
+				Detail:   fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
+				Paths:    []*structpath.PathNode{p},
 			})
 			continue
 		}
@@ -41,11 +40,10 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 		valueStr, ok := val.AsString()
 		if !ok {
 			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Secret value must be a string",
-				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
-				Locations: val.Locations(),
-				Paths:     []*structpath.PathNode{p},
+				Severity: diag.Error,
+				Summary:  "Secret value must be a string",
+				Detail:   fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
+				Paths:    []*structpath.PathNode{p},
 			})
 			continue
 		}
@@ -58,8 +56,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 				Detail: fmt.Sprintf(`The secret value for "%s" must be a variable reference (e.g., ${var.my_secret}).
 Plain text secret values are not allowed to prevent leaking secrets in configuration files.
 Use bundle variables to pass secret values at deployment time.`, key),
-				Locations: val.Locations(),
-				Paths:     []*structpath.PathNode{p},
+				Paths: []*structpath.PathNode{p},
 			})
 			continue
 		}
