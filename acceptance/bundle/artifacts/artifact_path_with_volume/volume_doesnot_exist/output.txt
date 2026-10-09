@@ -19,6 +19,7 @@
 }
 
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "artifact_path_with_volume-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Error: volume main.schema-[UNIQUE_NAME].doesnotexist does not exist
   at workspace.artifact_path
   in databricks.yml:6:18

@@ -81,6 +81,7 @@ Warning: unknown field: description
   at resources.experiments.experiment
   in resources/ml-artifacts-resource.yml:28:7
 
+Creating a new deployment of bundle "project_name_[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Created experiments.experiment
 Created experiments.experiment.permissions

@@ -1,5 +1,6 @@
 
 === Deploying a policy with both definition and policy_family_id must fail
+Creating a new deployment of bundle "cluster_policy_definition_and_family_conflict" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Error: cannot create resources.cluster_policies.pol: policy_family_id and definition cannot be used together (400 INVALID_PARAMETER_VALUE)
 

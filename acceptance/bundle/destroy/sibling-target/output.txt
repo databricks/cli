@@ -1,10 +1,12 @@
 
 >>> [CLI] bundle deploy -t dev
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t prod
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged

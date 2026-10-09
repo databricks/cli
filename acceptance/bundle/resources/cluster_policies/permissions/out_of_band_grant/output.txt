@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test_cluster_policy_permissions_drift" at /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
 Created cluster_policies.test_cluster_policy
 Created cluster_policies.test_cluster_policy.permissions

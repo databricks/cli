@@ -4,6 +4,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   at resources.pipelines.foo.development
   in databricks.yml:14:20
 
+Creating a new deployment of bundle "uc-schema-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created pipelines.foo
 Created schemas.bar

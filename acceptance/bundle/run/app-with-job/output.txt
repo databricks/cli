@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy --force-lock --auto-approve
+Creating a new deployment of bundle "basic" at /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
 Created apps.test_app
 Created jobs.foo

@@ -8,6 +8,7 @@
 ]
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.foo
 Created jobs.foo.permissions

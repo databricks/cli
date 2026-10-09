@@ -7,6 +7,7 @@ create vector_search_indexes.my_index.grants
 Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "vs-index-grants-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index

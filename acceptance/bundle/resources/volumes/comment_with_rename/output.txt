@@ -1,6 +1,7 @@
 
 === Deploy a volume that does not declare a comment
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
 Created volumes.volume1

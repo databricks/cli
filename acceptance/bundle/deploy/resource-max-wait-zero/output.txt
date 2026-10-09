@@ -1,6 +1,7 @@
 
 === Zero cap: the create wait is skipped entirely
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Warn: deploying resources.clusters.my_cluster: Not waiting for creation of resources.clusters.my_cluster (DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0); it may still be in progress
 Created clusters.my_cluster
@@ -20,6 +21,7 @@ Destroy: 1 deleted
 
 === No cap: the deployment polls until the cluster is RUNNING
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created clusters.my_cluster
 Files: 0 uploaded, 0 deleted

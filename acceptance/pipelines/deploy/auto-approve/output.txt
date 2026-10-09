@@ -1,5 +1,6 @@
 
 >>> [CLI] pipelines deploy
+Creating a new deployment of bundle "test-pipeline-auto-approve" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 Created pipelines.foo
 Files: 2 uploaded, 0 deleted

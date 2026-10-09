@@ -1,6 +1,7 @@
 
 === bundle deploy uploads the wheel
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "whl-upload" at /Workspace/Users/[USERNAME]/.bundle/whl-upload/default
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-upload/default/files...
 Created jobs.my_job
@@ -26,6 +27,7 @@ Destroy: 1 deleted
 
 === bundle deploy --plan also uploads the wheel
 >>> [CLI] bundle deploy --plan tmp.plan.json
+Creating a new deployment of bundle "whl-upload" at /Workspace/Users/[USERNAME]/.bundle/whl-upload/default
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-upload/default/files...
 Created jobs.my_job

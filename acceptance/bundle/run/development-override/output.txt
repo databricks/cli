@@ -5,6 +5,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   at resources.pipelines.my_pipeline.development
   in databricks.yml:8:20
 
+Creating a new deployment of bundle "test-pipeline-dev-override" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-override/prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-override/prod/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted

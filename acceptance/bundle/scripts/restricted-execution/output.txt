@@ -5,6 +5,7 @@ Executing 'preinit' script
 preinit value_from_env
 Executing 'postinit' script
 postinit value_from_env
+Creating a new deployment of bundle "scripts_with_restricted_execution" at /Workspace/Users/[USERNAME]/.bundle/scripts_with_restricted_execution/default
 Executing 'prebuild' script
 prebuild value_from_env
 Executing 'postbuild' script

@@ -1,6 +1,7 @@
 
 === Step 1: Deploy with job_1 only
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "stale_state_test" at /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
 Created jobs.job_1
 Files: 2 uploaded, 0 deleted

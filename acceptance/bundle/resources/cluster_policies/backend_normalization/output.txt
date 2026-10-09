@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "cluster_policy_backend_normalization" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.json_string
 Created cluster_policies.multiline

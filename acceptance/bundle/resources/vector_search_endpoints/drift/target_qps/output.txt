@@ -1,6 +1,7 @@
 
 === Initial deployment
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "drift-vs-endpoint-target-qps-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted

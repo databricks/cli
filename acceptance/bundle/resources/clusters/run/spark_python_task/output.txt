@@ -4,6 +4,7 @@
 >>> cp [TESTROOT]/bundle/resources/clusters/run/spark_python_task/../../deploy/simple/databricks.yml.tmpl .
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-deploy-cluster-simple" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.test_cluster
 Created jobs.foo

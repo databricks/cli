@@ -3,6 +3,7 @@
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "secret-scope-collapse-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default/files...
 Created secret_scopes.my_scope
 Created secret_scopes.my_scope.permissions

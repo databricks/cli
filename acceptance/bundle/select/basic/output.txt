@@ -23,6 +23,7 @@ create jobs.foo
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 1 not selected
 
 === bundle deploy --select jobs.foo
+Creating a new deployment of bundle "select-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
 Created jobs.bar
 Created jobs.foo

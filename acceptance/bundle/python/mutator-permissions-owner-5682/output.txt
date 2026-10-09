@@ -6,6 +6,7 @@
 ]
 
 >>> uv run [UV_ARGS] -q [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created pipelines.my_pipeline
 Created pipelines.my_pipeline.permissions

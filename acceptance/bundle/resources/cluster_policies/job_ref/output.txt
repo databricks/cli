@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "cluster_policy_job_ref" at /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
 Created cluster_policies.pol
 Created jobs.j

@@ -1,6 +1,7 @@
 
 === Deploy records version 3 and the deployment_history feature, with resources held in DMS
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-state-features-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted
