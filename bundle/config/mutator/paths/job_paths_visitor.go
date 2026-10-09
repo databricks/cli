@@ -67,16 +67,7 @@ func jobRewritePatterns() []jobRewritePattern {
 	patterns := append(taskPatterns, forEachPatterns...)
 	return append(patterns,
 		jobRewritePattern{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environment_variables"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("files"),
-				dyn.AnyIndex(),
-			),
+			structpath.MustParsePattern("resources.jobs.*.environment_variables[*].spec.files[*]"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
