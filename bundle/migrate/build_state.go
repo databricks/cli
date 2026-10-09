@@ -13,8 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -58,18 +56,20 @@ func BuildStateFromTF(
 	warningsSeen := false
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+	rootView := configRoot.View()
+
+	patterns := []*structpath.PatternNode{
+		structpath.MustParsePattern("resources.*.*"),
+		structpath.MustParsePattern("resources.*.*.permissions"),
+		structpath.MustParsePattern("resources.*.*.grants"),
 	}
 	for _, pat := range patterns {
-		_, err := dyn.MapByPattern(
-			configRoot.Value(),
+		err := structvar.ForEach(
+			rootView,
 			pat,
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			func(p *structpath.PathNode, _ structvar.View) error {
 				nodes = append(nodes, p.String())
-				return dyn.InvalidValue, nil
+				return nil
 			},
 		)
 		if err != nil {
@@ -112,7 +112,7 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
 
-		refs, err := direct.ExtractReferences(configRoot.Value(), node, adapter.StateType())
+		refs, err := direct.ExtractReferences(rootView, node, adapter.StateType())
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
 		}
@@ -125,12 +125,12 @@ func BuildStateFromTF(
 		// Same logic as makePlan in bundle/direct/bundle_plan.go.
 		var dependsOn []deployplan.DependsOnEntry //nolint:prealloc
 		for _, refTemplate := range refs {
-			ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+			ref, ok := structvar.NewRef(refTemplate)
 			if !ok {
 				continue
 			}
 			for _, targetPath := range ref.References() {
-				targetPathParsed, err := dyn.NewPathFromString(targetPath)
+				targetPathParsed, err := structpath.ParsePath(targetPath)
 				if err != nil {
 					continue
 				}

@@ -3,26 +3,26 @@ package configsync
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-// varPrefix is the dyn.Path prefix for the ${var.X} shorthand.
-var varPrefix = dyn.NewPath(dyn.Key("var"))
+// varPrefix is the path prefix for the ${var.X} shorthand.
+var varPrefix = structpath.NewStringKey(nil, "var")
 
 // RestoreVariableReferences replaces hardcoded change values with variable
 // references (${var.foo}, ${bundle.target}, ${resources.X.Y.id}) when the
 // value can be traced back to a reference in the original YAML. Resource IDs
 // are injected from state since they aren't materialized into the resolved
-// config's dyn.Value tree.
+// config's tree.
 //
 // For Replace operations, restoration consults the pre-resolved YAML at the
 // exact field position and tries three steps in order:
@@ -52,11 +52,11 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // Restoration counts by mechanism are accumulated into stats (used for
 // telemetry); pass nil when counters are not needed (the counter methods are
 // nil-safe).
-func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, preResolved dyn.Value, stats *RestoreStats) error {
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, preResolved structvar.View, stats *RestoreStats) error {
 	if !preResolved.IsValid() {
 		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
 	}
-	resolved := b.Config.Value()
+	resolved := resolvedConfig{view: b.Config.View(), overrides: map[string]any{}}
 
 	// Mirror mutator.lookup's source-linked deployment override: when enabled,
 	// ${workspace.file_path} resolves to b.SyncRootPath rather than the typed
@@ -65,21 +65,18 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	// actual deployed path and variables are lost on Replace. Keep this in
 	// sync with mutator.lookup if new overrides are added there.
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		fpPath := dyn.NewPath(dyn.Key("workspace"), dyn.Key("file_path"))
-		if updated, err := dyn.SetByPath(resolved, fpPath, dyn.V(b.SyncRootPath)); err == nil {
-			resolved = updated
-		}
+		resolved.overrides["workspace.file_path"] = b.SyncRootPath
 	}
 
 	// Augment resolved with resource IDs from state — only when the config
 	// actually uses ${resources.X.Y.id} references. The IDs aren't materialized
-	// into b.Config.Value() (they live in the StateDB), so we inject them here
+	// into b.Config (they live in the StateDB), so we inject them here
 	// to enable sibling-based restoration. Skipped entirely for bundles with
 	// no resource refs to avoid opening state DB files unnecessarily.
 	resourceRefs := collectResourceIDRefs(preResolved)
 	if len(resourceRefs) > 0 {
 		if lookup := resourceIDLookup(b); lookup != nil {
-			resolved = injectResourceIDs(ctx, resolved, resourceRefs, lookup)
+			injectResourceIDs(ctx, resolved, resourceRefs, lookup)
 		} else {
 			log.Debugf(ctx, "variable restoration: state DB unavailable, skipping resource ID injection for %d refs", len(resourceRefs))
 		}
@@ -116,10 +113,10 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 
 // LoadPreResolvedConfig loads the bundle's configuration through the standard
 // loader mutators (entry point, includes, target overrides) but without
-// variable resolution. The resulting dyn.Value is fully merged across files
+// variable resolution. The resulting configuration is fully merged across files
 // and targets, yet retains ${...} references as literal strings. Returns
-// InvalidValue if loading fails (restoration is then skipped).
-func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
+// an invalid value if loading fails (restoration is then skipped).
+func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) structvar.View {
 	fresh := &bundle.Bundle{
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
@@ -141,7 +138,26 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 		resourcemutator.MergePipelineClusters(),
 		resourcemutator.MergeApps(),
 	)
-	return fresh.Config.Value()
+	return fresh.Config.View()
+}
+
+// resolvedConfig is the bundle's resolved configuration plus values that are known
+// only outside of it (the source-linked file path, resource IDs from state).
+type resolvedConfig struct {
+	view      structvar.View
+	overrides map[string]any // by path
+}
+
+// lookup returns the value at path as a Go value, and whether it exists.
+func (c resolvedConfig) lookup(path *structpath.PathNode) (any, bool) {
+	if v, ok := c.overrides[path.String()]; ok {
+		return v, true
+	}
+	v := c.view.Lookup(path)
+	if !v.IsValid() {
+		return nil, false
+	}
+	return v.AsAny(), true
 }
 
 // resourceIDLookup returns a function that resolves resource keys to their
@@ -158,20 +174,17 @@ func resourceIDLookup(b *bundle.Bundle) func(string) string {
 // ${resources.<kind>.<name>.id} references. Returns the unique set of paths
 // so the caller can inject IDs at those positions; returns nil if no such
 // references exist.
-func collectResourceIDRefs(preResolved dyn.Value) []dyn.Path {
+func collectResourceIDRefs(preResolved structvar.View) []*structpath.PathNode {
 	seen := map[string]bool{}
-	var paths []dyn.Path
-	_ = dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error {
+	var paths []*structpath.PathNode
+	_ = structvar.Walk(preResolved, func(_ *structpath.PathNode, v structvar.View) error {
 		s, ok := v.AsString()
-		if !ok || !dynvar.IsPureVariableReference(s) || seen[s] {
+		if !ok || !structvar.IsPureVariableReference(s) || seen[s] {
 			return nil
 		}
 		seen[s] = true
-		p, ok := dynvar.PureReferenceToPath(s)
-		if !ok {
-			return nil
-		}
-		if len(p) != 4 || p[0].Key() != "resources" || p[3].Key() != "id" {
+		p, ok := structvar.PureReferenceToPath(s)
+		if !ok || p.Len() != 4 || p.KeyAt(0) != "resources" || p.KeyAt(3) != "id" {
 			return nil
 		}
 		paths = append(paths, p)
@@ -180,47 +193,33 @@ func collectResourceIDRefs(preResolved dyn.Value) []dyn.Path {
 	return paths
 }
 
-// injectResourceIDs populates the resolved dyn.Value with IDs from state for
-// the given resource reference paths. Skips references whose IDs aren't in
-// state or that can't be written back into the dyn.Value tree.
-func injectResourceIDs(ctx context.Context, resolved dyn.Value, paths []dyn.Path, lookupID func(string) string) dyn.Value {
+// injectResourceIDs records IDs from state for the given resource reference paths in
+// resolved. Skips references whose IDs aren't in state.
+func injectResourceIDs(ctx context.Context, resolved resolvedConfig, paths []*structpath.PathNode, lookupID func(string) string) {
 	for _, p := range paths {
-		resourceKey := p[:3].String()
+		resourceKey := p.Prefix(3).String()
 		id := lookupID(resourceKey)
 		if id == "" {
 			log.Debugf(ctx, "variable restoration: no state entry for resource %q", resourceKey)
 			continue
 		}
-		updated, err := dyn.SetByPath(resolved, p, dyn.V(id))
-		if err != nil {
-			log.Debugf(ctx, "variable restoration: SetByPath failed for %s: %v", p, err)
-			continue
-		}
-		resolved = updated
+		resolved.overrides[p.String()] = id
 	}
-	return resolved
 }
 
-// resolveReferencePath converts a variable reference string to the dyn.Path
+// resolveReferencePath converts a variable reference string to the path
 // where its resolved value can be found in the bundle config. It applies the
 // same ${var.X} → variables.X.value shorthand rewriting as the variable
 // resolution mutator.
-func resolveReferencePath(refStr string) (dyn.Path, bool) {
-	p, ok := dynvar.PureReferenceToPath(refStr)
+func resolveReferencePath(refStr string) (*structpath.PathNode, bool) {
+	p, ok := structvar.PureReferenceToPath(refStr)
 	if !ok {
 		return nil, false
 	}
 
-	if p.HasPrefix(varPrefix) && len(p) >= 2 {
-		newPath := dyn.NewPath(
-			dyn.Key("variables"),
-			p[1],
-			dyn.Key("value"),
-		)
-		if len(p) > 2 {
-			newPath = newPath.Append(p[2:]...)
-		}
-		return newPath, true
+	if p.HasPrefix(varPrefix) && p.Len() >= 2 {
+		newPath := structpath.NewPath(nil, "variables", p.KeyAt(1), "value")
+		return structpath.Join(newPath, p.AsSlice()[2:]...), true
 	}
 
 	return p, true
@@ -234,7 +233,7 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 // new value, falls back to a global lookup: if the new value uniquely matches
 // a different variable, that variable is used instead. The field's prior use
 // of a variable is the false-positive guard.
-func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *RestoreStats) any {
+func restoreOriginalRefs(value any, preResolved structvar.View, resolved resolvedConfig, stats *RestoreStats) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
@@ -254,26 +253,14 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *Rest
 		return value
 
 	case map[string]any:
-		preMap, _ := preResolved.AsMap()
 		for key, val := range v {
-			var childPre dyn.Value
-			if preMap.Len() > 0 {
-				if p, ok := preMap.GetPairByString(key); ok {
-					childPre = p.Value
-				}
-			}
-			v[key] = restoreOriginalRefs(val, childPre, resolved, stats)
+			v[key] = restoreOriginalRefs(val, preResolved.Get(key), resolved, stats)
 		}
 		return v
 
 	case []any:
-		preSeq, _ := preResolved.AsSequence()
 		for i, val := range v {
-			var childPre dyn.Value
-			if i < len(preSeq) {
-				childPre = preSeq[i]
-			}
-			v[i] = restoreOriginalRefs(val, childPre, resolved, stats)
+			v[i] = restoreOriginalRefs(val, preResolved.Index(i), resolved, stats)
 		}
 		return v
 
@@ -287,37 +274,34 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *Rest
 // relative path: if exactly one unique pure variable reference across siblings
 // resolves to the leaf value, that reference is substituted. Multiple
 // different matching references are treated as ambiguous and skipped.
-func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value, stats *RestoreStats) any {
-	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath, stats)
+func restoreFromSiblings(value any, siblings []structvar.View, resolved resolvedConfig, stats *RestoreStats) any {
+	return restoreFromSiblingsAt(value, siblings, resolved, nil, stats)
 }
 
-func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path, stats *RestoreStats) any {
+func restoreFromSiblingsAt(value any, siblings []structvar.View, resolved resolvedConfig, relPath *structpath.PathNode, stats *RestoreStats) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		refs := map[string]struct{}{}
 		strVal, isStr := value.(string)
 		for _, sib := range siblings {
-			sv, err := dyn.GetByPath(sib, relPath)
-			if err != nil {
-				continue
-			}
+			sv := sib.Lookup(relPath)
 			s, ok := sv.AsString()
 			if !ok {
 				continue
 			}
-			if dynvar.IsPureVariableReference(s) {
+			if structvar.IsPureVariableReference(s) {
 				rp, ok := resolveReferencePath(s)
 				if !ok {
 					continue
 				}
-				rv, getErr := dyn.GetByPath(resolved, rp)
-				if getErr != nil {
+				rv, found := resolved.lookup(rp)
+				if !found {
 					continue
 				}
-				if rv.AsAny() == value {
+				if equalValues(rv, value) {
 					refs[s] = struct{}{}
 				}
-			} else if isStr && dynvar.ContainsVariableReference(s) {
+			} else if isStr && structvar.ContainsVariableReference(s) {
 				// Compound interpolation in sibling: try to align the new
 				// value against the sibling's template. If all variables
 				// match at their positions, the template (possibly with
@@ -337,13 +321,13 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 
 	case map[string]any:
 		for key, val := range v {
-			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)), stats)
+			v[key] = restoreFromSiblingsAt(val, siblings, resolved, structpath.NewStringKey(relPath, key), stats)
 		}
 		return v
 
 	case []any:
 		for i, val := range v {
-			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)), stats)
+			v[i] = restoreFromSiblingsAt(val, siblings, resolved, structpath.NewIndex(relPath, i), stats)
 		}
 		return v
 
@@ -355,51 +339,33 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 // isPureVarRef reports whether the pre-resolved value at the field is a pure
 // ${var.X} reference. Used to gate the fallback substitution: only fields that
 // already used a variable can be re-targeted to a different variable.
-func isPureVarRef(preResolved dyn.Value) bool {
+func isPureVarRef(preResolved structvar.View) bool {
 	if !preResolved.IsValid() {
 		return false
 	}
 	s, ok := preResolved.AsString()
-	if !ok || !dynvar.IsPureVariableReference(s) {
+	if !ok || !structvar.IsPureVariableReference(s) {
 		return false
 	}
-	p, ok := dynvar.PureReferenceToPath(s)
-	if !ok {
-		return false
-	}
-	return p.HasPrefix(varPrefix)
+	p, ok := structvar.PureReferenceToPath(s)
+	return ok && p.HasPrefix(varPrefix)
 }
 
 // matchAnyVariable searches all bundle variables for a unique scalar value that
 // equals remoteValue. Returns the ${var.X} reference on a unique match, ""
 // otherwise. Multiple matches are treated as ambiguous and skipped.
-func matchAnyVariable(remoteValue any, resolved dyn.Value) (string, bool) {
-	variables, err := dyn.GetByPath(resolved, dyn.NewPath(dyn.Key("variables")))
-	if err != nil {
-		return "", false
-	}
-	vmap, ok := variables.AsMap()
-	if !ok {
-		return "", false
-	}
+func matchAnyVariable(remoteValue any, resolved resolvedConfig) (string, bool) {
 	var match string
 	count := 0
-	for _, pair := range vmap.Pairs() {
-		name, ok := pair.Key.AsString()
-		if !ok {
-			continue
-		}
-		v, getErr := dyn.GetByPath(pair.Value, dyn.NewPath(dyn.Key("value")))
-		if getErr != nil {
-			continue
-		}
+	for name, variable := range resolved.view.Get("variables").MapItems() {
+		v := variable.Get("value")
 		switch v.Kind() {
-		case dyn.KindString, dyn.KindInt, dyn.KindBool:
-			if v.AsAny() == remoteValue {
-				match = pathToRef(varPrefix.Append(dyn.Key(name)))
+		case structvar.KindString, structvar.KindInt, structvar.KindBool:
+			if equalValues(v.AsAny(), remoteValue) {
+				match = pathToRef(structpath.NewStringKey(varPrefix, name))
 				count++
 			}
-		case dyn.KindInvalid, dyn.KindMap, dyn.KindSequence, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+		case structvar.KindInvalid, structvar.KindMap, structvar.KindSequence, structvar.KindFloat, structvar.KindTime, structvar.KindNil:
 			// Skip non-scalar / unsupported variable values.
 		}
 	}
@@ -409,19 +375,19 @@ func matchAnyVariable(remoteValue any, resolved dyn.Value) (string, bool) {
 	return "", false
 }
 
-// pathToRef formats a dyn.Path as a "${...}" interpolation reference.
-func pathToRef(p dyn.Path) string {
+// pathToRef formats a path as a "${...}" interpolation reference.
+func pathToRef(p *structpath.PathNode) string {
 	return "${" + p.String() + "}"
 }
 
 // matchOriginalRef checks if the pre-resolved config value at this position
 // was a pure variable reference whose resolved value equals remoteValue.
-func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string, bool) {
+func matchOriginalRef(remoteValue any, preResolved structvar.View, resolved resolvedConfig) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
 	}
 	s, ok := preResolved.AsString()
-	if !ok || !dynvar.IsPureVariableReference(s) {
+	if !ok || !structvar.IsPureVariableReference(s) {
 		return "", false
 	}
 
@@ -430,12 +396,12 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 		return "", false
 	}
 
-	resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
-	if err != nil {
+	resolvedV, found := resolved.lookup(resolvedPath)
+	if !found {
 		return "", false
 	}
 
-	if resolvedV.AsAny() == remoteValue {
+	if equalValues(resolvedV, remoteValue) {
 		return s, true
 	}
 	return "", false
@@ -455,12 +421,12 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 // new value contains "in" inside an unrelated word, that occurrence is still
 // rewritten to ${var.X}. Variables in the template are processed in order of
 // appearance, which is usually what the user expects.
-func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.Value) (string, bool) {
+func restoreCompoundInterpolation(remoteValue string, preResolved structvar.View, resolved resolvedConfig) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
 	}
 	template, ok := preResolved.AsString()
-	if !ok || !dynvar.ContainsVariableReference(template) || dynvar.IsPureVariableReference(template) {
+	if !ok || !structvar.ContainsVariableReference(template) || structvar.IsPureVariableReference(template) {
 		return "", false
 	}
 
@@ -481,7 +447,7 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 		result = result[:idx] + seg.raw + result[idx+len(seg.resolvedValue):]
 	}
 
-	if !dynvar.ContainsVariableReference(result) {
+	if !structvar.ContainsVariableReference(result) {
 		return "", false
 	}
 	return result, true
@@ -498,8 +464,8 @@ type templateSegment struct {
 // parseTemplateSegments splits a template string like "/mnt/${var.X}/raw"
 // into alternating literal and variable segments, resolving each variable.
 // Returns nil if any variable can't be resolved.
-func parseTemplateSegments(template string, resolved dyn.Value) []templateSegment {
-	ref, ok := dynvar.NewRef(dyn.V(template))
+func parseTemplateSegments(template string, resolved resolvedConfig) []templateSegment {
+	ref, ok := structvar.NewRef(template)
 	if !ok {
 		return nil
 	}
@@ -526,12 +492,12 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 			return nil
 		}
 
-		resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
-		if err != nil {
+		resolvedV, found := resolved.lookup(resolvedPath)
+		if !found {
 			return nil
 		}
 
-		resolvedStr, ok := resolvedV.AsString()
+		resolvedStr, ok := resolvedV.(string)
 		if !ok {
 			return nil
 		}
@@ -554,18 +520,15 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 	return segments
 }
 
-// preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
+// preResolvedValueAt returns the pre-resolved value at the field path,
 // if the field exists in the merged pre-resolved config.
-func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, bool) {
-	p, err := dyn.NewPathFromString(fieldPath)
+func preResolvedValueAt(preResolved structvar.View, fieldPath string) (structvar.View, bool) {
+	p, err := structpath.ParsePath(fieldPath)
 	if err != nil {
-		return dyn.InvalidValue, false
+		return structvar.View{}, false
 	}
-	v, err := dyn.GetByPath(preResolved, p)
-	if err != nil {
-		return dyn.InvalidValue, false
-	}
-	return v, true
+	v := preResolved.Lookup(p)
+	return v, v.IsValid()
 }
 
 // parentIsVariableReference reports whether the parent of fieldPath resolves to a
@@ -573,7 +536,7 @@ func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, boo
 // ${var.spark_conf}). A nested key or index cannot be written into such a scalar,
 // so config-remote-sync skips the change. fieldPath is a merged-index path, the
 // same space as FieldChange.originalPath.
-func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
+func parentIsVariableReference(preResolved structvar.View, fieldPath string) bool {
 	node, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return false
@@ -587,7 +550,7 @@ func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
 		return false
 	}
 	s, ok := v.AsString()
-	return ok && dynvar.ContainsVariableReference(s)
+	return ok && structvar.ContainsVariableReference(s)
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when
@@ -595,7 +558,7 @@ func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
 // last component must be an index ([*] or [N]) and the parent must resolve
 // to a sequence in the pre-resolved config. Returns false for non-sequence
 // Adds (e.g., new map fields).
-func sequenceSiblings(preResolved dyn.Value, fieldPath string) ([]dyn.Value, bool) {
+func sequenceSiblings(preResolved structvar.View, fieldPath string) ([]structvar.View, bool) {
 	node, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return nil, false
@@ -604,17 +567,39 @@ func sequenceSiblings(preResolved dyn.Value, fieldPath string) ([]dyn.Value, boo
 	if !hasIndex && !node.BracketStar() {
 		return nil, false
 	}
-	p, err := dyn.NewPathFromString(node.Parent().String())
+	p, err := structpath.ParsePath(node.Parent().String())
 	if err != nil {
 		return nil, false
 	}
-	parentValue, err := dyn.GetByPath(preResolved, p)
-	if err != nil {
+	parentValue := preResolved.Lookup(p)
+	if parentValue.Kind() != structvar.KindSequence {
 		return nil, false
 	}
-	seq, ok := parentValue.AsSequence()
-	if !ok {
-		return nil, false
+	var seq []structvar.View
+	for _, elem := range parentValue.Sequence() {
+		seq = append(seq, elem)
 	}
 	return seq, true
+}
+
+// equalValues reports whether two configuration values are equal, treating integers of
+// different Go types as equal: variables decoded from YAML hold int, while typed
+// fields of the remote resource hold int64.
+func equalValues(a, b any) bool {
+	ai, aok := asInt64(a)
+	bi, bok := asInt64(b)
+	if aok || bok {
+		return aok && bok && ai == bi
+	}
+	return a == b
+}
+
+func asInt64(v any) (int64, bool) {
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int(), true
+	default:
+		return 0, false
+	}
 }

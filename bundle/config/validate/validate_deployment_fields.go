@@ -26,29 +26,29 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 	// deployment_id and version_id identify the bundle deployment and its version
 	// in the Deployment Metadata Service. The CLI sets them on every deploy, so a
 	// value provided by hand would be overwritten; reject it up front.
-	reject := func(resourceType, name, field, value string) {
+	reject := func(resource *structpath.PathNode, field, value string) {
 		if value == "" {
 			return
 		}
-		path := structpath.NewPath(nil, "resources", resourceType, name, "deployment", field)
+		path := structpath.NewPath(resource, "deployment", field)
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
 			Paths:     []*structpath.PathNode{path},
-			Locations: b.Config.GetLocationsOf(path),
+			Locations: b.Config.GetLocations(path.String()),
 		})
 	}
 
 	for name, job := range b.Config.Resources.Jobs {
 		if d := job.Deployment; d != nil {
-			reject("jobs", name, "deployment_id", d.DeploymentId)
-			reject("jobs", name, "version_id", d.VersionId)
+			reject(structpath.NewPath(nil, "resources", "jobs", name), "deployment_id", d.DeploymentId)
+			reject(structpath.NewPath(nil, "resources", "jobs", name), "version_id", d.VersionId)
 		}
 	}
 	for name, pipeline := range b.Config.Resources.Pipelines {
 		if d := pipeline.Deployment; d != nil {
-			reject("pipelines", name, "deployment_id", d.DeploymentId)
-			reject("pipelines", name, "version_id", d.VersionId)
+			reject(structpath.NewPath(nil, "resources", "pipelines", name), "deployment_id", d.DeploymentId)
+			reject(structpath.NewPath(nil, "resources", "pipelines", name), "version_id", d.VersionId)
 		}
 	}
 

@@ -8,12 +8,12 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func failCases() []struct {
@@ -112,10 +112,8 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 			bundletest.SetLocation(b, "resources.clusters.foo", []diag.Location{{File: "a.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
-			// Do it on the dyn.Value directly.
-			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources.clusters.foo.num_workers", dyn.V(0))
-			})
+			// Set it explicitly, since zero values are otherwise treated as unset.
+			require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.clusters.foo.num_workers"), 0))
 			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
 				{
@@ -160,10 +158,8 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 			bundletest.SetLocation(b, "resources.jobs.foo.job_clusters[0].new_cluster", []diag.Location{{File: "b.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
-			// Do it on the dyn.Value directly.
-			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(0))
-			})
+			// Set it explicitly, since zero values are otherwise treated as unset.
+			require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.job_clusters[0].new_cluster.num_workers"), 0))
 
 			diags := SingleNodeCluster().Apply(ctx, b)
 			assert.Equal(t, diag.Diagnostics{
@@ -209,10 +205,8 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].new_cluster", []diag.Location{{File: "c.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
-			// Do it on the dyn.Value directly.
-			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources.jobs.foo.tasks[0].new_cluster.num_workers", dyn.V(0))
-			})
+			// Set it explicitly, since zero values are otherwise treated as unset.
+			require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.tasks[0].new_cluster.num_workers"), 0))
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
@@ -255,10 +249,8 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 			bundletest.SetLocation(b, "resources.pipelines.foo.clusters[0]", []diag.Location{{File: "d.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
-			// Do it on the dyn.Value directly.
-			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources.pipelines.foo.clusters[0].num_workers", dyn.V(0))
-			})
+			// Set it explicitly, since zero values are otherwise treated as unset.
+			require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.pipelines.foo.clusters[0].num_workers"), 0))
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
@@ -308,10 +300,8 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 			bundletest.SetLocation(b, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster", []diag.Location{{File: "e.yml", Line: 1, Column: 1}})
 
 			// We can't set num_workers to 0 explicitly in the typed configuration.
-			// Do it on the dyn.Value directly.
-			bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-				return dyn.Set(v, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster.num_workers", dyn.V(0))
-			})
+			// Set it explicitly, since zero values are otherwise treated as unset.
+			require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.tasks[0].for_each_task.task.new_cluster.num_workers"), 0))
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
 			assert.Equal(t, diag.Diagnostics{
@@ -392,9 +382,7 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 			}
 
 			if tc.numWorkers != nil {
-				bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-					return dyn.Set(v, "resources.clusters.foo.num_workers", dyn.V(*tc.numWorkers))
-				})
+				require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.clusters.foo.num_workers"), *tc.numWorkers))
 			}
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
@@ -432,9 +420,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 			}
 
 			if tc.numWorkers != nil {
-				bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-					return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(*tc.numWorkers))
-				})
+				require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.job_clusters[0].new_cluster.num_workers"), *tc.numWorkers))
 			}
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
@@ -472,9 +458,7 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 			}
 
 			if tc.numWorkers != nil {
-				bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-					return dyn.Set(v, "resources.jobs.foo.tasks[0].new_cluster.num_workers", dyn.V(*tc.numWorkers))
-				})
+				require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.tasks[0].new_cluster.num_workers"), *tc.numWorkers))
 			}
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
@@ -509,9 +493,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 			}
 
 			if tc.numWorkers != nil {
-				bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-					return dyn.Set(v, "resources.pipelines.foo.clusters[0].num_workers", dyn.V(*tc.numWorkers))
-				})
+				require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.pipelines.foo.clusters[0].num_workers"), *tc.numWorkers))
 			}
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
@@ -553,9 +535,7 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 			}
 
 			if tc.numWorkers != nil {
-				bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-					return dyn.Set(v, "resources.jobs.foo.tasks[0].for_each_task.task.new_cluster.num_workers", dyn.V(*tc.numWorkers))
-				})
+				require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.tasks[0].for_each_task.task.new_cluster.num_workers"), *tc.numWorkers))
 			}
 
 			diags := bundle.Apply(ctx, b, SingleNodeCluster())
@@ -590,13 +570,8 @@ func TestValidateSingleNodeClusterWithIsSingleNode(t *testing.T) {
 	}
 
 	// Set num_workers to 0 and is_single_node to true
-	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
-		v, err := dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(0))
-		if err != nil {
-			return v, err
-		}
-		return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.is_single_node", dyn.V(true))
-	})
+	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.job_clusters[0].new_cluster.num_workers"), 0))
+	require.NoError(t, b.Config.Set(structpath.MustParsePath("resources.jobs.foo.job_clusters[0].new_cluster.is_single_node"), true))
 
 	diags := bundle.Apply(ctx, b, SingleNodeCluster())
 	assert.Empty(t, diags)

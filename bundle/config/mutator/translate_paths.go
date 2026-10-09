@@ -18,8 +18,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // translateOptions control path translation behavior.
@@ -300,33 +301,47 @@ func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Cont
 	return localRelPath, nil
 }
 
-func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
-	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
+// rewriteValue rewrites the path input found at p. It returns an empty string if the path was not rewritten.
+func (t *translateContext) rewriteValue(ctx context.Context, p *structpath.PathNode, input, dir string, opts translateOptions) (string, error) {
+	out, err := t.rewritePath(ctx, dir, input, opts)
 	if err != nil {
 		if target, ok := errors.AsType[ErrIsNotebook](err); ok {
-			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
+			return "", fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
 		}
 		if target, ok := errors.AsType[ErrIsNotNotebook](err); ok {
-			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
+			return "", fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
-		return dyn.InvalidValue, err
+		return "", err
 	}
 
-	// If the path was not rewritten, return the original value.
-	if out == "" {
-		return v, nil
-	}
-
-	return dyn.NewValue(out, v.Locations()), nil
+	return out, nil
 }
 
-func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
+// setRewritten stores the rewritten path at p (keeping its locations) unless the path was not rewritten.
+func (t *translateContext) setRewritten(p *structpath.PathNode, out string) error {
+	if out == "" {
+		return nil
+	}
+	return t.b.Config.Set(p, out)
+}
+
+// rewriteAt rewrites the string value v found at p relative to the bundle root and stores the result.
+func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode, v structvar.View, opts translateOptions) error {
+	input, _ := v.AsString()
+	out, err := t.rewriteValue(ctx, p, input, t.b.BundleRootPath, opts)
+	if err != nil {
+		return err
+	}
+	return t.setRewritten(p, out)
+}
+
+func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
 	switch {
 	case b.IsImmutableFolder():
 		// Reject an explicit workspace.file_path: immutable bundles set it
 		// automatically to the content-addressed snapshot location. A user-supplied
 		// value would be silently discarded during path translation, so we error early.
-		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
+		if loc := b.Config.DefinitionLocation("workspace.file_path"); loc.File != "" {
 			return diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is enabled",
@@ -340,18 +355,13 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
 
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, fn := range translations {
-			v, err = fn(ctx, v)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+	for _, fn := range translations {
+		if err := fn(ctx, b.Config.View()); err != nil {
+			return diag.FromErr(err)
 		}
-		return v, nil
-	})
+	}
 
-	return diag.FromErr(err)
+	return nil
 }
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -361,7 +371,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+	return applyTranslations(ctx, b, t, []translateFunc{
 		t.applyJobTranslations(paths.VisitJobPaths, false),
 		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
 		t.applyPipelineTranslations(paths.VisitPipelinePaths, false),
@@ -378,7 +388,7 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+	return applyTranslations(ctx, b, t, []translateFunc{
 		t.applyDashboardTranslations,
 		t.applyGenieSpaceTranslations,
 	})
@@ -386,27 +396,27 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 
 // gatherFallbackPaths collects the fallback paths for relative paths in the configuration.
 // Read more about the motivation for this functionality in the "fallback" path translation tests.
-func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
+func gatherFallbackPaths(v structvar.View, typ string) (map[string]string, error) {
 	fallback := make(map[string]string)
-	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
+	pattern := structpath.NewPatternDotStar(structpath.NewPatternStringKey(structpath.MustParsePattern("resources"), typ))
 
 	// Previous behavior was to use a resource's location as the base path to resolve
-	// relative paths in its definition. With the introduction of [dyn.Value] throughout,
-	// we can use the location of the [dyn.Value] of the relative path itself.
+	// relative paths in its definition. With the introduction of [structvar.View] throughout,
+	// we can use the location of the [structvar.View] of the relative path itself.
 	//
 	// This is more flexible, as resources may have overrides that are not
 	// located in the same directory as the resource configuration file.
 	//
 	// To maintain backwards compatibility, we allow relative paths to be resolved using
-	// the original approach as fallback if the [dyn.Value] location cannot be resolved.
-	_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		key := p[2].Key()
+	// the original approach as fallback if the [structvar.View] location cannot be resolved.
+	err := structvar.ForEach(v, pattern, func(p *structpath.PathNode, v structvar.View) error {
+		key := p.KeyAt(2)
 		dir, err := locationDirectory(v.Location())
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for %s: %w", p, err)
+			return fmt.Errorf("unable to determine directory for %s: %w", p, err)
 		}
 		fallback[key] = dir
-		return v, nil
+		return nil
 	})
 	if err != nil {
 		return nil, err

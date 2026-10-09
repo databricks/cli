@@ -14,7 +14,7 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 **RULE: Keep each PR focused on one change.** If you notice an unrelated cleanup, bug fix, or refactor while making your primary change, leave it alone or put it in a separate PR. Reviewers consistently ask to split mixed PRs, especially when a dependency bump or schema diff rides along with a feature change.
 
-**RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (shared utilities), `libs/databrickscfg/` (config), `libs/git/`, `libs/filer/`, `libs/cmdio/` (CLI I/O, spinners, prompts), `libs/env/` (env vars), `libs/testserver/`, `libs/structpath/` and `libs/dyn/` (path / dynamic values), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks). A function that duplicates an existing name and signature in the same package is a compile error waiting to happen; grep before you name.
+**RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (shared utilities), `libs/databrickscfg/` (config), `libs/git/`, `libs/filer/`, `libs/cmdio/` (CLI I/O, spinners, prompts), `libs/env/` (env vars), `libs/testserver/`, `libs/structs/structpath/` and `libs/structs/structvar/` (paths / typed config values), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks). A function that duplicates an existing name and signature in the same package is a compile error waiting to happen; grep before you name.
 
 # Development Commands
 
@@ -73,7 +73,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - `bundle/phases/` - High-level deployment phases
 
 **libs/** - Shared libraries and utilities
-- `libs/dyn/` - Dynamic configuration value manipulation
+- `libs/structs/structvar/` - Typed configuration values with references and locations
 - `libs/filer/` - File system abstraction (local, DBFS, workspace)
 - `libs/auth/` - Databricks authentication handling
 - `libs/sync/` - File synchronization between local and remote

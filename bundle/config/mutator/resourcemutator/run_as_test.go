@@ -11,8 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -23,18 +21,15 @@ import (
 
 func allResourceTypes(t *testing.T) []string {
 	// Compute supported resource types based on the `Resources{}` struct.
-	r := &config.Resources{}
-	rv, err := convert.FromTyped(r, dyn.NilValue)
-	require.NoError(t, err)
-	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
 	var resourceTypes []string
-	for _, k := range normalized.MustMap().Keys() {
-		resourceTypes = append(resourceTypes, k.MustString())
+	for f := range reflect.TypeFor[config.Resources]().Fields() {
+		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+		resourceTypes = append(resourceTypes, name)
 	}
 	slices.Sort(resourceTypes)
 
 	// Assert the total list of resource supported, as a sanity check that using
-	// the dyn library gives us the correct list of all resources supported. Please
+	// the struct gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
 	require.Equal(
 		t, []string{
@@ -298,14 +293,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		},
 	}
 
-	v, err := convert.FromTyped(base, dyn.NilValue)
-	require.NoError(t, err)
-
-	// Define top level resources key in the bundle configuration.
-	// This is not part of the typed configuration, so we need to add it manually.
-	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
-	require.NoError(t, err)
-
 	for _, rt := range allResourceTypes(t) {
 		// Skip allowed resources
 		if slices.Contains(allowList, rt) {
@@ -314,23 +301,16 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 
 		// Add an instance of the resource type that is not on the allow list to
 		// the bundle configuration.
-		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
-			"foo": dyn.V(map[string]dyn.Value{
-				"path": dyn.V("bar"),
-			}),
-		}))
-		require.NoError(t, err)
-
-		// Get back typed configuration from the newly created invalid bundle configuration.
-		r := &config.Root{}
-		err = convert.ToTyped(r, nv)
-		require.NoError(t, err)
+		r, diags := config.LoadFromBytes("databricks.yml", fmt.Appendf(nil, "resources:\n  %s:\n    foo:\n      path: bar\n", rt))
+		require.NoError(t, diags.Error())
+		r.Workspace = base.Workspace
+		r.RunAs = base.RunAs
 
 		// Assert this invalid bundle configuration fails validation.
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(t.Context(), b, SetRunAs())
+		diags = bundle.Apply(t.Context(), b, SetRunAs())
 		require.Error(t, diags.Error())
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
@@ -352,14 +332,6 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		},
 	}
 
-	v, err := convert.FromTyped(base, dyn.NilValue)
-	require.NoError(t, err)
-
-	// Define top level resources key in the bundle configuration.
-	// This is not part of the typed configuration, so we need to add it manually.
-	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
-	require.NoError(t, err)
-
 	for _, rt := range allResourceTypes(t) {
 		// Skip unsupported resources
 		if !slices.Contains(allowList, rt) {
@@ -368,23 +340,16 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 
 		// Add an instance of the resource type that is not on the allow list to
 		// the bundle configuration.
-		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
-			"foo": dyn.V(map[string]dyn.Value{
-				"name": dyn.V("bar"),
-			}),
-		}))
-		require.NoError(t, err)
-
-		// Get back typed configuration from the newly created invalid bundle configuration.
-		r := &config.Root{}
-		err = convert.ToTyped(r, nv)
-		require.NoError(t, err)
+		r, diags := config.LoadFromBytes("databricks.yml", fmt.Appendf(nil, "resources:\n  %s:\n    foo:\n      name: bar\n", rt))
+		require.NoError(t, diags.Error())
+		r.Workspace = base.Workspace
+		r.RunAs = base.RunAs
 
 		// Assert this configuration passes validation.
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(t.Context(), b, SetRunAs())
+		diags = bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
 }
@@ -394,7 +359,8 @@ func TestRunAsIdentities(t *testing.T) {
 		runAs     string
 		wantError bool
 	}{
-		{`null`, true},
+		// A null run_as is the same as not specifying it.
+		{`null`, false},
 		{`{}`, true},
 		{`{user_name: ""}`, true},
 		{`{service_principal_name: ""}`, true},
@@ -453,14 +419,14 @@ func TestRunAsGroupResources(t *testing.T) {
 			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
 			require.NoError(t, diags.Error())
 			b := &bundle.Bundle{Config: *r}
-			before := b.Config.Value().Get("resources")
+			before := b.Config.View().Get("resources").AsAny()
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 			if tc.wantError != "" {
 				require.Error(t, diags.Error())
 				assert.Contains(t, diags.Error().Error(), tc.wantError)
 			} else {
 				require.NoError(t, diags.Error())
-				assert.Equal(t, before, b.Config.Value().Get("resources"))
+				assert.Equal(t, before, b.Config.View().Get("resources").AsAny())
 			}
 		})
 	}

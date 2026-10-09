@@ -12,10 +12,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type FieldChange struct {
@@ -42,7 +42,7 @@ type resolvedChange struct {
 	path  *structpath.PatternNode
 	steps []sequenceStep
 	// leaf is the merged value the change addresses, invalid for a new field.
-	leaf dyn.Value
+	leaf structvar.View
 	// operation decides how many destinations the change needs: a removal has to
 	// reach every definition, an edit only the one that wins the merge.
 	operation OperationType
@@ -62,28 +62,23 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 	nodes := node.AsSlice()
 	var result *structpath.PatternNode
 	var steps []sequenceStep
-	var currentPath dyn.Path
-	currentValue := b.Config.Value()
+	var currentPath *structpath.PathNode
+	currentValue := b.Config.View()
 
 	for component, n := range nodes {
 		if key, ok := n.StringKey(); ok {
 			result = structpath.NewPatternStringKey(result, key)
-			currentPath = append(currentPath, dyn.Key(key))
-			if currentValue.IsValid() {
-				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
-			}
+			currentPath = structpath.NewStringKey(currentPath, key)
+			currentValue = currentValue.Get(key)
 			continue
 		}
 
 		if idx, ok := n.Index(); ok {
-			sequencePath := slices.Clone(currentPath)
+			sequencePath := currentPath
 			result = structpath.NewPatternIndex(result, idx)
-			currentPath = append(currentPath, dyn.Index(idx))
-			var element dyn.Value
-			if currentValue.IsValid() {
-				element, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
-				currentValue = element
-			}
+			currentPath = structpath.NewIndex(currentPath, idx)
+			element := currentValue.Index(idx)
+			currentValue = element
 			steps = append(steps, sequenceStep{
 				component:    component,
 				sequencePath: sequencePath,
@@ -98,26 +93,22 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
-			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
+			if !currentValue.IsValid() || currentValue.Kind() != structvar.KindSequence {
 				return resolvedChange{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
 			}
 
-			seq, _ := currentValue.AsSequence()
 			foundIndex := -1
+			var foundElement structvar.View
 
-			for i, elem := range seq {
-				keyValue, err := dyn.GetByPath(elem, dyn.Path{dyn.Key(key)})
-				if err != nil {
-					continue
-				}
-
-				if keyValue.Kind() == dyn.KindString && keyValue.MustString() == value {
+			for i, elem := range currentValue.Sequence() {
+				if keyValue, ok := elem.Get(key).AsString(); ok && keyValue == value {
 					foundIndex = i
+					foundElement = elem
 					break
 				}
 			}
 
-			sequencePath := slices.Clone(currentPath)
+			sequencePath := currentPath
 
 			if foundIndex == -1 {
 				if operation == OperationAdd {
@@ -128,20 +119,20 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 						newElement:   true,
 					})
 					// Can't navigate further into non-existent element
-					currentValue = dyn.Value{}
+					currentValue = structvar.View{}
 					continue
 				}
 				return resolvedChange{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
 			result = structpath.NewPatternIndex(result, foundIndex)
-			currentPath = append(currentPath, dyn.Index(foundIndex))
+			currentPath = structpath.NewIndex(currentPath, foundIndex)
 			steps = append(steps, sequenceStep{
 				component:    component,
 				sequencePath: sequencePath,
-				element:      seq[foundIndex],
+				element:      foundElement,
 			})
-			currentValue = seq[foundIndex]
+			currentValue = foundElement
 			continue
 		}
 	}
@@ -200,7 +191,7 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 // disappears looks identical to one that was written. preResolved is the merged
 // config with ${...} references still literal, used to detect variable-reference
 // parents.
-func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
+func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved structvar.View) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
 	targetName := b.Config.Bundle.Target
@@ -360,7 +351,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 						// on it belongs in that same block.
 						filePath = block.file
 					} else {
-						resourceLocation := b.Config.GetLocation(resourceKey)
+						resourceLocation := b.Config.DefinitionLocation(resourceKey)
 						filePath = resourceLocation.File
 					}
 					if filePath == "" {

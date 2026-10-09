@@ -7,21 +7,21 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type checkForSameNameLibraries struct{}
 
-var patterns = []dyn.Pattern{
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	envDepsPattern.Append(dyn.AnyIndex()),
-	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
+var patterns = []*structpath.PatternNode{
+	structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].whl"),
+	structpath.MustParsePattern(taskLibrariesPattern.String() + "[*].jar"),
+	structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].whl"),
+	structpath.MustParsePattern(forEachTaskLibrariesPattern.String() + "[*].jar"),
+	structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].whl"),
+	structpath.MustParsePattern(clusterLibrariesPattern.String() + "[*].jar"),
+	structpath.MustParsePattern(envDepsPattern.String() + "[*]"),
+	structpath.MustParsePattern(pipelineEnvDepsPattern.String() + "[*]"),
 }
 
 type libData struct {
@@ -35,50 +35,43 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 	var diags diag.Diagnostics
 	libs := make(map[string]*libData)
 
-	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, pattern := range patterns {
-			rootConfig, err = dyn.MapByPattern(rootConfig, pattern, func(p dyn.Path, libraryValue dyn.Value) (dyn.Value, error) {
-				libPath, ok := libraryValue.AsString()
-				if !ok {
-					return libraryValue, nil
-				}
-
-				// If not local library, skip the check
-				if !IsLibraryLocal(libPath) {
-					return libraryValue, nil
-				}
-
-				lib := filepath.Base(libPath)
-				// If the same basename was seen already but full path is different
-				// then it's a duplicate. Add the location to the location list.
-				lp, ok := libs[lib]
-				if !ok {
-					libs[lib] = &libData{
-						fullPath:   libPath,
-						locations:  []diag.Location{libraryValue.Location()},
-						paths:      dyn.ToStructPaths(p),
-						otherPaths: []string{},
-					}
-				} else if lp.fullPath != libPath {
-					lp.locations = append(lp.locations, libraryValue.Location())
-					lp.paths = append(lp.paths, dyn.ToStructPath(p))
-					lp.otherPaths = append(lp.otherPaths, libPath)
-				}
-
-				return libraryValue, nil
-			})
-			if err != nil {
-				return dyn.InvalidValue, err
+	root := b.Config.View()
+	var err error
+	for _, pattern := range patterns {
+		err = structvar.ForEach(root, pattern, func(p *structpath.PathNode, libraryValue structvar.View) error {
+			libPath, ok := libraryValue.AsString()
+			if !ok {
+				return nil
 			}
-		}
 
+			// If not local library, skip the check
+			if !IsLibraryLocal(libPath) {
+				return nil
+			}
+
+			lib := filepath.Base(libPath)
+			// If the same basename was seen already but full path is different
+			// then it's a duplicate. Add the location to the location list.
+			lp, ok := libs[lib]
+			if !ok {
+				libs[lib] = &libData{
+					fullPath:   libPath,
+					locations:  []diag.Location{libraryValue.Location()},
+					paths:      []*structpath.PathNode{p},
+					otherPaths: []string{},
+				}
+			} else if lp.fullPath != libPath {
+				lp.locations = append(lp.locations, libraryValue.Location())
+				lp.paths = append(lp.paths, p)
+				lp.otherPaths = append(lp.otherPaths, libPath)
+			}
+
+			return nil
+		})
 		if err != nil {
-			return dyn.InvalidValue, err
+			break
 		}
-
-		return rootConfig, nil
-	})
+	}
 
 	// Iterate over all the libraries and check if there are any duplicates.
 	// Duplicates will have more than one location.

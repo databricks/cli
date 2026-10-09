@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -209,32 +208,6 @@ const jobExample = `
       }
     }
 }`
-
-func BundleV(b *testing.B, numJobs int) dyn.Value {
-	allJobs := map[string]*resources.Job{}
-	for i := range numJobs {
-		job := jobs.JobSettings{}
-		err := json.Unmarshal([]byte(jobExample), &job)
-		require.NoError(b, err)
-
-		allJobs[strconv.Itoa(i)] = &resources.Job{
-			JobSettings: job,
-		}
-	}
-
-	myBundle := bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: allJobs,
-			},
-		},
-	}
-
-	// Apply noop mutator to initialize the bundle value.
-	bundle.ApplyFuncContext(b.Context(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
-
-	return myBundle.Config.Value()
-}
 
 func Bundle(b *testing.B, numJobs int) *bundle.Bundle {
 	allJobs := map[string]*resources.Job{}

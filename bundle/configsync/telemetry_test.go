@@ -3,7 +3,6 @@ package configsync
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,37 +62,30 @@ func TestResourceTypeFromKey(t *testing.T) {
 }
 
 func TestRestoreStatsCounters(t *testing.T) {
-	resolved := dyn.V(map[string]dyn.Value{
-		"variables": dyn.V(map[string]dyn.Value{
-			"region": dyn.V(map[string]dyn.Value{"value": dyn.V("us-east-1")}),
-			"other":  dyn.V(map[string]dyn.Value{"value": dyn.V("eu-west-1")}),
-		}),
-	})
+	resolved := variablesConfig(t, map[string]any{"region": "us-east-1", "other": "eu-west-1"})
 
 	// Original pure ref still matching: restored but not counted (safe path).
 	var kept RestoreStats
-	result := restoreOriginalRefs("us-east-1", dyn.V("${var.region}"), resolved, &kept)
+	result := restoreOriginalRefs("us-east-1", scalarView(t, "${var.region}"), resolved, &kept)
 	assert.Equal(t, "${var.region}", result)
 	assert.Equal(t, RestoreStats{}, kept)
 
 	// Pure ref whose value changed to another variable's value: re-targeted.
 	var retargeted RestoreStats
-	result = restoreOriginalRefs("eu-west-1", dyn.V("${var.region}"), resolved, &retargeted)
+	result = restoreOriginalRefs("eu-west-1", scalarView(t, "${var.region}"), resolved, &retargeted)
 	assert.Equal(t, "${var.other}", result)
 	assert.Equal(t, RestoreStats{Retargeted: 1}, retargeted)
 
 	// New sequence element leaf restored from a sibling reference.
-	siblings := []dyn.Value{
-		dyn.V(map[string]dyn.Value{"region": dyn.V("${var.region}")}),
-	}
+	siblings := tasksView(t, `task_key: "${var.region}"`)
 	var fromSiblings RestoreStats
-	resultMap := restoreFromSiblings(map[string]any{"region": "us-east-1"}, siblings, resolved, &fromSiblings).(map[string]any)
-	assert.Equal(t, "${var.region}", resultMap["region"])
+	resultMap := restoreFromSiblings(map[string]any{"task_key": "us-east-1"}, siblings, resolved, &fromSiblings).(map[string]any)
+	assert.Equal(t, "${var.region}", resultMap["task_key"])
 	assert.Equal(t, RestoreStats{FromSiblings: 1}, fromSiblings)
 
 	// Hardcoded value: nothing restored, nothing counted.
 	var none RestoreStats
-	result = restoreOriginalRefs("hardcoded", dyn.V("hardcoded"), resolved, &none)
+	result = restoreOriginalRefs("hardcoded", scalarView(t, "hardcoded"), resolved, &none)
 	assert.Equal(t, "hardcoded", result)
 	assert.Equal(t, RestoreStats{}, none)
 }

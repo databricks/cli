@@ -6,8 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type validateSecretValueIsVariable struct{}
@@ -25,20 +25,17 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 
 	// Iterate over all secrets in the bundle
 	for key := range b.Config.Resources.Secrets {
-		p := dyn.NewPath(dyn.Key("resources"), dyn.Key("secrets"), dyn.Key(key), dyn.Key("value"))
-		val, err := dyn.GetByPath(b.Config.Value(), p)
-		if dyn.IsNoSuchKeyError(err) {
+		p := structpath.NewPath(nil, "resources", "secrets", key, "value")
+		val := b.Config.View().Lookup(p)
+		if !val.IsValid() {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Secret value must be a string",
 				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
 				Locations: val.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{p},
 			})
 			continue
-		}
-		if err != nil {
-			return diag.FromErr(err)
 		}
 
 		valueStr, ok := val.AsString()
@@ -48,13 +45,13 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 				Summary:   "Secret value must be a string",
 				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
 				Locations: val.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{p},
 			})
 			continue
 		}
 
 		// Value must be a variable reference to prevent leaking secrets in config files
-		if !dynvar.IsPureVariableReference(valueStr) {
+		if !structvar.IsPureVariableReference(valueStr) {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Secret value must be a variable reference",
@@ -62,7 +59,7 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 Plain text secret values are not allowed to prevent leaking secrets in configuration files.
 Use bundle variables to pass secret values at deployment time.`, key),
 				Locations: val.Locations(),
-				Paths:     dyn.ToStructPaths(p),
+				Paths:     []*structpath.PathNode{p},
 			})
 			continue
 		}
@@ -79,25 +76,21 @@ Use bundle variables to pass secret values at deployment time.`, key),
 
 // checkVariableDefault emits an error if valueStr is a pure ${var.<name>} reference
 // and the referenced variable has a default value set.
-func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, secretKey, valueStr string, p dyn.Path, val dyn.Value) diag.Diagnostics {
-	refPath, ok := dynvar.PureReferenceToPath(valueStr)
-	if !ok || len(refPath) < 2 || refPath[0].Key() != "var" {
+func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, secretKey, valueStr string, p *structpath.PathNode, val structvar.View) diag.Diagnostics {
+	refPath, ok := structvar.PureReferenceToPath(valueStr)
+	if !ok || refPath.Len() < 2 || refPath.KeyAt(0) != "var" {
 		return nil
 	}
 
-	varName := refPath[1].Key()
+	varName := refPath.KeyAt(1)
 	variable, exists := b.Config.Variables[varName]
 	if !exists || variable == nil || !variable.HasDefault() {
 		return nil
 	}
 
 	// The default path in the dynamic config for the variable's default field.
-	defaultPath := dyn.NewPath(dyn.Key("variables"), dyn.Key(varName), dyn.Key("default"))
-	defaultVal, err := dyn.GetByPath(b.Config.Value(), defaultPath)
-	locations := val.Locations()
-	if err == nil {
-		locations = append(defaultVal.Locations(), locations...)
-	}
+	defaultPath := structpath.NewPath(nil, "variables", varName, "default")
+	locations := append(b.Config.LocationsAt(defaultPath), val.Locations()...)
 
 	return diag.Diagnostics{{
 		Severity: diag.Error,
@@ -106,6 +99,6 @@ func (v *validateSecretValueIsVariable) checkVariableDefault(b *bundle.Bundle, s
 A default value is stored in plain text in the configuration file, which defeats the purpose of using a variable reference for a secret.
 Remove the default value and pass the secret value at deployment time using "--var", the BUNDLE_VAR_%s environment variable, or a variable overrides file.`, varName, secretKey, varName),
 		Locations: locations,
-		Paths:     dyn.ToStructPaths(p),
+		Paths:     []*structpath.PathNode{p},
 	}}
 }

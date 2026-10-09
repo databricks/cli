@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -42,7 +41,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 	// Maps of key to the paths and locations the resource / script is defined at.
 	resourceAndScriptMetadata := map[string]*metadata{}
-	addLocationToMetadata := func(k, prefix string, p dyn.Path, v dyn.Value) {
+	addLocationToMetadata := func(k string, fullPath *structpath.PathNode) {
 		mv, ok := resourceAndScriptMetadata[k]
 		if !ok {
 			mv = &metadata{
@@ -51,46 +50,22 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			}
 		}
 
-		mv.paths = append(mv.paths, dyn.ToStructPath(dyn.NewPath(dyn.Key(prefix)).Append(p...)))
-		mv.locations = append(mv.locations, v.Locations()...)
+		mv.paths = append(mv.paths, fullPath)
+		mv.locations = append(mv.locations, b.Config.LocationsAt(fullPath)...)
 
 		resourceAndScriptMetadata[k] = mv
 	}
 
 	// Gather the paths and locations of all resources
-	rv := b.Config.Value().Get("resources")
-	if rv.Kind() != dyn.KindInvalid && rv.Kind() != dyn.KindNil {
-		_, err := dyn.MapByPattern(
-			rv,
-			dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				// The key for the resource. Eg: "my_job" for jobs.my_job.
-				k := p[1].Key()
-				addLocationToMetadata(k, "resources", p, v)
-				return v, nil
-			},
-		)
-		if err != nil {
-			return diag.FromErr(err)
+	for _, group := range b.Config.Resources.AllResources() {
+		for k := range group.Resources {
+			addLocationToMetadata(k, structpath.NewPath(nil, "resources", group.Description.PluralName, k))
 		}
 	}
 
 	// track locations for all scripts.
-	sv := b.Config.Value().Get("scripts")
-	if sv.Kind() != dyn.KindInvalid && sv.Kind() != dyn.KindNil {
-		_, err := dyn.MapByPattern(
-			sv,
-			dyn.NewPattern(dyn.AnyKey()),
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				// The key for the script. Eg: "my_script" for scripts.my_script.
-				k := p[0].Key()
-				addLocationToMetadata(k, "scripts", p, v)
-				return v, nil
-			},
-		)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+	for k := range b.Config.Scripts {
+		addLocationToMetadata(k, structpath.NewPath(nil, "scripts", k))
 	}
 
 	// If duplicate keys are found, report an error.

@@ -28,7 +28,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -710,8 +709,7 @@ func isNewerVersion(stateVersion, currentVersion string) bool {
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 	if b.Config.Definitions != nil {
-		v := dyn.GetValue(b.Config.Value(), "definitions")
-		loc := v.Locations()
+		loc := b.Config.GetLocations("definitions")
 		filename := "input yaml"
 		if len(loc) > 0 {
 			filename = filepath.ToSlash(loc[0].File)

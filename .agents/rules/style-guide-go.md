@@ -113,7 +113,7 @@ return fieldPaths
 
 ### Encoding
 
-**RULE: When mutating an API response by round-tripping JSON, decode with `json.Decoder` + `UseNumber()`.** The naive `json.Marshal` → `map[string]any` → `Marshal` path corrupts any int64 larger than 2^53 (it degrades to a float64 mantissa — e.g. a real `spark_context_id`) and alphabetizes object keys. `libs/dyn/jsonloader` preserves key order but also lacks `UseNumber`, so it shares the int64 hazard.
+**RULE: When mutating an API response by round-tripping JSON, decode with `json.Decoder` + `UseNumber()`.** The naive `json.Marshal` → `map[string]any` → `Marshal` path corrupts any int64 larger than 2^53 (it degrades to a float64 mantissa — e.g. a real `spark_context_id`) and alphabetizes object keys.
 
 **RULE: Be careful with `encoding/csv` `Writer.UseCRLF = true`.** It rewrites both record terminators AND embedded newlines inside quoted fields to `\r\n`, so tests for quoted multiline fields must expect `\r\n`, not just the line endings between rows.
 
@@ -191,7 +191,7 @@ func NewService(deps ServiceDeps) *Service { ... }
 
 ### Configuration patterns
 
-- Bundle config uses `dyn.Value` for dynamic typing
+- Bundle config is typed structs; `libs/structs/structvar` carries `${...}` references and source locations
 - Config loading supports includes, variable interpolation, and target overrides
 - Schema generation is automated from Go struct tags
 

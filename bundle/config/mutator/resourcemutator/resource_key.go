@@ -3,7 +3,8 @@ package resourcemutator
 import (
 	"errors"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // ResourceKey uniquely identifies a resource in configuration.
@@ -48,23 +49,21 @@ func (r ResourceKeySet) Size() int {
 }
 
 // AddPattern adds all resource keys that match the pattern.
-func (r ResourceKeySet) AddPattern(pattern dyn.Pattern, root dyn.Value) error {
-	if len(pattern) != 3 {
+func (r ResourceKeySet) AddPattern(pattern *structpath.PatternNode, root structvar.View) error {
+	if pattern.Len() != 3 {
 		return errors.New("pattern must have 3 keys")
 	}
 
-	_, err := dyn.MapByPattern(root, pattern, func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
+	return structvar.ForEach(root, pattern, func(path *structpath.PathNode, v structvar.View) error {
 		parsed, err := getResourceKey(path)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return err
 		}
 
 		r.AddResourceKey(parsed)
 
-		return v, nil
+		return nil
 	})
-
-	return err
 }
 
 // Types returns the types of all resources in the set.
@@ -105,17 +104,13 @@ func (r ResourceKeySet) ToArray() []ResourceKey {
 	return result
 }
 
-func getResourceKey(path dyn.Path) (ResourceKey, error) {
-	if len(path) < 3 {
+func getResourceKey(path *structpath.PathNode) (ResourceKey, error) {
+	if path.KeyAt(0) != "resources" {
 		return ResourceKey{}, errors.New("can't parse resource key")
 	}
 
-	if path[0].Key() != "resources" {
-		return ResourceKey{}, errors.New("can't parse resource key")
-	}
-
-	resourceType := path[1].Key()
-	resourceName := path[2].Key()
+	resourceType := path.KeyAt(1)
+	resourceName := path.KeyAt(2)
 
 	if resourceType == "" || resourceName == "" {
 		return ResourceKey{}, errors.New("can't parse resource key")

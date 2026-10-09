@@ -1275,20 +1275,27 @@ paths:
 	assert.Contains(t, err.Error(), "unexpected end of input")
 }
 
-func TestMustParsePaths(t *testing.T) {
-	paths := MustParsePaths("bundle.terraform", "resources.jobs.foo.tasks[0]")
-	require.Len(t, paths, 2)
-	assert.Equal(t, "bundle.terraform", paths[0].String())
-	assert.Equal(t, "resources.jobs.foo.tasks[0]", paths[1].String())
-	assert.Empty(t, MustParsePaths())
-}
-
 func TestNewPath(t *testing.T) {
 	assert.Equal(t, "a.b['c d']", NewPath(NewStringKey(nil, "a"), "b", "c d").String())
 	assert.Equal(t, "resources.jobs.j.tasks[2].job_cluster_key", NewPath(nil, "resources", "jobs", "j", "tasks", 2, "job_cluster_key").String())
 	assert.Nil(t, NewPath(nil))
 	assert.Equal(t, "a", NewPath(NewStringKey(nil, "a")).String())
 	assert.Panics(t, func() { NewPath(nil, int64(1)) })
+}
+
+func TestJoin(t *testing.T) {
+	p := MustParsePath("tasks[task_key='x'].libraries[0]['a.b']")
+	assert.Equal(t, "resources.jobs.j.tasks[task_key='x'].libraries[0]['a.b']", Join(MustParsePath("resources.jobs.j"), p.AsSlice()...).String())
+	assert.Equal(t, p.String(), Join(nil, p.AsSlice()...).String())
+	assert.Equal(t, "a", Join(MustParsePath("a")).String())
+}
+
+func TestMustParsePaths(t *testing.T) {
+	paths := MustParsePaths("bundle.terraform", "resources.jobs.foo.tasks[0]")
+	require.Len(t, paths, 2)
+	assert.Equal(t, "bundle.terraform", paths[0].String())
+	assert.Equal(t, "resources.jobs.foo.tasks[0]", paths[1].String())
+	assert.Empty(t, MustParsePaths())
 }
 
 func TestNewPathSlice(t *testing.T) {

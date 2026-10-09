@@ -6,9 +6,8 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -86,27 +85,21 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Convert the dashboard object to a [dyn.Value] to make comparison easier.
-		previous, err := convert.FromTyped(previousDashboard, dyn.NilValue)
-		require.NoError(t, err)
-		current, err := convert.FromTyped(currentDashboard, dyn.NilValue)
-		require.NoError(t, err)
-
 		// Collect updated and deleted paths.
 		var updatedFieldPaths []string
 		var deletedFieldPaths []string
-		_, err = merge.Override(previous, current, merge.OverrideVisitor{
-			VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
-				deletedFieldPaths = append(deletedFieldPaths, basePath.String())
+		_, err = structvar.PlanOverride(structvar.NewView(previousDashboard, nil, nil), structvar.NewView(currentDashboard, nil, nil), structvar.OverrideVisitor{
+			VisitDelete: func(path *structpath.PathNode, left structvar.View) error {
+				deletedFieldPaths = append(deletedFieldPaths, path.String())
 				return nil
 			},
-			VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			VisitInsert: func(path *structpath.PathNode, right structvar.View) error {
 				assert.Fail(t, "unexpected insert operation")
-				return right, nil
+				return nil
 			},
-			VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-				updatedFieldPaths = append(updatedFieldPaths, basePath.String())
-				return right, nil
+			VisitUpdate: func(path *structpath.PathNode, left, right structvar.View) error {
+				updatedFieldPaths = append(updatedFieldPaths, path.String())
+				return nil
 			},
 		})
 		require.NoError(t, err)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -87,15 +87,15 @@ func TestVisitJobPaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.tasks[0].notebook_task.notebook_path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[1].spark_python_task.python_file"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[2].dbt_task.project_directory"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[3].sql_task.file.path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[6].libraries[0].requirements"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[7].alert_task.workspace_path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[8].ai_runtime_task.deployments[0].command_path"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.tasks[0].notebook_task.notebook_path",
+		"resources.jobs.job0.tasks[1].spark_python_task.python_file",
+		"resources.jobs.job0.tasks[2].dbt_task.project_directory",
+		"resources.jobs.job0.tasks[3].sql_task.file.path",
+		"resources.jobs.job0.tasks[6].libraries[0].requirements",
+		"resources.jobs.job0.tasks[7].alert_task.workspace_path",
+		"resources.jobs.job0.tasks[8].ai_runtime_task.deployments[0].command_path",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }
@@ -126,7 +126,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	var expected []dyn.Path
+	var expected []*structpath.PathNode
 
 	assert.ElementsMatch(t, expected, actual)
 }
@@ -157,10 +157,10 @@ func TestVisitJobPaths_environmentVariables(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[0]"),
-		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[1]"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.environment_variables[0].spec.files[0]",
+		"resources.jobs.job0.environment_variables[0].spec.files[1]",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }
@@ -202,10 +202,10 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[1].for_each_task.task.alert_task.workspace_path"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path",
+		"resources.jobs.job0.tasks[1].for_each_task.task.alert_task.workspace_path",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }

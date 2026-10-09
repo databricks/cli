@@ -9,7 +9,7 @@ import (
 )
 
 // baseVarDef matches a path segment of a ${...} reference. It is the grammar of
-// dynvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesDynvar
+// structvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesStructvar
 // keeps them in agreement.
 const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
@@ -189,6 +189,15 @@ func NewPath(prev *PathNode, parts ...any) *PathNode {
 // slice, e.g. for diag.Diagnostic.Paths.
 func NewPathSlice(parts ...any) []*PathNode {
 	return []*PathNode{NewPath(nil, parts...)}
+}
+
+// Join appends the components of nodes (each node's own key, index or key-value, not
+// its parents) to prefix.
+func Join(prefix *PathNode, nodes ...*PathNode) *PathNode {
+	for _, n := range nodes {
+		prefix = &PathNode{prev: prefix, key: n.key, index: n.index, value: n.value}
+	}
+	return prefix
 }
 
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
@@ -665,6 +674,15 @@ func MustParsePath(s string) *PathNode {
 	return path
 }
 
+// MustParsePattern parses a pattern string and panics on error. Wildcards are allowed.
+func MustParsePattern(s string) *PatternNode {
+	pattern, err := ParsePattern(s)
+	if err != nil {
+		panic(err)
+	}
+	return pattern
+}
+
 // MustParsePaths parses each of paths like [MustParsePath], e.g. for diag.Diagnostic.Paths.
 func MustParsePaths(paths ...string) []*PathNode {
 	out := make([]*PathNode, len(paths))
@@ -712,7 +730,6 @@ func isValidField(s string) bool {
 }
 
 // PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
-// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
 func PureReferenceToPath(s string) (*PathNode, bool) {
 	m := pureReference.FindStringSubmatch(s)
 	if m == nil {
@@ -985,4 +1002,14 @@ func (p *PatternNode) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 	*p = *parsed
 	return nil
+}
+
+// KeyAt returns the string key of the i-th component of the path, or "" if it is not a key.
+func (p *PathNode) KeyAt(i int) string {
+	nodes := p.AsSlice()
+	if i < 0 || i >= len(nodes) {
+		return ""
+	}
+	k, _ := nodes[i].StringKey()
+	return k
 }

@@ -6,11 +6,15 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// configWithVariable returns a configuration that has the variable with name "foo".
+func configWithVariable(v *variable.Variable) *config.Root {
+	return &config.Root{Variables: map[string]*variable.Variable{"foo": v}}
+}
 
 func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	defaultVal := "default"
@@ -21,13 +25,9 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 
 	// set value for variable as an environment variable
 	t.Setenv("BUNDLE_VAR_foo", "process-env")
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
-	require.NoError(t, err)
-
-	err = convert.ToTyped(&variable, v)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	require.NoError(t, err)
 	assert.Equal(t, "process-env", variable.Value)
 }
@@ -39,13 +39,9 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 		Default:     defaultVal,
 	}
 
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
-	require.NoError(t, err)
-
-	err = convert.ToTyped(&variable, v)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	require.NoError(t, err)
 	assert.Equal(t, "default", variable.Value)
 }
@@ -61,13 +57,9 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the default value
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
-	require.NoError(t, err)
-
-	err = convert.ToTyped(&variable, v)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	require.NoError(t, err)
 	assert.Equal(t, "assigned-value", variable.Value)
 }
@@ -86,13 +78,9 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the value from environment
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
-	require.NoError(t, err)
-
-	err = convert.ToTyped(&variable, v)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	require.NoError(t, err)
 	assert.Equal(t, "assigned-value", variable.Value)
 }
@@ -103,10 +91,9 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	}
 
 	// fails because we could not resolve a value for the variable
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	assert.ErrorContains(t, err, "no value assigned to required variable foo. Variables are usually assigned in databricks.yml, and they can be overridden using \"--var\", the BUNDLE_VAR_foo environment variable, or .databricks/bundle/<target>/variable-overrides.json")
 }
 
@@ -153,9 +140,8 @@ func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
 	// set value for variable as an environment variable
 	t.Setenv("BUNDLE_VAR_foo", "process-env")
 
-	v, err := convert.FromTyped(variable, dyn.NilValue)
-	require.NoError(t, err)
+	cfg := configWithVariable(&variable)
 
-	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	err := setVariable(t.Context(), cfg, &variable, "foo", structvar.View{})
 	assert.ErrorContains(t, err, "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
 }

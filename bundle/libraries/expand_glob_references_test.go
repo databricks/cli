@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -283,11 +283,19 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
-	libs, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs.job.tasks[0].libraries"))
-	require.NoError(t, err)
-	assert.Equal(t, loc.File, libs.Location().File)
+	libs := b.Config.LocationsAt(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries"))
+	require.NotEmpty(t, libs)
+	assert.Equal(t, loc.File, libs[0].File)
 
-	deps, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.pipelines.pipeline.environment.dependencies"))
-	require.NoError(t, err)
-	assert.Equal(t, loc.File, deps.Location().File)
+	lib := b.Config.LocationsAt(structpath.MustParsePath("resources.jobs.job.tasks[0].libraries[0].whl"))
+	require.NotEmpty(t, lib)
+	assert.Equal(t, loc.File, lib[0].File)
+
+	deps := b.Config.LocationsAt(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies"))
+	require.NotEmpty(t, deps)
+	assert.Equal(t, loc.File, deps[0].File)
+
+	dep := b.Config.LocationsAt(structpath.MustParsePath("resources.pipelines.pipeline.environment.dependencies[0]"))
+	require.NotEmpty(t, dep)
+	assert.Equal(t, loc.File, dep[0].File)
 }

@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,22 +28,22 @@ func TestSyncDefaultPath_DefaultIfUnset(t *testing.T) {
 func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 	tcases := []struct {
 		name   string
-		paths  dyn.Value
+		paths  any
 		expect []string
 	}{
 		{
 			name:   "nil",
-			paths:  dyn.V(nil),
+			paths:  nil,
 			expect: []string{"."},
 		},
 		{
 			name:   "empty sequence",
-			paths:  dyn.V([]dyn.Value{}),
+			paths:  []string{},
 			expect: []string{},
 		},
 		{
 			name:   "non-empty sequence",
-			paths:  dyn.V([]dyn.Value{dyn.V("something")}),
+			paths:  []string{"something"},
 			expect: []string{"something"},
 		},
 	}
@@ -58,17 +58,7 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 			ctx := logdiag.InitContext(t.Context())
 
 			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-				err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-					v, err := dyn.Set(v, "sync", dyn.V(dyn.NewMapping()))
-					if err != nil {
-						return dyn.InvalidValue, err
-					}
-					v, err = dyn.Set(v, "sync.paths", tcase.paths)
-					if err != nil {
-						return dyn.InvalidValue, err
-					}
-					return v, nil
-				})
+				err := b.Config.Set(structpath.MustParsePath("sync.paths"), tcase.paths)
 				require.NoError(t, err)
 			})
 			require.False(t, logdiag.HasError(ctx))

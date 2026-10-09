@@ -9,8 +9,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type validateScripts struct{}
@@ -38,13 +38,13 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 	for _, k := range scriptKeys {
 		script := b.Config.Scripts[k]
-		contentPath := dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))
+		contentPath := structpath.NewPath(nil, "scripts", k, "content")
 
 		if script.Content == "" {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Script %s has no content", k),
-				Paths:    dyn.ToStructPaths(contentPath),
+				Paths:    []*structpath.PathNode{contentPath},
 			})
 			continue
 		}
@@ -59,14 +59,13 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 // validateScriptContent rejects any ${...} reference in a script's content.
 // Content is passed to the shell as-is, so ${...} would be ambiguous with a
 // bundle reference; reference a declared env entry with $NAME instead.
-func validateScriptContent(b *bundle.Bundle, key, content string, p dyn.Path) diag.Diagnostics {
-	ref, ok := dynvar.NewRef(dyn.V(content))
+func validateScriptContent(b *bundle.Bundle, key, content string, p *structpath.PathNode) diag.Diagnostics {
+	ref, ok := structvar.NewRef(content)
 	if !ok {
 		return nil
 	}
 
 	first := ref.Matches[0][0]
-	v, _ := dyn.GetByPath(b.Config.Value(), p)
 	return diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  fmt.Sprintf("Found %s in script %s.content. Interpolation syntax ${...} is not supported in script content", first, key),
@@ -79,8 +78,8 @@ from "content" with $NAME:
       env:
         MY_VAR: ${var.foo}
       content: echo "$MY_VAR"`,
-		Locations: v.Locations(),
-		Paths:     dyn.ToStructPaths(p),
+		Locations: b.Config.LocationsAt(p),
+		Paths:     []*structpath.PathNode{p},
 	}}
 }
 
@@ -88,13 +87,12 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 	var diags diag.Diagnostics
 
 	for _, name := range slices.Sorted(maps.Keys(env)) {
-		ref, ok := dynvar.NewRef(dyn.V(env[name]))
+		ref, ok := structvar.NewRef(env[name])
 		if !ok {
 			continue
 		}
 
-		envValuePath := dyn.NewPath(dyn.Key("scripts"), dyn.Key(key), dyn.Key("env"), dyn.Key(name))
-		v, _ := dyn.GetByPath(b.Config.Value(), envValuePath)
+		envValuePath := structpath.NewPath(nil, "scripts", key, "env", name)
 
 		for _, refPath := range ref.References() {
 			prefix, _, _ := strings.Cut(refPath, ".")
@@ -104,8 +102,8 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("${%s} cannot be used in scripts.%s.env.%s; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute", refPath, key, name),
-				Locations: v.Locations(),
-				Paths:     dyn.ToStructPaths(envValuePath),
+				Locations: b.Config.LocationsAt(envValuePath),
+				Paths:     []*structpath.PathNode{envValuePath},
 			})
 		}
 	}
