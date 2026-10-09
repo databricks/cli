@@ -1,0 +1,15 @@
+# Example 2.19 Integers
+
+canonical: 12345
+decimal: +12345
+octal: 0o14
+hexadecimal: 0xC
+
+# Note: this example is not part of the spec but added for completeness.
+#
+# Octal numbers:
+#   - YAML 1.1: prefix is "0"
+#   - YAML 1.2: prefix is "0o"
+# The "gopkg.in/yaml.v3" package accepts both for backwards compat.
+# We accept only the YAML 1.2 prefix "0o".
+octal11: 012345

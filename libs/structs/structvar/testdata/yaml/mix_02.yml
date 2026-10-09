@@ -1,0 +1,49 @@
+# Scalars with special characters
+
+# Commas and square brackets in strings should be enclosed in quotes
+special_chars: "[This, string] has, special chars."
+
+# Strings starting with reserved indicators must be quoted
+reserved_string: "@not_a_directive"
+colon_string: "this: looks like a mapping, but it's not"
+
+# Explicit data type declaration
+explicit_string: !!str 12345
+
+# Sequences with nested mappings and lists
+
+teams:
+  -
+    name: Team A
+    members:
+      - Alice
+      - Bob
+    tasks:
+      - task1:
+          status: incomplete
+          due_date: 2023-01-15
+      - task2:
+          status: complete
+
+# Complex mapping keys
+? |
+  Multi-line key
+  which is unusual but valid
+: multi-line key's value
+
+"complex key: with colon": complex key's value
+
+# Set (a mapping with null values)
+set_example:
+  item1: ~
+  item2: ~
+
+# Merge multiple mappings (with override)
+base_colors: &colors
+  red: "#FF0000"
+  blue: "#0000FF"
+  green: "#00FF00"
+
+theme:
+  <<: *colors
+  blue: "#001122"  # Overriding the blue color from base_colors

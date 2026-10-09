@@ -1,0 +1,15 @@
+# 5. Using Anchors for List Items
+# You can use anchors for list items too.
+features: &FEATURES
+  - wifi
+  - bluetooth
+
+phone1:
+  name: PhoneA
+  features: *FEATURES
+
+phone2:
+  name: PhoneB
+  features:
+    - camera
+    - *FEATURES
