@@ -1,0 +1,90 @@
+# Scalars
+
+# Strings can be unquoted
+name: John Doe
+
+# Strings can be single quoted
+single_quoted_string: 'This is a single quoted string'
+
+# Strings can be double quoted (allows for escape sequences)
+double_quoted_string: "This is a double quoted string with an escaped newline \n and tab \t."
+
+# Multiline string with folded style (newlines become spaces)
+folded_style: >
+  This is a very
+  long string that
+  spans several lines.
+
+# Multiline string with literal block style (newlines are preserved)
+literal_style: |
+  Line 1
+  Line 2
+  Line 3
+
+# Integers
+age: 30
+
+# Floating point
+price: 19.99
+
+# Boolean values
+is_student: true
+is_employed: false
+
+# Null value
+middle_name: ~  # null can also be represented with 'null'
+
+# Timestamp
+timestamp: 2023-01-01T12:00:00Z
+
+# Sequences (lists)
+
+# Inline list
+fruits: [apple, banana, cherry]
+
+# Block style list
+books:
+  - 'Moby Dick'
+  - '1984'
+  - 'Pride and Prejudice'
+
+# Mappings (dictionaries)
+
+# Inline dictionary
+address: {street: '123 Main St', city: 'Anytown', zip: '12345'}
+
+# Block style dictionary
+employee:
+  first_name: Jane
+  last_name: Smith
+  age: 40
+
+# Edge cases and advanced features
+
+# Strings that look like other types must be quoted
+looks_like_number: '12345'
+looks_like_boolean: 'yes'
+looks_like_null: 'null'
+looks_like_timestamp: '2023-01-01T12:00:00Z'
+
+# Using anchors and aliases to reuse properties
+base_address: &base
+  street: '456 Elm St'
+  city: 'Sometown'
+
+office_address:
+  <<: *base  # Merge the base address into this mapping
+  suite: 500
+
+# Nested structures
+users:
+  - name: Alice
+    age: 28
+    interests:
+      - reading
+      - cycling
+  - name: Bob
+    age: 35
+    interests:
+      - cooking
+      - hiking

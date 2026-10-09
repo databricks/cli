@@ -1,0 +1,13 @@
+# 2. Merging Anchors
+# Here, multiple anchors can be merged into a single item.
+defaults: &DEFAULTS
+  color: red
+  size: large
+
+materials: &MATERIALS
+  primary: cotton
+  secondary: polyester
+
+shirt:
+  <<: [*DEFAULTS, *MATERIALS]
+  pattern: striped
