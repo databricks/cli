@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
@@ -11,17 +12,17 @@ func ConvertGenieSpaceToValue(genieSpace *dashboards.GenieSpace, filePath string
 	// fields (e.g. space_id, etag) must not appear in the generated config, so
 	// we build the value field by field rather than marshaling the struct.
 	dv := map[string]dyn.Value{
-		"title":        dyn.NewValue(genieSpace.Title, []dyn.Location{{Line: 1}}),
-		"warehouse_id": dyn.NewValue(genieSpace.WarehouseId, []dyn.Location{{Line: 2}}),
-		"file_path":    dyn.NewValue(filePath, []dyn.Location{{Line: 3}}),
+		"title":        dyn.NewValue(genieSpace.Title, []diag.Location{{Line: 1}}),
+		"warehouse_id": dyn.NewValue(genieSpace.WarehouseId, []diag.Location{{Line: 2}}),
+		"file_path":    dyn.NewValue(filePath, []diag.Location{{Line: 3}}),
 	}
 
 	if genieSpace.Description != "" {
-		dv["description"] = dyn.NewValue(genieSpace.Description, []dyn.Location{{Line: 4}})
+		dv["description"] = dyn.NewValue(genieSpace.Description, []diag.Location{{Line: 4}})
 	}
 
 	if genieSpace.ParentPath != "" {
-		dv["parent_path"] = dyn.NewValue(ensureWorkspacePrefix(genieSpace.ParentPath), []dyn.Location{{Line: 5}})
+		dv["parent_path"] = dyn.NewValue(ensureWorkspacePrefix(genieSpace.ParentPath), []diag.Location{{Line: 5}})
 	}
 
 	return dyn.V(dv), nil

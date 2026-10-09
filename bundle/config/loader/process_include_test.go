@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,7 +67,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single pipeline in a file with the .pipeline.yaml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/single_job.pipeline.yaml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/single_job.pipeline.yaml", Line: 4, Column: 7},
 				},
@@ -83,7 +82,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/job_and_pipeline.job.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/job_and_pipeline.job.yml", Line: 4, Column: 7},
 				},
@@ -98,7 +97,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single experiment in a file with the .experiment.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/job_and_pipeline.experiment.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/job_and_pipeline.experiment.yml", Line: 4, Column: 7},
 				},
@@ -113,7 +112,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/two_jobs.job.yml", Line: 4, Column: 7},
 					{File: "testdata/format_not_match/two_jobs.job.yml", Line: 7, Column: 7},
 				},
@@ -128,7 +127,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/second_job_in_target.job.yml", Line: 11, Column: 11},
 					{File: "testdata/format_not_match/second_job_in_target.job.yml", Line: 4, Column: 7},
 				},
@@ -143,7 +142,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				Severity: diag.Recommendation,
 				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/two_jobs_in_target.job.yml", Line: 6, Column: 11},
 					{File: "testdata/format_not_match/two_jobs_in_target.job.yml", Line: 8, Column: 11},
 				},
@@ -170,7 +169,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
   - registered_model1 (registered_model)
   - schema1 (schema)
 `,
-				Locations: []dyn.Location{
+				Locations: []diag.Location{
 					{File: "testdata/format_not_match/multiple_resources.model_serving_endpoint.yml", Line: 12, Column: 7},
 					{File: "testdata/format_not_match/multiple_resources.model_serving_endpoint.yml", Line: 14, Column: 7},
 					{File: "testdata/format_not_match/multiple_resources.model_serving_endpoint.yml", Line: 18, Column: 7},

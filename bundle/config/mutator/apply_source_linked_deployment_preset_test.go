@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -128,8 +128,8 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 				tt.mutateBundle(b)
 			}
 
-			bundletest.SetLocation(b, "presets.source_linked_deployment", []dyn.Location{{File: "databricks.yml"}})
-			bundletest.SetLocation(b, "workspace.file_path", []dyn.Location{{File: "databricks.yml"}})
+			bundletest.SetLocation(b, "presets.source_linked_deployment", []diag.Location{{File: "databricks.yml"}})
+			bundletest.SetLocation(b, "workspace.file_path", []diag.Location{{File: "databricks.yml"}})
 
 			diags := bundle.Apply(tt.ctx, b, mutator.ApplySourceLinkedDeploymentPreset())
 			if diags.HasError() && tt.expectedError == "" {

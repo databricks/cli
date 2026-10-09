@@ -26,7 +26,7 @@ var patterns = []dyn.Pattern{
 
 type libData struct {
 	fullPath   string
-	locations  []dyn.Location
+	locations  []diag.Location
 	paths      []*structpath.PathNode
 	otherPaths []string
 }
@@ -56,7 +56,7 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 				if !ok {
 					libs[lib] = &libData{
 						fullPath:   libPath,
-						locations:  []dyn.Location{libraryValue.Location()},
+						locations:  []diag.Location{libraryValue.Location()},
 						paths:      dyn.ToStructPaths(p),
 						otherPaths: []string{},
 					}
