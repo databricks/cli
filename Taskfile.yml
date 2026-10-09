@@ -887,11 +887,22 @@ tasks:
           --dir "{{.ROOT_DIR}}" \
           --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
           --openapi-spec-sha "$OPENAPI_SHA"
+      # The SDK-version consistency check runs here for fast feedback when
+      # generate-clijson is invoked manually. Cleanup of genkit's output is
+      # delegated to generate-clijson-post so the SDK bumper can reuse it.
+      - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
+      - task: generate-clijson-post
+
+  # Post-processing for genkit's `update-sdk` output, factored out of
+  # generate-clijson so the SDK bumper can run the same cleanup after its own
+  # update-sdk invocation.
+  generate-clijson-post:
+    desc: Clean up genkit update-sdk output (shared by generate-clijson and the SDK bumper)
+    cmds:
       # genkit also writes .gitattributes, but that file is owned by
       # generate-cligen (which derives it from .gitattributes.manual plus the
       # rendered file list), so discard genkit's copy.
       - git checkout -- .gitattributes
-      - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
