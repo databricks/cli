@@ -1,0 +1,10 @@
+# 8. Boolean Anchors
+isActive: &active true
+
+user1:
+  username: user1
+  active: *active
+
+user2:
+  username: user2
+  active: *active

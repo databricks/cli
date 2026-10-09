@@ -1,0 +1,5 @@
+# Example 2.21 Miscellaneous
+
+null:
+booleans: [ true, false ]
+string: '012345'

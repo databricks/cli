@@ -1,0 +1,5 @@
+leaf: &leaf 1
+shared: &shared
+  value: *leaf
+use1: *shared
+use2: *shared

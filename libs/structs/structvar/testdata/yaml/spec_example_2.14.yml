@@ -1,0 +1,6 @@
+# Example 2.14 In the folded scalars, newlines become spaces
+
+--- >
+  Mark McGwire's
+  year was crippled
+  by a knee injury.

@@ -1,0 +1,6 @@
+# Use string anchor inside sequence to extend a mapping.
+str: &str "Hello world!"
+
+map:
+  <<: [*str]
+  key: value

@@ -1,0 +1,2 @@
+anchortest: &x
+  child: *x
