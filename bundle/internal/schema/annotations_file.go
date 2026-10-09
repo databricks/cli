@@ -153,6 +153,10 @@ func loadAnnotationsFile(path string, g *typeGraph) (annotation.File, []string, 
 	if err != nil {
 		return nil, nil, err
 	}
+	if v == nil {
+		// An empty document has no annotations.
+		return annotation.File{}, nil, nil
+	}
 
 	l := &fileLoader{graph: g, data: annotation.File{}}
 	err = l.block(v, g.root, "")
