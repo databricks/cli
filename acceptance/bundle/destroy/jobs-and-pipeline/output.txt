@@ -10,9 +10,11 @@ Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the snapshot file exists
+
 >>> find.py --expect 1 ^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json
 
 === Assert bundle deployment path is created
+
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 {
   "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
@@ -20,6 +22,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Assert the pipeline is created
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -48,6 +51,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Destroy bundle
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.foo
@@ -62,6 +66,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert pipeline is deleted
+
 >>> errcode [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 
@@ -82,6 +87,7 @@ Exit code: 1
 .databricks/bundle/default/deployment.json
 
 === Assert bundle deployment path is deleted
+
 >>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Error: Path (//Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
 

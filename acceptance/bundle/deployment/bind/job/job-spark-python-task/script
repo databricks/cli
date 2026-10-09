@@ -1,4 +1,4 @@
-title "Create a pre-defined job:\n"
+title "Create a pre-defined job:"
 
 PYTHON_FILE="/Workspace/Users/${CURRENT_USER_NAME}/initial_hello_world.py"
 

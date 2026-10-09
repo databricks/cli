@@ -11,7 +11,6 @@ $CLI bundle deploy
 job1_id="$(read_id.py job1)"
 
 title "Simulate a cluster policy injecting custom_tags and cluster_log_conf"
-echo
 echo "These fields exist only remotely (the user never set them in config)."
 echo "A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync."
 edit_resource.py jobs $job1_id <<'EOF'
@@ -34,11 +33,9 @@ for jc in r.get("job_clusters", []):
 EOF
 
 title "Detect and save all changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

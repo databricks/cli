@@ -38,6 +38,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === assert that permissions are applied
+
 >>> [CLI] permissions get alertsv2 [ALERT_ID]
 {
   "user_name": "deco-test-user@databricks.com",
@@ -50,6 +51,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === assert that no permanent drift happens
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

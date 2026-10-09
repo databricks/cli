@@ -3,9 +3,9 @@ echo '{"serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/ter
 
 # `bundle debug states` doesn't deploy; it should just report the state without
 # a mismatch warning. The "will attempt to migrate" hint belongs to deploy only.
-title 'Direct opt-in with terraform state on disk: debug states reports without warning\n'
+title 'Direct opt-in with terraform state on disk: debug states reports without warning'
 unset DATABRICKS_BUNDLE_ENGINE
 trace $CLI bundle debug states
 
-title 'Invalid env var with config set: config takes priority, still no warning\n'
+title 'Invalid env var with config set: config takes priority, still no warning'
 trace DATABRICKS_BUNDLE_ENGINE=bla $CLI bundle debug states

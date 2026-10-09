@@ -1,5 +1,6 @@
 
 === Initial summary for resource, before the deployment
+
 >>> [CLI] bundle summary -o json
 {
   "catalog_name": "main",
@@ -12,6 +13,7 @@
 }
 
 === Verify volume does not exist
+
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Volume 'main.myschema.myvolume' does not exist.
 
@@ -39,6 +41,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]"
 
 === Verify deployment
+
 >>> [CLI] volumes read main.myschema.myvolume
 {
   "catalog_name": "main",
@@ -56,6 +59,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update comment
+
 >>> update_file.py databricks.yml COMMENT1 COMMENT2
 
 === Summary should show modified_status=modified and show the same id
@@ -86,6 +90,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Verify updated deployment: should show new comment
+
 >>> [CLI] volumes read main.myschema.myvolume
 "COMMENT2"
 

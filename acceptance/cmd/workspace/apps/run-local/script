@@ -8,10 +8,10 @@ add_repl "$PROXY_PORT" PROXY_PORT
 # The app and the proxy start asynchronously; allow up to 15s for them to come up.
 export RETRY_MAX_ATTEMPTS=30
 
-title "Env var with valueFrom cannot be resolved locally\n"
+title "Env var with valueFrom cannot be resolved locally"
 trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
 
-title "Entry point overrides the command from app.yml\n"
+title "Entry point overrides the command from app.yml"
 trace $CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> ../LOG.entry-point
 trace grep -x "Running command: python -c print('Hello, world')" ../LOG.entry-point
 trace grep -x "Hello, world" ../LOG.entry-point
@@ -32,15 +32,15 @@ PID=$!
 trap cleanup EXIT
 cd ..
 
-title "Proxy forwards to the app and injects the identity headers\n"
+title "Proxy forwards to the app and injects the identity headers"
 trace retry --until X-Forwarded-Email curl -sS "http://127.0.0.1:$PROXY_PORT"
 
-title "Proxy URL is reported on the port that was asked for\n"
+title "Proxy URL is reported on the port that was asked for"
 trace grep -x "To access your app go to http://localhost:$PROXY_PORT" LOG.run
 
-title "App picked up the env var from app.yml\n"
+title "App picked up the env var from app.yml"
 trace grep -x "Python app has started with: test" LOG.run
 
-title "Shutting the app down\n"
+title "Shutting the app down"
 trace curl -sS -o /dev/null "http://127.0.0.1:$PROXY_PORT/shutdown"
 wait $PID

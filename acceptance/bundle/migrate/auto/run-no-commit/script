@@ -12,7 +12,7 @@ trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle run test_job --no-wait
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
-title "Nothing durable written: still on terraform (local state files + remote), no direct state / migrating temp / WAL\n"
+title "Nothing durable written: still on terraform (local state files + remote), no direct state / migrating temp / WAL"
 # find.py lists matching files sorted with forward slashes (cross-platform); the terraform provider
 # cache under .terraform/ is excluded by matching only state files (tfstate/.backup, resources*.json, WAL).
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

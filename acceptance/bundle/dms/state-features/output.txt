@@ -1,5 +1,6 @@
 
 === Deploy records version 3 and the deployment_history feature, with resources held in DMS
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
 Created jobs.foo
@@ -16,6 +17,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Reopening version 3 reads resources from DMS and produces a no-op plan
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
@@ -23,6 +25,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}
 
 === Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state
+
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
 Error: deployment history setting (false) does not match the existing state (true)
 

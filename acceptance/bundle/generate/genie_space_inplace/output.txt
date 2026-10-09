@@ -3,6 +3,7 @@
 {}
 
 === deploy initial genie space
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie space update inplace/default/files...
 Created genie_spaces.test_genie_space
@@ -10,6 +11,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === update the genie space
+
 >>> [CLI] genie update-space [GENIE_SPACE_ID] --serialized-space {"a":"b"}
 {
   "etag": "2",
@@ -21,6 +23,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === update the genie space file using bundle generate
+
 >>> [CLI] bundle generate genie-space --resource test_genie_space --force
 Writing genie space to space.geniespace.json
 

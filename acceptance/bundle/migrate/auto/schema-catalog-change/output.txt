@@ -5,9 +5,11 @@
 }
 
 === Replay the prior terraform deployment (captured from a real terraform run)
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Move the schema to another catalog. Without --auto-approve the recreate is refused
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Warn: migration to direct: schemas.my_schema: catalog_name differs between config ("othercat_[UNIQUE_NAME]") and terraform state ("main"); this resource will be recreated.
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
@@ -28,6 +30,7 @@ Exit code: 1
 direct_migrate_recreate_planned true
 
 === With --auto-approve the recreate moves the schema to the new catalog on direct
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
 Warn: migration to direct: schemas.my_schema: catalog_name differs between config ("othercat_[UNIQUE_NAME]") and terraform state ("main"); this resource will be recreated.
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
@@ -41,12 +44,14 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 === Redeploy on direct: the schema now matches config, so the plan is a clean no-op
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === The schema exists in the new catalog and the local state is direct
+
 >>> [CLI] schemas get othercat_[UNIQUE_NAME].myschema-[UNIQUE_NAME]
 {
   "full_name": "othercat_[UNIQUE_NAME].myschema-[UNIQUE_NAME]"
@@ -57,6 +62,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Cleanup
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.my_schema

@@ -1,5 +1,6 @@
 
 === Deploy with started=true: app created with compute running
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Created apps.myapp
@@ -28,6 +29,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "ACTIVE"
 
 === Re-deploy with description change: code deployed again
+
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
 >>> errcode [CLI] bundle deploy
@@ -47,6 +49,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Stop app externally while config says started=true: plan detects drift
+
 >>> errcode [CLI] apps stop [UNIQUE_NAME]
 "STOPPED"
 
@@ -56,6 +59,7 @@ update apps.myapp
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Deploy fixes the drift: compute restarted
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
@@ -63,6 +67,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Stop app externally, then deploy with started=false: app stays stopped
+
 >>> errcode [CLI] apps stop [UNIQUE_NAME]
 "STOPPED"
 
@@ -98,6 +103,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "STOPPED"
 
 === Deploy with started=true: compute restarted and code deployed
+
 >>> update_file.py databricks.yml started: false started: true
 
 >>> update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3

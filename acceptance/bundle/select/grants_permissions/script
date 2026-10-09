@@ -19,11 +19,11 @@ musterr trace $CLI bundle plan --select schemas.my_schema.grants
 
 # Deploying a selected resource applies its permissions/grants too.
 $CLI bundle plan --select jobs.my_job -o json > plan-job.json
-title "bundle deploy --select jobs.my_job\n"
+title "bundle deploy --select jobs.my_job"
 $CLI bundle deploy --select jobs.my_job $(readplanarg plan-job.json)
 
 $CLI bundle plan --select schemas.my_schema -o json > plan-schema.json
-title "bundle deploy --select schemas.my_schema\n"
+title "bundle deploy --select schemas.my_schema"
 $CLI bundle deploy --select schemas.my_schema $(readplanarg plan-schema.json)
 
 # Assert the permissions PUT and grants PATCH were emitted for the selected resources.

@@ -9,6 +9,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === The delete never completes; the capped wait times out and the recreate fails
+
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1 errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-capped-postgres-synced-table-[UNIQUE_NAME]/default/files...
 Recreated postgres_synced_tables.my_table

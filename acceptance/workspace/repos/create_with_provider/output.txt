@@ -2,6 +2,7 @@
 >>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path /Repos/me@databricks.com/test-repo
 
 === Get by id should work
+
 >>> [CLI] repos get [NUMID] -o json
 {
   "branch": "main",
@@ -13,6 +14,7 @@
 }
 
 === Get by path should work
+
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
 {
   "branch": "main",
@@ -24,6 +26,7 @@
 }
 
 === Delete by id should work
+
 >>> [CLI] repos delete [NUMID]
 
 >>> print_requests.py --get //repos //workspace/get-status

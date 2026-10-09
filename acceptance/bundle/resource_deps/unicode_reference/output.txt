@@ -1,5 +1,6 @@
 
 === Unicode job names resolve in resources references
+
 >>> [CLI] bundle validate
 Name: test-bundle
 Target: default

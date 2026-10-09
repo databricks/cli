@@ -5,6 +5,7 @@ host = [DATABRICKS_URL]
 cluster_id = existing-cluster-123
 
 === Run auth login with --configure-serverless
+
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile DEFAULT --configure-serverless
 Profile DEFAULT was successfully saved
 

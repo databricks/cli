@@ -7,9 +7,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Remove resources from configuration to test auto-approve
+
 >>> rm resources.yml
 
 === Try to redeploy without --auto-approve - should fail
+
 >>> errcode [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 
@@ -27,6 +29,7 @@ Files: 0 uploaded, 1 deleted
 Exit code: 1
 
 === Redeploy with --auto-approve - should succeed
+
 >>> [CLI] pipelines deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 

@@ -41,6 +41,7 @@ Files: 13 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
+
 >>> jq select(.method == "POST" and (.path | contains("/sql/warehouses"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
@@ -70,6 +71,7 @@ Resources:
       URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Update the warehouse name
+
 >>> update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
 
 >>> [CLI] bundle deploy
@@ -79,6 +81,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
+
 >>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
@@ -108,6 +111,7 @@ Resources:
       URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Destroy the warehouse
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.sql_warehouses.test_sql_warehouse
@@ -117,6 +121,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Verify the destroy request
+
 >>> jq select(.method == "DELETE" and (.path | contains("/sql/warehouses"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "DELETE",

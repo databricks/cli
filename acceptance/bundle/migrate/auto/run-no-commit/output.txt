@@ -1,8 +1,10 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === bundle run on direct migrates the terraform state IN MEMORY (no commit) to resolve the job
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle run test_job --no-wait
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]

@@ -1,10 +1,10 @@
-title "version stays lightweight\n"
+title "version stays lightweight"
 trace $CLI version
 
 # The acceptance binary is a development build, so the check short-circuits
 # without contacting GitHub. This exercises command wiring and output rendering.
-title "version --check\n"
+title "version --check"
 trace $CLI version --check
 
-title "version --check --output json\n"
+title "version --check --output json"
 trace $CLI version --check --output json

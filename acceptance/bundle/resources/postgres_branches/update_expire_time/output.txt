@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default/files...
 Created postgres_branches.dev_branch
@@ -27,6 +28,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change expire_time and re-deploy
+
 >>> update_file.py databricks.yml [EXPIRE_TIME_BEFORE] [EXPIRE_TIME_AFTER]
 
 >>> [CLI] bundle plan

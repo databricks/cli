@@ -38,6 +38,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
+
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
@@ -64,6 +65,7 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
 
 === Update the instance pool name
+
 >>> update_file.py databricks.yml my_instance_pool my_instance_pool_2
 
 >>> [CLI] bundle deploy
@@ -73,6 +75,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
+
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
@@ -100,6 +103,7 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
 
 === Destroy the instance pool
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.instance_pools.test_instance_pool
@@ -109,6 +113,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Verify the destroy request
+
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",

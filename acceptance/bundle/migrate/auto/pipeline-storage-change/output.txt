@@ -1,8 +1,10 @@
 
 === Replay the prior terraform deployment (captured from a real terraform run)
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Change immutable storage. Without --auto-approve the recreate is refused
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -28,6 +30,7 @@ direct_migrate_recreate_planned true
 .databricks/bundle/default/terraform/terraform.tfstate
 
 === With --auto-approve the recreate is applied on direct
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -43,11 +46,13 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 === Local state is now direct
+
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Cleanup
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.my_pipeline

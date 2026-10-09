@@ -2,16 +2,16 @@ sethome "./home"
 
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "Initial config\n"
+title "Initial config"
 cat "./home/.databrickscfg"
 
 title "Delete the only non-default profile"
 trace $CLI auth logout --profile only-profile --auto-approve --delete
 
-title "Backup file should exist\n"
+title "Backup file should exist"
 assert_backup_exists
 
-title "Config after logout — DEFAULT section with comment should remain\n"
+title "Config after logout — DEFAULT section with comment should remain"
 cat "./home/.databrickscfg"
 
 cp "./home/.databrickscfg" "./out.databrickscfg"

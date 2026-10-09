@@ -25,7 +25,7 @@ trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
 rm "$OUT_REQUESTS"
 
-title "Updating the local wheel and deploying again\n"
+title "Updating the local wheel and deploying again"
 touch my_test_code/src/new_module.py
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 nostamp < tmp.plan.json > out.plan_update.json

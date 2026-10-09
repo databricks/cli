@@ -1,5 +1,6 @@
 
 === Plan before first deploy: no deployment yet, so serial is still 0
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -16,6 +17,7 @@ create jobs.parent
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 === Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
 Created jobs.child
@@ -54,6 +56,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op now and records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -69,6 +72,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === The service lists both jobs, each recorded at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 [
   {
@@ -84,6 +88,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 ]
 
 === The raw recorded state the service holds for this deployment
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,

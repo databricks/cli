@@ -19,6 +19,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 === Adding resources.json with lower serial does not change anything
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

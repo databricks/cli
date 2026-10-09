@@ -1,4 +1,4 @@
-title 'Terraform state is present, empty env var uses state engine\n'
+title 'Terraform state is present, empty env var uses state engine'
 mkdir -p .databricks/bundle/default/terraform
 echo '{"version": 4, "serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/terraform/terraform.tfstate
 
@@ -20,7 +20,7 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
 
 rm "$OUT_REQUESTS"
-title 'Adding resources.json with higher serial, env var mismatch warns but uses state engine\n'
+title 'Adding resources.json with higher serial, env var mismatch warns but uses state engine'
 echo '{"serial": 10, "lineage": "test-lineage"}' > .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 

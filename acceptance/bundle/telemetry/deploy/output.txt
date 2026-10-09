@@ -12,8 +12,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> cat [OUTPUT_DIR]/out.requests.txt
 
 === Assert that mutator execution times are being recorded
+
 >>> cat telemetry.json
 true
 
 === Assert the dry-run migration to the direct engine is reported
+
 === Assert the terraform engine opt-in is reported

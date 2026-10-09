@@ -7,6 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Dry running pipeline, should have validate_only set to true
+
 >>> [CLI] pipelines dry-run
 Recommendation: This command runs the last deployed version of the code
 
@@ -24,6 +25,7 @@ Update ID: [UUID]
 }
 
 === Dry running pipeline with KEY, expect same output as without KEY
+
 >>> [CLI] pipelines dry-run my_pipeline
 Recommendation: This command runs the last deployed version of the code
 

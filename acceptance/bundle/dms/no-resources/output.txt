@@ -1,5 +1,6 @@
 
 === First deploy of a bundle with no resources: the deployment is created, and its workspace node identifies it even though no resource state was written
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
@@ -30,6 +31,7 @@ deployment_history_enabled true
 }
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -44,10 +46,12 @@ deployment_history_enabled true
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service lists no resources for the deployment
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 []
 
 === The raw recorded state the service holds for this deployment
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -60,6 +64,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 }
 
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
@@ -96,6 +101,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -110,10 +116,12 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service still lists no resources
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 []
 
 === The raw recorded state after redeploy
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,

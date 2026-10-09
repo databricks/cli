@@ -7,6 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Running pipeline with --refresh flag and specific tables
+
 >>> [CLI] pipelines run --refresh table1,table2
 Recommendation: This command runs the last deployed version of the code
 
@@ -34,6 +35,7 @@ Pipeline configurations for this update:
 }
 
 === Running pipeline with --full-refresh-all flag
+
 >>> [CLI] pipelines run --full-refresh-all
 Recommendation: This command runs the last deployed version of the code
 
@@ -58,6 +60,7 @@ Pipeline configurations for this update:
 }
 
 === Running pipeline with --full-refresh flag and specific tables
+
 >>> [CLI] pipelines run --full-refresh table1,table2
 Recommendation: This command runs the last deployed version of the code
 
@@ -85,6 +88,7 @@ Pipeline configurations for this update:
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
+
 >>> [CLI] pipelines run --full-refresh table1,table2 --refresh table3,table4
 Recommendation: This command runs the last deployed version of the code
 

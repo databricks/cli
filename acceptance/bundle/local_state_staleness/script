@@ -18,7 +18,7 @@ cp databricks.yml hello_world.py "$BUNDLE_A_DIR/"
 cp databricks.yml hello_world.py "$BUNDLE_B_DIR/"
 
 cleanup() {
-    title "Cleanup - destroy bundle A (bundle B does not have an active deployment)\n"
+    title "Cleanup - destroy bundle A (bundle B does not have an active deployment)"
     cd "$BUNDLE_A_DIR" || exit
     trace "$CLI" bundle destroy --auto-approve
 
@@ -39,6 +39,6 @@ title "Step 3: Deploy bundle A again (should use remote state)"
 cd "$BUNDLE_A_DIR"
 trace "$CLI" bundle deploy --force-lock --auto-approve
 
-title "Step 4: Verify only one job exists\n"
+title "Step 4: Verify only one job exists"
 cd "$BUNDLE_A_DIR"
 "$CLI" jobs list -o json | jq -r --arg name "test-job-basic-${UNIQUE_NAME}" '.[] | select(.settings.name == $name) | {name: .settings.name, id: .job_id}'

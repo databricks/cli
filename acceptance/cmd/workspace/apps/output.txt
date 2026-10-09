@@ -1,5 +1,6 @@
 
 === Apps create with correct input
+
 >>> [CLI] apps create --json @input.json
 {
   "active_deployment": {
@@ -42,6 +43,7 @@
 }
 
 === Apps update with correct input
+
 >>> [CLI] apps update test-name --json @input.json
 {
   "active_deployment": {
@@ -84,6 +86,7 @@
 }
 
 === Apps update with missing parameter
+
 >>> [CLI] apps update --json @input.json
 Error: accepts 1 arg(s), received 0
 

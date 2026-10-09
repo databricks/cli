@@ -35,6 +35,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
+
 >>> print_requests.py //policies/clusters/create
 {
   "method": "POST",
@@ -58,6 +59,7 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Update the cluster policy name
+
 >>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
 
 >>> [CLI] bundle deploy
@@ -67,6 +69,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
+
 >>> print_requests.py //policies/clusters/edit
 {
   "method": "POST",
@@ -91,6 +94,7 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Destroy the cluster policy
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.test_cluster_policy
@@ -100,6 +104,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Verify the destroy request
+
 >>> print_requests.py //policies/clusters/delete
 {
   "method": "POST",

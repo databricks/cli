@@ -1,5 +1,6 @@
 
 === Initial deployment with history_retention_duration: 604800s
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/remove-postgres-project-retention-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
@@ -30,6 +31,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Remove history_retention_duration and re-deploy
+
 >>> update_file.py databricks.yml       history_retention_duration: 604800s 
 
 >>> [CLI] bundle plan

@@ -38,11 +38,11 @@ else
   CONNECT_FLAGS="--releases-dir=$PWD/releases --known-hosts-dir=known-hosts"
 fi
 
-title "Download $PAYLOAD_BYTES bytes over the tunnel\n"
+title "Download $PAYLOAD_BYTES bytes over the tunnel"
 errcode $CLI ssh connect $CONNECT_FLAGS -- "$payload_cmd" >received.bin 2>LOG.download
 echo "received $(wc -c <received.bin | tr -d ' ') of $PAYLOAD_BYTES bytes"
 
-title "Upload $PAYLOAD_BYTES bytes over the tunnel\n"
+title "Upload $PAYLOAD_BYTES bytes over the tunnel"
 sh -c "$payload_cmd" >sent.bin
 errcode $CLI ssh connect $CONNECT_FLAGS -- "wc -c" <sent.bin >remote-count.txt 2>LOG.upload
 # The remote count is empty when the session ended before `wc` could report; say 0 rather than

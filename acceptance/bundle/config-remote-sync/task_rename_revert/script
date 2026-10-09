@@ -11,7 +11,6 @@ $CLI bundle deploy
 job_id="$(read_id.py sample_job)"
 
 title "Rename task to new_task_2 remotely"
-echo
 edit_resource.py jobs $job_id <<EOF
 for task in r["tasks"]:
     if task["task_key"] == "new_task":
@@ -19,14 +18,12 @@ for task in r["tasks"]:
 EOF
 
 title "Sync the rename into config (no redeploy)"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "Rename task back to new_task remotely"
-echo
 edit_resource.py jobs $job_id <<EOF
 for task in r["tasks"]:
     if task["task_key"] == "new_task_2":
@@ -38,7 +35,6 @@ EOF
 # "no array element found with task_key='new_task'" because the change was
 # classified as Replace on a key that the YAML no longer contains.
 title "Sync the revert into config"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 trace diff.py databricks.yml.backup databricks.yml

@@ -8,7 +8,7 @@ add_repl "$DEBUG_PORT" DEBUG_PORT
 # The app and the proxy start asynchronously; allow up to 15s for them to come up.
 export RETRY_MAX_ATTEMPTS=30
 
-title "Prepare environment runs the build script, and the entry point overrides app.yml\n"
+title "Prepare environment runs the build script, and the entry point overrides app.yml"
 # npm reaches no registry here: nothing to install, and app/.npmrc turns off its update check.
 # The build script runs only if the install succeeded, so the first grep covers both halves.
 trace $CLI apps run-local --prepare-environment --entry-point test.yml --port "$PREPARE_PORT" &> ../LOG.prepare
@@ -31,15 +31,15 @@ PID=$!
 trap cleanup EXIT
 cd ..
 
-title "Proxy forwards to the app\n"
+title "Proxy forwards to the app"
 trace retry --until "Hello From App" curl -sS "http://127.0.0.1:$PROXY_PORT"
 
-title "Debug mode reports the debugger port, and node listens on it\n"
+title "Debug mode reports the debugger port, and node listens on it"
 # The CLI prints this only after the proxy accepts connections, so the curl above can beat it.
 # node's line below needs no retry: it is written before the app listens, so the curl proves it.
 trace retry grep -x "To debug your app, attach a debugger to port $DEBUG_PORT" LOG.run
 trace grep "Debugger listening on ws://127.0.0.1:$DEBUG_PORT/" LOG.run
 
-title "Shutting the app down\n"
+title "Shutting the app down"
 trace curl -sS -o /dev/null "http://127.0.0.1:$PROXY_PORT/shutdown"
 wait $PID

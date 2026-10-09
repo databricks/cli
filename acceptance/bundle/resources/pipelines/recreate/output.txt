@@ -7,6 +7,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the pipeline is created with catalog
+
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -32,6 +33,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Switch from catalog to storage (triggers recreation)
+
 >>> update_file.py databricks.yml catalog: main storage: dbfs:/my-storage
 
 >>> update_file.py databricks.yml target: ${resources.schemas.bar.name} #target: ${resources.schemas.bar.name}
@@ -42,6 +44,7 @@ recreate pipelines.foo
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 === Redeploy the bundle (should recreate the pipeline)
+
 >>> errcode [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
