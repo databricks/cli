@@ -157,10 +157,10 @@ func TestVisitJobPaths_environmentVariables(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[0]"),
-		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[1]"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.environment_variables[0].spec.files[0]",
+		"resources.jobs.job0.environment_variables[0].spec.files[1]",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }
