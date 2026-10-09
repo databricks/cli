@@ -43,7 +43,7 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 			Severity:  diag.Warning,
 			Summary:   pipelineDevelopmentDeprecatedSummary,
 			Locations: v.Locations(),
-			Paths:     []dyn.Path{p},
+			Paths:     dyn.ToStructPaths(p),
 		})
 
 		// The preset overwrites YAML values with true, so a false here was set by a Python
@@ -54,7 +54,7 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 				Summary:   pipelineDevelopmentIgnoredSummary,
 				Detail:    pipelineDevelopmentIgnoredDetail,
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			})
 		}
 		return v, nil

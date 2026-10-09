@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -603,6 +604,33 @@ func (r Root) GetLocations(path string) []dyn.Location {
 		return nil
 	}
 	return v.Locations()
+}
+
+// GetLocationOf is [Root.GetLocation] for a path node.
+func (r Root) GetLocationOf(path *structpath.PathNode) dyn.Location {
+	v, ok := r.valueOf(path)
+	if !ok {
+		return dyn.Location{}
+	}
+	return v.Location()
+}
+
+// GetLocationsOf is [Root.GetLocations] for a path node.
+func (r Root) GetLocationsOf(path *structpath.PathNode) []dyn.Location {
+	v, ok := r.valueOf(path)
+	if !ok {
+		return nil
+	}
+	return v.Locations()
+}
+
+func (r Root) valueOf(path *structpath.PathNode) (dyn.Value, bool) {
+	p, ok := dyn.FromStructPath(path)
+	if !ok {
+		return dyn.InvalidValue, false
+	}
+	v, err := dyn.GetByPath(r.value, p)
+	return v, err == nil
 }
 
 // GetNodeAndType and returns parent resource node and type of the resource in direct backend.

@@ -213,7 +213,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 				require.Len(t, warnings, 1)
 				require.Contains(t, warnings[0].Summary, tc.wantSummary)
 				require.Contains(t, warnings[0].Detail, "service_principal_name: ${resources.apps.my_app.service_principal_client_id}")
-				require.Equal(t, dyn.MustPathFromString("resources.apps.my_app"), warnings[0].Paths[0])
+				require.Equal(t, "resources.apps.my_app", warnings[0].Paths[0].String())
 			} else {
 				require.Empty(t, warnings)
 			}

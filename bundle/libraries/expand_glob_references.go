@@ -19,7 +19,7 @@ func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 		Severity:  diag.Error,
 		Summary:   message,
 		Locations: l,
-		Paths:     []dyn.Path{p},
+		Paths:     dyn.ToStructPaths(p),
 	}
 }
 
