@@ -83,7 +83,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle summary -o json
 {
   "id": "main.myschema.myfeature",
-  "url": "[DATABRICKS_URL]/explore/data/features/main/myschema/myfeature?w=[NUMID]"
+  "url": "[DATABRICKS_URL]/explore/data/features/main/myschema/myfeature?w=[WORKSPACE_ID]"
 }
 
 === Verify deployment

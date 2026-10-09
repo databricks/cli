@@ -13,7 +13,7 @@ Resources:
   Features:
     feature1:
       Name: main.myschema.boundfeature
-      URL:  [DATABRICKS_URL]/explore/data/features/main/myschema/boundfeature?w=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/features/main/myschema/boundfeature?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle deployment unbind feature1
 
