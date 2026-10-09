@@ -1,0 +1,19 @@
+export DATABRICKS_APPKIT_TEMPLATE_PATH="$TESTDIR/template"
+
+title "Missing project name fails without a terminal"
+trace musterr $CLI bundle init app-appkit < /dev/null
+
+title "Unsupported template directory fails before initialization"
+trace musterr $CLI bundle init app-appkit --template-dir template < /dev/null
+
+title "Initialize AppKit from a config file without a terminal"
+trace $CLI bundle init app-appkit --config-file input.json --output-dir output < /dev/null
+test ! -d output/appkit-bundle-test/node_modules
+
+cd output/appkit-bundle-test
+
+trace $CLI bundle validate < /dev/null
+trace $CLI bundle deploy < /dev/null
+trace $CLI apps get appkit-bundle-test -o json | jq '{name, compute_state: .compute_status.state, deployment_state: .active_deployment.status.state}'
+trace $CLI bundle destroy --auto-approve < /dev/null
+rm -r .databricks

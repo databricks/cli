@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newInitCommand() *cobra.Command {
+func newInitCommand(appKitInit func() *cobra.Command) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
@@ -24,13 +24,11 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 - a Git repository URL, e.g. https://github.com/my/repository
 
 Examples:
-  databricks bundle init                   # Choose from built-in templates
-  databricks bundle init default-python    # Python jobs and notebooks
-  databricks bundle init dbt-sql           # dbt + SQL warehouse project
-  databricks bundle init --output-dir ./my-project
+  databricks bundle init default-python
+  databricks bundle init app-appkit --config-file input.json  # {"project_name":"my-app"}
 
 After initialization:
-  databricks bundle deploy --target dev
+  databricks bundle deploy
 
 See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
 	}
@@ -51,10 +49,21 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		if tag != "" && branch != "" {
 			return errors.New("only one of --tag or --branch can be specified")
 		}
-
+		ctx := cmd.Context()
 		var templatePathOrUrl string
 		if len(args) > 0 {
 			templatePathOrUrl = args[0]
+		} else {
+			selected, err := template.SelectTemplate(ctx)
+			if errors.Is(err, template.ErrCustomSelected) {
+				cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+				cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			templatePathOrUrl = string(selected)
 		}
 		r := template.Resolver{
 			TemplatePathOrUrl: templatePathOrUrl,
@@ -65,12 +74,15 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			Branch:            branch,
 		}
 
-		ctx := cmd.Context()
 		tmpl, err := r.Resolve(ctx)
-		if errors.Is(err, template.ErrCustomSelected) {
-			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
-			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
-			return nil
+		if errors.Is(err, template.ErrAppKitSelected) {
+			return runAppKitInit(cmd, appKitInit, appKitInitOptions{
+				configFile:  configFile,
+				outputDir:   outputDir,
+				templateDir: templateDir,
+				tag:         tag,
+				branch:      branch,
+			})
 		}
 		if err != nil {
 			return err

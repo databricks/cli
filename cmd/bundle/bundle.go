@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func New(appKitInit func() *cobra.Command) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bundle",
 		Short: "Declarative Automation Bundles let you express data/AI/analytics projects as code.",
@@ -32,7 +32,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newSchemaCommand())
 	cmd.AddCommand(newSyncCommand())
 	cmd.AddCommand(newValidateCommand())
-	cmd.AddCommand(newInitCommand())
+	cmd.AddCommand(newInitCommand(appKitInit))
 	cmd.AddCommand(newSummaryCommand())
 	cmd.AddCommand(newGenerateCommand())
 	cmd.AddCommand(newDebugCommand())
