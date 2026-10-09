@@ -1,0 +1,10 @@
+# Example 2.10 Node for “Sammy Sosa” appears twice in this document
+
+---
+hr:
+- Mark McGwire
+# Following node labeled SS
+- &SS Sammy Sosa
+rbi:
+- *SS # Subsequent occurrence
+- Ken Griffey
