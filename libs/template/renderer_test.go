@@ -229,8 +229,7 @@ func TestRendererSharedLibraryAndOverride(t *testing.T) {
 	// agents_md is defined only in the shared library, so rendering it (a heading)
 	// without error proves the shared library is parsed into the template's namespace.
 	assert.Contains(t, got, "shared: #")
-	// claude_md is defined in both the shared library and this template's own
-	// library; the template's own definition must take precedence.
+	// The template's experimental_deployment_history overrides the shared definition.
 	assert.Contains(t, got, "own: OWN WINS")
 }
 
