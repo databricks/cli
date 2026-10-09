@@ -207,29 +207,34 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 }
 
 func TestRendererSharedLibraryAndOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+
 	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	render := func(libraryDir string) string {
-		t.Helper()
-		tmpDir := t.TempDir()
-		r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", libraryDir)
-		require.NoError(t, err)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/library")
+	require.NoError(t, err)
 
-		err = r.walk()
-		require.NoError(t, err)
-		out, err := filer.NewLocalClient(tmpDir)
-		require.NoError(t, err)
-		err = r.persistToDisk(ctx, out)
-		require.NoError(t, err)
+	err = r.walk()
+	require.NoError(t, err)
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
+	require.NoError(t, err)
 
-		b, err := os.ReadFile(filepath.Join(tmpDir, "AGENTS.md"))
-		require.NoError(t, err)
-		return string(b)
-	}
+	b, err := os.ReadFile(filepath.Join(tmpDir, "out"))
+	require.NoError(t, err)
+	got := string(b)
 
-	assert.Contains(t, render("./testdata/library-override/no-library"), "# Declarative Automation Bundles Project")
-	assert.Equal(t, "OWN WINS", strings.TrimSpace(render("./testdata/library-override/library")))
+	// agents_md is defined in both the shared library and this template's own
+	// library; the template's own definition must take precedence.
+	assert.Contains(t, got, "own: OWN WINS")
+
+	r, err = newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/no-library")
+	require.NoError(t, err)
+	got, err = r.executeTemplate(`{{template "agents_md" .}}`)
+	require.NoError(t, err)
+	assert.Contains(t, got, "# Declarative Automation Bundles Project")
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {
