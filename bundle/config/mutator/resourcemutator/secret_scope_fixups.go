@@ -140,7 +140,7 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					Summary:   "Failed to collapse permissions for secret scope",
 					Detail:    err.Error(),
 					Paths:     []*structpath.PathNode{path},
-					Locations: []diag.Location{b.Config.GetLocation(path.String())},
+					Locations: []diag.Location{b.Config.GetLocationOf(path)},
 				},
 			}
 		}

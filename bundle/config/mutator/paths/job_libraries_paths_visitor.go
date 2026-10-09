@@ -6,15 +6,15 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-func jobTaskLibrariesRewritePatterns(base string) []jobRewritePattern {
+func jobTaskLibrariesRewritePatterns(base *structpath.PatternNode) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			structpath.MustParsePattern(base + ".libraries[*].whl"),
+			structpath.NewPattern(base, "libraries", structpath.AnyIndex, "whl"),
 			TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".libraries[*].jar"),
+			structpath.NewPattern(base, "libraries", structpath.AnyIndex, "jar"),
 			TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
@@ -23,7 +23,7 @@ func jobTaskLibrariesRewritePatterns(base string) []jobRewritePattern {
 
 func jobLibrariesRewritePatterns() []jobRewritePattern {
 	// Base pattern to match all tasks in all jobs.
-	base := "resources.jobs.*.tasks[*]"
+	base := jobTasksPattern
 
 	// Compile list of patterns and their respective rewrite functions.
 	jobEnvironmentsPatterns := []jobRewritePattern{
@@ -48,7 +48,7 @@ func jobLibrariesRewritePatterns() []jobRewritePattern {
 	}
 
 	taskPatterns := jobTaskLibrariesRewritePatterns(base)
-	forEachPatterns := jobTaskLibrariesRewritePatterns(base + ".for_each_task.task")
+	forEachPatterns := jobTaskLibrariesRewritePatterns(structpath.NewPattern(base, "for_each_task", "task"))
 	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
 	allPatterns = append(allPatterns, jobEnvironmentsWithRequirementsPatterns...)
 	allPatterns = append(allPatterns, forEachPatterns...)

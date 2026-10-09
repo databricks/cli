@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type processRootIncludes struct{}
@@ -112,7 +113,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 					Summary:  "Files in the 'include' configuration section must be YAML or JSON files.",
 					Detail:   fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
 					// The match's index within the glob is unrelated to the entry's position in the include list.
-					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", entryIndex)),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "include", entryIndex)),
 				})
 				continue
 			}

@@ -96,11 +96,11 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
+			nameLocations = append(nameLocations, b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "dashboards", key))...)
 			namePaths = append(namePaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
+			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "dashboards", key))...)
 			warehouseIdPaths = append(warehouseIdPaths, structpath.NewPath(nil, "resources", "dashboards", key))
 		}
 	}
@@ -130,7 +130,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocations(path.String()),
+				Locations: b.Config.GetLocationsOf(path),
 				Paths:     []*structpath.PathNode{path},
 			})
 		}
@@ -199,7 +199,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.GetLocations(scopePath.String()),
+				Locations: b.Config.GetLocationsOf(scopePath),
 				Paths:     []*structpath.PathNode{path},
 			})
 		}

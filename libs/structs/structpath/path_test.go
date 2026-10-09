@@ -1304,3 +1304,13 @@ func TestNewPathSlice(t *testing.T) {
 	assert.Equal(t, "resources.jobs['${var.env}_job']", paths[0].String())
 	assert.Equal(t, "sync.paths[3]", NewPathSlice("sync", "paths", 3)[0].String())
 }
+
+func TestNewPattern(t *testing.T) {
+	p := NewPattern(nil, "resources", "jobs", AnyKey, "tasks", AnyIndex, "libraries")
+	assert.Equal(t, MustParsePattern("resources.jobs.*.tasks[*].libraries").String(), p.String())
+
+	ext := NewPattern(p, AnyIndex, "whl", 0)
+	assert.Equal(t, "resources.jobs.*.tasks[*].libraries[*].whl[0]", ext.String())
+
+	assert.Panics(t, func() { NewPattern(nil, 1.5) })
+}

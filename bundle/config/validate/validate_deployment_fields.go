@@ -35,7 +35,7 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 			Severity:  diag.Error,
 			Summary:   field + " must not be set in bundle configuration; it is managed by Declarative Automation Bundles",
 			Paths:     []*structpath.PathNode{path},
-			Locations: b.Config.GetLocations(path.String()),
+			Locations: b.Config.GetLocationsOf(path),
 		})
 	}
 

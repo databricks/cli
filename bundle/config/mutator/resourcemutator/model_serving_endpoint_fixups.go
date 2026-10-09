@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -56,7 +57,7 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 				Summary:  "Cannot use both served_models and served_entities",
 				Detail:   "Model serving endpoint cannot specify both served_models and served_entities at the same time.",
 				Locations: []diag.Location{
-					b.Config.GetLocation("resources.model_serving_endpoints." + key),
+					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "model_serving_endpoints", key)),
 				},
 			})
 			continue
@@ -71,7 +72,7 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 				Summary:  "Using served_models is deprecated",
 				Detail:   "The served_models field is deprecated. Please use served_entities instead.",
 				Locations: []diag.Location{
-					b.Config.GetLocation("resources.model_serving_endpoints." + key + ".config.served_models"),
+					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "model_serving_endpoints", key, "config", "served_models")),
 				},
 			})
 

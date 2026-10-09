@@ -16,28 +16,28 @@ type pipelineRewritePattern struct {
 }
 
 // Base pattern to match all libraries in all pipelines.
-var base = "resources.pipelines.*"
+var base = structpath.NewPattern(nil, "resources", "pipelines", structpath.AnyKey)
 
 func pipelineRewritePatterns() []pipelineRewritePattern {
 	// Compile list of configuration paths to rewrite.
 	allPatterns := []pipelineRewritePattern{
 		{
-			pattern:     structpath.MustParsePattern(base + ".libraries[*].notebook.path"),
+			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "notebook", "path"),
 			mode:        TranslateModeNotebook,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     structpath.MustParsePattern(base + ".libraries[*].file.path"),
+			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "file", "path"),
 			mode:        TranslateModeFile,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     structpath.MustParsePattern(base + ".libraries[*].glob.include"),
+			pattern:     structpath.NewPattern(base, "libraries", structpath.AnyIndex, "glob", "include"),
 			mode:        TranslateModeGlob,
 			skipRewrite: noSkipRewrite,
 		},
 		{
-			pattern:     structpath.MustParsePattern(base + ".root_path"),
+			pattern:     structpath.NewPattern(base, "root_path"),
 			mode:        TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},

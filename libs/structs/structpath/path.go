@@ -369,6 +369,37 @@ func NewPatternBracketStar(prev *PatternNode) *PatternNode {
 	})
 }
 
+// wildcard is a NewPattern part that matches any key or element.
+type wildcard int
+
+// Wildcards for [NewPattern]: AnyKey matches any map key or field (rendered ".*") and
+// AnyIndex matches any sequence element (rendered "[*]").
+const (
+	AnyKey   wildcard = tagDotStar
+	AnyIndex wildcard = tagBracketStar
+)
+
+// NewPattern appends parts to prev like [NewPath]; AnyKey and AnyIndex append wildcards.
+func NewPattern(prev *PatternNode, parts ...any) *PatternNode {
+	for _, part := range parts {
+		switch v := part.(type) {
+		case string:
+			prev = NewPatternStringKey(prev, v)
+		case int:
+			prev = NewPatternIndex(prev, v)
+		case wildcard:
+			if v == AnyKey {
+				prev = NewPatternDotStar(prev)
+			} else {
+				prev = NewPatternBracketStar(prev)
+			}
+		default:
+			panic(fmt.Sprintf("structpath.NewPattern: unsupported part %#v", part))
+		}
+	}
+	return prev
+}
+
 func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
 	return (*PatternNode)(NewKeyValue((*PathNode)(prev), key, value))
 }

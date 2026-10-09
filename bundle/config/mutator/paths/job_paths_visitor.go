@@ -11,39 +11,42 @@ type jobRewritePattern struct {
 	skipRewrite func(string) bool
 }
 
+// jobTasksPattern matches all tasks in all jobs.
+var jobTasksPattern = structpath.NewPattern(nil, "resources", "jobs", structpath.AnyKey, "tasks", structpath.AnyIndex)
+
 func noSkipRewrite(string) bool {
 	return false
 }
 
-func jobTaskRewritePatterns(base string) []jobRewritePattern {
+func jobTaskRewritePatterns(base *structpath.PatternNode) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
-			structpath.MustParsePattern(base + ".notebook_task.notebook_path"),
+			structpath.NewPattern(base, "notebook_task", "notebook_path"),
 			TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".spark_python_task.python_file"),
+			structpath.NewPattern(base, "spark_python_task", "python_file"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".dbt_task.project_directory"),
+			structpath.NewPattern(base, "dbt_task", "project_directory"),
 			TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".sql_task.file.path"),
+			structpath.NewPattern(base, "sql_task", "file", "path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".alert_task.workspace_path"),
+			structpath.NewPattern(base, "alert_task", "workspace_path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
-			structpath.MustParsePattern(base + ".libraries[*].requirements"),
+			structpath.NewPattern(base, "libraries", structpath.AnyIndex, "requirements"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -51,7 +54,7 @@ func jobTaskRewritePatterns(base string) []jobRewritePattern {
 			// The AI Runtime task runs this bash script on each node; the backend
 			// reads it as a workspace file, so translate the local path to its
 			// remote (or immutable-snapshot) location like any other file.
-			structpath.MustParsePattern(base + ".ai_runtime_task.deployments[*].command_path"),
+			structpath.NewPattern(base, "ai_runtime_task", "deployments", structpath.AnyIndex, "command_path"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
@@ -60,10 +63,10 @@ func jobTaskRewritePatterns(base string) []jobRewritePattern {
 
 func jobRewritePatterns() []jobRewritePattern {
 	// Base pattern to match all tasks in all jobs.
-	base := "resources.jobs.*.tasks[*]"
+	base := jobTasksPattern
 
 	taskPatterns := jobTaskRewritePatterns(base)
-	forEachPatterns := jobTaskRewritePatterns(base + ".for_each_task.task")
+	forEachPatterns := jobTaskRewritePatterns(structpath.NewPattern(base, "for_each_task", "task"))
 	patterns := append(taskPatterns, forEachPatterns...)
 	return append(patterns,
 		jobRewritePattern{
