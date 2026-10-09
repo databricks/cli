@@ -862,8 +862,11 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
 	}
-	if f.path == "config.compute" && len(computeOptions) > 0 {
+	if f.path == "config.compute" && computeOptions != nil {
 		fmt.Fprintln(w, "\n  Supported accelerator types:")
+		if len(computeOptions) == 0 {
+			fmt.Fprintln(w, "    No accelerator types are currently available in this workspace.")
+		}
 		for _, option := range computeOptions {
 			fmt.Fprintf(w, "    %s - %s%s\n", option.HardwareAccelerator, formatPerNodeAcceleratorCount(option), launchStageBadge(option.LaunchStage))
 		}
@@ -894,16 +897,6 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
-}
-
-func filterKnownComputeOptions(options []computeOption) []computeOption {
-	result := make([]computeOption, 0, len(options))
-	for _, option := range options {
-		if _, err := parseGPUType(option.HardwareAccelerator); err == nil {
-			result = append(result, option)
-		}
-	}
-	return result
 }
 
 func fallbackComputeOptions() []computeOption {
