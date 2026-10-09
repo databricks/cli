@@ -2,11 +2,14 @@ package aircmd
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -754,6 +757,82 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, root.String(), "(required) Which accelerators to run on")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
+}
+
+func TestRunCommandHelpComputeOptions(t *testing.T) {
+	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_8xB300 - 8 accelerators per node`
+	tests := []struct {
+		name        string
+		statusCode  int
+		response    string
+		wantOptions string
+		wantWarning bool
+	}{
+		{
+			name:        "workspace subset",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_8xH100","per_node_accelerator_count":4,"launch_stage":"PUBLIC_PREVIEW"},{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16},{"hardware_accelerator":"GPU_1xA10"}]}`,
+			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
+		},
+		{
+			name:        "empty response falls back",
+			response:    `{}`,
+			wantOptions: builtInOptions,
+			wantWarning: true,
+		},
+		{
+			name:        "disabled endpoint falls back",
+			statusCode:  http.StatusBadRequest,
+			response:    `{"error_code":"FEATURE_DISABLED","message":"ListComputeOptions is not yet enabled."}`,
+			wantOptions: builtInOptions,
+		},
+		{
+			name:        "missing endpoint falls back",
+			statusCode:  http.StatusNotFound,
+			response:    `{"error_code":"ENDPOINT_NOT_FOUND","message":"Not found."}`,
+			wantOptions: builtInOptions,
+		},
+		{
+			name:        "unexpected API error warns and falls back",
+			statusCode:  http.StatusInternalServerError,
+			response:    `{"error_code":"INTERNAL_ERROR","message":"Internal error."}`,
+			wantOptions: builtInOptions,
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.statusCode != 0 {
+					w.WriteHeader(tt.statusCode)
+				}
+				_, _ = w.Write([]byte(tt.response))
+			}))
+			t.Cleanup(srv.Close)
+
+			var out, errOut strings.Builder
+			cmd := newRunCommand()
+			cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
+			cmd.SetOut(&out)
+			cmd.SetErr(&errOut)
+			cmd.SetArgs([]string{"-h", "config.compute"})
+			require.NoError(t, cmd.Execute())
+
+			options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
+			require.True(t, found)
+			options, _, found = strings.Cut(options, "\n\n  Fields:")
+			require.True(t, found)
+			assert.Equal(t, tt.wantOptions, options)
+			if tt.wantWarning {
+				assert.Contains(t, errOut.String(), "showing the built-in list")
+			} else {
+				assert.Empty(t, errOut.String())
+			}
+		})
+	}
 }
 
 // Guards against adding a schema field without a help: tag.

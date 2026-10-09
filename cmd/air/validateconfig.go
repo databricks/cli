@@ -246,8 +246,7 @@ func putOpt[T any](m map[string]any, key string, value *T) {
 	}
 }
 
-// endpointUnavailable reports that the validation endpoint could not answer
-// because it is disabled or absent.
+// endpointUnavailable reports that an API endpoint is disabled or absent.
 func endpointUnavailable(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
