@@ -167,3 +167,15 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 		"github.com/databricks/cli/no/such.Type: field",
 	}, detached)
 }
+
+func TestAnnotationsFileEmpty(t *testing.T) {
+	g, err := newTypeGraph(reflect.TypeFor[tgRoot]())
+	require.NoError(t, err)
+	path := filepath.Join(t.TempDir(), "annotations.yml")
+	require.NoError(t, os.WriteFile(path, []byte("# no annotations yet\n"), 0o644))
+
+	data, unknown, err := loadAnnotationsFile(path, g)
+	require.NoError(t, err)
+	assert.Empty(t, data)
+	assert.Empty(t, unknown)
+}

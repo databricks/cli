@@ -2,6 +2,8 @@ package direct
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -32,13 +34,10 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *s
 		return fmt.Errorf("resource %s not found in configuration", target)
 	}
 
-	// Each string is resolved on its own (references only point at other paths), then
-	// written back; collect first because writing changes the view.
-	type update struct {
-		path  *structpath.PathNode
-		value any
-	}
-	var updates []update
+	// Collect every reference string first: resolving them in one call shares the
+	// lookups, and writing back changes the view.
+	templates := map[string]structvar.Template{}
+	paths := map[string]*structpath.PathNode{}
 
 	lookup := func(path *structpath.PathNode) (structvar.View, error) {
 		if !path.HasPrefix(resourcesPrefix) {
@@ -67,22 +66,28 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *s
 			return nil
 		}
 		key := p.String()
-		out, err := structvar.Resolve(map[string]structvar.Template{key: {Value: s}}, lookup)
-		if err != nil {
-			return err
-		}
-		if resolved, ok := out[key]; ok {
-			updates = append(updates, update{structpath.Join(target, p.AsSlice()...), resolved.AsAny()})
-		}
+		templates[key] = structvar.Template{Value: s}
+		paths[key] = structpath.Join(target, p.AsSlice()...)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	for _, u := range updates {
+	resolved, err := structvar.Resolve(templates, lookup)
+	if err != nil {
+		return err
+	}
+
+	// Snapshot all values before writing: a resolved view may point into the configuration.
+	values := map[string]any{}
+	for key, v := range resolved {
+		values[key] = v.AsAny()
+	}
+	for _, key := range slices.Sorted(maps.Keys(values)) {
+		value := values[key]
 		// Decode converts like loading did, e.g. a string id into an int job_id.
-		diags, err := cfg.Decode(u.path, structvar.NewView(&u.value, nil, nil))
+		diags, err := cfg.Decode(paths[key], structvar.NewView(&value, nil, nil))
 		if err != nil {
 			return err
 		}

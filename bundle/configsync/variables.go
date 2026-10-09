@@ -3,6 +3,7 @@ package configsync
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -297,7 +298,7 @@ func restoreFromSiblingsAt(value any, siblings []structvar.View, resolved resolv
 				if !found {
 					continue
 				}
-				if rv == value {
+				if equalValues(rv, value) {
 					refs[s] = struct{}{}
 				}
 			} else if isStr && structvar.ContainsVariableReference(s) {
@@ -360,7 +361,7 @@ func matchAnyVariable(remoteValue any, resolved resolvedConfig) (string, bool) {
 		v := variable.Get("value")
 		switch v.Kind() {
 		case structvar.KindString, structvar.KindInt, structvar.KindBool:
-			if v.AsAny() == remoteValue {
+			if equalValues(v.AsAny(), remoteValue) {
 				match = pathToRef(structpath.NewStringKey(varPrefix, name))
 				count++
 			}
@@ -400,7 +401,7 @@ func matchOriginalRef(remoteValue any, preResolved structvar.View, resolved reso
 		return "", false
 	}
 
-	if resolvedV == remoteValue {
+	if equalValues(resolvedV, remoteValue) {
 		return s, true
 	}
 	return "", false
@@ -579,4 +580,26 @@ func sequenceSiblings(preResolved structvar.View, fieldPath string) ([]structvar
 		seq = append(seq, elem)
 	}
 	return seq, true
+}
+
+// equalValues reports whether two configuration values are equal, treating integers of
+// different Go types as equal: variables decoded from YAML hold int, while typed
+// fields of the remote resource hold int64.
+func equalValues(a, b any) bool {
+	ai, aok := asInt64(a)
+	bi, bok := asInt64(b)
+	if aok || bok {
+		return aok && bok && ai == bi
+	}
+	return a == b
+}
+
+func asInt64(v any) (int64, bool) {
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int(), true
+	default:
+		return 0, false
+	}
 }
