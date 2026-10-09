@@ -114,6 +114,17 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", requestBody.ContentType)
 	if clientCfg.AuthVisitor != nil {
+		// Some SDK OAuth visitors refresh with context.Background(). For those
+		// providers, acquire the token with the preflight context first.
+		switch w.Config.AuthType {
+		case auth.AuthTypePat, auth.AuthTypeBasic, "noop", auth.AuthTypeAzureCli, auth.AuthTypeAzureMSI, auth.AuthTypeAzureSecret, auth.AuthTypeGoogleCreds, auth.AuthTypeGoogleID:
+		default:
+			token, err := w.Config.GetTokenSource().Token(req.Context())
+			if err != nil {
+				return fmt.Errorf("failed to validate config: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
 		if err := clientCfg.AuthVisitor(req); err != nil {
 			return fmt.Errorf("failed to validate config: %w", err)
 		}
@@ -145,11 +156,11 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	responseBody, err := common.NewResponseWrapper(resp, requestBody)
 	if err != nil {
 		err = fmt.Errorf("failed to validate config: %w", err)
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 &&
-			resp.StatusCode != http.StatusNotFound &&
-			resp.StatusCode != http.StatusRequestTimeout &&
-			resp.StatusCode != http.StatusTooManyRequests {
-			return err
+		if resp.StatusCode >= 400 {
+			return &apierr.APIError{
+				StatusCode: resp.StatusCode,
+				Message:    err.Error(),
+			}
 		}
 		return asValidationUnavailable(err, true)
 	}
@@ -231,7 +242,9 @@ func classifyValidationFailure(err error) (unavailable, retryable bool) {
 		return true, true
 	}
 	if _, ok := errors.AsType[*url.Error](err); ok {
-		return true, true
+		if _, ok := errors.AsType[*apierr.APIError](err); !ok {
+			return true, true
+		}
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	if !ok {

@@ -16,8 +16,12 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/config/credentials"
+	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func baseRunConfig() *runConfig {
@@ -68,6 +72,16 @@ type validationRoundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn validationRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
+}
+
+type validationOAuthCredentials struct {
+	tokenSource sdkauth.TokenSource
+}
+
+func (validationOAuthCredentials) Name() string { return "oauth-m2m" }
+
+func (c validationOAuthCredentials) Configure(context.Context, *sdkconfig.Config) (credentials.CredentialsProvider, error) {
+	return credentials.NewOAuthCredentialsProviderFromTokenSource(c.tokenSource), nil
 }
 
 type validationErrorReadCloser struct{}
@@ -176,7 +190,7 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 		body := io.NopCloser(strings.NewReader(`{}`))
 		status := http.StatusOK
 		if req.URL.Path == validateConfigPath {
-			body = validationErrorReadCloser{}
+			body = validationContextReadCloser{ctx: req.Context()}
 			status = http.StatusUnauthorized
 		}
 		return &http.Response{
@@ -187,8 +201,53 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 		}, nil
 	})
 
-	err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.Error(t, err)
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	require.True(t, ok)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}
+
+func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
+	refreshStarted := make(chan struct{})
+	tokenSource := sdkauth.NewCachedTokenSource(
+		sdkauth.TokenSourceFn(func(ctx context.Context) (*oauth2.Token, error) {
+			close(refreshStarted)
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}),
+		sdkauth.WithCachedToken(&oauth2.Token{
+			AccessToken: "expired",
+			Expiry:      time.Now().Add(-time.Hour),
+		}),
+	)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        "https://example.test",
+		Credentials: validationOAuthCredentials{tokenSource: tokenSource},
+		HTTPTransport: validationRoundTripFunc(func(*http.Request) (*http.Response, error) {
+			t.Fatal("validation request should not be sent")
+			return nil, nil
+		}),
+		HostMetadataResolver: func(context.Context, string) (*sdkconfig.HostMetadata, error) {
+			return &sdkconfig.HostMetadata{}, nil
+		},
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err = preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+
+	require.NoError(t, err)
+	assert.Less(t, time.Since(started), time.Second)
+	select {
+	case <-refreshStarted:
+	default:
+		t.Fatal("OAuth token refresh did not start")
+	}
 }
 
 func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
@@ -283,6 +342,7 @@ func TestClassifyValidationFailure(t *testing.T) {
 		{"canceled", context.Canceled, false, false},
 		{"deadline", context.DeadlineExceeded, true, true},
 		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
+		{"OAuth rejection", &url.Error{Op: "Post", URL: "https://accounts.example.test", Err: &apierr.APIError{StatusCode: http.StatusUnauthorized}}, false, false},
 		{"unknown", errors.New("authentication visitor failed"), false, false},
 		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
 		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
