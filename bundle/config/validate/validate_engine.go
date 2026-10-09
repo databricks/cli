@@ -46,6 +46,8 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect),
 			Paths:    structpath.NewPathSlice("bundle", "engine"),
+			// Only the effective location; the automatic lookup would also add overridden ones.
+			Locations: []diag.Location{b.Config.GetLocation("bundle.engine")},
 		})
 	}
 

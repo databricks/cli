@@ -354,6 +354,8 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 		Summary:  "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity: diag.Error,
 		Paths:    structpath.NewPathSlice("presets", "trigger_pause_status"),
+		// Only the effective location; the automatic lookup would also add overridden ones.
+		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 	}}
 }
 
