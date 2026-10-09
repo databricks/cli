@@ -1,0 +1,1 @@
+* Fixed `experimental.immutable_folder` failing with `experimental.deployment_history` ("workspace_info.file_path must be an absolute workspace path") and failing `bundle validate` when top-level `permissions` are set.

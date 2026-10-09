@@ -1,0 +1,9 @@
+bundle:
+  name: my-bundle
+
+experimental:
+  immutable_folder: true
+
+permissions:
+  - level: CAN_VIEW
+    user_name: viewer@example.com
