@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBasicWorkspaceOAuthArgument_GetCacheKey(t *testing.T) {
@@ -116,4 +117,19 @@ func TestValidateHost(t *testing.T) {
 			assert.EqualError(t, err, test.want)
 		}
 	}
+}
+
+func TestBasicWorkspaceOAuthArgument_DiscoveryURL(t *testing.T) {
+	const discoveryURL = "https://acme.databricks.test/oidc/.well-known/oauth-authorization-server?o=123"
+	arg, err := NewProfileWorkspaceOAuthArgumentWithDiscoveryURL("https://acme.databricks.test", discoveryURL, "my-profile")
+	require.NoError(t, err)
+
+	assert.Equal(t, discoveryURL, arg.GetDiscoveryURL())
+	assert.Equal(t, "my-profile", arg.GetCacheKey())
+	assert.Empty(t, arg.GetHostCacheKey(), "no host-keyed mirror for a workspace token on a SPOG host")
+
+	plain, err := NewProfileWorkspaceOAuthArgument("https://acme.databricks.test", "my-profile")
+	require.NoError(t, err)
+	assert.Empty(t, plain.GetDiscoveryURL())
+	assert.Equal(t, "https://acme.databricks.test", plain.GetHostCacheKey())
 }

@@ -1583,3 +1583,81 @@ func TestChallenge_Discovery(t *testing.T) {
 		t.Errorf("refresh token = %q, want %q", returnedToken.RefreshToken, "discovery-refresh-token")
 	}
 }
+
+// discoveryURLEndpointSupplier serves the endpoints of workspaceHost for one
+// discovery URL and records the URLs it was asked for.
+type discoveryURLEndpointSupplier struct {
+	MockOAuthEndpointSupplier
+	discoveryURL  string
+	workspaceHost string
+	requested     *[]string
+}
+
+func (s discoveryURLEndpointSupplier) GetEndpointsFromURL(_ context.Context, rawURL string) (*OAuthAuthorizationServer, error) {
+	*s.requested = append(*s.requested, rawURL)
+	if rawURL != s.discoveryURL {
+		return nil, ErrOAuthNotSupported
+	}
+	return &OAuthAuthorizationServer{
+		AuthorizationEndpoint: s.workspaceHost + "/oidc/v1/authorize",
+		TokenEndpoint:         s.workspaceHost + "/oidc/v1/token",
+	}, nil
+}
+
+func TestToken_WorkspaceArgumentWithDiscoveryURLRefreshesAtDiscoveredEndpoint(t *testing.T) {
+	const discoveryURL = "https://acme.databricks.test/oidc/.well-known/oauth-authorization-server?o=123"
+	cache := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return &oauth2.Token{
+				AccessToken:  "expired",
+				RefreshToken: "cde",
+				Expiry:       time.Now().Add(-1 * time.Minute),
+			}, nil
+		},
+		store: func(key string, tok *oauth2.Token) error { return nil },
+	}
+	arg, err := NewProfileWorkspaceOAuthArgumentWithDiscoveryURL("https://acme.databricks.test", discoveryURL, "my-profile")
+	if err != nil {
+		t.Fatalf("NewProfileWorkspaceOAuthArgumentWithDiscoveryURL(): want no error, got %v", err)
+	}
+	var requested []string
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(cache),
+		WithHttpClient(&http.Client{
+			Transport: fixtures.SliceTransport{
+				{
+					Method:          "POST",
+					Resource:        "/oidc/v1/token",
+					ExpectedRequest: url.Values{"client_id": {"custom-client-id"}, "grant_type": {"refresh_token"}, "refresh_token": {"cde"}},
+					Response:        `access_token=refreshed&refresh_token=def`,
+					ResponseHeaders: map[string][]string{
+						"Content-Type": {"application/x-www-form-urlencoded"},
+					},
+				},
+			},
+		}),
+		WithOAuthEndpointSupplier(discoveryURLEndpointSupplier{
+			discoveryURL:  discoveryURL,
+			workspaceHost: "https://dbc-123.cloud.databricks.test",
+			requested:     &requested,
+		}),
+		WithOAuthArgument(arg),
+		WithClientID("custom-client-id"),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	tok, err := p.Token()
+	if err != nil {
+		t.Fatalf("p.Token(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "refreshed" {
+		t.Errorf("p.Token(): want access token 'refreshed', got %s", tok.AccessToken)
+	}
+	if len(requested) != 1 || requested[0] != discoveryURL {
+		t.Errorf("endpoints requested: want [%s], got %v", discoveryURL, requested)
+	}
+}

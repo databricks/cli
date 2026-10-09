@@ -90,6 +90,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			Scopes:               all["scopes"],
 			Resources:            all["resources"],
 			AuthType:             all["auth_type"],
+			DiscoveryURL:         all["discovery_url"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

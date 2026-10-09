@@ -212,6 +212,13 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetWorkspaceHost())
+			// A workspace-scoped token on a SPOG host needs the workspace named
+			// at login; --host alone would log in at the account level.
+			if d, ok := arg.(u2m.DiscoveryURLProvider); ok {
+				if workspaceID := SpogWorkspaceIDFromDiscoveryURL(d.GetDiscoveryURL()); workspaceID != "" {
+					cmd = append(cmd, "--workspace-id", workspaceID)
+				}
+			}
 		}
 	}
 	return strings.Join(cmd, " ")

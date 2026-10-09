@@ -257,3 +257,22 @@ func TestToOAuthArgument_NoAccountIDSkipsUnifiedRouting(t *testing.T) {
 	_, ok := got.(u2m.WorkspaceOAuthArgument)
 	assert.True(t, ok, "expected WorkspaceOAuthArgument when no caller AccountID, got %T", got)
 }
+
+func TestToOAuthArgument_SpogWorkspaceDiscoveryURLRoutesToWorkspace(t *testing.T) {
+	discoveryURL := SpogWorkspaceDiscoveryURL("https://acme.databricks.test", "123")
+	args := AuthArguments{
+		Host:         "https://acme.databricks.test",
+		AccountID:    "spog-account",
+		WorkspaceID:  "123",
+		DiscoveryURL: discoveryURL,
+		Profile:      "my-profile",
+	}
+	got, err := args.ToOAuthArgument()
+	require.NoError(t, err)
+
+	ws, ok := got.(u2m.BasicWorkspaceOAuthArgument)
+	require.True(t, ok, "expected BasicWorkspaceOAuthArgument, got %T", got)
+	assert.Equal(t, "https://acme.databricks.test", ws.GetWorkspaceHost())
+	assert.Equal(t, discoveryURL, ws.GetDiscoveryURL())
+	assert.Equal(t, "my-profile", ws.GetCacheKey())
+}

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -964,4 +965,147 @@ func TestWriteTokenErrorOutput(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
 	assert.Equal(t, "refresh token is invalid", got.Message)
+}
+
+// recordingEndpointSupplier records which kind of OAuth endpoints a refresh
+// was resolved from.
+type recordingEndpointSupplier struct {
+	MockApiClient
+	used *[]string
+}
+
+func (r *recordingEndpointSupplier) GetUnifiedOAuthEndpoints(ctx context.Context, host, accountId string) (*u2m.OAuthAuthorizationServer, error) {
+	*r.used = append(*r.used, "unified")
+	return r.MockApiClient.GetUnifiedOAuthEndpoints(ctx, host, accountId)
+}
+
+func (r *recordingEndpointSupplier) GetEndpointsFromURL(_ context.Context, rawURL string) (*u2m.OAuthAuthorizationServer, error) {
+	*r.used = append(*r.used, rawURL)
+	return &u2m.OAuthAuthorizationServer{
+		TokenEndpoint:         "https://workspace.test/oidc/v1/token",
+		AuthorizationEndpoint: "https://workspace.test/oidc/v1/authorize",
+	}, nil
+}
+
+func TestToken_loadTokenSpogProfileTokenType(t *testing.T) {
+	_, spog := newSpogWorkspacePair(t)
+	spogWorkspaceDiscoveryURL := auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345")
+
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "account-level-o", Host: spog.URL + "?o=12345", AccountID: "spog-account"},
+			{Name: "workspace-scoped", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345", DiscoveryURL: spogWorkspaceDiscoveryURL},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		authArguments *auth.AuthArguments
+		profileName   string
+		wantEndpoints string
+	}{
+		{
+			name:          "account-level profile with ?o= in its host refreshes at the account endpoint",
+			authArguments: &auth.AuthArguments{},
+			profileName:   "account-level-o",
+			wantEndpoints: "unified",
+		},
+		{
+			name:          "--workspace-id does not change an account-level profile",
+			authArguments: &auth.AuthArguments{WorkspaceID: "12345"},
+			profileName:   "account-level-o",
+			wantEndpoints: "unified",
+		},
+		{
+			name:          "workspace-scoped profile refreshes at the workspace endpoints",
+			authArguments: &auth.AuthArguments{},
+			profileName:   "workspace-scoped",
+			wantEndpoints: spogWorkspaceDiscoveryURL,
+		},
+		{
+			name:          "workspace-scoped profile matched by --host refreshes at the workspace endpoints",
+			authArguments: &auth.AuthArguments{Host: spog.URL, WorkspaceID: "12345"},
+			wantEndpoints: spogWorkspaceDiscoveryURL,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tokenStore := &inMemoryStore{Tokens: map[string]*oauth2.Token{
+				"account-level-o":  {RefreshToken: "account-level-o"},
+				"workspace-scoped": {RefreshToken: "workspace-scoped"},
+			}}
+			var used []string
+			_, err := loadToken(cmdio.MockDiscard(t.Context()), loadTokenArgs{
+				authArguments: tt.authArguments,
+				profileName:   tt.profileName,
+				args:          []string{},
+				tokenTimeout:  time.Minute,
+				profiler:      profiler,
+				tokenStore:    tokenStore,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenStore(tokenStore),
+					u2m.WithOAuthEndpointSupplier(&recordingEndpointSupplier{used: &used}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, []string{tt.wantEndpoints}, used)
+		})
+	}
+}
+
+func TestToken_loadTokenHostWithoutWorkspaceIDSkipsSpogWorkspaceProfile(t *testing.T) {
+	_, spog := newSpogWorkspacePair(t)
+	workspaceScoped := profile.Profile{
+		Name:         "workspace-scoped",
+		Host:         spog.URL,
+		AccountID:    "spog-account",
+		WorkspaceID:  "12345",
+		DiscoveryURL: auth.SpogWorkspaceDiscoveryURL(spog.URL, "12345"),
+	}
+	accountLevel := profile.Profile{Name: "account-level", Host: spog.URL, AccountID: "spog-account", WorkspaceID: "12345"}
+
+	tests := []struct {
+		name     string
+		profiles profile.Profiles
+		wantErr  bool
+	}{
+		{
+			name:     "uses the account-level profile",
+			profiles: profile.Profiles{workspaceScoped, accountLevel},
+		},
+		{
+			name:     "fails without an account-level profile",
+			profiles: profile.Profiles{workspaceScoped},
+			wantErr:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tokenStore := &inMemoryStore{Tokens: map[string]*oauth2.Token{
+				"workspace-scoped": {RefreshToken: "workspace-scoped"},
+				"account-level":    {RefreshToken: "account-level"},
+			}}
+			var used []string
+			_, err := loadToken(cmdio.MockDiscard(t.Context()), loadTokenArgs{
+				authArguments: &auth.AuthArguments{Host: spog.URL},
+				args:          []string{},
+				tokenTimeout:  time.Minute,
+				profiler:      profile.InMemoryProfiler{Profiles: tt.profiles},
+				tokenStore:    tokenStore,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenStore(tokenStore),
+					u2m.WithOAuthEndpointSupplier(&recordingEndpointSupplier{used: &used}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			})
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Empty(t, used, "the workspace-scoped token must not be refreshed")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"unified"}, used)
+		})
+	}
 }

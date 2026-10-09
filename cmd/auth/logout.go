@@ -274,6 +274,12 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
 
+	// Workspace-scoped SPOG tokens have no host-keyed copy, and the host's
+	// key belongs to account-level logins.
+	if auth.IsSpogWorkspaceDiscoveryURL(p.DiscoveryURL) {
+		return nil
+	}
+
 	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
 	if hostCacheKey == "" {
 		return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
