@@ -1,0 +1,63 @@
+
+=== Missing project name fails without a terminal
+>>> musterr [CLI] bundle init app-appkit
+Error: app-appkit requires project_name in --config-file in non-interactive mode
+
+=== Unsupported template directory fails before initialization
+>>> musterr [CLI] bundle init app-appkit --template-dir template
+Error: --template-dir is not supported for app-appkit; use databricks apps init --template for a custom AppKit template
+
+=== Version and branch cannot be combined
+>>> musterr [CLI] bundle init app-appkit --config-file input-version.json --branch main
+Error: version in --config-file cannot be combined with --tag or --branch
+
+=== JSON output is unsupported
+>>> musterr [CLI] bundle init app-appkit --config-file input.json -o json
+Error: -o json is not supported for app-appkit; use text output
+
+=== Initialize AppKit from a config file without a terminal
+>>> [CLI] bundle init app-appkit --config-file input.json --output-dir output
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/output/appkit-bundle-test
+  Files: 5
+
+  Next steps:
+
+    cd appkit-bundle-test
+    pnpm install --frozen-lockfile && pnpm run dev
+
+
+>>> [CLI] bundle validate
+Name: appkit-bundle-test
+Target: default
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/appkit-bundle-test/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/appkit-bundle-test/default/files...
+✓ Deployment succeeded
+Created apps.app
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] apps get appkit-bundle-test -o json
+{
+  "name": "appkit-bundle-test",
+  "compute_state": "ACTIVE",
+  "deployment_state": "SUCCEEDED"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/appkit-bundle-test/default
+
+Destroy: 1 deleted

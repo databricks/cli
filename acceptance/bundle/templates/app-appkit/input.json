@@ -1,0 +1,5 @@
+{
+  "project_name": "appkit-bundle-test",
+  "app_description": "AppKit bundle initialization test",
+  "skip_install": true
+}
