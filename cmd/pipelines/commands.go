@@ -19,6 +19,7 @@ func Commands() []*cobra.Command {
 		dryRunCommand(),
 		historyCommand(),
 		logsCommand(),
+		describeCommand(),
 		openCommand(),
 		showCommand(),
 	}
