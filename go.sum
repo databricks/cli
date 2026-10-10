@@ -65,10 +65,10 @@ github.com/databricks/sdk-go/auth v0.0.1-dev.8 h1:iMOsshXRZvOrOUVZdcAc4MWQ64mqce
 github.com/databricks/sdk-go/auth v0.0.1-dev.8/go.mod h1:YliptECFkvwuHLoHiKRqo9Drx5RVM9u5J40UDmEq0iQ=
 github.com/databricks/sdk-go/core v0.0.1-dev.8 h1:xUjpesiEAFvFtrMlV16+20Wx65VoE/ptr5KTFRFrFwQ=
 github.com/databricks/sdk-go/core v0.0.1-dev.8/go.mod h1:7Ckau34bOsaZhHJE6r7ORNa+/kO33jIs6DfrJL6UbsM=
-github.com/databricks/sdk-go/files v0.0.1-dev.9 h1:G8F4/uE1akngntl70jjZ/HEuWYZaOZ0E78awI6M+Gpg=
-github.com/databricks/sdk-go/files v0.0.1-dev.9/go.mod h1:5pMBqpem7JO7sfwAhqdidVJsaw/TQZY2j8ZCNTnBcJ8=
-github.com/databricks/sdk-go/options v0.0.1-dev.8 h1:3DSZGzO3Lt8UrMe2aMrCrVwRWSAf+HDnvdkE3I6stm0=
-github.com/databricks/sdk-go/options v0.0.1-dev.8/go.mod h1:c74TPXhjRn3Zitpc9/brPEdvKS7lLURtlWjVOw4m2k4=
+github.com/databricks/sdk-go/files v0.0.1-dev.10 h1:huvKmRLqdYD4gImdpvv5VeACqoH0t25Uy+j3dbI7CIs=
+github.com/databricks/sdk-go/files v0.0.1-dev.10/go.mod h1:a7NleaunwaJzS685rZMLpEUcS5x9A1ydsxrYdqQjq2Q=
+github.com/databricks/sdk-go/options v0.0.1-dev.9 h1:lFwZKjUr2nsrYKUTICO+UsT12jKVus9ARvJkabWNwyA=
+github.com/databricks/sdk-go/options v0.0.1-dev.9/go.mod h1:c74TPXhjRn3Zitpc9/brPEdvKS7lLURtlWjVOw4m2k4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
