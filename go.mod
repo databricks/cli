@@ -47,8 +47,8 @@ require github.com/databricks/sdk-go/core v0.0.1-dev.8 // Apache-2.0
 
 require (
 	github.com/databricks/sdk-go/auth v0.0.1-dev.8 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.1-dev.9 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.1-dev.8 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.10 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.9 // Apache-2.0
 )
 
 require (
