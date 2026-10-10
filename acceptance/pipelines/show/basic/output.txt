@@ -2,6 +2,7 @@
 === table output
 
 >>> [CLI] pipelines show main.default.people
+Table: main.default.people
 id  name
 --  -----
 1   alice
