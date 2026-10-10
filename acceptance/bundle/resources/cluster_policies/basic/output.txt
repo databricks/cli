@@ -29,6 +29,7 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test_cluster_policy" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.test_cluster_policy
 Files: 2 uploaded, 0 deleted

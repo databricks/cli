@@ -2,6 +2,7 @@
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "permissions-test" at /Workspace/Users/[USERNAME]/.bundle/permissions-test/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
 Created pipelines.foo
 Created pipelines.foo.permissions

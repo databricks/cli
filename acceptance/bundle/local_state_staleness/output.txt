@@ -1,6 +1,7 @@
 
 === Step 1: Deploy bundle A
 >>> [CLI] bundle deploy --force-lock --auto-approve
+Creating a new deployment of bundle "local-state-staleness-test" at /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
 Created jobs.test_job
 Files: 2 uploaded, 0 deleted

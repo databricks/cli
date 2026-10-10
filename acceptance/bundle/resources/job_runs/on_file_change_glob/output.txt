@@ -1,6 +1,7 @@
 
 === deploy hashes the matched files
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "job-runs-on-file-change-glob" at /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
 Created jobs.my_job
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]

@@ -13,6 +13,7 @@
 create jobs.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Creating a new deployment of bundle "dms-stale-plan-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 3 uploaded, 0 deleted

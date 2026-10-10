@@ -4,6 +4,7 @@ Error: resource not found or not yet deployed. Did you forget to run 'databricks
 
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "caterpillar" at /Workspace/Users/[USERNAME]/.bundle/caterpillar/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted

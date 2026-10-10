@@ -1,6 +1,7 @@
 
 === Deploy: the deployment is created carrying this bundle's metadata
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-metadata-before-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev/files...
 Created schemas.foo
 Files: 2 uploaded, 0 deleted

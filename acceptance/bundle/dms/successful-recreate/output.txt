@@ -1,6 +1,7 @@
 
 === Deploy: the state write records the resource
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-successful-recreate-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/files...
 Created schemas.foo
 Files: 2 uploaded, 0 deleted

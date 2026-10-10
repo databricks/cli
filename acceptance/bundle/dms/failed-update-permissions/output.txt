@@ -1,6 +1,7 @@
 
 === Deploy the job and its permissions
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-failed-update-permissions-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Created jobs.foo.permissions

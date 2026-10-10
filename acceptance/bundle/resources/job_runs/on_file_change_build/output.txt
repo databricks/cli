@@ -1,6 +1,7 @@
 
 === first deploy triggers a run
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "job-runs-on-file-change-build" at /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-build/default
 Executing 'prebuild' script
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-build/default/files...
 Created jobs.my_job

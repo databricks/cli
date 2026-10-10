@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-postgres-replace-endpoint-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-endpoint-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-endpoint-[UNIQUE_NAME]/default/files...
 Created postgres_branches.develop
 Created postgres_endpoints.primary

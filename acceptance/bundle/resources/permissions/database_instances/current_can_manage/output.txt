@@ -44,6 +44,7 @@ Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
   in databricks.yml:9:7
 
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created database_instances.foo
 Created database_instances.foo.permissions

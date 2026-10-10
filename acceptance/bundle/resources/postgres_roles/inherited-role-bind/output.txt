@@ -1,6 +1,7 @@
 
 === Deploy project, branch, and role
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "inherited-role-bind-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project

@@ -1,6 +1,7 @@
 
 === Test auto-approve pipelines destroy
 >>> [CLI] pipelines deploy
+Creating a new deployment of bundle "test-pipeline-destroy" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
 Created pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted

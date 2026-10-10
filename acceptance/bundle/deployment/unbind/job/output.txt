@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy --var job_name=My Job
+Creating a new deployment of bundle "my_project" at /Workspace/Users/[USERNAME]/.bundle/my_project/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
 Created jobs.job_1
 Files: 1 uploaded, 0 deleted

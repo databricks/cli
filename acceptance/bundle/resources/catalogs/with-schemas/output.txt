@@ -1,6 +1,7 @@
 
 === Deploy bundle with catalog and schema
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "uc-catalog-schemas-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created catalogs.test_catalog
 Created schemas.test_schema

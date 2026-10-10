@@ -63,6 +63,13 @@ func (s *StateDesc) IsDMS() bool {
 	return ok
 }
 
+// IsFirstDeployment reports whether no existing state was found for the bundle's root
+// path. AllStates is populated only when at least one state file was read, so an empty
+// slice means nothing has been deployed to this root yet.
+func (s *StateDesc) IsFirstDeployment() bool {
+	return len(s.AllStates) == 0
+}
+
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
@@ -245,7 +252,9 @@ func validateStates(states []*StateDesc) error {
 		if lastLineage == nil {
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
-			return errors.New("lineage mismatch in state files")
+			return errors.New("the bundle's root path already contains state from a different deployment (lineage mismatch). " +
+				"Another bundle may be deployed to the same root path, or this bundle was re-deployed from a different machine or checkout after a destroy. " +
+				"Set a unique bundle.name or workspace.root_path so this bundle deploys to its own location")
 		}
 	}
 

@@ -4,6 +4,7 @@
 >>> print_requests.py --get //permissions
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-registered-models-basic-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
 Created registered_models.my_registered_model
 Created registered_models.my_registered_model.grants

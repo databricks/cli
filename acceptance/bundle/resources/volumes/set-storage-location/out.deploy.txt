@@ -1,5 +1,6 @@
 
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "testbundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
 Created schemas.myschema
 Error: cannot create resources.volumes.volume1: CreateVolume storage_location can not be provided. (400 INVALID_PARAMETER_VALUE)

@@ -16,6 +16,7 @@ Please refer to the README.md file for "getting started" instructions.
 
 === Deploy pipeline
 >>> [CLI] pipelines deploy
+Creating a new deployment of bundle "lakeflow_project" at /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Created jobs.sample_job
 Created pipelines.lakeflow_project_etl

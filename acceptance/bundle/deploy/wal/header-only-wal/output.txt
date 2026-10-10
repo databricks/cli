@@ -1,6 +1,7 @@
 
 === First deploy (killed before recording the job, leaves a header-only WAL)
 >>> errcode [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 [PROCESS_KILLED]
 
@@ -11,6 +12,7 @@ Exit code: [KILLED]
 
 === Second deploy (killed again, leaves another header-only WAL)
 >>> errcode [CLI] bundle deploy --force-lock
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 [PROCESS_KILLED]
 
@@ -21,6 +23,7 @@ Exit code: [KILLED]
 
 === Third deploy (must recover and succeed, not blocked by the leftover WAL)
 >>> errcode [CLI] bundle deploy --force-lock
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
 Files: 0 uploaded, 0 deleted

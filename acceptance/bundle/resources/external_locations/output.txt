@@ -9,6 +9,7 @@ create external_locations.test_location.grants
 Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "catalog-and-ext-loc-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created catalogs.test_catalog
 Created catalogs.test_catalog.grants

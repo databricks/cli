@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "update-publish-failure-stale-content" at /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
 Created dashboards.dashboard1
 Files: 3 uploaded, 0 deleted

@@ -12,6 +12,7 @@
 ]
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dashboard-perm-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default/files...
 Created dashboards.foo
 Created dashboards.foo.permissions

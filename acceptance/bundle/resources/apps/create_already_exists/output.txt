@@ -29,6 +29,7 @@
 }
 
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "test-app-already-exists" at /Workspace/Users/[USERNAME]/.bundle/test-app-already-exists/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-app-already-exists/default/files...
 Error: cannot create resources.apps.myapp: An app with the same name already exists: test-app-already-exists (409 RESOURCE_ALREADY_EXISTS)
 

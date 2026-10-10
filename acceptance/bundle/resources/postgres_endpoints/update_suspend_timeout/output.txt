@@ -1,6 +1,7 @@
 
 === Initial deployment with suspend_timeout_duration: 300s
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "update-postgres-endpoint-suspend-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_endpoints.my_endpoint

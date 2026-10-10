@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-deploy-cluster-instance-pool" at /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-instance-pool/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-instance-pool/default/files...
 Created clusters.cluster1
 Created clusters.cluster2

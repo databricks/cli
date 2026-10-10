@@ -58,6 +58,7 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:9:7
 
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Created clusters.cluster1
 Created clusters.cluster1.permissions

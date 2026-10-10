@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "resource-refs" at /Workspace/Users/[USERNAME]/.bundle/resource-refs/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files...
 Created apps.data_app
 Created jobs.example_job

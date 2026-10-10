@@ -1,6 +1,7 @@
 
 === Deploy job foo and pipeline bar; both are recorded at version 1
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-no-drift-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Created pipelines.bar

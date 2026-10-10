@@ -10,6 +10,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 >>> print_requests.py --get //permissions
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "catalog-grants-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/catalog-grants-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/catalog-grants-[UNIQUE_NAME]/default/files...
 Created catalogs.grants_catalog
 Created catalogs.grants_catalog.grants

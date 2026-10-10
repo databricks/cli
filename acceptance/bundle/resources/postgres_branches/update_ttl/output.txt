@@ -1,6 +1,7 @@
 
 === Initial deployment
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "update-postgres-branch-ttl-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-ttl-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-ttl-[UNIQUE_NAME]/default/files...
 Created postgres_branches.dev_branch
 Created postgres_projects.my_project

@@ -1,6 +1,7 @@
 
 === The first version fails, so no deployment record exists - only the node naming its ID
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "dms-version-never-created" at /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
 Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
 
@@ -43,6 +44,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "dms-version-never-created" at /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
 Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
 

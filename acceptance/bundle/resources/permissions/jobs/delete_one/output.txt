@@ -2,6 +2,7 @@
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.job_with_permissions
 Created jobs.job_with_permissions.permissions
