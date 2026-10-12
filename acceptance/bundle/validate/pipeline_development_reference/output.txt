@@ -1,18 +1,14 @@
 
-
-
-
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-  User: [USERNAME]
-  at resources.pipelines.main.development
-  at resources.pipelines.other.development
-  in databricks.yml:11:20
-  in databricks.yml:8:20
 >>> [CLI] bundle validate
-Found 2 warnings
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.main.development
+  in databricks.yml:10:20
+
 Name: test-bundle
 Target: default
-Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
-Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
 Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
 "${resources.pipelines.other.development}"
