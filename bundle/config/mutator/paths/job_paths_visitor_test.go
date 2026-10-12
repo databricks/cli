@@ -124,10 +124,10 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected :=  []*structpath.PathNode{
-		dyn.MustPathFromString("resources.jobs.job0.environments[1].spec.project_environment"),
-		dyn.MustPathFromString("resources.jobs.job0.environments[2].spec.project_environment"),
-	}
+	expected := structpath.MustParsePaths(
+		"resources.jobs.job0.environments[1].spec.project_environment",
+		"resources.jobs.job0.environments[2].spec.project_environment",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }

@@ -73,15 +73,7 @@ func jobRewritePatterns() []jobRewritePattern {
 		},
 		// Environment-level pattern for all jobs.
 		jobRewritePattern{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("jobs"),
-				dyn.AnyKey(),
-				dyn.Key("environments"),
-				dyn.AnyIndex(),
-				dyn.Key("spec"),
-				dyn.Key("project_environment"),
-			),
+			structpath.MustParsePattern("resources.jobs.*.environments[*].spec.project_environment"),
 			TranslateModeFile,
 			noSkipRewrite,
 		},
