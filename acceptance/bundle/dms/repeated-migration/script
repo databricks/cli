@@ -25,10 +25,22 @@ trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Curr
 echo "PASS: repeat deployed"
 
 title "3. DMS records\nExpect: versions complete; original ID preserved; name=repeated.\n"
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq 'map(select((.version_id | tonumber) >= 4))' | dms_versions_fields | jq -r '.[] | "version \(.version_id): previous=\(.previous_version_id) type=\(.version_type | ltrimstr("VERSION_TYPE_")) status=\(.status | ltrimstr("VERSION_STATUS_")) completion=\(.completion_reason | ltrimstr("VERSION_COMPLETE_"))"'
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json | dms_operations_fields | jq -r '.[] | "operation 4: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/5" -o json | dms_operations_fields | jq -r '.[] | "operation 5: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | dms_resource_state_fields | jq -r '.[] | "resource: key=\(.resource_key) id=\(.resource_id)\n  last_action=\(.last_action_type | ltrimstr("OPERATION_ACTION_TYPE_")) version=\(.last_version_id) name=\(.state.name)\n  tasks=\(.state.tasks | tojson) dependencies=\(.state.depends_on | tojson)"'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json |
+    jq 'map(select((.version_id | tonumber) >= 4))' |
+    jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})' |
+    jq -r '.[] | "version \(.version_id): previous=\(.previous_version_id) type=\(.version_type | ltrimstr("VERSION_TYPE_")) status=\(.status | ltrimstr("VERSION_STATUS_")) completion=\(.completion_reason | ltrimstr("VERSION_COMPLETE_"))"'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json |
+    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})' |
+    jq -r '.[] | "operation 4: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/5" -o json |
+    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})' |
+    jq -r '.[] | "operation 5: key=\(.resource_key) id=\(.resource_id) action=\(.action_type | ltrimstr("OPERATION_ACTION_TYPE_")) status=\(.status | ltrimstr("OPERATION_STATUS_"))"'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json |
+    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id,
+        state: (.state | fromjson | {name: .state.name,
+            tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}],
+            depends_on: (.depends_on // [])})})' |
+    jq -r '.[] | "resource: key=\(.resource_key) id=\(.resource_id)\n  last_action=\(.last_action_type | ltrimstr("OPERATION_ACTION_TYPE_")) version=\(.last_version_id) name=\(.state.name)\n  tasks=\(.state.tasks | tojson) dependencies=\(.state.depends_on | tojson)"'
 
 title "4. Backup copy\nExpect: backup=updated; bytes match latest and differ from first.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.repeat.json

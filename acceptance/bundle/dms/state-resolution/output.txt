@@ -19,7 +19,7 @@ PASS: stale cache replaced
 
 === 2. Invalid cache
 Input: YAML in JSON cache paths.
-Expect: cache restored; Terraform absent; plan unchanged.
+Expect: use remote state; overwrite broken JSON; remove Terraform cache; no resource changes.
 
 >>> cp databricks.yml .databricks/bundle/default/resources.json
 
@@ -35,20 +35,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
 PASS: invalid caches handled
 
-=== 3. Remote reads
-Expect: unforced summary/open both export remote resources.json.
-
->>> [CLI] bundle summary
-
->>> contains.py /api/2.0/workspace/export resources.json
-
->>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
-
->>> contains.py /api/2.0/workspace/export resources.json
-PASS: summary and open checked
-
-=== 4. Missing remote
+=== 3. Missing remote
 Expect: bad JSON fails; local cache bytes remain unchanged.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json

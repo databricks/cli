@@ -2,7 +2,10 @@
 # so it drives DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY instead of the parent's matrix.
 EnvMatrix.DMS = [""]
 
-# Preserve both migration and deployment URLs around the parent's version-line removal rule.
+# acceptance/bundle/test.toml removes Current Deployment Version for shared DMS/non-DMS goldens.
+# Inherited Repls append and cannot be disabled here.
+# Mask at Order -1 before the parent's default 0, then restore at +1.
+# This lets these tests assert both migration and deployment links.
 [[Repls]]
 Old = '(?m)^Current Deployment Version: '
 New = '__CURRENT_DEPLOYMENT_VERSION__: '

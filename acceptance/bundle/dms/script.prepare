@@ -11,15 +11,3 @@ dms_plan() {
 deployment_history_telemetry() {
     jq -r 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "deployment_history_enabled") | "\(.key) \(.value)"' "$OUT_REQUESTS"
 }
-
-dms_versions_fields() {
-    jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})'
-}
-
-dms_operations_fields() {
-    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
-}
-
-dms_resource_state_fields() {
-    jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id, state: (.state | fromjson | {name: .state.name, tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}], depends_on: (.depends_on // [])})})'
-}

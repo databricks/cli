@@ -23,9 +23,13 @@ trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.fir
 
 title "Read back the completed migration and deploy versions with their recorded resource state"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | dms_versions_fields
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | dms_operations_fields
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | dms_operations_fields
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | dms_resource_state_fields
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq -c 'sort_by(.version_id | tonumber) | map({version_id, previous_version_id, version_type, status, completion_reason})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/2" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/3" -o json | jq -c 'sort_by(.resource_key) | map({resource_key, resource_id, action_type, status})'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -c '
+    sort_by(.resource_key) | map({resource_key, resource_id, last_action_type, last_version_id,
+        state: (.state | fromjson | {name: .state.name,
+            tasks: [.state.tasks[]? | {task_key, job_id: .run_job_task.job_id}],
+            depends_on: (.depends_on // [])})})'
 
 rm -f "$OUT_REQUESTS"
