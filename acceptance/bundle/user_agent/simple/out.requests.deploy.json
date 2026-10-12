@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -23,7 +23,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -36,7 +36,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -49,7 +49,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -62,7 +62,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -74,7 +74,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -87,7 +87,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -100,7 +100,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -113,7 +113,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -126,7 +126,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -139,7 +139,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -151,7 +151,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -168,7 +168,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -184,7 +184,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -200,7 +200,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -217,7 +217,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -234,7 +234,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -251,7 +251,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -263,7 +263,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -275,7 +275,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[CMD_EXEC_ID_HASH] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "POST",

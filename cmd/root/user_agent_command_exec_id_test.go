@@ -12,7 +12,7 @@ func TestWithCommandExecIdInUserAgent(t *testing.T) {
 	ctx := cmdctx.GenerateExecId(t.Context())
 	ctx = withCommandExecIdInUserAgent(ctx)
 
-	// user agent should contain cmd-exec-id/<UUID>
+	// user agent should contain cmd-exec-id/<shortid>
 	ua := useragent.FromContext(ctx)
-	assert.Regexp(t, `cmd-exec-id/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`, ua)
+	assert.Regexp(t, `cmd-exec-id/[0-9A-Za-z]{11}( |$)`, ua)
 }
