@@ -47,7 +47,9 @@ func historyCommand() *cobra.Command {
 		}
 
 		if pipelineId != "" {
-			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+			if cmd.Flag("target").Value.String() == "" {
+				cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+			}
 			if err := root.MustWorkspaceClient(cmd, args); err != nil {
 				return err
 			}
