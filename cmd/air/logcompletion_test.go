@@ -72,11 +72,6 @@ func TestCompletionMatcher(t *testing.T) {
 	}
 }
 
-// withNode prefixes a node's training output to a summary.
-func withNode(node int, summary []string) []string {
-	return append([]string{"training node " + strconv.Itoa(node)}, summary...)
-}
-
 // logsBody renders a log endpoint response for one node's attempt. Records are
 // timestamped one second apart from 1700000000s and keyed by attempt, position
 // and content, so a poll that re-serves earlier lines dedups them while new or
@@ -201,7 +196,7 @@ func streamForCompletion(t *testing.T, srvURL string, exitOnCompletion bool) (bo
 
 func TestStreamBricklensExitsWhenAllNodesComplete(t *testing.T) {
 	cs, srv := newCompletionServer(t, 2, []string{runningRunBody}, func(q logQuery, _ *completionServer) []string {
-		return withNode(q.node, successSummary)
+		return append([]string{"training node " + strconv.Itoa(q.node)}, successSummary...)
 	})
 
 	ok, out, err := streamForCompletion(t, srv.URL, true)
@@ -227,6 +222,21 @@ func TestStreamBricklensWaitsForEveryNode(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ok)
 	assert.Len(t, cs.tailAttempts(1), 3)
+	// Node 0 was confirmed once and not re-fetched while node 1 caught up.
+	assert.Len(t, cs.tailAttempts(0), 1)
+}
+
+func TestStreamBricklensCompletionRequiresNodeCount(t *testing.T) {
+	cs, srv := newCompletionServer(t, 0, []string{runningRunBody, succeededRunBody}, func(q logQuery, _ *completionServer) []string {
+		return successSummary
+	})
+
+	ok, _, err := streamForCompletion(t, srv.URL, true)
+	require.NoError(t, err)
+	assert.True(t, ok)
+	// Without a node count there is nothing to confirm, so it waited for Jobs.
+	assert.GreaterOrEqual(t, cs.runGets, 2)
+	assert.Empty(t, cs.tailAttempts(0))
 }
 
 func TestStreamBricklensIgnoresFailureSummary(t *testing.T) {
@@ -292,4 +302,6 @@ func TestStreamBricklensBindsCompletionToLatestAttempt(t *testing.T) {
 	assert.True(t, ok)
 	assert.GreaterOrEqual(t, cs.runGets, 3)
 	assert.Equal(t, []string{"0", "1"}, cs.tailAttempts(1))
+	// Node 0, confirmed on attempt 0, had to be confirmed again on attempt 1.
+	assert.Equal(t, []string{"0", "1"}, cs.tailAttempts(0))
 }

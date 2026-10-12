@@ -363,10 +363,12 @@ type bricklensStreamer struct {
 	// a response carries it.
 	nodeCount int
 	// completion watches the streamed node for the success summary of
-	// completionAttempt. It only triggers the per-attempt check in
-	// allNodesCompleted, and a retry starts a fresh matcher.
+	// completionAttempt and only triggers allNodesCompleted. completedNodes counts
+	// the leading nodes confirmed to have succeeded on that attempt, so a check
+	// resumes where the last one stopped. A retry resets all three.
 	completion        completionMatcher
 	completionAttempt int
+	completedNodes    int
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -475,6 +477,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		if st.status.latestAttempt != st.completionAttempt {
 			st.completion = completionMatcher{}
 			st.completionAttempt = st.status.latestAttempt
+			st.completedNodes = 0
 		}
 
 		terminal := st.status.terminal()
@@ -553,32 +556,32 @@ func (st *bricklensStreamer) run() (bool, error) {
 	}
 }
 
-// allNodesCompleted reports whether every node of the run's latest attempt has
-// printed the entry script's success summary. The streamed node's summary only
-// triggers the check: every node, the streamed one included, is then read with an
-// explicit attempt number, so all summaries come from the same attempt. Best
-// effort: an unknown node count or a failed fetch reads as not completed, so the
-// stream keeps following the run.
+// allNodesCompleted reports whether every node of completionAttempt has printed
+// the entry script's success summary. Every node, the streamed one included, is
+// read with an explicit attempt number, so all summaries come from the same
+// attempt. A node that succeeded stays succeeded, so later calls resume at the
+// first unconfirmed node. Best effort: an unknown node count or a failed fetch
+// reads as not completed, so the stream keeps following the run.
 func (st *bricklensStreamer) allNodesCompleted() bool {
 	if !st.completion.completed || st.nodeCount < 1 {
 		return false
 	}
-	for node := range st.nodeCount {
-		if !st.nodeCompleted(node, st.completionAttempt) {
+	for ; st.completedNodes < st.nodeCount; st.completedNodes++ {
+		if !st.nodeCompleted(st.completedNodes) {
 			return false
 		}
 	}
 	return true
 }
 
-// nodeCompleted searches the newest lines of a node's log for an attempt for the
-// success summary. From the stream start rather than the live cursor, since the
-// node may have finished before the lookback window.
-func (st *bricklensStreamer) nodeCompleted(node, attempt int) bool {
+// nodeCompleted searches the newest lines of a node's log for completionAttempt
+// for the success summary. From the stream start rather than the live cursor,
+// since the node may have finished before the lookback window.
+func (st *bricklensStreamer) nodeCompleted(node int) bool {
 	resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, bricklensLogsQuery{
 		fromSeconds:   st.streamStartSec,
 		pageSize:      completionTailLines,
-		attemptNumber: attempt,
+		attemptNumber: st.completionAttempt,
 		nodeIndex:     node,
 	})
 	if err != nil {
