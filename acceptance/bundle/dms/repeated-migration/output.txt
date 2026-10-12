@@ -1,0 +1,35 @@
+
+=== Restored remote direct state registers in version 4 and deploys in version 5
+>>> update_file.py .databricks/resources.before-dms.json "serial": 1 "serial":  1
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-dms.json --format AUTO --overwrite
+
+>>> update_file.py databricks.yml name: updated name: repeated
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/files...
+Enabling deployment history...
+Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=4
+Updated jobs.one
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Both registration and deployment versions complete without recreating the resource
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
+[{"version_id":"2","previous_version_id":null,"version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"3","previous_version_id":"2","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"4","previous_version_id":"3","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"5","previous_version_id":"4","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/4 -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/5 -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"5","state":{"name":"repeated","tasks":[],"depends_on":[]}}]
+
+=== The refreshed backup matches the restored bytes and differs from the first backup
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.repeat.json
+
+>>> cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
+
+>>> musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json

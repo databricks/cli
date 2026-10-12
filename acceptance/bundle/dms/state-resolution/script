@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-resolution-${UNIQUE_NAME}/default/state"
+
+title "Deploy with history enabled"
+trace $CLI bundle deploy
+cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
+
+title "Unforced debug states initializes and chooses remote state over a newer local cache"
+update_file.py .databricks/bundle/default/resources.json '"state_version": 3,' '"state_version": 3, "serial": 999,'
+update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
+trace $CLI bundle debug states 2>&1 | contains.py 'remote direct state' '!local ' '!stale-' '!serial=999'
+trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+
+title "Remote state replaces malformed direct JSON and removes malformed Terraform state"
+trace cp databricks.yml .databricks/bundle/default/resources.json
+mkdir -p .databricks/bundle/default/terraform
+trace cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
+trace $CLI bundle plan | contains.py 'Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged'
+trace test ! -e .databricks/bundle/default/terraform/terraform.tfstate
+trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+rm -f "$OUT_REQUESTS"
+
+title "Unforced summary and open read remote state"
+trace $CLI bundle summary > LOG.summary.output
+print_requests.py --get //workspace/export | contains.py '/api/2.0/workspace/export' > LOG.summary.requests
+trace $CLI bundle open foo > LOG.open.output
+print_requests.py --get //workspace/export | contains.py '/api/2.0/workspace/export' > LOG.open.requests
+
+title "Without remote state, malformed direct cache fails and remains unchanged"
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "$state_path/resources.json"
+trace cp databricks.yml .databricks/bundle/default/resources.json
+trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'invalid character'
+trace cmp databricks.yml .databricks/bundle/default/resources.json
+
+MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.remote.json --format AUTO --overwrite &> LOG.restore
+$CLI bundle destroy --auto-approve &> LOG.destroy
+rm -f "$OUT_REQUESTS"

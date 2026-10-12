@@ -1,7 +1,3 @@
 Ignore = [".databricks"]
 
 EnvMatrix.STATE_FILE = ["resources.future.json", "resources.future_with_feature.json"]
-
-[[Repls]]
-Old = 'Error: migrating state [^\n]*[/\\]resources\.json:'
-New = 'Error: migrating state resources.json:'

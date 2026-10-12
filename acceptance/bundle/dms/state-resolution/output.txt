@@ -1,0 +1,42 @@
+
+=== Deploy with history enabled
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Unforced debug states initializes and chooses remote state over a newer local cache
+>>> [CLI] bundle debug states
+resources.json: remote direct state serial=0 lineage="[UUID]"
+
+>>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+
+=== Remote state replaces malformed direct JSON and removes malformed Terraform state
+>>> cp databricks.yml .databricks/bundle/default/resources.json
+
+>>> cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> test ! -e .databricks/bundle/default/terraform/terraform.tfstate
+
+>>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+
+=== Unforced summary and open read remote state
+>>> [CLI] bundle summary
+
+>>> [CLI] bundle open foo
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+
+=== Without remote state, malformed direct cache fails and remains unchanged
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json
+
+>>> cp databricks.yml .databricks/bundle/default/resources.json
+
+>>> musterr [CLI] bundle plan
+Error: invalid character 'b' looking for beginning of value
+
+
+>>> cmp databricks.yml .databricks/bundle/default/resources.json

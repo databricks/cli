@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+$CLI bundle deploy &> LOG.direct-deploy
+DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
+cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
+update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+update_file.py databricks.yml 'name: one' 'name: updated'
+$CLI bundle deploy &> LOG.first-migration
+contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3' < LOG.first-migration > LOG.first-migration-checked
+
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-repeated-migration-${UNIQUE_NAME}/default/state"
+MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json &> LOG.first-backup
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_path/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+
+title "Restored remote direct state registers in version 4 and deploys in version 5"
+trace update_file.py .databricks/resources.before-dms.json '"serial": 1' '"serial":  1'
+trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.before-dms.json --format AUTO --overwrite
+trace update_file.py databricks.yml 'name: updated' 'name: repeated'
+trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
+
+title "Both registration and deployment versions complete without recreating the resource"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | dms_versions_fields
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json | dms_operations_fields
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/5" -o json | dms_operations_fields
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | dms_resource_state_fields
+
+title "The refreshed backup matches the restored bytes and differs from the first backup"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.repeat.json
+trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
+trace musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
+
+rm -f "$OUT_REQUESTS"

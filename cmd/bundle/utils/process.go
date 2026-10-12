@@ -362,6 +362,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		b.MigratingToDMS = opts.Deploy && stateDesc.Engine.IsDirect() && !stateDesc.IsDMS() && configuresDeploymentHistory(ctx, b)
+		// TODO: Support applying plans computed against direct state after migration to DMS.
+		// This restriction blocks automatic migration with --plan once deployment history reaches GA.
 		if b.MigratingToDMS && opts.ReadPlanPath != "" {
 			return b, stateDesc, errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
 		}
