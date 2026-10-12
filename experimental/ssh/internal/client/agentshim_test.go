@@ -570,7 +570,7 @@ func TestBuildAgentShimEvent(t *testing.T) {
 		// `SshAgentShimAgent` value in `libs/telemetry/protos/ssh_agent_shim.go`
 		t.Run(fmt.Sprintf("maps %s to an enum for telemetry", agent.name), func(t *testing.T) {
 			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
-			assert.NotEqual(t, got.Agent, protos.SshAgentShimAgentUnspecified)
+			assert.NotEqual(t, protos.SshAgentShimAgentUnspecified, got.Agent)
 		})
 	}
 
