@@ -505,12 +505,12 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
-		if root != nil {
+		// Unlike the member file, the root is reported only when the run changes
+		// it; Result.WorkspaceRoot already names the root.
+		if root != nil && root.changed {
 			plan.WouldWriteWorkspace = filepath.ToSlash(root.path)
-			if root.changed {
-				if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
-					plan.WouldBackupWorkspace = filepath.ToSlash(backupName)
-				}
+			if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
+				plan.WouldBackupWorkspace = filepath.ToSlash(backupName)
 			}
 		}
 		p.res.Plan = plan

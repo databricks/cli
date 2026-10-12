@@ -235,7 +235,15 @@ func hasConstraintDeps(lines []string) bool {
 	if !ok {
 		return false
 	}
-	return slices.ContainsFunc(lines[header+1:end], constraintDepsRe.MatchString)
+	for i := header + 1; i < end; i++ {
+		if !constraintDepsRe.MatchString(lines[i]) {
+			continue
+		}
+		last, _ := constraintDepsArrayEnd(lines, i, end)
+		_, value, _ := strings.Cut(strings.Join(lines[i:last+1], "\n"), "=")
+		return strings.ContainsAny(value, `"'`)
+	}
+	return false
 }
 
 // errDottedToolUv is returned when the file defines the [tool.uv] table without
@@ -1057,7 +1065,8 @@ func mergeToolUv(lines, deps []string) ([]string, bool) {
 
 // removeManagedToolUv removes the marker-bracketed managed [tool.uv] block, and
 // the one blank line appendManagedBlock puts before a standalone block. A
-// header-less block inside a user [tool.uv] table leaves the table's own keys.
+// header-less block inside a user [tool.uv] table leaves the table's own keys
+// and blank lines.
 // A standalone block keeps its [tool.uv] header when user keys follow its end
 // marker, because those keys belong to that table.
 func removeManagedToolUv(lines []string) ([]string, bool) {
@@ -1066,11 +1075,12 @@ func removeManagedToolUv(lines []string) ([]string, bool) {
 		return removeUnmarkedConstraintDeps(lines)
 	}
 	var keep []string
-	if slices.ContainsFunc(lines[start:stop+1], func(l string) bool { return headerName(l) == "[tool.uv]" }) &&
-		tableBodyHasKeys(lines, stop+1) {
-		keep = []string{"[tool.uv]"}
-	} else if start > 0 && strings.TrimSpace(lines[start-1]) == "" {
-		start--
+	if slices.ContainsFunc(lines[start:stop+1], func(l string) bool { return headerName(l) == "[tool.uv]" }) {
+		if tableBodyHasKeys(lines, stop+1) {
+			keep = []string{"[tool.uv]"}
+		} else if start > 0 && strings.TrimSpace(lines[start-1]) == "" {
+			start--
+		}
 	}
 	out := make([]string, 0, len(lines)-(stop-start+1)+len(keep))
 	out = append(out, lines[:start]...)

@@ -325,3 +325,17 @@ func TestDiscoverWorkspaceRootSymlinkChangesDepth(t *testing.T) {
 	assert.Equal(t, root, gotRoot)
 	assert.Equal(t, filepath.Join("..", "..", ".."), gotRel)
 }
+
+func TestPipelineWorkspaceMemberDryRunReRunPlansNoRootWrite(t *testing.T) {
+	p, _, _ := newMemberPipeline(t)
+	_, err := p.Run(t.Context())
+	require.NoError(t, err)
+
+	p.Check = true
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, res.Plan)
+	assert.Empty(t, res.Plan.WouldWriteWorkspace)
+	assert.Empty(t, res.Plan.WouldBackupWorkspace)
+	assert.NotEmpty(t, res.WorkspaceRoot)
+}

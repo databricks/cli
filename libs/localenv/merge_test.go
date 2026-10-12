@@ -1384,6 +1384,7 @@ func TestMergeToolUvBlockReportsReplacedPins(t *testing.T) {
 		{"only a comment names the key", "# constraint-dependencies are added by setup-local\n[tool.uv.workspace]\nmembers = [\"a\"]\n", false},
 		{"user pins", "[tool.uv]\nconstraint-dependencies = [\"urllib3<2\"]\n", true},
 		{"managed pins", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"old==1\",\n]\n" + managedMarkerEnd + "\n", true},
+		{"empty unmarked key", "[tool.uv]\nconstraint-dependencies = []\n", false},
 		{"empty managed block", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n]\n" + managedMarkerEnd + "\n", false},
 	}
 	for _, tc := range tests {
@@ -1411,4 +1412,15 @@ func TestMergeManagedConstraintsAtWorkspaceRootRemovesUnmarkedPins(t *testing.T)
 	out, _, err = MergeManaged([]byte(head+"\n[tool.uv]\npackage = false\nconstraint-dependencies = [\"x==1\"]\n"), c, opts)
 	require.NoError(t, err)
 	assert.Equal(t, head+"\n[tool.uv]\npackage = false\n", string(out))
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootKeepsUserBlankLine(t *testing.T) {
+	// A header-less managed block sits inside the user's [tool.uv] table; the
+	// blank line before it is the user's, not the merge's.
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n\n" +
+		managedMarkerStart + "\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n\n", string(out))
 }
