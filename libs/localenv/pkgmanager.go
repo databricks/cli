@@ -22,17 +22,17 @@ type PackageManager interface {
 	Provision(ctx context.Context, projectDir, python string) error
 
 	// PostProvision seeds pip into the virtual environment at venv (an absolute
-	// path to the venv folder).
+	// path to the venv folder), running in projectDir.
 	// This step is required because VS Code's ms-python.vscode-python-envs
 	// extension falls back to `python -m pip list` when its `uv --version`
 	// probe fails on the GUI PATH; uv venvs contain no pip; and `uv sync`
 	// strips pip, so seeding must run after every sync.
-	PostProvision(ctx context.Context, venv string) error
+	PostProvision(ctx context.Context, projectDir, venv string) error
 
-	// Validate inspects the provisioned virtual environment at venv and returns
-	// what it observed (see VenvInfo). The caller decides which observations are
-	// acceptable.
-	Validate(ctx context.Context, venv string) (VenvInfo, error)
+	// Validate inspects the provisioned virtual environment at venv, running in
+	// projectDir, and returns what it observed (see VenvInfo). The caller decides
+	// which observations are acceptable.
+	Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error)
 }
 
 // PythonResolution records which preparation path supplied the interpreter.

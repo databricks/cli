@@ -475,3 +475,25 @@ func TestLineWithPrefix(t *testing.T) {
 	_, ok = lineWithPrefix("PYVER:3.12\n", validateDBCPrefix)
 	assert.False(t, ok)
 }
+
+func TestPostProvisionAndValidateRunInProjectDir(t *testing.T) {
+	// The venv can live outside the project (a uv workspace root), but uv and the
+	// probe interpreter still run in the project folder: uv reads its settings
+	// from there, and `python -c` puts the working folder first on sys.path.
+	project := filepath.Join("p", "proj")
+	venv := filepath.Join("p", ".venv")
+	ctx, stub := process.WithStub(t.Context())
+	var dirs []string
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		dirs = append(dirs, cmd.Dir)
+		// The validate probe parses its prefixed lines from stdout.
+		_, err := cmd.Stdout.Write([]byte("PYVER:3.12\nDBCVER:\nPYSPARKVER:\nDBCIMPORT:\n"))
+		return err
+	})
+	m := &uvManager{bin: "uv"}
+
+	require.NoError(t, m.PostProvision(ctx, project, venv))
+	_, err := m.Validate(ctx, project, venv)
+	require.NoError(t, err)
+	assert.Equal(t, []string{project, project}, dirs)
+}

@@ -17,8 +17,8 @@ import (
 	"github.com/hexops/gotextdiff/span"
 )
 
-// Filenames and directories the pipeline reads and writes. venvDir is also the
-// virtualenv directory the package manager provisions. pyprojectFile lives in
+// Filenames and directories the pipeline reads and writes. venvDir is the name of
+// the virtualenv folder the package manager provisions. pyprojectFile lives in
 // detect.go, the first consumer of it.
 const (
 	backupFile = "pyproject.toml.bak"
@@ -73,9 +73,10 @@ type Pipeline struct {
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
 
-	// venv is the absolute virtualenv folder that provision seeds, validate
-	// inspects, and Result.VenvPath reports. Set in preflight.
-	venv string
+	// venv is the absolute virtualenv folder that provision seeds and validate
+	// inspects; venvRel is the same folder relative to ProjectDir, reported as
+	// Result.VenvPath. Both are set in preflight.
+	venv, venvRel string
 
 	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
 	// in tests so backup names are deterministic.
@@ -177,7 +178,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	p.venv = filepath.Join(p.ProjectDir, venvDir)
+	p.venvRel = venvDir
+	p.venv = filepath.Join(p.ProjectDir, p.venvRel)
 	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
@@ -322,7 +324,7 @@ func (p *Pipeline) pyprojectPath() string {
 }
 
 // backupPath returns the path to the canonical pyproject.toml backup file in dir.
-func (p *Pipeline) backupPath(dir string) string {
+func backupPath(dir string) string {
 	return filepath.Join(dir, backupFile)
 }
 
@@ -337,7 +339,7 @@ func (p *Pipeline) timestampedBackupBase(dir string) string {
 // pyproject.toml.bak is written once and kept as the pristine original; later
 // backups are pyproject.toml.<timestamp>.bak. mode is preserved onto the file.
 func (p *Pipeline) backupCurrent(dir string, content []byte, mode os.FileMode) (string, error) {
-	canonical := p.backupPath(dir)
+	canonical := backupPath(dir)
 	switch err := writeNew(canonical, content, mode); {
 	case err == nil:
 		return canonical, nil
@@ -363,7 +365,7 @@ func (p *Pipeline) backupCurrent(dir string, content []byte, mode os.FileMode) (
 // .bak if none exists yet, else a timestamped name — for --dry-run only. Best-effort:
 // an unstattable .bak returns an error the caller treats as "nothing to report".
 func (p *Pipeline) plannedBackupName(dir string) (string, error) {
-	canonical := p.backupPath(dir)
+	canonical := backupPath(dir)
 	_, statErr := os.Stat(canonical)
 	switch {
 	case errors.Is(statErr, os.ErrNotExist):
@@ -459,7 +461,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// Report a backup only when the run would actually write one (i.e. it changes
 		// the file); a no-op re-run writes none.
 		if !greenfield && !bytes.Equal(merged, baseBytes) {
-			if backupName, statErr := p.plannedBackupName(p.ProjectDir); statErr == nil {
+			if backupName, statErr := p.plannedBackupName(filepath.Dir(pyproject)); statErr == nil {
 				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
@@ -469,8 +471,9 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 }
 
 // pyprojectDiff renders the unified diff the --dry-run plan reports for one
-// pyproject.toml. label is the file name shown in the diff headers; an existing
-// file diffs label against label+".new", a greenfield file diffs "" against label.
+// pyproject.toml. label is the file name shown in the diff headers: an existing
+// file diffs label against label+".new"; a greenfield file has empty old content
+// and label in both headers.
 func pyprojectDiff(label string, base, merged []byte, greenfield bool) string {
 	oldStr := ""
 	newStr := string(merged)
@@ -501,8 +504,8 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 
 // writePyproject writes merged over the pyproject.toml at path, backing up the
 // current file first (into the same folder) unless greenfield. A no-op merge
-// writes nothing and returns no backup. diskMutated reports whether disk changed
-// before a failure; the caller passes it to p.fail.
+// writes nothing and returns no backup. diskMutated reports whether disk changed,
+// on success and on failure; on failure the caller passes it to p.fail.
 func (p *Pipeline) writePyproject(path string, merged []byte, greenfield bool) (backup string, diskMutated bool, perr *PipelineError) {
 	if !greenfield {
 		// Stat+read up front: mode is preserved onto the backup, content is the
@@ -564,7 +567,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.Provision(ctx, p.ProjectDir, selection.Executable); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
-	if err := p.PM.PostProvision(ctx, p.venv); err != nil {
+	if err := p.PM.PostProvision(ctx, p.ProjectDir, p.venv); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "post-provision failed"))
 	}
 	p.markOK(PhaseProvision, "")
@@ -589,7 +592,7 @@ func (p *Pipeline) hasConstraintConflictWarning() bool {
 // is not managed (opts.SkipDBConnect) the databricks-connect assertion and version
 // reporting are skipped.
 func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string, opts MergeOptions) error {
-	info, err := p.PM.Validate(ctx, p.venv)
+	info, err := p.PM.Validate(ctx, p.ProjectDir, p.venv)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
 	}
@@ -650,11 +653,7 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	// absolute path: the VS Code consumer already knows the project root (it sets
 	// the working directory when it shells out). For a standalone project this is
 	// ".venv".
-	rel, err := filepath.Rel(p.ProjectDir, p.venv)
-	if err != nil {
-		return p.fail(PhaseValidate, true, NewError(ErrValidate, err, "venv %s is not relative to the project", filepath.ToSlash(p.venv)))
-	}
-	p.res.VenvPath = filepath.ToSlash(rel)
+	p.res.VenvPath = filepath.ToSlash(p.venvRel)
 	if p.res.Resolved != nil {
 		if managed {
 			p.res.Resolved.DBConnectVersion = dbcVer

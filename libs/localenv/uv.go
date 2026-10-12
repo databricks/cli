@@ -203,7 +203,7 @@ func venvPython(venv string) string {
 	return filepath.Join(venv, "bin", "python")
 }
 
-// PostProvision seeds pip into the project's virtual environment.
+// PostProvision seeds pip into the virtual environment at venv.
 //
 // VS Code's ms-python.vscode-python-envs extension falls back to
 // `python -m pip list` when its `uv --version` probe fails on the GUI PATH.
@@ -211,9 +211,9 @@ func venvPython(venv string) string {
 // pip if it was previously present. Seeding pip after every sync ensures the
 // VS Code integration works correctly regardless of how the environment was
 // activated.
-func (m *uvManager) PostProvision(ctx context.Context, venv string) error {
+func (m *uvManager) PostProvision(ctx context.Context, projectDir, venv string) error {
 	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(venv))...)
-	if err := m.runUv(ctx, args, filepath.Dir(venv)); err != nil {
+	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv pip seed")
 	}
 	return nil
@@ -231,7 +231,7 @@ func (m *uvManager) PostProvision(ctx context.Context, venv string) error {
 // on top of it. Metadata alone cannot tell a live collision from a stale dist-info that
 // no longer describes the importable module, so the probe also attempts `import
 // databricks.connect`: a live collision raises there, a harmless leftover does not.
-func (m *uvManager) Validate(ctx context.Context, venv string) (VenvInfo, error) {
+func (m *uvManager) Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error) {
 	// Each value is printed with a unique prefix so parsing greps for the prefix rather
 	// than relying on line position: any stray line uv or the interpreter writes to
 	// stdout (e.g. a warning) would otherwise shift a positional parse.
@@ -256,7 +256,7 @@ except BaseException as e:
 	// what was installed, so validation observes the real target.
 	out, err := process.Background(ctx,
 		[]string{venvPython(venv), "-c", pyCode},
-		process.WithDir(filepath.Dir(venv)),
+		process.WithDir(projectDir),
 		process.WithProcessGroup(),
 	)
 	if err != nil {

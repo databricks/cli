@@ -34,9 +34,9 @@ func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.
 func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
-func (fakePM) Provision(context.Context, string, string) error { return nil }
-func (fakePM) PostProvision(context.Context, string) error     { return nil }
-func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
+func (fakePM) Provision(context.Context, string, string) error     { return nil }
+func (fakePM) PostProvision(context.Context, string, string) error { return nil }
+func (f fakePM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{PythonMinor: f.py, DBConnect: f.dbc, Pyspark: f.pyspark, DBConnectImportErr: f.dbcImportErr}, nil
 }
 
@@ -58,11 +58,11 @@ func (noProvisionPM) Provision(context.Context, string, string) error {
 	return errors.New("Provision must not be called under --dry-run")
 }
 
-func (noProvisionPM) PostProvision(context.Context, string) error {
+func (noProvisionPM) PostProvision(context.Context, string, string) error {
 	return errors.New("PostProvision must not be called under --dry-run")
 }
 
-func (noProvisionPM) Validate(context.Context, string) (VenvInfo, error) {
+func (noProvisionPM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{}, errors.New("Validate must not be called under --dry-run")
 }
 
@@ -1434,34 +1434,36 @@ func newServerlessTestPipeline(t *testing.T, dir string) *Pipeline {
 	}
 }
 
-// venvRecordingPM records the venv folder the pipeline hands to PostProvision
-// and Validate.
+// venvRecordingPM records the folders the pipeline hands to PostProvision and
+// Validate.
 type venvRecordingPM struct {
 	fakePM
-	postProvisionVenv, validateVenv *string
+	postProvisionDir, postProvisionVenv, validateDir, validateVenv string
 }
 
-func (f venvRecordingPM) PostProvision(_ context.Context, venv string) error {
-	*f.postProvisionVenv = venv
+func (f *venvRecordingPM) PostProvision(_ context.Context, projectDir, venv string) error {
+	f.postProvisionDir, f.postProvisionVenv = projectDir, venv
 	return nil
 }
 
-func (f venvRecordingPM) Validate(ctx context.Context, venv string) (VenvInfo, error) {
-	*f.validateVenv = venv
-	return f.fakePM.Validate(ctx, venv)
+func (f *venvRecordingPM) Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error) {
+	f.validateDir, f.validateVenv = projectDir, venv
+	return f.fakePM.Validate(ctx, projectDir, venv)
 }
 
 func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
 	dir := writeProject(t)
-	var post, val string
+	pm := &venvRecordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
 	p := newServerlessTestPipeline(t, dir)
-	p.PM = venvRecordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, postProvisionVenv: &post, validateVenv: &val}
+	p.PM = pm
 
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
 	want := filepath.Join(dir, ".venv")
-	assert.Equal(t, want, post)
-	assert.Equal(t, want, val)
+	assert.Equal(t, dir, pm.postProvisionDir)
+	assert.Equal(t, want, pm.postProvisionVenv)
+	assert.Equal(t, dir, pm.validateDir)
+	assert.Equal(t, want, pm.validateVenv)
 	assert.Equal(t, ".venv", res.VenvPath)
 }
 
@@ -1471,7 +1473,7 @@ func TestWritePyprojectNoOpWritesNothing(t *testing.T) {
 	content := []byte("[project]\nname = \"x\"\n")
 	require.NoError(t, os.WriteFile(path, content, 0o644))
 
-	p := &Pipeline{ProjectDir: dir, res: NewResult()}
+	p := &Pipeline{ProjectDir: dir}
 	backup, mutated, perr := p.writePyproject(path, content, false)
 	require.Nil(t, perr)
 	assert.Empty(t, backup)
@@ -1485,7 +1487,7 @@ func TestWritePyprojectBacksUpInItsOwnFolder(t *testing.T) {
 	path := filepath.Join(other, pyprojectFile)
 	require.NoError(t, os.WriteFile(path, []byte("[project]\nname = \"x\"\n"), 0o644))
 
-	p := &Pipeline{ProjectDir: project, res: NewResult()}
+	p := &Pipeline{ProjectDir: project}
 	backup, mutated, perr := p.writePyproject(path, []byte("[project]\nname = \"y\"\n"), false)
 	require.Nil(t, perr)
 	assert.True(t, mutated)
