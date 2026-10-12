@@ -238,10 +238,21 @@ func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimO
 // separated from logAgentShimEvent so the field mapping can be unit tested.
 func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
 	return &protos.SshAgentShimEvent{
-		AgentName:       agentName,
+		Agent:           agentNameToAgentEnum(agentName),
 		IsSuccess:       outcome.err == nil,
 		ErrorCategory:   outcome.category(),
 		SetupDurationMs: setupDuration.Milliseconds(),
+	}
+}
+
+func agentNameToAgentEnum(agentName string) protos.SshAgentShimAgent {
+	switch agentName {
+	case "claude":
+		return protos.SshAgentShimAgentClaudeCode
+	case "codex":
+		return protos.SshAgentShimAgentCodex
+	default:
+		return protos.SshAgentShimAgentUnspecified
 	}
 }
 

@@ -565,10 +565,19 @@ func TestProbeModelServicesPageError(t *testing.T) {
 }
 
 func TestBuildAgentShimEvent(t *testing.T) {
+	for _, agent := range supportedAgents {
+		// This test will fail when you add a new supported agent without adding a new
+		// `SshAgentShimAgent` value in `libs/telemetry/protos/ssh_agent_shim.go`
+		t.Run(fmt.Sprintf("maps %s to an enum for telemetry", agent.name), func(t *testing.T) {
+			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
+			assert.NotEqual(t, got.Agent, protos.SshAgentShimAgentUnspecified)
+		})
+	}
+
 	t.Run("successful launch reports success and no category", func(t *testing.T) {
 		got := buildAgentShimEvent("claude", agentShimOutcome{}, 1500*time.Millisecond)
 		assert.Equal(t, &protos.SshAgentShimEvent{
-			AgentName:       "claude",
+			Agent:           protos.SshAgentShimAgentClaudeCode,
 			IsSuccess:       true,
 			ErrorCategory:   protos.SshAgentShimErrorCategoryUnspecified,
 			SetupDurationMs: 1500,
@@ -580,7 +589,7 @@ func TestBuildAgentShimEvent(t *testing.T) {
 			err: categorize(protos.SshAgentShimErrorCategoryGatewayAuthFailed, errors.New("boom")),
 		}, 200*time.Millisecond)
 		assert.Equal(t, &protos.SshAgentShimEvent{
-			AgentName:       "codex",
+			Agent:           protos.SshAgentShimAgentCodex,
 			IsSuccess:       false,
 			ErrorCategory:   protos.SshAgentShimErrorCategoryGatewayAuthFailed,
 			SetupDurationMs: 200,

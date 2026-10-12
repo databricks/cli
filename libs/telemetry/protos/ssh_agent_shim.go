@@ -81,6 +81,21 @@ const (
 	SshAgentShimErrorCategoryUnknown SshAgentShimErrorCategory = "UNKNOWN"
 )
 
+// The agent for an `ssh agent-shim <agent>` command invocation. Values are in
+// screaming snake case to match what JSON->proto serialization expects.
+type SshAgentShimAgent string
+
+const (
+	// Unknown agent was specified.
+	SshAgentShimAgentUnspecified SshAgentShimAgent = "TYPE_UNSPECIFIED"
+
+	// Claude Code CLI.
+	SshAgentShimAgentClaudeCode SshAgentShimAgent = "CLAUDE_CODE"
+
+	// Codex CLI.
+	SshAgentShimAgentCodex SshAgentShimAgent = "CODEX"
+)
+
 // SshAgentShimEvent is emitted when a user runs `ssh agent-shim <agent>` on the remote
 // driver to launch a coding agent against the Unity AI Gateway.
 //
@@ -89,9 +104,9 @@ const (
 // uploaded from the shim just before the exec. A failed launch returns normally and is
 // uploaded by cmd/root as usual.
 type SshAgentShimEvent struct {
-	// Name of the agent the user asked to launch (e.g. "claude", "codex"). Drawn from a
-	// fixed set of CLI-defined identifiers, never user-authored text.
-	AgentName string `json:"agent_name"`
+	//  The agent the user asked to launch, mapped to a string matching the proto enum
+	// (e.g. "CLAUDE_CODE", "CODEX", etc).
+	Agent SshAgentShimAgent `json:"agent"`
 
 	// Whether the agent was launched. False means setup failed before the agent ran.
 	// Populated on every event, so no omitempty: a genuine false must stay distinguishable
