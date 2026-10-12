@@ -8,7 +8,7 @@ warning: requires-python ">=3.10" is replaced by the environment's ">=3.12"
   databricks-connect  17.2.0
   Virtual env         ../../custom env
   pyproject.toml      updated (backup: [TEST_TMP_DIR]/bundles/a/pyproject.toml.bak)
-  Workspace root      [TEST_TMP_DIR]
+  uv workspace root   [TEST_TMP_DIR]
   Root pyproject.toml constraints updated (backup: [TEST_TMP_DIR]/pyproject.toml.bak)
 
 Next steps:
