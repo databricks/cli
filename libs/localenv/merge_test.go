@@ -1329,3 +1329,36 @@ func TestMergeManagedSkipToolUvRemovesStaleBlockKeepsUserTable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
 }
+
+func TestMergeToolUvBlockRejectsDottedKeyWorkspace(t *testing.T) {
+	// A dotted key defines the [tool.uv] table, so appending a [tool.uv] header
+	// would define it twice: invalid TOML that breaks uv for the whole workspace.
+	in := []byte("tool.uv.workspace.members = [\"bundles/*\"]\n")
+	_, _, err := MergeToolUvBlock(in, []string{"x==1"})
+	assert.Error(t, err)
+}
+
+func TestMergeManagedSkipToolUvKeepsHeaderForTrailingUserKeys(t *testing.T) {
+	// The user added a key below an earlier standalone block. It belongs to that
+	// block's [tool.uv] table, so the header must survive the block's removal.
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n" +
+		managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\npackage = false\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{SkipToolUv: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
+}
+
+func TestMergeToolUvBlockAllowsWorkspaceSubtable(t *testing.T) {
+	// A [tool.uv.workspace] header does not define [tool.uv] itself, so the
+	// managed [tool.uv] block can follow it (uv accepts this layout).
+	in := []byte("[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n")
+	_, _, err := MergeToolUvBlock(in, []string{"x==1"})
+	assert.NoError(t, err)
+}
+
+func TestMergeToolUvBlockRejectsDottedKeyInToolTable(t *testing.T) {
+	in := []byte("[tool]\nuv.workspace.members = [\"bundles/*\"]\n")
+	_, _, err := MergeToolUvBlock(in, []string{"x==1"})
+	assert.ErrorIs(t, err, errDottedToolUv)
+}

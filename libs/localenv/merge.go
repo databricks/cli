@@ -200,11 +200,48 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 // table. changed reports whether the block differs from the input.
 func MergeToolUvBlock(target []byte, deps []string) (merged []byte, changed bool, err error) {
 	merged, err = transformLines(target, func(lines []string) ([]string, error) {
+		if definesToolUvWithDottedKeys(lines) {
+			return nil, errDottedToolUv
+		}
 		var out []string
 		out, changed = mergeToolUv(lines, deps)
 		return out, nil
 	})
-	return merged, changed, err
+	if err != nil {
+		return nil, false, err
+	}
+	return merged, changed, nil
+}
+
+// errDottedToolUv: the file defines the [tool.uv] table with dotted keys, which
+// the line-based merge cannot extend. Appending a [tool.uv] header would define
+// the table twice, which uv rejects for the whole workspace.
+var errDottedToolUv = errors.New("pyproject.toml defines [tool.uv] with dotted keys (for example tool.uv.workspace.members); use a [tool.uv.workspace] table so the constraint block can be added")
+
+// toolUvDottedTopRe and toolUvDottedToolRe match a dotted key that defines the [tool.uv] table: tool.uv.…
+// at the top level, or uv.… inside [tool].
+var (
+	toolUvDottedTopRe  = regexp.MustCompile(`^\s*tool\s*\.\s*uv\s*[.=]`)
+	toolUvDottedToolRe = regexp.MustCompile(`^\s*uv\s*[.=]`)
+)
+
+// definesToolUvWithDottedKeys reports whether lines define the [tool.uv] table
+// only through dotted keys, with no [tool.uv] header.
+func definesToolUvWithDottedKeys(lines []string) bool {
+	if _, _, ok := tableBounds(lines, "[tool.uv]"); ok {
+		return false
+	}
+	table := ""
+	for _, line := range lines {
+		if name := headerName(line); name != "" {
+			table = name
+			continue
+		}
+		if (table == "" && toolUvDottedTopRe.MatchString(line)) || (table == "[tool]" && toolUvDottedToolRe.MatchString(line)) {
+			return true
+		}
+	}
+	return false
 }
 
 // transformLines runs fn over target split into lines, with CRLF normalized to
@@ -994,18 +1031,39 @@ func mergeToolUv(lines, deps []string) ([]string, bool) {
 // removeManagedToolUv removes the marker-bracketed managed [tool.uv] block, and
 // the one blank line appendManagedBlock puts before a standalone block. A
 // header-less block inside a user [tool.uv] table leaves the table's own keys.
+// A standalone block keeps its [tool.uv] header when user keys follow its end
+// marker, because those keys belong to that table.
 func removeManagedToolUv(lines []string) ([]string, bool) {
 	start, stop, found := markerBounds(lines)
 	if !found {
 		return lines, false
 	}
-	if start > 0 && strings.TrimSpace(lines[start-1]) == "" {
+	var keep []string
+	if slices.ContainsFunc(lines[start:stop+1], func(l string) bool { return headerName(l) == "[tool.uv]" }) &&
+		tableBodyHasKeys(lines, stop+1) {
+		keep = []string{"[tool.uv]"}
+	} else if start > 0 && strings.TrimSpace(lines[start-1]) == "" {
 		start--
 	}
-	out := make([]string, 0, len(lines)-(stop-start+1))
+	out := make([]string, 0, len(lines)-(stop-start+1)+len(keep))
 	out = append(out, lines[:start]...)
+	out = append(out, keep...)
 	out = append(out, lines[stop+1:]...)
 	return out, true
+}
+
+// tableBodyHasKeys reports whether the lines from index from up to the next
+// table header hold anything other than blank lines and comments.
+func tableBodyHasKeys(lines []string, from int) bool {
+	for _, line := range lines[from:] {
+		if tableHeaderRe.MatchString(line) {
+			return false
+		}
+		if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "#") {
+			return true
+		}
+	}
+	return false
 }
 
 // markerAttachedToToolUv reports whether the managed marker region beginning at
