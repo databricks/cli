@@ -1,3 +1,0 @@
-[[Server]]
-Pattern = "POST /api/2.0/workspace/import"
-Response.StatusCode = 500
