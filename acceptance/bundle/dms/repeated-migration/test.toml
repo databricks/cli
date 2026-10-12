@@ -1,0 +1,10 @@
+# Preserve both migration and deployment URLs around the parent's version-line removal rule.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: '
+New = '__CURRENT_DEPLOYMENT_VERSION__: '
+Order = -1
+
+[[Repls]]
+Old = '(?m)^__CURRENT_DEPLOYMENT_VERSION__: '
+New = 'Current Deployment Version: '
+Order = 1

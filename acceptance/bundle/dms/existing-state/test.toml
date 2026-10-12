@@ -1,3 +1,14 @@
 # This test checks config precedence with conflicting environment settings,
 # so it drives DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY instead of the parent's matrix.
 EnvMatrix.DMS = [""]
+
+# Preserve both migration and deployment URLs around the parent's version-line removal rule.
+[[Repls]]
+Old = '(?m)^Current Deployment Version: '
+New = '__CURRENT_DEPLOYMENT_VERSION__: '
+Order = -1
+
+[[Repls]]
+Old = '(?m)^__CURRENT_DEPLOYMENT_VERSION__: '
+New = 'Current Deployment Version: '
+Order = 1
