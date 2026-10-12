@@ -1,0 +1,2 @@
+# Opt in to UUID numbering so distinct UUIDs in the output can be told apart.
+UniqueUUID = true

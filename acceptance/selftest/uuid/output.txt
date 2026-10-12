@@ -1,0 +1,5 @@
+
+=== UniqueUUID = true numbers distinct UUIDs
+first:       [UUID][0]
+second:      [UUID][1]
+first again: [UUID][0]
