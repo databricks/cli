@@ -53,8 +53,14 @@ schema.table (legacy Hive metastore).`,
 				return err
 			}
 
+			checkForMoreRows := root.OutputType(cmd) == flags.OutputText && !cmd.Flags().Changed("limit")
+			queryLimit := limit
+			if checkForMoreRows {
+				queryLimit++
+			}
+
 			client := sqlexec.New(w.StatementExecution, warehouseID)
-			statement := fmt.Sprintf("SELECT * FROM %s LIMIT %d", quoted, limit)
+			statement := fmt.Sprintf("SELECT * FROM %s LIMIT %d", quoted, queryLimit)
 			result, err := client.Execute(ctx, statement)
 			if err != nil {
 				if ctx.Err() != nil {
@@ -64,13 +70,19 @@ schema.table (legacy Hive metastore).`,
 				return err
 			}
 
+			rows := result.Rows
+			hasMoreRows := checkForMoreRows && len(rows) > limit
+			if hasMoreRows {
+				rows = rows[:limit]
+			}
+
 			if root.OutputType(cmd) == flags.OutputText {
 				fmt.Fprintf(cmd.OutOrStdout(), "Table: %s\n", args[0])
 			}
-			if err := render(ctx, cmd, result.Columns, result.Rows); err != nil {
+			if err := render(ctx, cmd, result.Columns, rows); err != nil {
 				return err
 			}
-			if root.OutputType(cmd) == flags.OutputText && !cmd.Flags().Changed("limit") && len(result.Rows) == limit {
+			if hasMoreRows {
 				fmt.Fprintln(cmd.OutOrStdout(), "Use --limit <n> to preview more rows.")
 			}
 			return nil

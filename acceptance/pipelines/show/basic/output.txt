@@ -39,7 +39,7 @@ Error: invalid table name "people": expected catalog.schema.table (Unity Catalog
     "disposition": "INLINE",
     "format": "JSON_ARRAY",
     "on_wait_timeout": "CONTINUE",
-    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 10",
+    "statement": "SELECT * FROM `main`.`default`.`people` LIMIT 11",
     "wait_timeout": "10s",
     "warehouse_id": "wh-test"
   }

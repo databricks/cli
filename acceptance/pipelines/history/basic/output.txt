@@ -1,8 +1,8 @@
 
 === default history by pipeline id
 
->>> [CLI] pipelines history [UUID]
-Updates Summary for pipeline [UUID]:
+>>> [CLI] pipelines history [PIPELINE_ID]
+Updates Summary for pipeline [PIPELINE_ID]:
 Update ID: update-3
    State: COMPLETED
    Creation Time: [TIMESTAMP]
@@ -21,9 +21,9 @@ Update ID: update-1
 
 === json output
 
->>> [CLI] pipelines history [UUID] --output json
+>>> [CLI] pipelines history [PIPELINE_ID] --output json
 {
-  "Key": "[UUID]",
+  "Key": "[PIPELINE_ID]",
   "Updates": [
     {
       "creation_time": 1640995200000,
@@ -48,12 +48,12 @@ Update ID: update-1
 
 === wire request uses pipeline id
 
->>> print_requests.py //api/2.0/pipelines/[UUID]/updates --get
+>>> print_requests.py //api/2.0/pipelines/[PIPELINE_ID]/updates --get
 {
   "method": "GET",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  "path": "/api/2.0/pipelines/[PIPELINE_ID]/updates"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  "path": "/api/2.0/pipelines/[PIPELINE_ID]/updates"
 }
