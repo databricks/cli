@@ -1,13 +1,5 @@
 
-=== Deploy with history enabled and save the remote-state snapshot
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/files...
-Created jobs.foo
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
-
+=== Setup: deploy with history enabled and save the remote-state snapshot (LOG.setup)
 === Unforced debug uses remote state over local serial 999 / wrong lineage; cmp proves the stale cache is replaced
 >>> update_file.py .databricks/bundle/default/resources.json "state_version": 3, "state_version": 3, "serial": 999,
 

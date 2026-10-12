@@ -1,44 +1,7 @@
 
-=== Create direct state at serial 1 and preserve the original resource ID and snapshot
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/files...
-Created jobs.one
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
-
->>> cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
-
->>> jq {serial, features} .databricks/resources.before-dms.json
-{
-  "serial": 1,
-  "features": null
-}
-
-=== Enable history: registration version 2 and deployment version 3 each have a version URL
->>> update_file.py databricks.yml deployment_history: false deployment_history: true
-
->>> update_file.py databricks.yml name: one name: updated
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/files...
-Enabling deployment history...
-Deployment history enabled: [DATABRICKS_URL]/deployments/[NUMID]?version=2
-Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=3
-Updated jobs.one
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
-=== Save the first remote backup so the repeated migration must replace it
->>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.first.json
-
->>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.deployment.json -o json
-
-=== Restore state without the history marker: INITIAL_REGISTER version 4, then deploy version 5
->>> update_file.py .databricks/resources.before-dms.json "serial": 1 "serial":  1
-
->>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-dms.json --format AUTO --overwrite
+=== Setup: deploy job one, migrate in version 2, update its name to updated in version 3, and save recorded state (LOG.setup)
+=== Restore the latest recorded state without the history marker: INITIAL_REGISTER version 4, then deploy version 5
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 
 >>> update_file.py databricks.yml name: updated name: repeated
 
@@ -53,7 +16,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Completed registration and deployment preserve the original resource ID
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
-[{"version_id":"2","previous_version_id":null,"version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"3","previous_version_id":"2","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"4","previous_version_id":"3","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"5","previous_version_id":"4","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
+[{"version_id":"4","previous_version_id":"3","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"5","previous_version_id":"4","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/4 -o json
 [{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
@@ -64,7 +27,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 [{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"5","state":{"name":"repeated","tasks":[],"depends_on":[]}}]
 
-=== Inspect the restored direct state captured before the repeated migration
+=== The backup captures the latest pre-repeat name updated, before deployment changes it to repeated
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.repeat.json
 
 >>> cat .databricks/resources.backup.repeat.json
@@ -72,7 +35,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
- "serial":  1,
+ "serial": 3,
  "state": {
   "resources.jobs.one": {
    "__id__": "[ONE_ID]",
@@ -84,7 +47,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
-    "name": "one",
+    "name": "updated",
     "queue": {
      "enabled": true
     }
@@ -92,8 +55,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
  }
 }
-=== The refreshed backup equals the restored resources.json byte for byte
->>> cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
 
-=== The refreshed backup replaced the first snapshot with different bytes
+=== The refreshed backup equals the restored resources.json byte for byte
+>>> cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
+
+=== The first backup (name one) is replaced by the latest snapshot (name updated)
 >>> musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json

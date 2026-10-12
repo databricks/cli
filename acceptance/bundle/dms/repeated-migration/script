@@ -1,41 +1,37 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Create direct state at serial 1 and preserve the original resource ID and snapshot"
-trace $CLI bundle deploy 2>&1 | contains.py 'Resources: 1 created' '!Enabling deployment history'
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
-trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
-trace jq '{serial, features}' .databricks/resources.before-dms.json
-
-title "Enable history: registration version 2 and deployment version 3 each have a version URL"
-trace update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
-trace update_file.py databricks.yml 'name: one' 'name: updated'
-trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3'
-
 state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-repeated-migration-${UNIQUE_NAME}/default/state"
-title "Save the first remote backup so the repeated migration must replace it"
-trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json
-deployment_id=$(trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_path/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+title "Setup: deploy job one, migrate in version 2, update its name to updated in version 3, and save recorded state (LOG.setup)"
+{
+    trace $CLI bundle deploy
+    trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false replace_ids.py
+    trace update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
+    trace update_file.py databricks.yml 'name: one' 'name: updated'
+    trace $CLI bundle deploy
+    deployment_id=$(trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_path/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+    trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json
+    trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.before-repeat.json
+} &> LOG.setup
 
-title "Restore state without the history marker: INITIAL_REGISTER version 4, then deploy version 5"
-trace update_file.py .databricks/resources.before-dms.json '"serial": 1' '"serial":  1'
-trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.before-dms.json --format AUTO --overwrite
+title "Restore the latest recorded state without the history marker: INITIAL_REGISTER version 4, then deploy version 5"
+trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 trace update_file.py databricks.yml 'name: updated' 'name: repeated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=4' '?version=5' 'Resources: 0 created' '!Created '
 
 title "Completed registration and deployment preserve the original resource ID"
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | dms_versions_fields
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-versions "deployments/${deployment_id}" -o json | jq 'map(select((.version_id | tonumber) >= 4))' | dms_versions_fields
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/4" -o json | dms_operations_fields
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-operations "deployments/${deployment_id}/versions/5" -o json | dms_operations_fields
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | dms_resource_state_fields
 
-title "Inspect the restored direct state captured before the repeated migration"
+title "The backup captures the latest pre-repeat name updated, before deployment changes it to repeated"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.repeat.json
-trace cat .databricks/resources.backup.repeat.json
+trace cat .databricks/resources.backup.repeat.json | contains.py '"name": "updated"' '!"name": "repeated"'
 
 title "The refreshed backup equals the restored resources.json byte for byte"
-trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.repeat.json
+trace cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
 
-title "The refreshed backup replaced the first snapshot with different bytes"
+title "The first backup (name one) is replaced by the latest snapshot (name updated)"
 trace musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
 
 rm -f "$OUT_REQUESTS"

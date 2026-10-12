@@ -1,9 +1,11 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-resolution-${UNIQUE_NAME}/default/state"
 
-title "Deploy with history enabled and save the remote-state snapshot"
-trace $CLI bundle deploy
-trace cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
+title "Setup: deploy with history enabled and save the remote-state snapshot (LOG.setup)"
+{
+    trace $CLI bundle deploy
+    trace cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
+} &> LOG.setup
 
 title "Unforced debug uses remote state over local serial 999 / wrong lineage; cmp proves the stale cache is replaced"
 trace update_file.py .databricks/bundle/default/resources.json '"state_version": 3,' '"state_version": 3, "serial": 999,'
