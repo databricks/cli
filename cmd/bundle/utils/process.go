@@ -386,7 +386,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 			// Stamp the deployment and the version this run records onto every job and pipeline so
 			// the plan carries them. The deployment version follows the last recorded version or
-			// the bind-only migration version; deployment_id does not exist until a first deploy
+			// the initial registration version; deployment_id does not exist until a first deploy
 			// creates it, so it is left off here and the deploy phase stamps the created id.
 			lastVersionID, err := parseLastVersionID(dmsDeployment)
 			if err != nil {

@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// Migrate records every resource from the open resources.json state in a bind-only version.
+// Migrate records every resource from the open resources.json state in an initial registration version.
 // The caller must hold the deployment lock and have created the DMS deployment.
 func Migrate(ctx context.Context, db *dstate.DeploymentState) error {
 	keys := slices.Sorted(maps.Keys(db.Data.State))
@@ -32,7 +32,7 @@ func Migrate(ctx context.Context, db *dstate.DeploymentState) error {
 		states[i] = state
 		operations[i] = bundledeployments.StagedOperation{
 			ResourceKey: strings.TrimPrefix(key, dms.StatePrefix),
-			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeInitialRegister,
 		}
 	}
 
