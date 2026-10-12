@@ -473,7 +473,7 @@ func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *p
 	}
 	if existingProfile != nil &&
 		existingProfile.AccountID == authArguments.AccountID &&
-		(existingProfile.WorkspaceID == "" || existingProfile.WorkspaceID == auth.WorkspaceIDNone) {
+		(existingProfile.WorkspaceID == "" || existingProfile.WorkspaceID == profile.WorkspaceIDNone) {
 		return false
 	}
 	return true
