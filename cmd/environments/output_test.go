@@ -156,10 +156,13 @@ func TestActivateHintQuotesShellCharacters(t *testing.T) {
 	// UV_PROJECT_ENVIRONMENT can name a folder with spaces or shell characters.
 	if runtime.GOOS == "windows" {
 		assert.Equal(t, `"my env\Scripts\activate"`, activateHint("my env"))
+		assert.Equal(t, `"R&D\Scripts\activate"`, activateHint("R&D"))
 		return
 	}
 	assert.Equal(t, `source 'my env/bin/activate'`, activateHint("my env"))
 	assert.Equal(t, `source '/tmp/env$1/bin/activate'`, activateHint("/tmp/env$1"))
+	// A leading dash would be read as an option.
+	assert.Equal(t, `source ./-env/bin/activate`, activateHint("-env"))
 }
 
 func TestActivateHint(t *testing.T) {

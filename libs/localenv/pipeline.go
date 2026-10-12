@@ -334,35 +334,29 @@ func (p *Pipeline) run(ctx context.Context) error {
 // ProjectDir ("" outside a workspace; see discoverWorkspaceRoot).
 func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error {
 	name := env.Get(ctx, EnvUvProjectEnvironment)
-	if name == "" {
+	switch {
+	case name == "":
 		p.venv = filepath.Join(venvBase, venvDir)
 		p.venvRel = filepath.Join(rootRel, venvDir)
-		return nil
-	}
-	// The value is used as uv uses it: not cleaned, because uv follows a symlink
-	// in it before it applies "..". Only a trailing separator is dropped.
-	name = strings.TrimRight(name, `/\`)
-	// uv uses an absolute value as is. On Windows a rooted path such as \envs\x
-	// is not absolute, and uv keeps only the drive of the root for it. An
-	// absolute venv is reported as is: a relative path cannot cross drives.
-	if filepath.IsAbs(name) || strings.HasPrefix(filepath.ToSlash(name), "/") {
-		if !filepath.IsAbs(name) {
-			name = filepath.VolumeName(venvBase) + name
+	case filepath.IsAbs(name):
+		// uv uses an absolute value as is. It is reported as is too: a relative
+		// path cannot cross drives.
+		p.venv = filepath.Clean(name)
+		p.venvRel = p.venv
+	case strings.HasPrefix(filepath.ToSlash(name), "/"):
+		// A Windows rooted path such as \envs\x: uv keeps only the drive of the
+		// root for it.
+		p.venv = filepath.Clean(filepath.VolumeName(venvBase) + name)
+		p.venvRel = p.venv
+	default:
+		// uv joins a relative value to the symlink-resolved root, so ".." in it
+		// climbs the real folders.
+		resolvedBase, err := filepath.EvalSymlinks(venvBase)
+		if err != nil {
+			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
 		}
-		p.venv = name
-		p.venvRel = name
-		return nil
-	}
-	// uv joins a relative value to the symlink-resolved root, so ".." in it
-	// climbs the real folders.
-	resolvedBase, err := filepath.EvalSymlinks(venvBase)
-	if err != nil {
-		return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
-	}
-	p.venv = resolvedBase + string(filepath.Separator) + name
-	p.venvRel = name
-	if rootRel != "" {
-		p.venvRel = rootRel + string(filepath.Separator) + name
+		p.venv = filepath.Join(resolvedBase, name)
+		p.venvRel = filepath.Join(rootRel, name)
 	}
 	return nil
 }
@@ -793,10 +787,10 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	p.markOK(PhaseValidate, detail)
 
 	// venvPath is reported relative to the project root (spec §6.1): the VS Code
-	// consumer already knows the project root (it sets the working directory when
-	// it shells out). It is absolute only when UV_PROJECT_ENVIRONMENT is absolute.
-	// For a standalone project this is ".venv"; for a workspace member it is computed between the symlink-resolved
-	// folders (see discoverWorkspaceRoot), for example "../../.venv".
+	// consumer already knows the project root (it sets the working directory
+	// when it shells out). By default it is ".venv", or a path such as
+	// "../../.venv" for a workspace member (see discoverWorkspaceRoot); it is
+	// absolute only when UV_PROJECT_ENVIRONMENT is absolute.
 	p.res.VenvPath = filepath.ToSlash(p.venvRel)
 	if p.res.Resolved != nil {
 		if managed {

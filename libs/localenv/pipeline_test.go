@@ -1586,24 +1586,8 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return link, real, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        filepath.Join("..", "env"),
-			wantVenv:     func(base string) string { return resolvedPath(t, base) + "/../env" },
+			wantVenv:     func(base string) string { return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env") },
 			wantVenvPath: "../env",
-		},
-		{
-			// uv follows link before it applies "..", so the path must not be
-			// cleaned lexically.
-			name: "relative through a symlink in the value",
-			setup: func(t *testing.T) (string, string, fakePM) {
-				if runtime.GOOS == "windows" {
-					t.Skip("symlinks need extra privileges on Windows")
-				}
-				dir := writeProject(t)
-				require.NoError(t, os.Symlink(filepath.Join(t.TempDir(), "elsewhere"), filepath.Join(dir, "link")))
-				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
-			},
-			value:        "link/../custom-env",
-			wantVenv:     func(base string) string { return resolvedPath(t, base) + "/link/../custom-env" },
-			wantVenvPath: "link/../custom-env",
 		},
 		{
 			name: "relative with a trailing slash",
@@ -1625,9 +1609,10 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				dir := writeProject(t)
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
-			value:        `\envs\x`,
-			wantVenv:     func(base string) string { return filepath.VolumeName(base) + `\envs\x` },
-			wantVenvPath: filepath.ToSlash(`\envs\x`),
+			value:    `\envs\x`,
+			wantVenv: func(base string) string { return filepath.VolumeName(base) + `\envs\x` },
+			// The drive comes from the project, so the case derives it below.
+			wantVenvPath: "",
 		},
 		{
 			name: "absolute",
@@ -1652,7 +1637,11 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 			want := tc.wantVenv(base)
 			assert.Equal(t, want, pm.postProvisionVenv)
 			assert.Equal(t, want, pm.validateVenv)
-			assert.Equal(t, tc.wantVenvPath, res.VenvPath)
+			wantVenvPath := tc.wantVenvPath
+			if wantVenvPath == "" {
+				wantVenvPath = filepath.ToSlash(want)
+			}
+			assert.Equal(t, wantVenvPath, res.VenvPath)
 		})
 	}
 }

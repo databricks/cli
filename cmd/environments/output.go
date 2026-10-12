@@ -156,15 +156,20 @@ func activateHint(venvPath string) string {
 	if runtime.GOOS == "windows" {
 		// venvPath is in slash form; cmd.exe reads "/" as a switch character, so a
 		// relative path such as ../../.venv needs backslashes.
-		return quoteIfSpaced(filepath.FromSlash(venvPath) + `\Scripts\activate`)
+		return quoteForCmd(filepath.FromSlash(venvPath) + `\Scripts\activate`)
+	}
+	// A leading dash would be read as an option of source.
+	if strings.HasPrefix(venvPath, "-") {
+		venvPath = "./" + venvPath
 	}
 	return "source " + shellquote.BashArg(venvPath+"/bin/activate")
 }
 
-// quoteIfSpaced wraps path in double quotes when it holds a space, so cmd.exe
-// reads it as one argument (UV_PROJECT_ENVIRONMENT can name such a folder).
-func quoteIfSpaced(path string) string {
-	if strings.ContainsAny(path, " \t") {
+// quoteForCmd wraps path in double quotes when cmd.exe would otherwise split
+// it or read a special character in it (UV_PROJECT_ENVIRONMENT can name such a
+// folder).
+func quoteForCmd(path string) string {
+	if strings.ContainsAny(path, " \t&^()<>|,;=!") {
 		return `"` + path + `"`
 	}
 	return path
