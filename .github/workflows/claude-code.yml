@@ -1,0 +1,65 @@
+name: Claude Code
+
+# Automated PR reviews (review-only — no interactive @claude / assist).
+#
+# The actual Claude Code execution runs in eng-dev-ecosystem on
+# protected runners whose IPs are allowlisted by the Databricks
+# account IP ACL. This workflow is a thin trigger that dispatches
+# to eng-dev-ecosystem via the DECO workflow trigger GitHub App.
+
+on:
+  # Triggers an automatic review when a PR is first opened.
+  pull_request:
+    types: [opened]
+
+jobs:
+  # Automatic review on PR open.
+  # Restrict to org members/owners to prevent untrusted users (e.g. external
+  # fork PRs) from consuming model serving resources. See:
+  # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+  review:
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.head.repo.fork &&
+      contains(fromJson('["MEMBER","OWNER"]'), github.event.pull_request.author_association)
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    timeout-minutes: 30
+    environment: test-trigger-is
+    permissions:
+      contents: read
+
+    steps:
+      - name: Generate GitHub App token
+        id: token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: databricks-eng
+          repositories: eng-dev-ecosystem
+
+      - name: Trigger Claude Code review
+        run: |
+          gh workflow run cli-claude-code.yml \
+            -R databricks-eng/eng-dev-ecosystem \
+            --ref main \
+            -F pull_request_number=${{ github.event.pull_request.number }}
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+
+      - name: Track remote run
+        run: |
+          sleep 10
+          RUN_ID=$(gh run list -R databricks-eng/eng-dev-ecosystem \
+            --workflow cli-claude-code.yml --limit 1 \
+            --json databaseId -q '.[0].databaseId')
+          echo "## Claude Code Review" >> "$GITHUB_STEP_SUMMARY"
+          echo "[View run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+          gh run watch "$RUN_ID" -R databricks-eng/eng-dev-ecosystem --exit-status
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
