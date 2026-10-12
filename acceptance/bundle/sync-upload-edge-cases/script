@@ -71,11 +71,7 @@ trace MSYS_NO_PATHCONV=1 $CLI workspace list -o json "$remote_files" |
   jq 'sort_by(.path) | .[] | {name: (.path | sub(".*/"; "")), object_type, language}'
 
 title "uploaded paths from each multipart POST /workspace/import (sorted)"
-trace jq -rs '
-  map(select(.path == "/api/2.0/workspace/import")) |
-  map(.body.multipart_form.path) |
-  sort | .[]
-' "$OUT_REQUESTS"
+trace print_workspace_imports | sort
 
 title "every upload set format=AUTO"
 trace jq -rs '

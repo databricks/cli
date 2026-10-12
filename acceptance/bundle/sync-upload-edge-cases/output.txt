@@ -73,11 +73,7 @@ Uploaded with spaces.txt
 }
 
 === uploaded paths from each multipart POST /workspace/import (sorted)
->>> jq -rs 
-  map(select(.path == "/api/2.0/workspace/import")) |
-  map(.body.multipart_form.path) |
-  sort | .[]
- [OUTPUT_DIR]/out.requests.txt
+>>> print_workspace_imports
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/.gitignore
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/dashboard.lvdash.json
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/databricks.yml

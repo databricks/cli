@@ -29,7 +29,7 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 ]
 
 === Expecting 1 wheel to be uploaded
->>> jq -r .body.multipart_form.path | strings [OUTPUT_DIR]/out.requests.txt
+>>> print_workspace_imports
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.gitignore
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
@@ -62,7 +62,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
->>> jq -r .body.multipart_form.path | strings [OUTPUT_DIR]/out.requests.txt
+>>> print_workspace_imports
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py
@@ -92,7 +92,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
->>> jq -r .body.multipart_form.path | strings [OUTPUT_DIR]/out.requests.txt
+>>> print_workspace_imports
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl
 /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
