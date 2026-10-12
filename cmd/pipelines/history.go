@@ -2,7 +2,6 @@ package pipelines
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -11,10 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
-
-var pipelineIDRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 func historyCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -41,11 +39,18 @@ func historyCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var key, pipelineId string
 		var w *databricks.WorkspaceClient
-		if len(args) == 1 && pipelineIDRegex.MatchString(args[0]) {
+		if len(args) == 1 {
+			id, err := uuid.Parse(args[0])
+			if err == nil {
+				pipelineId = id.String()
+			}
+		}
+
+		if pipelineId != "" {
+			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 			if err := root.MustWorkspaceClient(cmd, args); err != nil {
 				return err
 			}
-			pipelineId = args[0]
 			key = pipelineId
 			w = cmdctx.WorkspaceClient(cmd.Context())
 		} else {
