@@ -191,7 +191,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if !winner.IsLocal {
-		log.Info(ctx, "Using remote resource state.")
+		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
 
 		localStatePath := localPathTerraform
 		if winner.Engine == engine.EngineDirect {
