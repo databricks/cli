@@ -484,8 +484,10 @@ func TestPostProvisionAndValidateRunInProjectDir(t *testing.T) {
 	venv := filepath.Join("p", ".venv")
 	ctx, stub := process.WithStub(t.Context())
 	var dirs []string
+	var args [][]string
 	stub.WithCallback(func(cmd *exec.Cmd) error {
 		dirs = append(dirs, cmd.Dir)
+		args = append(args, cmd.Args)
 		// The validate probe parses its prefixed lines from stdout.
 		_, err := cmd.Stdout.Write([]byte("PYVER:3.12\nDBCVER:\nPYSPARKVER:\nDBCIMPORT:\n"))
 		return err
@@ -496,4 +498,8 @@ func TestPostProvisionAndValidateRunInProjectDir(t *testing.T) {
 	_, err := m.Validate(ctx, project, venv)
 	require.NoError(t, err)
 	assert.Equal(t, []string{project, project}, dirs)
+	// Both commands use the interpreter of the venv folder, not of the project.
+	require.Len(t, args, 2)
+	assert.Contains(t, args[0], venvPython(venv), "pip seed")
+	assert.Equal(t, venvPython(venv), args[1][0], "validate probe")
 }
