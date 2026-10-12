@@ -1,0 +1,7 @@
+# Let the two deploy lock requests through, then inject a single 504 on the next import-file request, which is a file upload. Uploads overwrite, so they are retried and the deploy succeeds.
+fault.py "POST /api/2.0/workspace-files/import-file/*" 504 2 1
+
+$CLI bundle deploy
+
+# databricks.yml is the only file. Two POST requests for it should appear: the initial 504 and the successful retry.
+print_requests.py //api/2.0/workspace-files/import-file | jq -r .path | grep '/files/'

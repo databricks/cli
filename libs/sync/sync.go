@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -39,6 +40,10 @@ type SyncOptions struct {
 	SnapshotBasePath string
 
 	PollInterval time.Duration
+
+	// RetryInterval is the pause between attempts to upload a file after a transient
+	// server error. Defaults to retry.DefaultInterval when zero.
+	RetryInterval time.Duration
 
 	WorkspaceClient *databricks.WorkspaceClient
 
@@ -114,10 +119,15 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	filer, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}
+	retryInterval := opts.RetryInterval
+	if retryInterval == 0 {
+		retryInterval = retry.DefaultInterval
+	}
+	filer := retry.Filer(workspaceFiler, retryInterval)
 
 	var notifier EventNotifier
 	outputWaitGroup := &stdsync.WaitGroup{}

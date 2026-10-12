@@ -10,11 +10,13 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -69,7 +71,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
-			return UploadFile(errCtx, source, u.client)
+			return UploadFile(errCtx, source, retry.Filer(u.client, bundleenv.RetryInterval(errCtx, retry.DefaultInterval)))
 		})
 	}
 

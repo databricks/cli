@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -65,7 +66,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	_, err := retryWith(ctx, func(err error) bool {
 		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
 		_, ok := errors.AsType[*dresources.RetrySafeError](err)
-		return ok && isTransient(ctx, err)
+		return ok && retry.IsTransient(ctx, err)
 	}, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
