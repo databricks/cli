@@ -1271,3 +1271,35 @@ func TestRenderFreshPyprojectSkipDBConnectOmitsDBConnect(t *testing.T) {
 	assert.Contains(t, s, "constraint-dependencies")
 	requireValidTOML(t, out)
 }
+
+func TestMergeManagedSkipToolUvLeavesBlockAlone(t *testing.T) {
+	in := []byte("[project]\nname = \"a\"\nrequires-python = \">=3.10\"\n")
+	c := Constraints{RequiresPython: ">=3.12", ConstraintDeps: []string{"numpy==1.26.4"}}
+	out, regions, err := MergeManaged(in, c, MergeOptions{SkipToolUv: true})
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `requires-python = ">=3.12"`)
+	assert.NotContains(t, string(out), "constraint-dependencies")
+	assert.NotContains(t, regions, regionToolUv)
+}
+
+func TestMergeToolUvBlockVirtualRoot(t *testing.T) {
+	in := []byte("[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n")
+	out, changed, err := MergeToolUvBlock(in, []string{"numpy==1.26.4"})
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Contains(t, string(out), managedMarkerStart)
+	assert.Contains(t, string(out), `"numpy==1.26.4"`)
+	assert.Contains(t, string(out), "[tool.uv.workspace]")
+
+	again, changed2, err := MergeToolUvBlock(out, []string{"numpy==1.26.4"})
+	require.NoError(t, err)
+	assert.False(t, changed2)
+	assert.Equal(t, out, again)
+}
+
+func TestMergeToolUvBlockKeepsCRLF(t *testing.T) {
+	in := []byte("[tool.uv.workspace]\r\nmembers = [\"a\"]\r\n")
+	out, _, err := MergeToolUvBlock(in, []string{"x==1"})
+	require.NoError(t, err)
+	assert.NotContains(t, strings.ReplaceAll(string(out), "\r\n", ""), "\n")
+}

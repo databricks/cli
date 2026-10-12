@@ -851,7 +851,7 @@ func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
 
 	p := &Pipeline{ProjectDir: dir, res: &Result{Phases: initialPhases()}}
-	err := p.applyMerge(t.Context(), []byte("merged"), false)
+	err := p.applyMerge(t.Context(), []byte("merged"), nil, false)
 	require.Error(t, err)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
@@ -1079,13 +1079,13 @@ func TestApplyMergeSameInstantBackupsGetUniqueNames(t *testing.T) {
 	}
 
 	// First modifying apply: backs up "current-1" under a timestamped name.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), nil, false))
 	first := p.res.BackupPath
 	require.NotEmpty(t, first)
 
 	// Second modifying apply at the SAME instant: backs up "merged-1" but must not
 	// collide with or overwrite the first timestamped backup.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), nil, false))
 	second := p.res.BackupPath
 	require.NotEmpty(t, second)
 

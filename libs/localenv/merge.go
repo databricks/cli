@@ -113,6 +113,11 @@ type MergeOptions struct {
 	// databricks-connect dependency unmanaged: an existing pin is preserved and none
 	// is injected or asserted.
 	SkipDBConnect bool
+	// SkipToolUv leaves the [tool.uv] constraint block of this file unmanaged. It
+	// is set for a uv workspace member, whose constraint block is written to the
+	// workspace root instead (uv reads constraint-dependencies only from the root).
+	// requires-python is still managed in the member.
+	SkipToolUv bool
 }
 
 // MergeManaged applies the managed transforms to target, preserving every other
@@ -121,6 +126,79 @@ type MergeOptions struct {
 // back in produces identical bytes. opts selects which axes are managed; the
 // environment region is always reconciled.
 func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byte, regions []string, err error) {
+	merged, err = transformLines(target, func(lines []string) ([]string, error) {
+		// requires-python needs a [project] table to hold it; without one the merge
+		// would silently drop the pin, so fail loudly instead. Only enforced when
+		// constraints are managed — under SkipConstraints there is no requires-python to
+		// write, so a [project]-less file (e.g. one with only dependency groups) is
+		// merged for its other axes rather than rejected.
+		if !opts.SkipConstraints {
+			if _, _, ok := tableBounds(lines, "[project]"); !ok {
+				return nil, errNoProjectTable
+			}
+		}
+
+		if !opts.SkipConstraints {
+			var rpChanged bool
+			lines, rpChanged = mergeRequiresPython(lines, c.RequiresPython)
+			if rpChanged {
+				regions = append(regions, regionRequiresPython)
+			}
+		}
+
+		if !opts.SkipDBConnect {
+			var dbcChanged bool
+			lines, _, dbcChanged = mergeDatabricksConnect(lines, c.DatabricksConnect)
+			// In the install flow, after the managed pin lands in the dev group, remove any
+			// databricks-connect pin elsewhere that is disjoint from it — the pins that would
+			// otherwise make uv unsatisfiable. Compatible pins are left alone. An empty pin
+			// (an artifact without databricks-connect) is a data no-op, distinct from the
+			// SkipDBConnect intent handled by the gate above.
+			strayChanged := false
+			if c.DatabricksConnect != "" {
+				lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
+			}
+			if dbcChanged || strayChanged {
+				regions = append(regions, regionDatabricksConnect)
+			}
+		}
+
+		lines, envChanged := mergeDatabricksEnvironment(lines, c.EnvironmentVersion)
+		if envChanged {
+			regions = append(regions, regionDatabricksEnvironment)
+		}
+
+		if !opts.SkipConstraints && !opts.SkipToolUv {
+			var uvChanged bool
+			lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
+			if uvChanged {
+				regions = append(regions, regionToolUv)
+			}
+		}
+		return lines, nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return merged, regions, nil
+}
+
+// MergeToolUvBlock reconciles only the managed [tool.uv] constraint-dependencies
+// block of target, preserving every other byte. It is used for the root
+// pyproject.toml of a uv workspace, which may be a virtual root with no [project]
+// table. changed reports whether the block differs from the input.
+func MergeToolUvBlock(target []byte, deps []string) (merged []byte, changed bool, err error) {
+	merged, err = transformLines(target, func(lines []string) ([]string, error) {
+		var out []string
+		out, changed = mergeToolUv(lines, deps)
+		return out, nil
+	})
+	return merged, changed, err
+}
+
+// transformLines runs fn over target split into lines, with CRLF normalized to
+// LF and multiline strings protected, and restores both on the way out.
+func transformLines(target []byte, fn func([]string) ([]string, error)) ([]byte, error) {
 	s := string(target)
 
 	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on
@@ -136,64 +214,18 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 
 	protected, restore, err := protectMultilineStrings(s)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	lines := strings.Split(protected, "\n")
-
-	// requires-python needs a [project] table to hold it; without one the merge
-	// would silently drop the pin, so fail loudly instead. Only enforced when
-	// constraints are managed — under SkipConstraints there is no requires-python to
-	// write, so a [project]-less file (e.g. one with only dependency groups) is
-	// merged for its other axes rather than rejected.
-	if !opts.SkipConstraints {
-		if _, _, ok := tableBounds(lines, "[project]"); !ok {
-			return nil, nil, errNoProjectTable
-		}
-	}
-
-	if !opts.SkipConstraints {
-		var rpChanged bool
-		lines, rpChanged = mergeRequiresPython(lines, c.RequiresPython)
-		if rpChanged {
-			regions = append(regions, regionRequiresPython)
-		}
-	}
-
-	if !opts.SkipDBConnect {
-		var dbcChanged bool
-		lines, _, dbcChanged = mergeDatabricksConnect(lines, c.DatabricksConnect)
-		// In the install flow, after the managed pin lands in the dev group, remove any
-		// databricks-connect pin elsewhere that is disjoint from it — the pins that would
-		// otherwise make uv unsatisfiable. Compatible pins are left alone. An empty pin
-		// (an artifact without databricks-connect) is a data no-op, distinct from the
-		// SkipDBConnect intent handled by the gate above.
-		strayChanged := false
-		if c.DatabricksConnect != "" {
-			lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
-		}
-		if dbcChanged || strayChanged {
-			regions = append(regions, regionDatabricksConnect)
-		}
-	}
-
-	lines, envChanged := mergeDatabricksEnvironment(lines, c.EnvironmentVersion)
-	if envChanged {
-		regions = append(regions, regionDatabricksEnvironment)
-	}
-
-	if !opts.SkipConstraints {
-		var uvChanged bool
-		lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
-		if uvChanged {
-			regions = append(regions, regionToolUv)
-		}
+	lines, err := fn(strings.Split(protected, "\n"))
+	if err != nil {
+		return nil, err
 	}
 
 	out := restore(strings.Join(lines, "\n"))
 	if crlf {
 		out = strings.ReplaceAll(out, "\n", "\r\n")
 	}
-	return []byte(out), regions, nil
+	return []byte(out), nil
 }
 
 // headerName returns the bracketed table name of a TOML table-header line (e.g.

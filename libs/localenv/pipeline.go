@@ -81,6 +81,10 @@ type Pipeline struct {
 	// Result.VenvPath. Set in preflight.
 	venvRel string
 
+	// workspaceRoot is the uv workspace root when ProjectDir is a workspace
+	// member, else "". Set in preflight.
+	workspaceRoot string
+
 	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
 	// in tests so backup names are deterministic.
 	nowFn func() time.Time
@@ -181,8 +185,6 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	p.venvRel = venvDir
-	p.venv = filepath.Join(p.ProjectDir, p.venvRel)
 	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
@@ -190,9 +192,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	//   - PackageManager.EnsureAvailable may install the manager (uv) if missing.
 	// Both exist to fail fast before real writes, which --dry-run never performs, so
 	// they are skipped in a dry run. Neither result is needed to compute the plan.
-	if p.Check {
-		p.markOK(PhasePreflight, "check")
-	} else {
+	detail := "check"
+	if !p.Check {
 		if err := ensureWritable(p.ProjectDir); err != nil {
 			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
 		}
@@ -200,8 +201,26 @@ func (p *Pipeline) run(ctx context.Context) error {
 		if err != nil {
 			return p.fail(PhasePreflight, false, asPipelineError(err, ErrUvMissing, "%s unavailable", p.PM.Name()))
 		}
-		p.markOK(PhasePreflight, p.PM.Name()+" "+version)
+		detail = p.PM.Name() + " " + version
 	}
+	// A uv workspace member shares the venv at the workspace root, where uv sync
+	// creates it, and keeps its constraint block in the root pyproject.toml, the
+	// only file uv reads constraint-dependencies from.
+	// https://docs.astral.sh/uv/concepts/projects/workspaces/
+	p.workspaceRoot = p.discoverWorkspaceRoot(ctx)
+	venvBase := p.ProjectDir
+	if p.workspaceRoot != "" {
+		venvBase = p.workspaceRoot
+		p.res.WorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
+		if !p.Check {
+			if err := ensureWritable(p.workspaceRoot); err != nil {
+				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "workspace root %s is not writable", filepath.ToSlash(p.workspaceRoot)))
+			}
+		}
+	}
+	p.venv = filepath.Join(venvBase, venvDir)
+	p.venvRel = venvDir
+	p.markOK(PhasePreflight, detail)
 
 	// Phase: resolve — compute target → environment key.
 	p.report(ctx, PhaseResolve)
@@ -247,7 +266,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// The serverless environment version (empty for cluster targets) is written
 	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
+	mergedBytes, root, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
 	if err != nil {
 		return err
 	}
@@ -262,7 +281,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Apply the merged content to disk (backup first for existing projects).
-	if err := p.applyMerge(ctx, mergedBytes, greenfield); err != nil {
+	if err := p.applyMerge(ctx, mergedBytes, root, greenfield); err != nil {
 		return err
 	}
 	p.markOK(PhaseMerge, "")
@@ -385,7 +404,7 @@ func (p *Pipeline) plannedBackupName(dir string) (string, error) {
 // --dry-run). opts selects which managed axes are written. envVersion is the
 // serverless environment version to write into [tool.databricks.environment], or
 // "" for a cluster target.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, greenfield bool, err error) {
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, root *rootMerge, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 
 	// The merge base is the live pyproject.toml, not the backup. MergeManaged
@@ -406,7 +425,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// after detectManager saw it) must not be misread as greenfield — that
 		// would render a fresh file and overwrite the user's project with no
 		// backup. Fail instead of destroying unrecoverable state (invariant 2).
-		return nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
+		return nil, nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
 	}
 	greenfield = baseBytes == nil
 
@@ -420,6 +439,12 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	// from the target surfaces as a normal E_PROVISION, not a guessed alternative.
 	effective := *c
 	effective.EnvironmentVersion = envVersion
+
+	// A workspace member's constraint block goes to the workspace root (see
+	// planRootMerge), so the member merge leaves its own [tool.uv] alone. A
+	// greenfield project is never a member (discoverWorkspaceRoot), so
+	// RenderFreshPyproject needs no such option.
+	opts.SkipToolUv = p.workspaceRoot != ""
 
 	var changedRegions []string
 	if greenfield {
@@ -440,7 +465,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	} else {
 		merged, changedRegions, err = MergeManaged(baseBytes, effective, opts)
 		if err != nil {
-			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
+			return nil, nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
 		// Surface merge-quality warnings (overridden, consolidated, or duplicated pins,
 		// conflicting user constraints) from the pre-merge file. Greenfield has nothing of
@@ -452,12 +477,24 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective, opts), opts)...)
 	}
 
+	root, err = p.planRootMerge(c.ConstraintDeps, opts)
+	if err != nil {
+		return nil, nil, greenfield, err
+	}
+	if root != nil && !bytes.Equal(root.base, root.merged) {
+		changedRegions = append(changedRegions, regionToolUv)
+	}
+
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
 	// not need the diff.
 	if p.Check {
+		diff := pyprojectDiff(pyprojectFile, baseBytes, merged, greenfield)
+		if root != nil {
+			diff += pyprojectDiff("workspace root "+pyprojectFile, root.base, root.merged, false)
+		}
 		plan := &Plan{
 			WouldWrite:         filepath.ToSlash(pyproject),
-			Diff:               pyprojectDiff(pyprojectFile, baseBytes, merged, greenfield),
+			Diff:               diff,
 			ChangedRegions:     changedRegions,
 			WouldInstallPython: pyMinor,
 		}
@@ -468,9 +505,49 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
+		if root != nil {
+			plan.WouldWriteWorkspace = filepath.ToSlash(root.path)
+			if !bytes.Equal(root.base, root.merged) {
+				if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
+					plan.WouldBackupWorkspace = filepath.ToSlash(backupName)
+				}
+			}
+		}
 		p.res.Plan = plan
 	}
-	return merged, greenfield, nil
+	return merged, root, greenfield, nil
+}
+
+// rootMerge is the planned change to the workspace root pyproject.toml.
+type rootMerge struct {
+	path   string
+	base   []byte
+	merged []byte
+}
+
+// planRootMerge merges the constraint block into the workspace root
+// pyproject.toml. It returns nil when there is no workspace root or when
+// constraints are not managed (--no-constraints).
+func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, error) {
+	if p.workspaceRoot == "" || opts.SkipConstraints {
+		return nil, nil
+	}
+	path := filepath.Join(p.workspaceRoot, pyprojectFile)
+	base, err := os.ReadFile(path)
+	if err != nil {
+		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "read workspace root pyproject.toml %s failed", filepath.ToSlash(path)))
+	}
+	merged, changed, err := MergeToolUvBlock(base, deps)
+	if err != nil {
+		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge workspace root constraints failed"))
+	}
+	if changed && bytes.Contains(base, []byte(managedMarkerStart)) {
+		p.res.Warnings = append(p.res.Warnings, Warning{
+			Code:    WarnWorkspaceConstraintsReplaced,
+			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),
+		})
+	}
+	return &rootMerge{path: path, base: base, merged: merged}, nil
 }
 
 // pyprojectDiff renders the unified diff the --dry-run plan reports for one
@@ -492,7 +569,7 @@ func pyprojectDiff(label string, base, merged []byte, greenfield bool) string {
 
 // applyMerge writes the merged bytes to disk, backing up the current
 // pyproject.toml first. From the backup copy onward, disk has been mutated.
-func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield bool) error {
+func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootMerge, greenfield bool) error {
 	backup, mutated, perr := p.writePyproject(p.pyprojectPath(), mergedBytes, greenfield)
 	// A backup written before a failed write is still reported, so the consumer
 	// can restore from it.
@@ -501,6 +578,17 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 	}
 	if perr != nil {
 		return p.fail(PhaseMerge, mutated, perr)
+	}
+	if root != nil {
+		// The member is written first; if the root write fails, disk is already
+		// mutated, so the failure always reports diskMutated.
+		backup, _, perr := p.writePyproject(root.path, root.merged, false)
+		if backup != "" {
+			p.res.WorkspaceBackupPath = filepath.ToSlash(backup)
+		}
+		if perr != nil {
+			return p.fail(PhaseMerge, true, perr)
+		}
 	}
 	return nil
 }

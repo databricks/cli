@@ -213,10 +213,14 @@ type ResolvedInfo struct {
 // Plan describes the changes a --dry-run run would apply (spec §6.3).
 // ChangedRegions is retained for text output only and is not serialized.
 type Plan struct {
-	WouldWrite         string `json:"wouldWrite"`
-	WouldBackup        string `json:"wouldBackup,omitempty"`
-	WouldInstallPython string `json:"wouldInstallPython,omitempty"`
-	Diff               string `json:"diff"`
+	WouldWrite  string `json:"wouldWrite"`
+	WouldBackup string `json:"wouldBackup,omitempty"`
+	// WouldWriteWorkspace and WouldBackupWorkspace name the workspace root
+	// pyproject.toml and its planned backup, for a uv workspace member only.
+	WouldWriteWorkspace  string `json:"wouldWriteWorkspace,omitempty"`
+	WouldBackupWorkspace string `json:"wouldBackupWorkspace,omitempty"`
+	WouldInstallPython   string `json:"wouldInstallPython,omitempty"`
+	Diff                 string `json:"diff"`
 
 	ChangedRegions []string `json:"-"`
 }
@@ -293,6 +297,11 @@ const (
 	// the user's own pyproject pins it (constraints-only mode) — so it agrees with the
 	// validate hard-fail, which keys on the installed venv rather than the mode.
 	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
+	// WarnWorkspaceConstraintsReplaced: the project is a uv workspace member and
+	// the workspace root already had a managed constraint block with different
+	// pins (for example from another bundle's run). The new pins replace them, and
+	// every member of the workspace now resolves against them.
+	WarnWorkspaceConstraintsReplaced = "W_WORKSPACE_CONSTRAINTS_REPLACED"
 )
 
 // Result is the full outcome of a sync run and the root of the --json object
@@ -303,16 +312,20 @@ const (
 // a distinction that trips JSON consumers and golden diffs. Construct a Result
 // with NewResult (or otherwise seed both) rather than a bare Result{} literal.
 type Result struct {
-	SchemaVersion    int              `json:"schemaVersion"`
-	Command          string           `json:"command"`
-	OK               bool             `json:"ok"`
-	Mode             string           `json:"mode"`
-	DryRun           bool             `json:"dryRun"`
-	Compute          *ComputeInfo     `json:"compute,omitempty"`
-	Resolved         *ResolvedInfo    `json:"resolved,omitempty"`
-	Greenfield       bool             `json:"greenfield"`
-	Plan             *Plan            `json:"plan,omitempty"`
-	VenvPath         string           `json:"venvPath,omitempty"`
+	SchemaVersion int           `json:"schemaVersion"`
+	Command       string        `json:"command"`
+	OK            bool          `json:"ok"`
+	Mode          string        `json:"mode"`
+	DryRun        bool          `json:"dryRun"`
+	Compute       *ComputeInfo  `json:"compute,omitempty"`
+	Resolved      *ResolvedInfo `json:"resolved,omitempty"`
+	Greenfield    bool          `json:"greenfield"`
+	Plan          *Plan         `json:"plan,omitempty"`
+	VenvPath      string        `json:"venvPath,omitempty"`
+	// WorkspaceRoot is the uv workspace root (absolute, slash form) when the
+	// project is a workspace member. The [tool.uv] constraint block and the venv
+	// live there. Empty for a standalone project.
+	WorkspaceRoot    string           `json:"workspaceRoot,omitempty"`
 	PythonResolution PythonResolution `json:"pythonResolution,omitempty"`
 	// PythonInterpreter is the exact interpreter chosen by the installed-Python
 	// fallback, named in the text summary so the user can tell which interpreter
@@ -328,6 +341,9 @@ type Result struct {
 	Warnings        []Warning      `json:"warnings"`
 	Error           *PipelineError `json:"error"`
 	BackupPath      string         `json:"backupPath,omitempty"`
+	// WorkspaceBackupPath is the backup of the workspace root pyproject.toml, set
+	// only when the run changed that file.
+	WorkspaceBackupPath string `json:"workspaceBackupPath,omitempty"`
 	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
 	// CLI pipeline only; the extension measures its own end-to-end latency (process
 	// spawn, interpreter adoption) separately.
