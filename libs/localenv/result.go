@@ -215,12 +215,12 @@ type ResolvedInfo struct {
 type Plan struct {
 	WouldWrite  string `json:"wouldWrite"`
 	WouldBackup string `json:"wouldBackup,omitempty"`
-	// WouldWriteWorkspace and WouldBackupWorkspace name the workspace root
+	// WouldWriteUvWorkspace and WouldBackupUvWorkspace name the workspace root
 	// pyproject.toml and its planned backup, for a uv workspace member only.
-	WouldWriteWorkspace  string `json:"wouldWriteUvWorkspace,omitempty"`
-	WouldBackupWorkspace string `json:"wouldBackupUvWorkspace,omitempty"`
-	WouldInstallPython   string `json:"wouldInstallPython,omitempty"`
-	Diff                 string `json:"diff"`
+	WouldWriteUvWorkspace  string `json:"wouldWriteUvWorkspace,omitempty"`
+	WouldBackupUvWorkspace string `json:"wouldBackupUvWorkspace,omitempty"`
+	WouldInstallPython     string `json:"wouldInstallPython,omitempty"`
+	Diff                   string `json:"diff"`
 
 	ChangedRegions []string `json:"-"`
 }
@@ -297,11 +297,11 @@ const (
 	// the user's own pyproject pins it (constraints-only mode) — so it agrees with the
 	// validate hard-fail, which keys on the installed venv rather than the mode.
 	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
-	// WarnWorkspaceConstraintsReplaced: the project is a uv workspace member and
+	// WarnUvWorkspaceConstraintsReplaced: the project is a uv workspace member and
 	// the run replaced constraint pins the workspace root already had, from an
 	// earlier run (for example for another bundle) or written by the user. Every
 	// member of the workspace now resolves against the new pins.
-	WarnWorkspaceConstraintsReplaced = "W_WORKSPACE_CONSTRAINTS_REPLACED"
+	WarnUvWorkspaceConstraintsReplaced = "W_UV_WORKSPACE_CONSTRAINTS_REPLACED"
 )
 
 // Result is the full outcome of a sync run and the root of the --json object
@@ -322,10 +322,10 @@ type Result struct {
 	Greenfield    bool          `json:"greenfield"`
 	Plan          *Plan         `json:"plan,omitempty"`
 	VenvPath      string        `json:"venvPath,omitempty"`
-	// WorkspaceRoot is the uv workspace root (absolute, slash form) when the
+	// UvWorkspaceRoot is the uv workspace root (absolute, slash form) when the
 	// project is a workspace member. The [tool.uv] constraint block and the venv
 	// live there. Empty for a standalone project.
-	WorkspaceRoot    string           `json:"uvWorkspaceRoot,omitempty"`
+	UvWorkspaceRoot  string           `json:"uvWorkspaceRoot,omitempty"`
 	PythonResolution PythonResolution `json:"pythonResolution,omitempty"`
 	// PythonInterpreter is the exact interpreter chosen by the installed-Python
 	// fallback, named in the text summary so the user can tell which interpreter
@@ -341,9 +341,9 @@ type Result struct {
 	Warnings        []Warning      `json:"warnings"`
 	Error           *PipelineError `json:"error"`
 	BackupPath      string         `json:"backupPath,omitempty"`
-	// WorkspaceBackupPath is the backup of the workspace root pyproject.toml, set
+	// UvWorkspaceBackupPath is the backup of the workspace root pyproject.toml, set
 	// only when the run changed that file.
-	WorkspaceBackupPath string `json:"uvWorkspaceBackupPath,omitempty"`
+	UvWorkspaceBackupPath string `json:"uvWorkspaceBackupPath,omitempty"`
 	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
 	// CLI pipeline only; the extension measures its own end-to-end latency (process
 	// spawn, interpreter adoption) separately.

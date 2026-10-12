@@ -170,8 +170,8 @@ func TestRenderSuccessWorkspaceMember(t *testing.T) {
 	res.OK = true
 	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
 	res.VenvPath = "../../.venv"
-	res.WorkspaceRoot = "/repo"
-	res.WorkspaceBackupPath = "/repo/pyproject.toml.bak"
+	res.UvWorkspaceRoot = "/repo"
+	res.UvWorkspaceBackupPath = "/repo/pyproject.toml.bak"
 
 	out := renderText(t, res, nil)
 
@@ -196,7 +196,7 @@ func TestRenderDryRunWorkspaceMember(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.OK = true
 	res.DryRun = true
-	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteWorkspace: "/repo/pyproject.toml"}
+	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteUvWorkspace: "/repo/pyproject.toml"}
 	out := renderText(t, res, nil)
 	assert.Contains(t, out, "Plan: /repo/pyproject.toml (uv workspace root)")
 }
@@ -206,7 +206,7 @@ func TestRenderSuccessWorkspaceMemberUnchangedRoot(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.OK = true
 	res.VenvPath = "../../.venv"
-	res.WorkspaceRoot = "/repo"
+	res.UvWorkspaceRoot = "/repo"
 
 	out := renderText(t, res, nil)
 

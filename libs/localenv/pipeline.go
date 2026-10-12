@@ -209,12 +209,17 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// https://docs.astral.sh/uv/concepts/projects/workspaces/
 	var rootRel string
 	p.workspaceRoot, rootRel = p.discoverWorkspaceRoot(ctx)
+	// A discovery failure keeps the standalone behavior, but an interrupt must
+	// not: the run would go on to merge as a standalone project and write files.
+	if err := ctx.Err(); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrCanceled, err, "interrupted"))
+	}
 	venvBase := p.ProjectDir
 	p.venvRel = venvDir
 	if p.workspaceRoot != "" {
 		venvBase = p.workspaceRoot
 		p.venvRel = filepath.Join(rootRel, venvDir)
-		p.res.WorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
+		p.res.UvWorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
 		if !p.Check {
 			if err := ensureWritable(p.workspaceRoot); err != nil {
 				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "uv workspace root %s is not writable", filepath.ToSlash(p.workspaceRoot)))
@@ -508,9 +513,9 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// Unlike the member file, the root is reported only when the run changes
 		// it; Result.WorkspaceRoot already names the root.
 		if root != nil && root.changed {
-			plan.WouldWriteWorkspace = filepath.ToSlash(root.path)
+			plan.WouldWriteUvWorkspace = filepath.ToSlash(root.path)
 			if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
-				plan.WouldBackupWorkspace = filepath.ToSlash(backupName)
+				plan.WouldBackupUvWorkspace = filepath.ToSlash(backupName)
 			}
 		}
 		p.res.Plan = plan
@@ -546,7 +551,7 @@ func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, 
 	// bundle) wrote them or the user did, and the new ones apply to every member.
 	if replaced {
 		p.res.Warnings = append(p.res.Warnings, Warning{
-			Code:    WarnWorkspaceConstraintsReplaced,
+			Code:    WarnUvWorkspaceConstraintsReplaced,
 			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),
 		})
 	}
@@ -587,7 +592,7 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootM
 		// when either write changed it.
 		rootBackup, rootMutated, perr := p.writePyproject(root.path, root.merged, false)
 		if rootBackup != "" {
-			p.res.WorkspaceBackupPath = filepath.ToSlash(rootBackup)
+			p.res.UvWorkspaceBackupPath = filepath.ToSlash(rootBackup)
 		}
 		if perr != nil {
 			perr.Msg = "uv workspace root: " + perr.Msg

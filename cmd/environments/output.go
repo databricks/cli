@@ -76,8 +76,8 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 	if res.DryRun {
 		if res.Plan != nil {
 			cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWrite)
-			if res.Plan.WouldWriteWorkspace != "" {
-				cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWriteWorkspace+" (uv workspace root)")
+			if res.Plan.WouldWriteUvWorkspace != "" {
+				cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWriteUvWorkspace+" (uv workspace root)")
 			}
 			for _, region := range res.Plan.ChangedRegions {
 				cmdio.LogString(ctx, "  changed region: "+region)
@@ -118,14 +118,14 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
-	if res.WorkspaceRoot != "" {
+	if res.UvWorkspaceRoot != "" {
 		// The root file changes only when its constraint block changes, and every
 		// change writes a backup; --no-constraints and a no-op re-run leave it alone.
 		rootDetail := "unchanged"
-		if res.WorkspaceBackupPath != "" {
-			rootDetail = "constraints updated (backup: " + res.WorkspaceBackupPath + ")"
+		if res.UvWorkspaceBackupPath != "" {
+			rootDetail = "constraints updated (backup: " + res.UvWorkspaceBackupPath + ")"
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "uv workspace root", res.WorkspaceRoot))
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "uv workspace root", res.UvWorkspaceRoot))
 		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Root pyproject.toml", rootDetail))
 	}
 	renderInstalledPythonFallback(ctx, res)

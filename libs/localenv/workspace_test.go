@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -120,10 +121,10 @@ func TestPipelineWorkspaceMember(t *testing.T) {
 	assert.Contains(t, string(memberBytes), `"databricks-connect~=17.2.0"`)
 
 	assert.Equal(t, "../../.venv", res.VenvPath)
-	assert.Equal(t, filepath.ToSlash(root), res.WorkspaceRoot)
-	assert.Equal(t, filepath.ToSlash(filepath.Join(root, backupFile)), res.WorkspaceBackupPath)
+	assert.Equal(t, filepath.ToSlash(root), res.UvWorkspaceRoot)
+	assert.Equal(t, filepath.ToSlash(filepath.Join(root, backupFile)), res.UvWorkspaceBackupPath)
 	assert.Equal(t, filepath.ToSlash(filepath.Join(member, backupFile)), res.BackupPath)
-	assert.NotContains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced, "first run must not warn")
+	assert.NotContains(t, codes(res.Warnings), WarnUvWorkspaceConstraintsReplaced, "first run must not warn")
 }
 
 func TestPipelineWorkspaceMemberIdempotent(t *testing.T) {
@@ -133,8 +134,8 @@ func TestPipelineWorkspaceMemberIdempotent(t *testing.T) {
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
 	assert.Empty(t, res.BackupPath)
-	assert.Empty(t, res.WorkspaceBackupPath)
-	assert.NotContains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
+	assert.Empty(t, res.UvWorkspaceBackupPath)
+	assert.NotContains(t, codes(res.Warnings), WarnUvWorkspaceConstraintsReplaced)
 	for _, dir := range []string{root, member} {
 		matches, err := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
 		require.NoError(t, err)
@@ -155,7 +156,7 @@ func TestPipelineWorkspaceConstraintsReplacedWarning(t *testing.T) {
 
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	assert.Contains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
+	assert.Contains(t, codes(res.Warnings), WarnUvWorkspaceConstraintsReplaced)
 }
 
 func TestPipelineWorkspaceMemberNoConstraints(t *testing.T) {
@@ -168,7 +169,7 @@ func TestPipelineWorkspaceMemberNoConstraints(t *testing.T) {
 	after, err := os.ReadFile(filepath.Join(root, pyprojectFile))
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
-	assert.Empty(t, res.WorkspaceBackupPath)
+	assert.Empty(t, res.UvWorkspaceBackupPath)
 	assert.NoFileExists(t, filepath.Join(root, backupFile))
 }
 
@@ -184,8 +185,8 @@ func TestPipelineWorkspaceMemberDryRun(t *testing.T) {
 	assert.Equal(t, before, after)
 	require.NotNil(t, res.Plan)
 	assert.Equal(t, filepath.ToSlash(filepath.Join(member, pyprojectFile)), res.Plan.WouldWrite)
-	assert.Equal(t, filepath.ToSlash(filepath.Join(root, pyprojectFile)), res.Plan.WouldWriteWorkspace)
-	assert.Equal(t, filepath.ToSlash(filepath.Join(root, backupFile)), res.Plan.WouldBackupWorkspace)
+	assert.Equal(t, filepath.ToSlash(filepath.Join(root, pyprojectFile)), res.Plan.WouldWriteUvWorkspace)
+	assert.Equal(t, filepath.ToSlash(filepath.Join(root, backupFile)), res.Plan.WouldBackupUvWorkspace)
 	assert.Contains(t, res.Plan.Diff, "workspace root")
 }
 
@@ -286,7 +287,7 @@ func TestPipelineWorkspaceReplacesUserRootPinsWithWarning(t *testing.T) {
 
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	assert.Contains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
+	assert.Contains(t, codes(res.Warnings), WarnUvWorkspaceConstraintsReplaced)
 }
 
 func TestApplyMergeRootFailureBeforeAnyWriteIsNotDiskMutated(t *testing.T) {
@@ -335,7 +336,44 @@ func TestPipelineWorkspaceMemberDryRunReRunPlansNoRootWrite(t *testing.T) {
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, res.Plan)
-	assert.Empty(t, res.Plan.WouldWriteWorkspace)
-	assert.Empty(t, res.Plan.WouldBackupWorkspace)
-	assert.NotEmpty(t, res.WorkspaceRoot)
+	assert.Empty(t, res.Plan.WouldWriteUvWorkspace)
+	assert.Empty(t, res.Plan.WouldBackupUvWorkspace)
+	assert.NotEmpty(t, res.UvWorkspaceRoot)
+}
+
+// cancelDiscoveryPM cancels the run while workspace discovery runs, like a
+// SIGINT that interrupts `uv workspace dir`.
+type cancelDiscoveryPM struct {
+	fakePM
+	cancel context.CancelFunc
+}
+
+func (f cancelDiscoveryPM) WorkspaceRoot(ctx context.Context, _ string) (string, error) {
+	f.cancel()
+	return "", ctx.Err()
+}
+
+func TestPipelineCancelDuringDiscoveryWritesNothing(t *testing.T) {
+	p, root, member := newMemberPipeline(t)
+	// A first run fills the constraint cache, so the canceled run below can
+	// still fetch; then the member file is reset so a merge would change it.
+	_, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(member, pyprojectFile),
+		[]byte("[project]\nname = \"a\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p.PM = cancelDiscoveryPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0", root: root}, cancel: cancel}
+	before, err := os.ReadFile(filepath.Join(member, pyprojectFile))
+	require.NoError(t, err)
+
+	res, err := p.Run(ctx)
+	require.Error(t, err)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrCanceled, res.Error.Code)
+	assert.False(t, res.Error.DiskMutated)
+	after, err := os.ReadFile(filepath.Join(member, pyprojectFile))
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
 }
