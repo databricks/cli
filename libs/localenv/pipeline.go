@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -251,8 +250,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// to --no-dbconnect: it stops managing the pin (not reported here, not asserted in
 	// validate) but keeps the resolved value on c.
 	// A workspace member's constraint block goes to the workspace root (see
-	// planRootMerge). A greenfield project is never a member
-	// (discoverWorkspaceRoot), so RenderFreshPyproject needs no such option.
+	// planRootMerge). Discovery never reports a greenfield project as a member
+	// (see discoverWorkspaceRoot), so RenderFreshPyproject needs no such option.
 	opts := MergeOptions{
 		SkipConstraints:            p.SkipConstraints,
 		SkipDBConnect:              p.Mode == ModeConstraintsOnly,
@@ -482,8 +481,8 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if err != nil {
 		return nil, nil, greenfield, err
 	}
-	if root != nil && !bytes.Equal(root.base, root.merged) && !slices.Contains(changedRegions, regionToolUv) {
-		changedRegions = append(changedRegions, regionToolUv)
+	if root != nil && !bytes.Equal(root.base, root.merged) {
+		changedRegions = append(changedRegions, regionWorkspaceToolUv)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -538,13 +537,13 @@ func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, 
 	if err != nil {
 		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "read workspace root pyproject.toml %s failed", filepath.ToSlash(path)))
 	}
-	merged, changed, err := MergeToolUvBlock(base, deps)
+	merged, _, replaced, err := MergeToolUvBlock(base, deps)
 	if err != nil {
 		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge workspace root constraints failed"))
 	}
-	// Any earlier pins are replaced, whether an earlier run (maybe for another
+	// Earlier pins are replaced, whether an earlier run (maybe for another
 	// bundle) wrote them or the user did, and the new ones apply to every member.
-	if changed && bytes.Contains(base, []byte("constraint-dependencies")) {
+	if replaced {
 		p.res.Warnings = append(p.res.Warnings, Warning{
 			Code:    WarnWorkspaceConstraintsReplaced,
 			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),

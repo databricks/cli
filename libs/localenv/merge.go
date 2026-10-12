@@ -31,6 +31,7 @@ const (
 	regionRequiresPython        = "requires-python"
 	regionDatabricksConnect     = "databricks-connect"
 	regionToolUv                = "tool.uv.constraint-dependencies"
+	regionWorkspaceToolUv       = regionToolUv + " (workspace root)"
 	regionDatabricksEnvironment = "tool.databricks.environment"
 )
 
@@ -193,37 +194,56 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 // MergeToolUvBlock reconciles only the managed [tool.uv] constraint-dependencies
 // block of target, preserving every other byte. It is used for the root
 // pyproject.toml of a uv workspace, which may be a virtual root with no [project]
-// table. changed reports whether the block differs from the input.
-func MergeToolUvBlock(target []byte, deps []string) (merged []byte, changed bool, err error) {
+// table. changed reports whether the block differs from the input; replaced
+// reports whether that change replaces constraint-dependencies the file already
+// had (from an earlier run or from the user).
+func MergeToolUvBlock(target []byte, deps []string) (merged []byte, changed, replaced bool, err error) {
 	merged, err = transformLines(target, func(lines []string) ([]string, error) {
-		if definesToolUvWithDottedKeys(lines) {
+		if definesToolUvWithoutHeader(lines) {
 			return nil, errDottedToolUv
 		}
+		hadPins := hasConstraintDeps(lines)
 		var out []string
 		out, changed = mergeToolUv(lines, deps)
+		replaced = changed && hadPins
 		return out, nil
 	})
 	if err != nil {
-		return nil, false, err
+		return nil, false, false, err
 	}
-	return merged, changed, nil
+	return merged, changed, replaced, nil
 }
 
-// errDottedToolUv: the file defines the [tool.uv] table with dotted keys, which
-// the line-based merge cannot extend. Appending a [tool.uv] header would define
-// the table twice, which uv rejects for the whole workspace.
-var errDottedToolUv = errors.New("pyproject.toml defines [tool.uv] with dotted keys (for example tool.uv.workspace.members); use a [tool.uv.workspace] table so the constraint block can be added")
+// hasConstraintDeps reports whether lines hold a managed block or a
+// constraint-dependencies key in the [tool.uv] table.
+func hasConstraintDeps(lines []string) bool {
+	if _, _, found := markerBounds(lines); found {
+		return true
+	}
+	header, end, ok := tableBounds(lines, "[tool.uv]")
+	if !ok {
+		return false
+	}
+	return slices.ContainsFunc(lines[header+1:end], constraintDepsRe.MatchString)
+}
 
-// toolUvDottedTopRe and toolUvDottedToolRe match a dotted key that defines the [tool.uv] table: tool.uv.…
-// at the top level, or uv.… inside [tool].
+// errDottedToolUv is returned when the file defines the [tool.uv] table without
+// a [tool.uv] header (dotted, quoted, or inline keys). The line-based merge
+// cannot extend such a table, and appending a [tool.uv] header would define it
+// twice, which uv rejects for the whole workspace.
+var errDottedToolUv = errors.New("pyproject.toml defines [tool.uv] without a [tool.uv] header (for example tool.uv.workspace.members or an inline table); use [tool.uv] and [tool.uv.workspace] tables so the constraint block can be added")
+
+// toolUvTopRe and toolUvInToolRe match a key that defines the [tool.uv] table
+// without its header: tool.uv.… or an inline tool = {…} at the top level, and
+// uv.… or uv = {…} inside [tool]. Keys may be quoted.
 var (
-	toolUvDottedTopRe  = regexp.MustCompile(`^\s*tool\s*\.\s*uv\s*[.=]`)
-	toolUvDottedToolRe = regexp.MustCompile(`^\s*uv\s*[.=]`)
+	toolUvTopRe    = regexp.MustCompile(`^\s*["']?tool["']?\s*(\.\s*["']?uv["']?\s*[.=]|=\s*\{)`)
+	toolUvInToolRe = regexp.MustCompile(`^\s*["']?uv["']?\s*[.=]`)
 )
 
-// definesToolUvWithDottedKeys reports whether lines define the [tool.uv] table
-// only through dotted keys, with no [tool.uv] header.
-func definesToolUvWithDottedKeys(lines []string) bool {
+// definesToolUvWithoutHeader reports whether lines define the [tool.uv] table
+// only through keys, with no [tool.uv] header.
+func definesToolUvWithoutHeader(lines []string) bool {
 	if _, _, ok := tableBounds(lines, "[tool.uv]"); ok {
 		return false
 	}
@@ -233,7 +253,7 @@ func definesToolUvWithDottedKeys(lines []string) bool {
 			table = name
 			continue
 		}
-		if (table == "" && toolUvDottedTopRe.MatchString(line)) || (table == "[tool]" && toolUvDottedToolRe.MatchString(line)) {
+		if (table == "" && toolUvTopRe.MatchString(line)) || (table == "[tool]" && toolUvInToolRe.MatchString(line)) {
 			return true
 		}
 	}
@@ -1032,7 +1052,7 @@ func mergeToolUv(lines, deps []string) ([]string, bool) {
 func removeManagedToolUv(lines []string) ([]string, bool) {
 	start, stop, found := markerBounds(lines)
 	if !found {
-		return lines, false
+		return removeUnmarkedConstraintDeps(lines)
 	}
 	var keep []string
 	if slices.ContainsFunc(lines[start:stop+1], func(l string) bool { return headerName(l) == "[tool.uv]" }) &&
@@ -1046,6 +1066,22 @@ func removeManagedToolUv(lines []string) ([]string, bool) {
 	out = append(out, keep...)
 	out = append(out, lines[stop+1:]...)
 	return out, true
+}
+
+// removeUnmarkedConstraintDeps removes constraint-dependencies from a plain
+// [tool.uv] table, the form a run before the managed markers wrote. Like
+// mergeToolUv, it drops the whole table when that key is all it holds.
+func removeUnmarkedConstraintDeps(lines []string) ([]string, bool) {
+	header, end, ok := tableBounds(lines, "[tool.uv]")
+	if !ok || !slices.ContainsFunc(lines[header+1:end], constraintDepsRe.MatchString) {
+		return lines, false
+	}
+	if toolUvHasOnlyConstraintDeps(lines, header, end) {
+		out := make([]string, 0, len(lines)-(end-header))
+		out = append(out, lines[:header]...)
+		return append(out, lines[end:]...), true
+	}
+	return removeConstraintDeps(lines, header, end), true
 }
 
 // tableBodyHasKeys reports whether the lines from index from up to the next

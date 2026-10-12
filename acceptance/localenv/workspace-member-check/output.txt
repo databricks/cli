@@ -6,7 +6,7 @@ Plan: [TEST_TMP_DIR]/pyproject.toml (workspace root)
   changed region: requires-python
   changed region: databricks-connect
   changed region: tool.databricks.environment
-  changed region: tool.uv.constraint-dependencies
+  changed region: tool.uv.constraint-dependencies (workspace root)
 Check complete. No files were modified.
 
 >>> [CLI] environments setup-local --serverless-version 4 --dry-run --output json

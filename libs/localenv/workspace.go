@@ -13,9 +13,10 @@ import (
 // It returns "" for both when ProjectDir is not a member: a standalone project,
 // the root itself, or a project uv cannot place.
 //
-// A folder with no pyproject.toml yet (greenfield) is not treated as a member,
-// even when a members glob of a parent workspace matches it: the first run sets
-// it up as a standalone project, and a re-run finds it as a member.
+// A folder with no pyproject.toml yet (greenfield) is not treated as a member.
+// When a members glob of a parent workspace matches it, the file this command
+// creates makes it a member: the first run then fails at provision (uv syncs
+// the root venv), and a re-run finds the member.
 //
 // A discovery failure (uv older than 0.9.9, uv not found under --dry-run, a
 // malformed workspace) keeps the standalone behavior. A malformed workspace
@@ -31,27 +32,29 @@ func (p *Pipeline) discoverWorkspaceRoot(ctx context.Context) (root, rel string)
 	}
 	// uv prints the root with symlinks resolved and in the on-disk letter case,
 	// while ProjectDir keeps the form the shell gave (on macOS, /var vs
-	// /private/var, and any letter case). So compare folders by identity. Prefer
-	// the root in ProjectDir's form, so the paths the command reports match the
-	// folder the user ran it from. If a symlink sits between the root and
-	// ProjectDir, only the symlink-resolved ProjectDir reaches the root; then use
-	// uv's root, with the relative path the OS resolves.
-	if ancestor, levels, ok := sameFolderAncestor(p.ProjectDir, root); ok {
-		if levels == 0 {
-			return "", ""
-		}
-		return ancestor, upLevels(levels)
-	}
+	// /private/var, and any letter case). So compare folders by identity.
+	//
+	// The relative path is counted from the symlink-resolved ProjectDir, because
+	// that is where the OS resolves "..". The root is reported in ProjectDir's
+	// form when one of its parents is the root, so the paths the command reports
+	// match the folder the user ran it from; otherwise uv's form is used.
 	resolved, err := filepath.EvalSymlinks(p.ProjectDir)
 	if err != nil {
 		log.Debugf(ctx, CommandName+": cannot resolve the project folder: %v", err)
 		return "", ""
 	}
-	if _, levels, ok := sameFolderAncestor(resolved, root); ok && levels > 0 {
-		return root, upLevels(levels)
+	_, levels, ok := sameFolderAncestor(resolved, root)
+	if !ok {
+		log.Debugf(ctx, CommandName+": workspace root %s is not a parent of the project folder", filepath.ToSlash(root))
+		return "", ""
 	}
-	log.Debugf(ctx, CommandName+": workspace root %s is not a parent of the project folder", filepath.ToSlash(root))
-	return "", ""
+	if levels == 0 {
+		return "", ""
+	}
+	if ancestor, _, ok := sameFolderAncestor(p.ProjectDir, root); ok {
+		return ancestor, upLevels(levels)
+	}
+	return root, upLevels(levels)
 }
 
 // sameFolderAncestor returns the first of dir and its parents that is the same

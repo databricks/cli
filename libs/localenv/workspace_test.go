@@ -136,7 +136,8 @@ func TestPipelineWorkspaceMemberIdempotent(t *testing.T) {
 	assert.Empty(t, res.WorkspaceBackupPath)
 	assert.NotContains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
 	for _, dir := range []string{root, member} {
-		matches, _ := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
+		matches, err := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
+		require.NoError(t, err)
 		assert.Empty(t, matches, "no timestamped backup in %s", dir)
 	}
 }
@@ -304,4 +305,23 @@ func TestApplyMergeRootFailureBeforeAnyWriteIsNotDiskMutated(t *testing.T) {
 	require.NotNil(t, p.res.Error)
 	assert.False(t, p.res.Error.DiskMutated)
 	assert.Contains(t, p.res.Error.Error(), "workspace root")
+}
+
+func TestDiscoverWorkspaceRootSymlinkChangesDepth(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+	// <root>/link -> <root>/deep/bundles: the logical path reaches the root in
+	// two levels, but the OS resolves a relative path from the real member folder
+	// (<root>/deep/bundles/a), three levels below the root.
+	root := t.TempDir()
+	real := filepath.Join(root, "deep", "bundles", "a")
+	require.NoError(t, os.MkdirAll(real, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(real, pyprojectFile), []byte("[project]\nname = \"a\"\n"), 0o644))
+	require.NoError(t, os.Symlink(filepath.Join(root, "deep", "bundles"), filepath.Join(root, "link")))
+
+	p := &Pipeline{ProjectDir: filepath.Join(root, "link", "a"), PM: fakePM{root: root}}
+	gotRoot, gotRel := p.discoverWorkspaceRoot(t.Context())
+	assert.Equal(t, root, gotRoot)
+	assert.Equal(t, filepath.Join("..", "..", ".."), gotRel)
 }

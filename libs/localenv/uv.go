@@ -313,10 +313,7 @@ func (m *uvManager) WorkspaceRoot(ctx context.Context, projectDir string) (strin
 		}
 		bin = found
 	}
-	out, err := process.Background(ctx, append([]string{bin}, m.workspaceDirArgs()...),
-		process.WithDir(projectDir),
-		process.WithProcessGroup(),
-	)
+	out, err := m.runUvOutput(ctx, append([]string{bin}, m.workspaceDirArgs()...), projectDir)
 	if err != nil {
 		return "", err
 	}
