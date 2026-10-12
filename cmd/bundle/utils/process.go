@@ -358,7 +358,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath = b.StateFilenameDirect(ctx)
 			if !stateDesc.IsDMS() {
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(!configuresDeploymentHistory(ctx, b)), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
@@ -376,6 +376,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
+		// Repeated migrations may already have a DMS deployment even when the state lacks its history marker.
 		if needDirectState && (stateDesc.IsDMS() || b.MigratingToDMS) {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -645,7 +646,7 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	_, localPath := b.StateFilenameDirect(ctx)
 	if !resolveDeploymentHistory(ctx, b, stateDesc) {
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(!configuresDeploymentHistory(ctx, b)), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
 		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
