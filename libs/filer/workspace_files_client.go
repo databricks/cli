@@ -133,12 +133,6 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	// Workspace.Upload/Download forward cfg.WorkspaceID behind a bare != "" check,
-	// so normalize the "none" sentinel to "" to keep the SDK from routing on it.
-	if w.Config.WorkspaceID == auth.WorkspaceIDNone {
-		w.Config.WorkspaceID = ""
-	}
-
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err

@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -109,36 +108,6 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	})
 }
 
-// Confirms NewWorkspaceFilesClient clears the CLI-only "none" sentinel so the
-// SDK's Workspace.Upload/Download never route on it, while a real workspace ID
-// is left untouched.
-func TestNewWorkspaceFilesClientNormalizesWorkspaceID(t *testing.T) {
-	server := testserver.New(t)
-
-	tests := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{"none sentinel is cleared", auth.WorkspaceIDNone, ""},
-		{"real workspace ID is kept", "7474644166319138", "7474644166319138"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:        server.URL,
-				Token:       "testtoken",
-				WorkspaceID: tc.input,
-			})
-			require.NoError(t, err)
-
-			_, err = NewWorkspaceFilesClient(client, "/dir")
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, client.Config.WorkspaceID)
-		})
-	}
-}
-
 // importFormFields parses the multipart body of a recorded /workspace/import
 // request into a field name -> value map.
 func importFormFields(t *testing.T, contentType string, body []byte) map[string]string {
@@ -214,55 +183,6 @@ func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
 			if present {
 				assert.Equal(t, "true", overwrite)
 			}
-		})
-	}
-}
-
-// Confirms the workspace routing header is sent when the config carries a real
-// workspace ID, and that the CLI-only "none" sentinel is never forwarded as a
-// literal routing identifier. The sentinel is written to .databrickscfg by
-// `auth login --skip-workspace`; the platform has no workspace named "none",
-// so sending it would misroute the upload.
-func TestWorkspaceFilesClientWriteWorkspaceIDHeader(t *testing.T) {
-	tests := []struct {
-		name        string
-		workspaceID string
-		expect      string
-	}{
-		{
-			name:        "real workspace ID is forwarded",
-			workspaceID: "7474644166319138",
-			expect:      "7474644166319138",
-		},
-		{
-			name:        "none sentinel is not forwarded",
-			workspaceID: auth.WorkspaceIDNone,
-			expect:      "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var gotHeader string
-			server := testserver.New(t)
-			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
-				gotHeader = req.Headers.Get(auth.WorkspaceIDHeader)
-				return testserver.Response{StatusCode: http.StatusOK}
-			})
-			testserver.AddDefaultHandlers(server)
-
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:        server.URL,
-				Token:       "testtoken",
-				WorkspaceID: tc.workspaceID,
-			})
-			require.NoError(t, err)
-
-			f, err := NewWorkspaceFilesClient(client, "/dir")
-			require.NoError(t, err)
-
-			require.NoError(t, f.Write(t.Context(), "file.txt", strings.NewReader("hello")))
-			assert.Equal(t, tc.expect, gotHeader)
 		})
 	}
 }
