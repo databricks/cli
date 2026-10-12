@@ -1559,7 +1559,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 		// joined to, and the fake package manager.
 		setup        func(t *testing.T) (projectDir, base string, pm fakePM)
 		value        string
-		wantVenv     func(base string) string
+		wantVenv     func(t *testing.T, base string) string
 		wantVenvPath func(venv string) string
 	}{
 		{
@@ -1569,7 +1569,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        "custom-env",
-			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
 			wantVenvPath: func(string) string { return "custom-env" },
 		},
 		{
@@ -1581,7 +1581,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return member, root, fakePM{py: "3.12", dbc: "17.2.0", root: root}
 			},
 			value:        "custom-env",
-			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
 			wantVenvPath: func(string) string { return "../../custom-env" },
 		},
 		{
@@ -1595,8 +1595,10 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				require.NoError(t, os.Symlink(real, link))
 				return link, real, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
-			value:        filepath.Join("..", "env"),
-			wantVenv:     func(base string) string { return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env") },
+			value: filepath.Join("..", "env"),
+			wantVenv: func(t *testing.T, base string) string {
+				return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env")
+			},
 			wantVenvPath: func(string) string { return "../env" },
 		},
 		{
@@ -1606,7 +1608,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        "custom-env/",
-			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
 			wantVenvPath: func(string) string { return "custom-env" },
 		},
 		{
@@ -1620,9 +1622,24 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:    `\envs\x`,
-			wantVenv: func(base string) string { return filepath.VolumeName(base) + `\envs\x` },
+			wantVenv: func(t *testing.T, base string) string { return filepath.VolumeName(base) + `\envs\x` },
 			// The drive comes from the project.
 			wantVenvPath: filepath.ToSlash,
+		},
+		{
+			// A Windows drive-relative value such as C:envs\x names a folder on
+			// that drive; uv uses it as is, so does the CLI.
+			name: "drive-relative",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a drive-relative path exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        `C:envs\x`,
+			wantVenv:     func(*testing.T, string) string { return `C:envs\x` },
+			wantVenvPath: func(string) string { return "C:envs/x" },
 		},
 		{
 			name: "absolute",
@@ -1631,7 +1648,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        abs,
-			wantVenv:     func(string) string { return abs },
+			wantVenv:     func(*testing.T, string) string { return abs },
 			wantVenvPath: func(string) string { return filepath.ToSlash(abs) },
 		},
 	}
@@ -1644,7 +1661,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 
 			res, err := p.Run(env.Set(t.Context(), EnvUvProjectEnvironment, tc.value))
 			require.NoError(t, err)
-			want := tc.wantVenv(base)
+			want := tc.wantVenv(t, base)
 			assert.Equal(t, want, pm.postProvisionVenv)
 			assert.Equal(t, want, pm.validateVenv)
 			assert.Equal(t, tc.wantVenvPath(want), res.VenvPath)

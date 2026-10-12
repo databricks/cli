@@ -344,6 +344,11 @@ func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error 
 		// path cannot cross drives.
 		p.venv = filepath.Clean(name)
 		p.venvRel = p.venv
+	case filepath.VolumeName(name) != "":
+		// A Windows drive-relative value such as C:envs\x names a folder on that
+		// drive; uv uses it as is.
+		p.venv = filepath.Clean(name)
+		p.venvRel = p.venv
 	case strings.HasPrefix(filepath.ToSlash(name), "/"):
 		// A Windows rooted path such as \envs\x: uv keeps only the drive of the
 		// root for it.
