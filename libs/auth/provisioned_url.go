@@ -100,19 +100,3 @@ func getJSON(ctx context.Context, httpClient *http.Client, endpoint, accessToken
 	}
 	return nil
 }
-
-// oauthServerMetadata is the subset of an OAuth authorization server metadata
-// document needed to check which host serves a workspace's tokens.
-type oauthServerMetadata struct {
-	TokenEndpoint string `json:"token_endpoint"`
-}
-
-// LookupOAuthTokenEndpoint returns the token_endpoint served by the OAuth
-// authorization server metadata document at discoveryURL.
-func LookupOAuthTokenEndpoint(ctx context.Context, discoveryURL string, httpClient *http.Client) (string, error) {
-	var metadata oauthServerMetadata
-	if err := getJSON(ctx, httpClient, discoveryURL, "", "oauth-authorization-server", &metadata); err != nil {
-		return "", err
-	}
-	return metadata.TokenEndpoint, nil
-}

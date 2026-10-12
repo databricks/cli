@@ -116,16 +116,3 @@ func TestLookupWorkspacePrimaryURL_HTTPError(t *testing.T) {
 	_, err := LookupWorkspacePrimaryURL(t.Context(), server.URL, nil)
 	assert.ErrorContains(t, err, "databricks-config endpoint returned status 404")
 }
-
-func TestLookupOAuthTokenEndpoint(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/oidc/.well-known/oauth-authorization-server", r.URL.Path)
-		assert.Equal(t, "123", r.URL.Query().Get("o"))
-		_, _ = w.Write([]byte(`{"token_endpoint": "https://dbc-123.cloud.databricks.test/oidc/v1/token"}`))
-	}))
-	defer server.Close()
-
-	endpoint, err := LookupOAuthTokenEndpoint(t.Context(), server.URL+"/oidc/.well-known/oauth-authorization-server?o=123", nil)
-	require.NoError(t, err)
-	assert.Equal(t, "https://dbc-123.cloud.databricks.test/oidc/v1/token", endpoint)
-}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
@@ -310,7 +309,7 @@ a new profile is created.
 			})
 		}
 
-		err = setLoginHostAndAccountId(ctx, existingProfile, authArguments, args, resources)
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
 		}
@@ -559,48 +558,6 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	}
 
 	return nil
-}
-
-// setLoginHostAndAccountId is setHostAndAccountId for auth login. RFC 8707
-// resource indicators are only honored on workspace-level authorize, so a
-// --resource login for a workspace on a SPOG host logs in at the workspace's
-// own host rather than the SPOG host's account-level OIDC.
-func setLoginHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args, resources []string) error {
-	if err := setHostAndAccountId(ctx, existingProfile, authArguments, args); err != nil {
-		return err
-	}
-	host := (&config.Config{Host: authArguments.Host}).CanonicalHostName()
-	if len(resources) == 0 || !auth.HasUnifiedHostSignal(authArguments.DiscoveryURL) || auth.IsClassicAccountHost(host) {
-		return nil
-	}
-	if authArguments.WorkspaceID == "" || authArguments.WorkspaceID == auth.WorkspaceIDNone {
-		return errors.New("--resource on a unified host needs a workspace: add ?o=<workspace-id> to --host or pass --workspace-id")
-	}
-	workspaceHost, err := lookupWorkspaceHost(ctx, host, authArguments.WorkspaceID)
-	if err != nil {
-		return fmt.Errorf("finding the host of workspace %s for --resource: %w. Pass the workspace URL with --host instead", authArguments.WorkspaceID, err)
-	}
-	cmdio.LogString(ctx, fmt.Sprintf("Logging in at %s, the workspace's own URL, because --resource needs a workspace-level login.", workspaceHost))
-	authArguments.Host = workspaceHost
-	authArguments.DiscoveryURL = ""
-	return nil
-}
-
-// lookupWorkspaceHost returns the canonical host of workspaceID, read from the
-// token endpoint of the workspace OAuth metadata the SPOG host serves for it.
-func lookupWorkspaceHost(ctx context.Context, spogHost, workspaceID string) (string, error) {
-	discoveryURL := spogHost + "/oidc/.well-known/oauth-authorization-server?" + url.Values{"o": {workspaceID}}.Encode()
-	lookupCtx, cancel := context.WithTimeout(ctx, provisionedURLTimeout)
-	defer cancel()
-	tokenEndpoint, err := auth.LookupOAuthTokenEndpoint(lookupCtx, discoveryURL, nil)
-	if err != nil {
-		return "", err
-	}
-	u, err := url.Parse(tokenEndpoint)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return "", fmt.Errorf("invalid token endpoint %q", tokenEndpoint)
-	}
-	return u.Scheme + "://" + u.Host, nil
 }
 
 // needsAccountIDPrompt reports whether the target host requires an account ID

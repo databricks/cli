@@ -1694,54 +1694,6 @@ func newUnifiedHostServer(t *testing.T) *httptest.Server {
 	return server
 }
 
-// newSpogServer serves /.well-known/databricks-config for a unified (SPOG)
-// host with an account-scoped OIDC endpoint, and workspace-level OAuth
-// metadata (selected with ?o=) whose endpoints are on the host returned by
-// workspaceHost, as the SPOG host serves them for a workspace.
-func newSpogServer(t *testing.T, workspaceHost func() string) *httptest.Server {
-	t.Helper()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/.well-known/databricks-config":
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"account_id":    "spog-account",
-				"oidc_endpoint": "http://" + r.Host + "/oidc/accounts/{account_id}",
-				"host_type":     "UNIFIED_HOST",
-			})
-		case "/oidc/.well-known/oauth-authorization-server":
-			if r.URL.Query().Get("o") == "" {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"authorization_endpoint": workspaceHost() + "/oidc/v1/authorize",
-				"token_endpoint":         workspaceHost() + "/oidc/v1/token",
-			})
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(server.Close)
-	return server
-}
-
-// newSpogWorkspacePair returns a canonical workspace server whose account's
-// primary URL is a SPOG server that serves the workspace's OAuth from the
-// workspace server.
-func newSpogWorkspacePair(t *testing.T) (workspace, spog *httptest.Server) {
-	t.Helper()
-	var workspaceURL string
-	spog = newSpogServer(t, func() string { return workspaceURL })
-	workspace = newDiscoveryServer(t, map[string]any{
-		"account_id":   "spog-account",
-		"workspace_id": "12345",
-		"primary_url":  spog.URL,
-	})
-	workspaceURL = workspace.URL
-	return workspace, spog
-}
-
 func TestSetHostAndAccountId_DoesNotSwitchToPrimaryURL(t *testing.T) {
 	// setHostAndAccountId also serves auth token, which must keep the profile's
 	// host so the cached token is found and refreshed where it was issued.
@@ -2083,41 +2035,6 @@ func TestSwitchToWorkspacePrimaryURL(t *testing.T) {
 			}
 			assert.Equal(t, "spog-account", args.AccountID)
 			assert.Equal(t, tt.wantWorkspaceID, args.WorkspaceID)
-		})
-	}
-}
-
-func TestSetLoginHostAndAccountId_Resources(t *testing.T) {
-	workspace, spog := newSpogWorkspacePair(t)
-	// A unified host that serves no workspace-level OAuth metadata.
-	spogWithoutWorkspaceOAuth := newUnifiedHostServer(t)
-	resources := []string{workspace.URL + "/ai-gateway/mcp-services/system.ai.github"}
-
-	tests := []struct {
-		name        string
-		host        string
-		workspaceID string
-		resources   []string
-		wantHost    string
-		wantErr     string
-	}{
-		{name: "spog host with ?o= logs in at the workspace host", host: spog.URL + "?o=12345", resources: resources, wantHost: workspace.URL},
-		{name: "spog host with --workspace-id logs in at the workspace host", host: spog.URL, workspaceID: "12345", resources: resources, wantHost: workspace.URL},
-		{name: "spog host without a workspace", host: spog.URL, resources: resources, wantErr: "--resource on a unified host needs a workspace"},
-		{name: "spog host that doesn't serve the workspace", host: spogWithoutWorkspaceOAuth.URL + "?o=12345", resources: resources, wantErr: "Pass the workspace URL with --host instead"},
-		{name: "workspace host is kept", host: workspace.URL, resources: resources, wantHost: workspace.URL},
-		{name: "spog host without resources is kept", host: spog.URL + "?o=12345", wantHost: spog.URL},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := &auth.AuthArguments{Host: tt.host, WorkspaceID: tt.workspaceID}
-			err := setLoginHostAndAccountId(cmdio.MockDiscard(t.Context()), nil, args, []string{}, tt.resources)
-			if tt.wantErr != "" {
-				assert.ErrorContains(t, err, tt.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantHost, args.Host)
 		})
 	}
 }
