@@ -14,8 +14,11 @@ trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'De
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace jq '{features, state}' .databricks/bundle/default/resources.json
 
-title "The remote backup preserves the original direct state byte for byte"
+title "Inspect the remote backup's original pre-migration resource IDs, state, and dependencies"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json
+trace cat .databricks/resources.backup.first.json
+
+title "The backup equals the pre-migration resources.json byte for byte"
 trace cmp .databricks/resources.before-dms.json .databricks/resources.backup.first.json
 
 title "Read back the completed migration and deploy versions with their recorded resource state"
