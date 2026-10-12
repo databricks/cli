@@ -34,6 +34,7 @@ func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.
 func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
+
 func (f fakePM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
 	if f.root != "" {
 		return f.root, nil

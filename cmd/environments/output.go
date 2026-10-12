@@ -75,6 +75,9 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 	if res.DryRun {
 		if res.Plan != nil {
 			cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWrite)
+			if res.Plan.WouldWriteWorkspace != "" {
+				cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWriteWorkspace+" (workspace root)")
+			}
 			for _, region := range res.Plan.ChangedRegions {
 				cmdio.LogString(ctx, "  changed region: "+region)
 			}
@@ -114,6 +117,14 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
+	if res.WorkspaceRoot != "" {
+		rootDetail := "constraints written"
+		if res.WorkspaceBackupPath != "" {
+			rootDetail += " (backup: " + res.WorkspaceBackupPath + ")"
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Workspace root", res.WorkspaceRoot))
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Root pyproject.toml", rootDetail))
+	}
 	renderInstalledPythonFallback(ctx, res)
 
 	cmdio.LogString(ctx, "")

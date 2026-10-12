@@ -25,27 +25,32 @@ func (p *Pipeline) discoverWorkspaceRoot(ctx context.Context) string {
 		log.Debugf(ctx, CommandName+": workspace discovery failed, using the project folder: %v", err)
 		return ""
 	}
-	same, err := samePath(root, p.ProjectDir)
+	// uv prints the symlink-resolved root, while ProjectDir comes from the shell
+	// (on macOS, /var vs /private/var). Compare and join in resolved form, then
+	// express the root relative to ProjectDir so paths derived from it (the venv,
+	// the root pyproject.toml) share ProjectDir's form.
+	rel, err := resolvedRel(p.ProjectDir, root)
 	if err != nil {
 		log.Debugf(ctx, CommandName+": cannot compare workspace root %s with the project folder: %v", filepath.ToSlash(root), err)
 		return ""
 	}
-	if same {
+	if rel == "." {
 		return ""
 	}
-	return root
+	return filepath.Join(p.ProjectDir, rel)
 }
 
-// samePath reports whether a and b name the same folder after resolving
-// symlinks (macOS temp folders live under /var, a symlink to /private/var).
-func samePath(a, b string) (bool, error) {
-	ra, err := filepath.EvalSymlinks(a)
+// resolvedRel returns the path of target relative to base after resolving
+// symlinks in both (macOS temp folders live under /var, a symlink to
+// /private/var). It is "." when both name the same folder.
+func resolvedRel(base, target string) (string, error) {
+	rb, err := filepath.EvalSymlinks(base)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	rb, err := filepath.EvalSymlinks(b)
+	rt, err := filepath.EvalSymlinks(target)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	return ra == rb, nil
+	return filepath.Rel(rb, rt)
 }

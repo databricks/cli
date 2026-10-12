@@ -194,3 +194,19 @@ func TestPipelineWorkspaceRootNotWritable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, memberBefore, memberAfter)
 }
+
+func TestDiscoverWorkspaceRootKeepsProjectPathForm(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+	root, _ := memberLayout(t)
+	link := filepath.Join(t.TempDir(), "link")
+	require.NoError(t, os.Symlink(root, link))
+	resolved, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err)
+	// uv prints the symlink-resolved root; ProjectDir reaches the member through
+	// the link. The root must come back in ProjectDir's form so the venv path
+	// relative to the project stays "../../.venv".
+	p := &Pipeline{ProjectDir: filepath.Join(link, "bundles", "a"), PM: rootPM{root: resolved}}
+	assert.Equal(t, link, p.discoverWorkspaceRoot(t.Context()))
+}
