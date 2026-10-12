@@ -27,7 +27,13 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc, pyspark, dbcImportErr, root string }
+type fakePM struct {
+	py, dbc, pyspark, dbcImportErr string
+	// root and rootErr are what WorkspaceRoot reports; an empty root means the
+	// project is not a workspace member.
+	root    string
+	rootErr error
+}
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
@@ -36,6 +42,9 @@ func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, er
 }
 
 func (f fakePM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	if f.rootErr != nil {
+		return "", f.rootErr
+	}
 	if f.root != "" {
 		return f.root, nil
 	}
