@@ -1464,3 +1464,43 @@ func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
 	assert.Equal(t, want, val)
 	assert.Equal(t, ".venv", res.VenvPath)
 }
+
+func TestWritePyprojectNoOpWritesNothing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, pyprojectFile)
+	content := []byte("[project]\nname = \"x\"\n")
+	require.NoError(t, os.WriteFile(path, content, 0o644))
+
+	p := &Pipeline{ProjectDir: dir, res: NewResult()}
+	backup, mutated, perr := p.writePyproject(path, content, false)
+	require.Nil(t, perr)
+	assert.Empty(t, backup)
+	assert.False(t, mutated)
+	assert.NoFileExists(t, filepath.Join(dir, backupFile))
+}
+
+func TestWritePyprojectBacksUpInItsOwnFolder(t *testing.T) {
+	project := t.TempDir()
+	other := t.TempDir()
+	path := filepath.Join(other, pyprojectFile)
+	require.NoError(t, os.WriteFile(path, []byte("[project]\nname = \"x\"\n"), 0o644))
+
+	p := &Pipeline{ProjectDir: project, res: NewResult()}
+	backup, mutated, perr := p.writePyproject(path, []byte("[project]\nname = \"y\"\n"), false)
+	require.Nil(t, perr)
+	assert.True(t, mutated)
+	assert.Equal(t, filepath.Join(other, backupFile), backup)
+	assert.NoFileExists(t, filepath.Join(project, backupFile))
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"y\"\n", string(got))
+}
+
+func TestPyprojectDiffLabels(t *testing.T) {
+	d := pyprojectDiff("pyproject.toml", []byte("a\n"), []byte("b\n"), false)
+	assert.Contains(t, d, "--- pyproject.toml")
+	assert.Contains(t, d, "+++ pyproject.toml.new")
+	g := pyprojectDiff("pyproject.toml", nil, []byte("b\n"), true)
+	assert.Contains(t, g, "+++ pyproject.toml")
+	assert.NotContains(t, g, ".new")
+}
