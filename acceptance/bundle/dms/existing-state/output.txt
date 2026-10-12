@@ -1,6 +1,6 @@
 
-=== Deploy without recording
->>> [CLI] bundle deploy
+=== Config disables recording even when the environment enables it
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Created jobs.one
 Created jobs.two
@@ -20,7 +20,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> cp databricks.yml .databricks/bundle/default/resources.json
 
-=== Enable recording with an invalid local cache: register remote serial 1 in version 2, then deploy updates in version 3
+=== Config enables recording despite the disabled environment and invalid local cache: register version 2, then deploy version 3
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Enabling deployment history...

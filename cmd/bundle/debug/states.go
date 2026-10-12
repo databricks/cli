@@ -21,11 +21,9 @@ func NewStatesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
-			// when using filers must run Initialize() phase otherwise some paths are not present and this happens:
-			// Error: reading terraform.tfstate: opening: relative path escapes root: terraform.tfstate
-			SkipInitialize: !forcePull,
-			ReadState:      true,
-			AlwaysPull:     forcePull,
+			// Initialize remote paths before reading state through workspace filers.
+			ReadState:  true,
+			AlwaysPull: forcePull,
 		}
 
 		_, stateDesc, err := utils.ProcessBundleRet(cmd, opts)

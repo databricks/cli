@@ -89,6 +89,9 @@ type ProcessOptions struct {
 	// finding the matching local files.
 	ReadPlanPath string
 
+	// PostStateResolutionFunc runs before deployment history settings are enforced.
+	PostStateResolutionFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
+
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
@@ -176,10 +179,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	// History-enabled state reads need initialized remote paths even without --force-pull.
-	if opts.ReadState && configuresDeploymentHistory(ctx, b) {
-		opts.SkipInitialize = false
-	}
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -365,9 +364,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		b.MigratingToDMS = opts.Deploy && stateDesc.Engine.IsDirect() && !stateDesc.IsDMS() && configuresDeploymentHistory(ctx, b)
-		if b.MigratingToDMS && opts.ReadPlanPath != "" {
-			return b, stateDesc, errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
+		if opts.PostStateResolutionFunc != nil {
+			if err := opts.PostStateResolutionFunc(ctx, b, stateDesc); err != nil {
+				return b, stateDesc, err
+			}
 		}
 		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting && !b.MigratingToDMS {
 			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
@@ -671,7 +671,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
-	configured := configuresDeploymentHistory(ctx, b)
+	configured := ConfiguresDeploymentHistory(ctx, b)
 	if stateDesc.SourcePath == "" {
 		if configured {
 			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
@@ -686,7 +686,7 @@ func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stat
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
-	configured := configuresDeploymentHistory(ctx, b)
+	configured := ConfiguresDeploymentHistory(ctx, b)
 	recorded := stateDesc.IsDMS()
 	if configured == recorded {
 		return nil
@@ -705,8 +705,12 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	return nil
 }
 
-func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
-	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+// ConfiguresDeploymentHistory reports whether the configuration or environment enables history.
+func ConfiguresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
 	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 

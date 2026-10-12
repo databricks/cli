@@ -3,7 +3,11 @@
 package bundle
 
 import (
+	"context"
+	"errors"
+
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
@@ -66,6 +70,13 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 				if cmd.Flag("fail-on-active-runs").Changed {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
 				}
+			},
+			PostStateResolutionFunc: func(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateDesc) error {
+				b.MigratingToDMS = state.Engine.IsDirect() && !state.IsDMS() && utils.ConfiguresDeploymentHistory(ctx, b)
+				if b.MigratingToDMS && readPlanPath != "" {
+					return errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
+				}
+				return nil
 			},
 			Verbose:      verbose,
 			AlwaysPull:   true,

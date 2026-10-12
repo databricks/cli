@@ -1,15 +1,16 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Deploy without recording"
-trace $CLI bundle deploy
+title "Config disables recording even when the environment enables it"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 replace_ids.py
 trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
 trace cp databricks.yml .databricks/bundle/default/resources.json
 
-title "Enable recording with an invalid local cache: register remote serial 1 in version 2, then deploy updates in version 3"
-export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
+title "Config enables recording despite the disabled environment and invalid local cache: register version 2, then deploy version 3"
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
 update_file.py databricks.yml 'name: one' 'name: updated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' '?version=2' '?version=3'
 trace print_requests.py --dms //api/2.0/bundle //api/2.2/jobs --oneline

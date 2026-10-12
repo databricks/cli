@@ -19,4 +19,5 @@ create schemas.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> test ! -e .databricks/bundle/default/resources.json
+>>> jq -e .state == {} .databricks/bundle/default/resources.json
+true

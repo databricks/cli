@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/prompt"
@@ -179,6 +180,13 @@ func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions) error {
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
 			applyDeployFlags(cmd, b, opts)
+		},
+		PostStateResolutionFunc: func(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateDesc) error {
+			b.MigratingToDMS = state.Engine.IsDirect() && !state.IsDMS() && utils.ConfiguresDeploymentHistory(ctx, b)
+			if b.MigratingToDMS && opts.readPlanPath != "" {
+				return errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
+			}
+			return nil
 		},
 		// Context is already initialized by the workspace command's PreRunE
 		SkipInitContext: true,
