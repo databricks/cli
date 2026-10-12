@@ -300,6 +300,34 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 	return "", false
 }
 
+// WorkspaceRoot asks uv for the workspace root of projectDir (`uv workspace
+// dir`, added in uv 0.9.9). Under --dry-run EnsureAvailable has not run, so the
+// binary is discovered here without installing it.
+// https://docs.astral.sh/uv/reference/cli/#uv-workspace-dir
+func (m *uvManager) WorkspaceRoot(ctx context.Context, projectDir string) (string, error) {
+	bin := m.bin
+	if bin == "" {
+		found, err := discoverUv(ctx)
+		if err != nil {
+			return "", err
+		}
+		bin = found
+	}
+	out, err := process.Background(ctx, append([]string{bin}, m.workspaceDirArgs()...),
+		process.WithDir(projectDir),
+		process.WithProcessGroup(),
+	)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
+// workspaceDirArgs returns the argument slice for `uv workspace dir`.
+func (m *uvManager) workspaceDirArgs() []string {
+	return []string{"workspace", "dir"}
+}
+
 // syncArgs returns the argument slice for `uv sync` (without the binary),
 // pinning the interpreter to python via --python.
 func (m *uvManager) syncArgs(python string) []string {

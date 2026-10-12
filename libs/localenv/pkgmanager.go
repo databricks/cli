@@ -16,6 +16,11 @@ type PackageManager interface {
 	// minor. The returned executable is passed unchanged to Provision.
 	EnsurePython(ctx context.Context, minor string) (PythonSelection, error)
 
+	// WorkspaceRoot returns the absolute root of the workspace that the package
+	// manager uses for projectDir. For a project that is not a workspace member,
+	// this is projectDir itself.
+	WorkspaceRoot(ctx context.Context, projectDir string) (string, error)
+
 	// Provision installs the project dependencies inside projectDir, pinning the
 	// environment to python, which is either a minor request (e.g. "3.12") or an
 	// exact interpreter path selected by EnsurePython.

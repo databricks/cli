@@ -27,13 +27,20 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
+type fakePM struct{ py, dbc, pyspark, dbcImportErr, root string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
+func (f fakePM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	if f.root != "" {
+		return f.root, nil
+	}
+	return projectDir, nil
+}
+
 func (fakePM) Provision(context.Context, string, string) error     { return nil }
 func (fakePM) PostProvision(context.Context, string, string) error { return nil }
 func (f fakePM) Validate(context.Context, string, string) (VenvInfo, error) {
@@ -52,6 +59,10 @@ func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
 
 func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, error) {
 	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
+}
+
+func (noProvisionPM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	return projectDir, nil
 }
 
 func (noProvisionPM) Provision(context.Context, string, string) error {
