@@ -67,7 +67,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -85,7 +85,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -103,7 +103,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -121,7 +121,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -139,7 +139,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -157,7 +157,7 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[CMD_EXEC_ID_HASH]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
