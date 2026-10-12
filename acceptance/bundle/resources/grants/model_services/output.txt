@@ -4,6 +4,7 @@
 >>> print_requests.py --get //permissions
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-model-service-grants-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-grants-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-grants-[UNIQUE_NAME]/default/files...
 Created model_services.my_model_service
 Created model_services.my_model_service.grants

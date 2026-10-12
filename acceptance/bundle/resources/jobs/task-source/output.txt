@@ -4,6 +4,7 @@ Warning: invalid value "github" for enum field. Valid values are [awsCodeCommit 
   at resources.jobs.git_job.git_source.git_provider
   in databricks.yml:8:19
 
+Creating a new deployment of bundle "task-source" at /Workspace/Users/[USERNAME]/.bundle/task-source/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
 Created jobs.git_job
 Created jobs.workspace_job

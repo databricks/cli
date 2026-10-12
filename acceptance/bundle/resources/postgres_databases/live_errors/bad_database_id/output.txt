@@ -1,3 +1,4 @@
+Creating a new deployment of bundle "bad-database-id-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/bad-database-id-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-database-id-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project

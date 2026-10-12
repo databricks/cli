@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "schema-grants-manage-out-of-band-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/schema-grants-manage-out-of-band-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-manage-out-of-band-[UNIQUE_NAME]/default/files...
 Created schemas.grants_schema
 Created schemas.grants_schema.grants

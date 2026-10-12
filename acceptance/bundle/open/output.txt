@@ -12,6 +12,7 @@ Error: resource does not have a URL associated with it (has it been deployed?)
 Exit code: 1
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "caterpillar" at /Workspace/Users/[USERNAME]/.bundle/caterpillar/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted

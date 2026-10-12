@@ -1,6 +1,7 @@
 
 === Initial deployment with STANDARD endpoint_type
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-vs-index-with-endpoint-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index

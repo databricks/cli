@@ -1,5 +1,6 @@
 
 >>> [CLI] pipelines deploy
+Creating a new deployment of bundle "test-create-pipeline" at /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
 Created pipelines.foo
 Files: 2 uploaded, 0 deleted

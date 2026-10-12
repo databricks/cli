@@ -24,6 +24,7 @@ Warning: The "development: false" set by a Python mutator is ignored when runnin
 
 To run this pipeline in production, set "presets.pipelines_development: false" on the target.
 
+Creating a new deployment of bundle "my_project" at /Workspace/Users/[USERNAME]/.bundle/my_project/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
 Created pipelines.my_pipeline
 Files: 0 uploaded, 0 deleted

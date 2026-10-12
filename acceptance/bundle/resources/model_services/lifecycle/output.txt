@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-model-service-test-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-test-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-test-[UNIQUE_NAME]/default/files...
 Created model_services.ms
 Files: 2 uploaded, 0 deleted

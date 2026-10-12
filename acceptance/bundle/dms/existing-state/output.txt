@@ -1,6 +1,7 @@
 
 === Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-existing-state-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Created jobs.one
 Files: 2 uploaded, 0 deleted
@@ -56,6 +57,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Creating a new deployment of bundle "dms-existing-state-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Created jobs.one
 Files: 2 uploaded, 0 deleted

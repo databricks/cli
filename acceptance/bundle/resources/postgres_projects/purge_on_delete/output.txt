@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-postgres-purge-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default/files...
 Created postgres_projects.hard_delete
 Created postgres_projects.soft_delete

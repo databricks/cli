@@ -1,6 +1,7 @@
 
 === Deploy a pipeline with cascade_on_destroy: true (state records true)
 >>> [CLI] pipelines deploy
+Creating a new deployment of bundle "test-pipeline-destroy-cascade-divergence" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default/files...
 Created pipelines.my_pipeline
 Files: 1 uploaded, 0 deleted

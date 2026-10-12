@@ -1,6 +1,7 @@
 
 === Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; other bundle/dms tests cover it.
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-multiple-resources-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Created jobs.five
 Created jobs.four

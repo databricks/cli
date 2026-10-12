@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "photon-true" at /Workspace/Users/[USERNAME]/.bundle/photon-true/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/photon-true/default/files...
 Created pipelines.my
 Files: 2 uploaded, 0 deleted

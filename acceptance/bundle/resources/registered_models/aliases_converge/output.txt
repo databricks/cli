@@ -3,6 +3,7 @@
 
 === Initial deployment with aliases set
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-registered-models-aliases-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
 Created registered_models.my_registered_model
 Files: 2 uploaded, 0 deleted

@@ -1,6 +1,7 @@
 
 === Deploy so there is a recorded resource to recreate
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-upload-fails-once-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
 Created schemas.foo
 Files: 2 uploaded, 0 deleted

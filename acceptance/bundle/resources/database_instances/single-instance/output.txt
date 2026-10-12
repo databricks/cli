@@ -21,6 +21,7 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-lakebase-single-instance-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default/files...
 Created database_instances.my_database
 Files: 2 uploaded, 0 deleted

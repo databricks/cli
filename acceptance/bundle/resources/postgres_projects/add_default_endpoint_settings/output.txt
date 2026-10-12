@@ -1,6 +1,7 @@
 
 === Initial deployment with no default_endpoint_settings block
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted

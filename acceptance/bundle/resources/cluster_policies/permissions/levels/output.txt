@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "cluster-policy-permission-levels-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/cluster-policy-permission-levels-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-policy-permission-levels-[UNIQUE_NAME]/default/files...
 Created cluster_policies.test_cluster_policy
 Created cluster_policies.test_cluster_policy.permissions

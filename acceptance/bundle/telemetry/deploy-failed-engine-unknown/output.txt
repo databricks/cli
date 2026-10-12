@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Error: Failed to acquire deployment lock: Internal error
 Error: Internal error (500 INTERNAL_ERROR)
 

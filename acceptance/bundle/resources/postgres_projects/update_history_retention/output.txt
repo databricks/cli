@@ -1,6 +1,7 @@
 
 === Initial deployment with history_retention_duration: 604800s
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "update-postgres-project-retention-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-retention-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-retention-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted

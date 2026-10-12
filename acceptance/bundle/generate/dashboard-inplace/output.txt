@@ -4,6 +4,7 @@
 
 === deploy initial dashboard
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dashboard update inplace" at /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
 Created dashboards.test_dashboard
 Files: 2 uploaded, 0 deleted

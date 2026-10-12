@@ -33,6 +33,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-lakebase-synced-table-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default/files...
 Created database_catalogs.my_catalog
 Created database_instances.my_instance

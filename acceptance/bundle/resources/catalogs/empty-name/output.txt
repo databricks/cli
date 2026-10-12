@@ -1,5 +1,6 @@
 
 >>> musterr [CLI] bundle deploy
+Creating a new deployment of bundle "catalog-empty-name-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/catalog-empty-name-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/catalog-empty-name-[UNIQUE_NAME]/default/files...
 Error: cannot create resources.catalogs.mycatalog: Invalid input: RPC CreateCatalog Field managedcatalog.CatalogInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward slashes, or control characters. (400 INVALID_PARAMETER_VALUE)
 

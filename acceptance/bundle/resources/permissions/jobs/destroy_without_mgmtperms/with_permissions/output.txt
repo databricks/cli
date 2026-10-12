@@ -11,6 +11,7 @@
 No active deployment found to destroy!
 
 >>> as-test-sp [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Created jobs.foo.permissions

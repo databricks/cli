@@ -8,6 +8,7 @@
 }
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "cluster_policy_definition_yaml" at /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.pol
 Files: 2 uploaded, 0 deleted

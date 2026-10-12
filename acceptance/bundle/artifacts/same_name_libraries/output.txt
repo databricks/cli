@@ -1,5 +1,6 @@
 
 >>> errcode [CLI] bundle deploy
+Creating a new deployment of bundle "same_name_libraries" at /Workspace/Users/[USERNAME]/.bundle/same_name_libraries/default
 Building whl1...
 Building whl2...
 Error: Duplicate local library names: my_default_python-0.0.1-py3-none-any.whl

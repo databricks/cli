@@ -2,6 +2,7 @@
 === No engine configured and no state: deploy defaults to the direct engine
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-engine-default" at /Workspace/Users/[USERNAME]/.bundle/test-engine-default/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-engine-default/default/files...
 Created schemas.foo
 Files: 1 uploaded, 0 deleted

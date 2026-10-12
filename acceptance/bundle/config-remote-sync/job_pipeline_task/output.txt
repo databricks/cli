@@ -2,6 +2,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   at resources.pipelines.my_pipeline.development
   in databricks.yml:8:20
 
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created pipelines.my_pipeline

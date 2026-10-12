@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy -t no_permissions
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/no_permissions
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/no_permissions/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -17,6 +18,7 @@ state_path_is_shared false
 state_path_other false
 
 >>> [CLI] bundle deploy -t user_declared
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -46,6 +48,7 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:23:7
 
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -63,6 +66,7 @@ state_path_is_shared false
 state_path_other false
 
 >>> [CLI] bundle deploy -t other_user_not_declared
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/other_user_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/other_user_not_declared/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -80,6 +84,7 @@ state_path_is_shared false
 state_path_other false
 
 >>> [CLI] bundle deploy -t workspace_other
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/workspace_other
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/workspace_other/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -109,6 +114,7 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:47:7
 
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
@@ -126,6 +132,7 @@ state_path_is_shared true
 state_path_other false
 
 >>> [CLI] bundle deploy -t shared_not_declared
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged

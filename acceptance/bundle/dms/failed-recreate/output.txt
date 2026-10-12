@@ -1,6 +1,7 @@
 
 === Deploy the schema, so there is a resource to recreate
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-failed-recreate-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/files...
 Created schemas.foo
 Files: 2 uploaded, 0 deleted

@@ -20,6 +20,7 @@ Error: no such resource: schemas.my_schema.grants
 
 
 === bundle deploy --select jobs.my_job
+Creating a new deployment of bundle "select-subnodes-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created jobs.my_job.permissions

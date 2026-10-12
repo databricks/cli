@@ -1,6 +1,7 @@
 
 === Deploy with started=true so the app has an active deployment
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "config-drift-stopped-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default/files...
 ✓ Deployment succeeded
 Created apps.myapp

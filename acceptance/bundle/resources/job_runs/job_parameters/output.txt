@@ -1,6 +1,7 @@
 
 === deploy triggers the run with only the overridden parameter
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "job-runs-job-parameters" at /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
 Created jobs.my_job
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]

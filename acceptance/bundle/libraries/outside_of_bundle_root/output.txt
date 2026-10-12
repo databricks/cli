@@ -26,6 +26,7 @@ Validation OK!
 ]
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "outside_of_bundle_root" at /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default
 Uploading ../lib/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
 Created jobs.test

@@ -2,6 +2,7 @@
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy --plan plan.json
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Warn: Plan was created with CLI version 1.2.3 but current version is [CLI_VERSION]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job

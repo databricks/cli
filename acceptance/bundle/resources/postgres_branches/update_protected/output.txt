@@ -18,6 +18,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "update-postgres-branch-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
 Created postgres_branches.dev_branch
 Created postgres_projects.my_project

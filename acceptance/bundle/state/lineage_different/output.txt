@@ -1,6 +1,6 @@
 
 >>> musterr [CLI] bundle plan
-Error: lineage mismatch in state files
+Error: the bundle's root path already contains state from a different deployment (lineage mismatch). Another bundle may be deployed to the same root path, or this bundle was re-deployed from a different machine or checkout after a destroy. Set a unique bundle.name or workspace.root_path so this bundle deploys to its own location
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
@@ -8,7 +8,7 @@ Available state files:
 
 
 >>> musterr [CLI] bundle deploy
-Error: lineage mismatch in state files
+Error: the bundle's root path already contains state from a different deployment (lineage mismatch). Another bundle may be deployed to the same root path, or this bundle was re-deployed from a different machine or checkout after a destroy. Set a unique bundle.name or workspace.root_path so this bundle deploys to its own location
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
@@ -16,7 +16,7 @@ Available state files:
 
 
 >>> musterr [CLI] bundle summary
-Error: lineage mismatch in state files
+Error: the bundle's root path already contains state from a different deployment (lineage mismatch). Another bundle may be deployed to the same root path, or this bundle was re-deployed from a different machine or checkout after a destroy. Set a unique bundle.name or workspace.root_path so this bundle deploys to its own location
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
@@ -24,7 +24,7 @@ Available state files:
 
 
 >>> musterr [CLI] bundle destroy --auto-approve
-Error: lineage mismatch in state files
+Error: the bundle's root path already contains state from a different deployment (lineage mismatch). Another bundle may be deployed to the same root path, or this bundle was re-deployed from a different machine or checkout after a destroy. Set a unique bundle.name or workspace.root_path so this bundle deploys to its own location
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"

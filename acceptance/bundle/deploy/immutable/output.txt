@@ -69,6 +69,7 @@ Building python_artifact...
 }
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-immutable-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
 Building python_artifact...
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job

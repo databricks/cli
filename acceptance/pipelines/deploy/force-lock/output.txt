@@ -4,6 +4,7 @@
 
 === test deployment without force-lock (should fail)
 >>> errcode [CLI] pipelines deploy
+Creating a new deployment of bundle "test-pipeline-force-lock" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
 Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
 conflict with the other deployment if it is still active
@@ -16,6 +17,7 @@ Exit code: 1
 
 === test deployment with force-lock (should succeed)
 >>> [CLI] pipelines deploy --force-lock
+Creating a new deployment of bundle "test-pipeline-force-lock" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
 Created pipelines.foo
 Files: 2 uploaded, 0 deleted

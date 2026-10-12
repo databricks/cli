@@ -8,6 +8,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "jobs-permissions-test" at /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
 Created jobs.job_with_permissions
 Created jobs.job_with_permissions.permissions

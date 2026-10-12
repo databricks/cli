@@ -1,3 +1,4 @@
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Error: reading plan file: open nonexistent.json: no such file or directory
 
 

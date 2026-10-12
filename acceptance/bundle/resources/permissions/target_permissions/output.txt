@@ -6,6 +6,7 @@ create jobs.foo.permissions
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "jobs-permissions-test" at /Workspace/Users/[USERNAME]/test-bundle
 Uploading bundle files to /Workspace/Users/[USERNAME]/test-bundle/files...
 Created jobs.foo
 Created jobs.foo.permissions

@@ -1,3 +1,4 @@
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Error: parsing plan JSON: invalid character 'i' looking for beginning of value
 
 

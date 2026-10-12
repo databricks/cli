@@ -35,6 +35,7 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test_sql_warehouse" at /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
 Created sql_warehouses.test_sql_warehouse
 Files: 10 uploaded, 0 deleted

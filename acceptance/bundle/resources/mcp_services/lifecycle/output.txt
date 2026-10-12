@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-mcp-service-test-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-test-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-test-[UNIQUE_NAME]/default/files...
 Created mcp_services.mcp
 Files: 2 uploaded, 0 deleted

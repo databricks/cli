@@ -5,6 +5,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   at resources.pipelines.my_pipeline.development
   in databricks.yml:18:24
 
+Creating a new deployment of bundle "test-pipeline-dev-mode-changes" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/dev_false
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/dev_false/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted
@@ -36,6 +37,7 @@ Update ID: [UUID]
 
 === Switched to mode: development without redeploying: run sends development: true
 >>> [CLI] bundle deploy -t switch_to_dev
+Creating a new deployment of bundle "test-pipeline-dev-mode-changes" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_to_dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_to_dev/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted
@@ -59,6 +61,7 @@ Update ID: [UUID]
 
 === Switched away from mode: development without redeploying: run does not send development
 >>> [CLI] bundle deploy -t switch_from_dev
+Creating a new deployment of bundle "test-pipeline-dev-mode-changes" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_from_dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_from_dev/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted
@@ -80,6 +83,7 @@ Update ID: [UUID]
 
 === Pipeline switched to production outside the bundle: run on a development target sends development: true
 >>> [CLI] bundle deploy -t ui_toggle
+Creating a new deployment of bundle "test-pipeline-dev-mode-changes" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/ui_toggle
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/ui_toggle/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted

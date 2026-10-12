@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "out-of-band-delete" at /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted

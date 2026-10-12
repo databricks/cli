@@ -17,6 +17,7 @@ create pipelines.nyc_taxi_pipeline.permissions
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name
+Creating a new deployment of bundle "run_as" at /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name/files...
 Created pipelines.nyc_taxi_pipeline
 Created pipelines.nyc_taxi_pipeline.permissions
@@ -40,6 +41,7 @@ create pipelines.nyc_taxi_pipeline.permissions
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name_different
+Creating a new deployment of bundle "run_as" at /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files...
 Created pipelines.nyc_taxi_pipeline
 Created pipelines.nyc_taxi_pipeline.permissions
@@ -63,6 +65,7 @@ create pipelines.nyc_taxi_pipeline.permissions
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name
+Creating a new deployment of bundle "run_as" at /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name/files...
 Created pipelines.nyc_taxi_pipeline
 Created pipelines.nyc_taxi_pipeline.permissions
@@ -86,6 +89,7 @@ create pipelines.nyc_taxi_pipeline.permissions
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name_different
+Creating a new deployment of bundle "run_as" at /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/files...
 Created pipelines.nyc_taxi_pipeline
 Created pipelines.nyc_taxi_pipeline.permissions

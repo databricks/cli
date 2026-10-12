@@ -4,5 +4,6 @@
 >>> update_file.py out.plan.json "action": "action_renamed":
 
 >>> musterr [CLI] bundle deploy --plan out.plan.json
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Error: parsing plan JSON: json: unknown field "action_renamed"
 

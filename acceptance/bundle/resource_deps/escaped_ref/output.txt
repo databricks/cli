@@ -12,6 +12,7 @@
 }
 
 === Payload: escaped stays literal, real is resolved
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.bar
 Created jobs.foo

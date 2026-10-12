@@ -1,6 +1,7 @@
 
 === Deploy project, branch, role, and database
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "replace-existing-database-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_databases.my_database

@@ -2,6 +2,7 @@
 === bundle deploy --plan (no --select)
 
 >>> [CLI] bundle deploy --plan plan.json
+Creating a new deployment of bundle "select-plan-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/select-plan-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-plan-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 3 uploaded, 0 deleted

@@ -1,5 +1,6 @@
 
 >>> errcode [CLI] bundle deploy
+Creating a new deployment of bundle "git-source-python-task" at /Workspace/Users/[USERNAME]/.bundle/git-source-python-task/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/git-source-python-task/default/files...
 Created jobs.foo
 Files: 1 uploaded, 0 deleted

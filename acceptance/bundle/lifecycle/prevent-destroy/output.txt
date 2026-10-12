@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "prevent-destroy" at /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 Created pipelines.my_pipelines
 Created schemas.my_schema

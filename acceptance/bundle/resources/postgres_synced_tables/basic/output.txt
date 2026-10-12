@@ -36,6 +36,7 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-postgres-synced-table-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default/files...
 Created postgres_catalogs.my_catalog
 Created postgres_projects.my_project

@@ -14,6 +14,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 === deploy: per-resource lines, progress and summary
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created experiments.my_experiment
 Files: 2 uploaded, 0 deleted

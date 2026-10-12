@@ -1,6 +1,7 @@
 
 === Production target: update does not send development
 >>> [CLI] bundle deploy -t prod
+Creating a new deployment of bundle "test-pipeline-dev-mode" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/prod/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted
@@ -20,6 +21,7 @@ Update ID: [UUID]
 
 === Development target: update sends development: true
 >>> [CLI] bundle deploy -t dev
+Creating a new deployment of bundle "test-pipeline-dev-mode" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted
@@ -65,6 +67,7 @@ Pipeline configurations for this update:
 
 === Development target with pipelines_development preset disabled: update does not send development
 >>> [CLI] bundle deploy -t dev_preset_off
+Creating a new deployment of bundle "test-pipeline-dev-mode" at /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev_preset_off
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev_preset_off/files...
 Created pipelines.my_pipeline
 Files: 2 uploaded, 0 deleted

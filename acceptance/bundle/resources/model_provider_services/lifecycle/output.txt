@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-model-provider-service-test-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-model-provider-service-test-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-provider-service-test-[UNIQUE_NAME]/default/files...
 Created model_provider_services.mps
 Files: 2 uploaded, 0 deleted

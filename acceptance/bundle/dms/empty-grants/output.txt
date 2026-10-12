@@ -1,6 +1,7 @@
 
 === Deploy a schema with one grant: the grants node is recorded with its state
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-empty-grants-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-empty-grants-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-empty-grants-[UNIQUE_NAME]/default/files...
 Created schemas.foo
 Created schemas.foo.grants

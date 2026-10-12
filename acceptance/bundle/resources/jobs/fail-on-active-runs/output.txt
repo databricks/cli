@@ -10,6 +10,7 @@ Validation OK!
 
 === deploy empty bundle
 >>> [CLI] bundle deploy --fail-on-active-runs
+Creating a new deployment of bundle "deploy-jobs-active-runs-test-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 3 uploaded, 0 deleted

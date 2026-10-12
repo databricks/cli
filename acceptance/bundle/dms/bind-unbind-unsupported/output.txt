@@ -6,6 +6,7 @@ Error: bind is not supported for a bundle target that records deployment history
 
 === Deploy so the bundle records state, then unbind is refused too
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dms-bind-unbind-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted

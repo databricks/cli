@@ -1,6 +1,7 @@
 
 === the deploy stops waiting before the run finishes
 >>> errcode [CLI] bundle deploy
+Creating a new deployment of bundle "job-runs-interrupted-run" at /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
 Created jobs.my_job
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: Fault injected by test. (403 INJECTED)

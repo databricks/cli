@@ -1,6 +1,7 @@
 
 === Initial deployment with pg_settings.statement_timeout: 8000
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_endpoints.my_endpoint

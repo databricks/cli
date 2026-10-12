@@ -1,0 +1,1 @@
+* Explain the state "lineage mismatch" deploy error with its likely cause (another bundle deployed to the same root path, or a redeploy from a different machine or checkout after a destroy) and how to resolve it. ([#7005](https://github.com/databricks/cli/pull/7005))

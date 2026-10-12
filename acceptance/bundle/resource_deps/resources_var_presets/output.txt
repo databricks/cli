@@ -29,6 +29,7 @@
 }
 
 >>> [CLI] bundle deploy -t dev
+Creating a new deployment of bundle "test-bundle" at /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Created pipelines.mypipeline
 Created schemas.bar

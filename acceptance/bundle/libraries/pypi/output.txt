@@ -9,6 +9,7 @@
 ]
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "pypi" at /Workspace/Users/[USERNAME]/.bundle/pypi/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pypi/default/files...
 Created jobs.testjob
 Files: 2 uploaded, 0 deleted

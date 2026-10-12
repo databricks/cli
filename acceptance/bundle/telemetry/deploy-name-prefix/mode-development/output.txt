@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "development-prefix" at /Workspace/Users/[USERNAME]/.bundle/development-prefix/development
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/development-prefix/development/files...
 Created schemas.foo
 Files: 1 uploaded, 0 deleted

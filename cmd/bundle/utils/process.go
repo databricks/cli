@@ -252,6 +252,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
+
+		// On a first deploy there is no prior state at the root path, so this creates a
+		// brand-new deployment rather than updating an existing one. Announce it (like the
+		// per-resource lines, so -q/-qq silence it) so a user who renamed the bundle - which
+		// changes the root path - sees that the deploy does not reuse the old deployment.
+		if opts.Deploy && stateDesc.IsFirstDeployment() && b.Quiet < bundle.QuietSummary {
+			cmdio.LogString(ctx, fmt.Sprintf("Creating a new deployment of bundle %q at %s", b.Config.Bundle.Name, b.Config.Workspace.RootPath))
+		}
 	}
 
 	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain

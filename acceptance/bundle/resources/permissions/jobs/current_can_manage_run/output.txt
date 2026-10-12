@@ -25,6 +25,7 @@
 }
 
 >>> errcode [CLI] bundle deploy -t green
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
 Created jobs.interim_gold_layer_job
 Created jobs.interim_gold_layer_job.permissions

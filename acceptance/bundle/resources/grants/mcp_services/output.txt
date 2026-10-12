@@ -4,6 +4,7 @@
 >>> print_requests.py --get //permissions
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-mcp-service-grants-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-grants-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-grants-[UNIQUE_NAME]/default/files...
 Created mcp_services.my_mcp_service
 Created mcp_services.my_mcp_service.grants

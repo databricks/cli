@@ -1,6 +1,7 @@
 
 === Step 1: deploy with purge_on_delete unset
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "pg-purge-transitions-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
 Created postgres_projects.proj
 Files: 0 uploaded, 0 deleted

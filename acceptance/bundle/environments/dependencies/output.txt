@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "dependencies" at /Workspace/Users/[USERNAME]/.bundle/dependencies/default
 Uploading dist/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
 Created jobs.test_job

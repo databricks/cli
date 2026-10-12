@@ -31,6 +31,7 @@ create postgres_projects.my_project
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
+Creating a new deployment of bundle "deploy-postgres-branch-recreate-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project

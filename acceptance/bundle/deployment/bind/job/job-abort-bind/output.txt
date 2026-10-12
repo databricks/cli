@@ -11,6 +11,7 @@ Exit code: 1
 
 === Deploy bundle:
 >>> [CLI] bundle deploy --force-lock
+Creating a new deployment of bundle "test-bundle-[UNIQUE_NAME]" at /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
 Created jobs.foo
 Files: 2 uploaded, 0 deleted
