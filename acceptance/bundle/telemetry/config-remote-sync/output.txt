@@ -27,7 +27,7 @@ Resource: resources.jobs.foo
   ],
   "files_changed_count": 1,
   "state_serial": 1,
-  "state_lineage": "[LINEAGE_HASH]",
+  "state_lineage": "[UUID]",
   "state_source": "local",
   "states_available_count": 2,
   "state_resource_ids": {
@@ -36,3 +36,6 @@ Resource: resources.jobs.foo
     ]
   }
 }
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+"[LINEAGE_HASH]"

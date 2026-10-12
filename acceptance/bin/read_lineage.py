@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Update ACC_REPLS to replace the lineage hash of the state, as the CLI reports it in the user
-agent (lineage/...) and telemetry (state_lineage), with [LINEAGE_HASH].
+agent (lineage/...) and telemetry (execution_context.state_lineage_hash), with [LINEAGE_HASH].
 
 Use it after the deploy that mints a fresh lineage; fixture lineages hash to stable values
 and need no replacement.

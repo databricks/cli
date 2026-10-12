@@ -10,4 +10,7 @@ trace $CLI bundle config-remote-sync
 
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
 
+# The execution context of every event carries the hash of the state lineage.
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log | select(.bundle_config_remote_sync_event != null) | .execution_context.state_lineage_hash'
+
 rm "$OUT_REQUESTS"
