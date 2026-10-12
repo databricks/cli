@@ -1,0 +1,7 @@
+Cloud = true
+
+# Needs a SQL Server connection (CREATE CONNECTION) and Lakeflow Connect gateway ingestion,
+# which the aws-prod-ucws and azure-prod-ucws workspaces have.
+CloudEnvs.gcp = false
+
+Ignore = ["databricks.yml"]

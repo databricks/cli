@@ -569,6 +569,19 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
+	// Connections:
+	server.Handle("POST", "/api/2.1/unity-catalog/connections", func(req Request) any {
+		return req.Workspace.ConnectionsCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/connections/{name}", func(req Request) any {
+		return MapGetUC(req.Workspace, req.Workspace.Connections, req.Vars["name"], "Connection")
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/connections/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Connections, req.Vars["name"])
+	})
+
 	// Catalogs:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {

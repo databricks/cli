@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    $CLI connections delete conn_$UNIQUE_NAME
+}
+trap cleanup EXIT
+
+# The connection host is a placeholder: the gateway never reaches a real source.
+$CLI connections create --json '{"name": "conn_'$UNIQUE_NAME'", "connection_type": "SQLSERVER", "options": {"host": "sqlserver.example.test", "port": "1433", "user": "u", "password": "p"}}' > /dev/null
+
+trace $CLI bundle deploy
+
+gateway_fields() {
+    jq '.spec | {continuous, catalog, schema}'
+}
+
+title "The backend fills in continuous, catalog and schema"
+ppid=$(read_id.py gw)
+trace $CLI pipelines get $ppid | gateway_fields
+
+title "Fields the backend added are not drift"
+trace $CLI bundle plan | contains.py "0 to change"
+trace $CLI bundle deploy
