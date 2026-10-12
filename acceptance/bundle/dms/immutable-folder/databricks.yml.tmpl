@@ -1,0 +1,19 @@
+bundle:
+  name: dms-immutable-folder-$UNIQUE_NAME
+experimental:
+  immutable_folder: true
+  deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      tasks:
+        - task_key: main
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"
