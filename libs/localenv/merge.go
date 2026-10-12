@@ -175,6 +175,17 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 				regions = append(regions, regionToolUv)
 			}
 		}
+
+		// A workspace member's pins live at the root. A managed block left in the
+		// member by an earlier run has no effect (uv ignores it), so remove it
+		// rather than keep pins that disagree with what uv applies.
+		if !opts.SkipConstraints && opts.SkipToolUv {
+			var removed bool
+			lines, removed = removeManagedToolUv(lines)
+			if removed {
+				regions = append(regions, regionToolUv)
+			}
+		}
 		return lines, nil
 	})
 	if err != nil {
@@ -978,6 +989,23 @@ func mergeToolUv(lines, deps []string) ([]string, bool) {
 
 	// No [tool.uv] at all: append a fresh standalone managed block at EOF.
 	return appendManagedBlock(lines, renderToolUvBlock(deps, true)), true
+}
+
+// removeManagedToolUv removes the marker-bracketed managed [tool.uv] block, and
+// the one blank line appendManagedBlock puts before a standalone block. A
+// header-less block inside a user [tool.uv] table leaves the table's own keys.
+func removeManagedToolUv(lines []string) ([]string, bool) {
+	start, stop, found := markerBounds(lines)
+	if !found {
+		return lines, false
+	}
+	if start > 0 && strings.TrimSpace(lines[start-1]) == "" {
+		start--
+	}
+	out := make([]string, 0, len(lines)-(stop-start+1))
+	out = append(out, lines[:start]...)
+	out = append(out, lines[stop+1:]...)
+	return out, true
 }
 
 // markerAttachedToToolUv reports whether the managed marker region beginning at

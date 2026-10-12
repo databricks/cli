@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -483,7 +484,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if err != nil {
 		return nil, nil, greenfield, err
 	}
-	if root != nil && !bytes.Equal(root.base, root.merged) {
+	if root != nil && !bytes.Equal(root.base, root.merged) && !slices.Contains(changedRegions, regionToolUv) {
 		changedRegions = append(changedRegions, regionToolUv)
 	}
 
