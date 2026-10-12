@@ -191,7 +191,7 @@ func TestEnsurePythonFailsWhenFallbackFindsNothing(t *testing.T) {
 func TestVenvPythonPath(t *testing.T) {
 	// Validate invokes this interpreter directly (not via `uv run`) so it observes
 	// exactly the .venv that was provisioned, ignoring any active VIRTUAL_ENV.
-	got := venvPython(filepath.Join("p", "proj"))
+	got := venvPython(filepath.Join("p", "proj", ".venv"))
 	var want string
 	if runtime.GOOS == "windows" {
 		want = filepath.Join("p", "proj", ".venv", "Scripts", "python.exe")

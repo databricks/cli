@@ -73,6 +73,10 @@ type Pipeline struct {
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
 
+	// venv is the absolute virtualenv folder that provision seeds, validate
+	// inspects, and Result.VenvPath reports. Set in preflight.
+	venv string
+
 	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
 	// in tests so backup names are deterministic.
 	nowFn func() time.Time
@@ -173,6 +177,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
+	p.venv = filepath.Join(p.ProjectDir, venvDir)
 	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
@@ -539,7 +544,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.Provision(ctx, p.ProjectDir, selection.Executable); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
-	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.PostProvision(ctx, p.venv); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "post-provision failed"))
 	}
 	p.markOK(PhaseProvision, "")
@@ -564,7 +569,7 @@ func (p *Pipeline) hasConstraintConflictWarning() bool {
 // is not managed (opts.SkipDBConnect) the databricks-connect assertion and version
 // reporting are skipped.
 func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string, opts MergeOptions) error {
-	info, err := p.PM.Validate(ctx, p.ProjectDir)
+	info, err := p.PM.Validate(ctx, p.venv)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
 	}
@@ -622,10 +627,14 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	p.markOK(PhaseValidate, detail)
 
 	// venvPath is reported relative to the project root (spec §6.1), not as an
-	// absolute path: the value names the ".venv" the command provisions inside
-	// ProjectDir, and the VS Code consumer already knows the project root (it
-	// sets the working directory when it shells out). venvDir is already ".venv".
-	p.res.VenvPath = venvDir
+	// absolute path: the VS Code consumer already knows the project root (it sets
+	// the working directory when it shells out). For a standalone project this is
+	// ".venv".
+	rel, err := filepath.Rel(p.ProjectDir, p.venv)
+	if err != nil {
+		return p.fail(PhaseValidate, true, NewError(ErrValidate, err, "venv %s is not relative to the project", filepath.ToSlash(p.venv)))
+	}
+	p.res.VenvPath = filepath.ToSlash(rel)
 	if p.res.Resolved != nil {
 		if managed {
 			p.res.Resolved.DBConnectVersion = dbcVer

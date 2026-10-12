@@ -90,7 +90,7 @@ func TestProvisionCreatesAndValidatesVenv(t *testing.T) {
 	}
 
 	// A real interpreter exists in the created venv.
-	assert.FileExists(t, venvPython(dir))
+	assert.FileExists(t, venvPython(filepath.Join(dir, venvDir)))
 
 	// pyproject.toml + uv.lock were written; the env-owned pin was applied.
 	pyproject, err := os.ReadFile(filepath.Join(dir, "pyproject.toml"))

@@ -1420,3 +1420,47 @@ func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
 	// databricks-connect (orthogonal) is still added.
 	assert.Contains(t, s, "databricks-connect~=17.2.0")
 }
+
+// newServerlessTestPipeline returns a pipeline for dir against a test artifact
+// server (serverless v4) that is closed when the test ends.
+func newServerlessTestPipeline(t *testing.T, dir string) *Pipeline {
+	srv := newTestServer(t)
+	t.Cleanup(srv.Close)
+	return &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{},
+		PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+}
+
+// venvRecordingPM records the venv folder the pipeline hands to PostProvision
+// and Validate.
+type venvRecordingPM struct {
+	fakePM
+	postProvisionVenv, validateVenv *string
+}
+
+func (f venvRecordingPM) PostProvision(_ context.Context, venv string) error {
+	*f.postProvisionVenv = venv
+	return nil
+}
+
+func (f venvRecordingPM) Validate(ctx context.Context, venv string) (VenvInfo, error) {
+	*f.validateVenv = venv
+	return f.fakePM.Validate(ctx, venv)
+}
+
+func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
+	dir := writeProject(t)
+	var post, val string
+	p := newServerlessTestPipeline(t, dir)
+	p.PM = venvRecordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}, postProvisionVenv: &post, validateVenv: &val}
+
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	want := filepath.Join(dir, ".venv")
+	assert.Equal(t, want, post)
+	assert.Equal(t, want, val)
+	assert.Equal(t, ".venv", res.VenvPath)
+}
