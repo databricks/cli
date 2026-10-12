@@ -78,7 +78,7 @@ Stream logs after submission using:
         }
       }
     ],
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "run_name": "submit-smoke",
     "tasks": [
       {
@@ -129,7 +129,7 @@ Stream logs after submission using:
         }
       }
     ],
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][1]",
     "run_name": "b300-submit-smoke",
     "tasks": [
       {

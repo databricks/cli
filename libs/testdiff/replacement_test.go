@@ -74,6 +74,17 @@ func TestReplacement_DistinctSingleMatch(t *testing.T) {
 	assert.Equal(t, "[NUMBER]", got)
 }
 
+func TestReplacement_DistinctSingleValueRepeated(t *testing.T) {
+	rc := ReplacementsContext{Repls: []Replacement{
+		{Old: regexp.MustCompile(`\d+`), New: "[NUMBER]", Distinct: true},
+	}}
+
+	// A single distinct value, even repeated, stays unsuffixed: numbering only
+	// adds signal when there is more than one distinct value to tell apart.
+	got := rc.Replace("25\n25")
+	assert.Equal(t, "[NUMBER]\n[NUMBER]", got)
+}
+
 func TestReplaceAppliesInOrder(t *testing.T) {
 	input := "A"
 

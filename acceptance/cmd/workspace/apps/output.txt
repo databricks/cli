@@ -35,7 +35,7 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][0]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
@@ -77,7 +77,7 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][1]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"

@@ -41,14 +41,14 @@ Warning: The "development: false" set by a Python mutator is ignored when runnin
 
 To run this pipeline in production, set "presets.pipelines_development: false" on the target.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 
-Update ID: [UUID]
+Update ID: [UUID][1]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "development": true
   }

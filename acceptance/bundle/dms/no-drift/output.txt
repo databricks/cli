@@ -32,7 +32,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 1,
   "features": {
     "deployment_history": {}
@@ -47,7 +47,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][0]",
  "features": {
   "deployment_history": {}
  },
@@ -119,7 +119,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/pipelines/[UUID]",
+  "path": "/api/2.0/pipelines/[UUID][1]",
   "body": {
     "catalog": "main",
     "channel": "CURRENT",
@@ -177,7 +177,7 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 2,
   "features": {
     "deployment_history": {}
@@ -196,7 +196,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][0]",
  "features": {
   "deployment_history": {}
  },

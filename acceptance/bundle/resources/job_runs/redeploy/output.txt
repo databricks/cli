@@ -33,7 +33,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "dev"
@@ -126,7 +126,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][1]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "prod"

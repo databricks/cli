@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 1,
   "plan": {
     "resources.pipelines.foo1": {
@@ -15,19 +15,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[UUID][1]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo1 name",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][1]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[UUID][1]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[UUID][1]"
         }
       }
     },
@@ -48,19 +48,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[UUID][2]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo2 foo1.creator_user_name=[USERNAME]",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][2]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[UUID][2]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[UUID][2]"
         }
       }
     },
@@ -81,19 +81,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[UUID][3]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo3 foo2.state=IDLE",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][3]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[UUID][3]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[UUID][3]"
         }
       }
     },
@@ -114,19 +114,19 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[UUID][4]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][4]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[UUID][4]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[UUID][4]"
         }
       }
     }

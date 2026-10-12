@@ -17,7 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "job_id": [MY_JOB_ID]
   }
 }
@@ -33,8 +33,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers_state.on_bundle_deploy": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "[UUID]",
-    "new": "[UUID]"
+    "old": "[UUID][1]",
+    "new": "[UUID][2]"
   },
   "result_state": {
     "action": "skip",
@@ -76,7 +76,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][3]",
     "job_id": [MY_JOB_ID]
   }
 }
