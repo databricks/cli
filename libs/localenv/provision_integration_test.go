@@ -154,6 +154,36 @@ func TestProvisionWorkspaceMember(t *testing.T) {
 	assert.Less(t, major, 19, "the root constraint pyarrow<19 must apply")
 }
 
+// TestProvisionWorkspaceMemberProjectEnvironment runs the real pipeline from a
+// workspace member with a relative UV_PROJECT_ENVIRONMENT, which uv resolves
+// against the workspace root.
+func TestProvisionWorkspaceMemberProjectEnvironment(t *testing.T) {
+	requireRealProvision(t)
+	if _, err := process.Background(t.Context(), []string{mustUv(t, t.Context()), "workspace", "dir", "--help"}); err != nil {
+		t.Skipf("uv has no `workspace dir` command (added in uv 0.9.9): %v", err)
+	}
+	root := t.TempDir()
+	member := filepath.Join(root, "bundles", "a")
+	require.NoError(t, os.MkdirAll(member, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(member, pyprojectFile),
+		[]byte("[project]\nname = \"a\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(root, pyprojectFile),
+		[]byte("[project]\nname = \"root\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n\n[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n"), 0o644))
+	srv := serverlessConstraintServer(t)
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: false, ProjectDir: member,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "5"},
+		Compute: stubCompute{}, PM: NewUvManager(),
+	}
+	res, err := p.Run(env.Set(realProvisionCtx(t), EnvUvProjectEnvironment, "custom-env"))
+	require.NoError(t, err)
+	assert.Equal(t, "../../custom-env", res.VenvPath)
+	assert.FileExists(t, venvPython(filepath.Join(root, "custom-env")))
+	assert.NoDirExists(t, filepath.Join(root, venvDir))
+}
+
 // TestProvisionValidateIgnoresActiveVirtualEnv is the regression guard for the
 // validate fix: an active VIRTUAL_ENV pointing at a *real* interpreter of a
 // different version must not make validation read that interpreter instead of

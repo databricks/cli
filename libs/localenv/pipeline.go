@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/atomicfile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -217,10 +218,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 		return p.fail(PhasePreflight, false, NewError(ErrCanceled, err, "interrupted"))
 	}
 	venvBase := p.ProjectDir
-	p.venvRel = venvDir
 	if p.workspaceRoot != "" {
 		venvBase = p.workspaceRoot
-		p.venvRel = filepath.Join(rootRel, venvDir)
 		p.res.UvWorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
 		if !p.Check {
 			if err := ensureWritable(p.workspaceRoot); err != nil {
@@ -228,7 +227,9 @@ func (p *Pipeline) run(ctx context.Context) error {
 			}
 		}
 	}
-	p.venv = filepath.Join(venvBase, venvDir)
+	if err := p.setVenv(ctx, venvBase, rootRel); err != nil {
+		return err
+	}
 	p.markOK(PhasePreflight, detail)
 
 	// Phase: resolve — compute target → environment key.
@@ -324,6 +325,32 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// Phase: validate — assert the venv matches the target.
 	p.report(ctx, PhaseValidate)
 	return p.validate(ctx, pyMinor, c.DatabricksConnect, opts)
+}
+
+// setVenv sets the venv folder where uv sync puts the project environment:
+// UV_PROJECT_ENVIRONMENT when set, else .venv, relative to venvBase (the
+// workspace root or ProjectDir). rootRel is venvBase relative to ProjectDir
+// ("" outside a workspace), counted between symlink-resolved folders like every
+// relative path the OS resolves.
+func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error {
+	name := env.Get(ctx, EnvUvProjectEnvironment)
+	if name == "" {
+		name = venvDir
+	}
+	if !filepath.IsAbs(name) {
+		p.venv = filepath.Join(venvBase, name)
+		p.venvRel = filepath.Join(rootRel, name)
+		return nil
+	}
+	p.venv = name
+	resolved, err := filepath.EvalSymlinks(p.ProjectDir)
+	if err == nil {
+		p.venvRel, err = filepath.Rel(resolved, name)
+	}
+	if err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "%s=%s cannot be reached by a path relative to the project folder; use a path on the same volume", EnvUvProjectEnvironment, filepath.ToSlash(name)))
+	}
+	return nil
 }
 
 // resolve runs ResolveCompute and records the resolve phase.

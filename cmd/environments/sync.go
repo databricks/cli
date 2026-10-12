@@ -24,7 +24,9 @@ func newSetupLocalCommand() *cobra.Command {
 
 Use this when you want to develop or debug a Databricks project locally: it installs the matching Python version and a compatible databricks-connect, and pins your dependencies to versions known to work with your chosen compute. It creates or updates a .venv (managed by uv) in the current directory and records the setup in pyproject.toml, leaving the rest of your project untouched.
 
-In a uv workspace member, the command uses the shared .venv at the workspace root and writes the dependency constraints to the root pyproject.toml, because uv reads them only from there. uv sync installs the current member's dependencies into the shared .venv and removes packages that only other members need. All members share one environment, so they must target compatible compute.`,
+In a uv workspace member, the command uses the shared .venv at the workspace root and writes the dependency constraints to the root pyproject.toml, because uv reads them only from there. uv sync installs the current member's dependencies into the shared .venv and removes packages that only other members need. All members share one environment, so they must target compatible compute.
+
+If UV_PROJECT_ENVIRONMENT is set, the command uses that environment instead of .venv, as uv does.`,
 		Example: `  # Match a serverless version
   databricks environments setup-local --serverless-version 5
 

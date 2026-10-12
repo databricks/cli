@@ -23,6 +23,12 @@ import (
 // that would otherwise be declined for lack of a TTY. Any truthy value enables it.
 const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 
+// EnvUvProjectEnvironment is uv's own setting for where `uv sync` puts the
+// project environment: an absolute path as is, a relative one against the
+// workspace root (or the project root outside a workspace).
+// https://docs.astral.sh/uv/reference/environment/#uv_project_environment
+const EnvUvProjectEnvironment = "UV_PROJECT_ENVIRONMENT"
+
 // uvManager implements PackageManager using the uv tool.
 // https://docs.astral.sh/uv/
 type uvManager struct {
