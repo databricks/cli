@@ -76,9 +76,6 @@ schema.table (legacy Hive metastore).`,
 				rows = rows[:limit]
 			}
 
-			if root.OutputType(cmd) == flags.OutputText {
-				fmt.Fprintf(cmd.OutOrStdout(), "Table: %s\n", args[0])
-			}
 			if err := render(ctx, cmd, result.Columns, rows); err != nil {
 				return err
 			}

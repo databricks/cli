@@ -2,7 +2,6 @@
 === default limit shows a hint when more rows are available
 
 >>> [CLI] pipelines show main.default.people
-Table: main.default.people
 id
 --
 1
