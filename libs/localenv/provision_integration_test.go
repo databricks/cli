@@ -114,6 +114,9 @@ func TestProvisionCreatesAndValidatesVenv(t *testing.T) {
 // dependency).
 func TestProvisionWorkspaceMember(t *testing.T) {
 	requireRealProvision(t)
+	if _, err := process.Background(t.Context(), []string{mustUv(t, t.Context()), "workspace", "dir", "--help"}); err != nil {
+		t.Skipf("uv has no `workspace dir` command (added in uv 0.9.9): %v", err)
+	}
 	root := t.TempDir()
 	for _, m := range []string{"a", "b"} {
 		dir := filepath.Join(root, "bundles", m)

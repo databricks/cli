@@ -104,14 +104,6 @@ func newMemberPipeline(t *testing.T) (p *Pipeline, root, member string) {
 	return p, root, member
 }
 
-func warningCodes(res *Result) []string {
-	var codes []string
-	for _, w := range res.Warnings {
-		codes = append(codes, w.Code)
-	}
-	return codes
-}
-
 func TestPipelineWorkspaceMember(t *testing.T) {
 	p, root, member := newMemberPipeline(t)
 	res, err := p.Run(t.Context())
@@ -131,7 +123,7 @@ func TestPipelineWorkspaceMember(t *testing.T) {
 	assert.Equal(t, filepath.ToSlash(root), res.WorkspaceRoot)
 	assert.Equal(t, filepath.ToSlash(filepath.Join(root, backupFile)), res.WorkspaceBackupPath)
 	assert.Equal(t, filepath.ToSlash(filepath.Join(member, backupFile)), res.BackupPath)
-	assert.NotContains(t, warningCodes(res), WarnWorkspaceConstraintsReplaced, "first run must not warn")
+	assert.NotContains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced, "first run must not warn")
 }
 
 func TestPipelineWorkspaceMemberIdempotent(t *testing.T) {
@@ -142,7 +134,7 @@ func TestPipelineWorkspaceMemberIdempotent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, res.BackupPath)
 	assert.Empty(t, res.WorkspaceBackupPath)
-	assert.NotContains(t, warningCodes(res), WarnWorkspaceConstraintsReplaced)
+	assert.NotContains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
 	for _, dir := range []string{root, member} {
 		matches, _ := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
 		assert.Empty(t, matches, "no timestamped backup in %s", dir)
@@ -162,7 +154,7 @@ func TestPipelineWorkspaceConstraintsReplacedWarning(t *testing.T) {
 
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
-	assert.Contains(t, warningCodes(res), WarnWorkspaceConstraintsReplaced)
+	assert.Contains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
 }
 
 func TestPipelineWorkspaceMemberNoConstraints(t *testing.T) {
@@ -284,4 +276,32 @@ func TestPipelineWorkspaceMemberSymlinkBelowRoot(t *testing.T) {
 	rootBytes, err := os.ReadFile(filepath.Join(resolvedRoot, pyprojectFile))
 	require.NoError(t, err)
 	assert.Contains(t, string(rootBytes), "constraint-dependencies")
+}
+
+func TestPipelineWorkspaceReplacesUserRootPinsWithWarning(t *testing.T) {
+	p, root, _ := newMemberPipeline(t)
+	require.NoError(t, os.WriteFile(filepath.Join(root, pyprojectFile),
+		[]byte("[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n\n[tool.uv]\nconstraint-dependencies = [\"urllib3<2\"]\n"), 0o644))
+
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Contains(t, codes(res.Warnings), WarnWorkspaceConstraintsReplaced)
+}
+
+func TestApplyMergeRootFailureBeforeAnyWriteIsNotDiskMutated(t *testing.T) {
+	// The member merge is a no-op and the root file cannot be read, so nothing on
+	// disk changed and the failure must say so.
+	_, member := memberLayout(t)
+	memberPath := filepath.Join(member, pyprojectFile)
+	current, err := os.ReadFile(memberPath)
+	require.NoError(t, err)
+	p := &Pipeline{ProjectDir: member, res: NewResult()}
+	p.res.Phases = initialPhases()
+	missing := filepath.Join(t.TempDir(), pyprojectFile)
+
+	err = p.applyMerge(t.Context(), current, &rootMerge{path: missing, merged: []byte("x")}, false)
+	require.Error(t, err)
+	require.NotNil(t, p.res.Error)
+	assert.False(t, p.res.Error.DiskMutated)
+	assert.Contains(t, p.res.Error.Error(), "workspace root")
 }

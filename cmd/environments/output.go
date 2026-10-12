@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -152,7 +153,9 @@ func renderInstalledPythonFallback(ctx context.Context, res *libslocalenv.Result
 // that fails with "source is not recognized" and a path that does not exist.
 func activateHint(venvPath string) string {
 	if runtime.GOOS == "windows" {
-		return venvPath + `\Scripts\activate`
+		// venvPath is in slash form; cmd.exe reads "/" as a switch character, so a
+		// relative path such as ../../.venv needs backslashes.
+		return filepath.FromSlash(venvPath) + `\Scripts\activate`
 	}
 	return "source " + venvPath + "/bin/activate"
 }

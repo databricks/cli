@@ -250,9 +250,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// values, so c keeps the real artifact values throughout. --constraints-only maps
 	// to --no-dbconnect: it stops managing the pin (not reported here, not asserted in
 	// validate) but keeps the resolved value on c.
+	// A workspace member's constraint block goes to the workspace root (see
+	// planRootMerge). A greenfield project is never a member
+	// (discoverWorkspaceRoot), so RenderFreshPyproject needs no such option.
 	opts := MergeOptions{
-		SkipConstraints: p.SkipConstraints,
-		SkipDBConnect:   p.Mode == ModeConstraintsOnly,
+		SkipConstraints:            p.SkipConstraints,
+		SkipDBConnect:              p.Mode == ModeConstraintsOnly,
+		ConstraintsAtWorkspaceRoot: p.workspaceRoot != "",
 	}
 
 	dbcVersion := dbcVersionFromPin(c.DatabricksConnect)
@@ -443,12 +447,6 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	effective := *c
 	effective.EnvironmentVersion = envVersion
 
-	// A workspace member's constraint block goes to the workspace root (see
-	// planRootMerge), so the member merge leaves its own [tool.uv] alone. A
-	// greenfield project is never a member (discoverWorkspaceRoot), so
-	// RenderFreshPyproject needs no such option.
-	opts.SkipToolUv = p.workspaceRoot != ""
-
 	var changedRegions []string
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
@@ -544,7 +542,9 @@ func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, 
 	if err != nil {
 		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge workspace root constraints failed"))
 	}
-	if changed && bytes.Contains(base, []byte(managedMarkerStart)) {
+	// Any earlier pins are replaced, whether an earlier run (maybe for another
+	// bundle) wrote them or the user did, and the new ones apply to every member.
+	if changed && bytes.Contains(base, []byte("constraint-dependencies")) {
 		p.res.Warnings = append(p.res.Warnings, Warning{
 			Code:    WarnWorkspaceConstraintsReplaced,
 			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),
@@ -583,14 +583,15 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootM
 		return p.fail(PhaseMerge, mutated, perr)
 	}
 	if root != nil {
-		// The member is written first; if the root write fails, disk is already
-		// mutated, so the failure always reports diskMutated.
-		backup, _, perr := p.writePyproject(root.path, root.merged, false)
-		if backup != "" {
-			p.res.WorkspaceBackupPath = filepath.ToSlash(backup)
+		// The member is written first, so a root failure reports disk as mutated
+		// when either write changed it.
+		rootBackup, rootMutated, perr := p.writePyproject(root.path, root.merged, false)
+		if rootBackup != "" {
+			p.res.WorkspaceBackupPath = filepath.ToSlash(rootBackup)
 		}
 		if perr != nil {
-			return p.fail(PhaseMerge, true, perr)
+			perr.Msg = "workspace root: " + perr.Msg
+			return p.fail(PhaseMerge, mutated || rootMutated, perr)
 		}
 	}
 	return nil

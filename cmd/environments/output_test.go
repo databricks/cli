@@ -142,6 +142,16 @@ func TestRenderDryRun(t *testing.T) {
 	assert.Contains(t, out, "No files were modified")
 }
 
+func TestActivateHintWorkspaceMember(t *testing.T) {
+	// venvPath is in slash form; cmd.exe needs backslashes in a relative path.
+	hint := activateHint("../../.venv")
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, `..\..\.venv\Scripts\activate`, hint)
+	} else {
+		assert.Equal(t, "source ../../.venv/bin/activate", hint)
+	}
+}
+
 func TestActivateHint(t *testing.T) {
 	hint := activateHint(".venv")
 	if runtime.GOOS == "windows" {

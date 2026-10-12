@@ -1272,10 +1272,10 @@ func TestRenderFreshPyprojectSkipDBConnectOmitsDBConnect(t *testing.T) {
 	requireValidTOML(t, out)
 }
 
-func TestMergeManagedSkipToolUvLeavesBlockAlone(t *testing.T) {
+func TestMergeManagedConstraintsAtWorkspaceRootLeavesBlockAlone(t *testing.T) {
 	in := []byte("[project]\nname = \"a\"\nrequires-python = \">=3.10\"\n")
 	c := Constraints{RequiresPython: ">=3.12", ConstraintDeps: []string{"numpy==1.26.4"}}
-	out, regions, err := MergeManaged(in, c, MergeOptions{SkipToolUv: true})
+	out, regions, err := MergeManaged(in, c, MergeOptions{ConstraintsAtWorkspaceRoot: true})
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `requires-python = ">=3.12"`)
 	assert.NotContains(t, string(out), "constraint-dependencies")
@@ -1304,28 +1304,28 @@ func TestMergeToolUvBlockKeepsCRLF(t *testing.T) {
 	assert.NotContains(t, strings.ReplaceAll(string(out), "\r\n", ""), "\n")
 }
 
-func TestMergeManagedSkipToolUvRemovesStaleStandaloneBlock(t *testing.T) {
+func TestMergeManagedConstraintsAtWorkspaceRootRemovesStaleStandaloneBlock(t *testing.T) {
 	// A run before workspace support wrote the managed block into the member,
 	// where uv ignores it. The member merge removes it; the root holds the pins.
 	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n" +
 		managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
 	c := Constraints{RequiresPython: ">=3.12"}
-	out, regions, err := MergeManaged([]byte(in), c, MergeOptions{SkipToolUv: true, SkipDBConnect: true})
+	out, regions, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
 	require.NoError(t, err)
 	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n", string(out))
 	assert.Contains(t, regions, regionToolUv)
 
-	again, regions2, err := MergeManaged(out, c, MergeOptions{SkipToolUv: true, SkipDBConnect: true})
+	again, regions2, err := MergeManaged(out, c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
 	require.NoError(t, err)
 	assert.Equal(t, out, again)
 	assert.NotContains(t, regions2, regionToolUv)
 }
 
-func TestMergeManagedSkipToolUvRemovesStaleBlockKeepsUserTable(t *testing.T) {
+func TestMergeManagedConstraintsAtWorkspaceRootRemovesStaleBlockKeepsUserTable(t *testing.T) {
 	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n" +
 		managedMarkerStart + "\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
 	c := Constraints{RequiresPython: ">=3.12"}
-	out, _, err := MergeManaged([]byte(in), c, MergeOptions{SkipToolUv: true, SkipDBConnect: true})
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
 	require.NoError(t, err)
 	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
 }
@@ -1338,13 +1338,13 @@ func TestMergeToolUvBlockRejectsDottedKeyWorkspace(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMergeManagedSkipToolUvKeepsHeaderForTrailingUserKeys(t *testing.T) {
+func TestMergeManagedConstraintsAtWorkspaceRootKeepsHeaderForTrailingUserKeys(t *testing.T) {
 	// The user added a key below an earlier standalone block. It belongs to that
 	// block's [tool.uv] table, so the header must survive the block's removal.
 	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n" +
 		managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\npackage = false\n"
 	c := Constraints{RequiresPython: ">=3.12"}
-	out, _, err := MergeManaged([]byte(in), c, MergeOptions{SkipToolUv: true, SkipDBConnect: true})
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
 	require.NoError(t, err)
 	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
 }

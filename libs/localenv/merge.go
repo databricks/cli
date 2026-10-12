@@ -113,11 +113,11 @@ type MergeOptions struct {
 	// databricks-connect dependency unmanaged: an existing pin is preserved and none
 	// is injected or asserted.
 	SkipDBConnect bool
-	// SkipToolUv leaves the [tool.uv] constraint block of this file unmanaged. It
-	// is set for a uv workspace member, whose constraint block is written to the
-	// workspace root instead (uv reads constraint-dependencies only from the root).
-	// requires-python is still managed in the member.
-	SkipToolUv bool
+	// ConstraintsAtWorkspaceRoot is set for a uv workspace member: its constraint
+	// block is written to the workspace root (uv reads constraint-dependencies only
+	// there), so this file gets none, and a managed block that an earlier run left
+	// here is removed. requires-python is still managed in the member.
+	ConstraintsAtWorkspaceRoot bool
 }
 
 // MergeManaged applies the managed transforms to target, preserving every other
@@ -168,21 +168,17 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 			regions = append(regions, regionDatabricksEnvironment)
 		}
 
-		if !opts.SkipConstraints && !opts.SkipToolUv {
+		if !opts.SkipConstraints {
 			var uvChanged bool
-			lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
-			if uvChanged {
-				regions = append(regions, regionToolUv)
+			if opts.ConstraintsAtWorkspaceRoot {
+				// A managed block left in the member by an earlier run has no effect
+				// (uv ignores it), so remove it rather than keep pins that disagree
+				// with what uv applies.
+				lines, uvChanged = removeManagedToolUv(lines)
+			} else {
+				lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
 			}
-		}
-
-		// A workspace member's pins live at the root. A managed block left in the
-		// member by an earlier run has no effect (uv ignores it), so remove it
-		// rather than keep pins that disagree with what uv applies.
-		if !opts.SkipConstraints && opts.SkipToolUv {
-			var removed bool
-			lines, removed = removeManagedToolUv(lines)
-			if removed {
+			if uvChanged {
 				regions = append(regions, regionToolUv)
 			}
 		}
