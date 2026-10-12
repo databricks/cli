@@ -1,16 +1,26 @@
 
-=== Setup: deploy with history enabled and save the remote-state snapshot (LOG.setup)
-=== Unforced debug uses remote state over local serial 999 / wrong lineage; cmp proves the stale cache is replaced
->>> update_file.py .databricks/bundle/default/resources.json "state_version": 3, "state_version": 3, "serial": 999,
+=== Setup (LOG.setup)
+Current: DMS enabled; remote reference snapshot saved.
 
->>> update_file.py .databricks/bundle/default/resources.json "lineage": " "lineage": "stale-
+=== 1. Stale cache
+Expect: remote beats serial 999/wrong lineage; cache matches remote.
+
+>>> jq {serial, lineage} .databricks/bundle/default/resources.json
+{
+  "serial": 999,
+  "lineage": "stale-[UUID]"
+}
 
 >>> [CLI] bundle debug states
 resources.json: remote direct state serial=0 lineage="[UUID]"
 
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+PASS: stale cache replaced
 
-=== Copy YAML into JSON cache paths to simulate invalid JSON; remote state replaces the broken cache and removes Terraform state
+=== 2. Invalid cache
+Input: YAML in JSON cache paths.
+Expect: cache restored; Terraform absent; plan unchanged.
+
 >>> cp databricks.yml .databricks/bundle/default/resources.json
 
 >>> mkdir -p .databricks/bundle/default/terraform
@@ -23,8 +33,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> test ! -e .databricks/bundle/default/terraform/terraform.tfstate
 
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+PASS: invalid caches handled
 
-=== Unforced summary and open export resources.json; contains.py checks saved HTTP requests in LOG.*
+=== 3. Remote reads
+Expect: unforced summary/open both export remote resources.json.
+
 >>> [CLI] bundle summary
 
 >>> contains.py /api/2.0/workspace/export resources.json
@@ -33,8 +46,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 >>> contains.py /api/2.0/workspace/export resources.json
+PASS: summary and open checked
 
-=== Without remote state the plan must fail; cmp proves malformed local cache bytes remain unchanged
+=== 4. Missing remote
+Expect: bad JSON fails; local cache bytes remain unchanged.
+
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json
 
 >>> cp databricks.yml .databricks/bundle/default/resources.json
@@ -44,6 +60,4 @@ Error: invalid character 'b' looking for beginning of value
 
 
 >>> cmp databricks.yml .databricks/bundle/default/resources.json
-
-=== Restore the remote snapshot for cleanup; destroy output is kept in LOG.destroy
->>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.remote.json --format AUTO --overwrite
+PASS: failure preserved cache

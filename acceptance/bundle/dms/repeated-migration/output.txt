@@ -1,10 +1,20 @@
 
-=== Setup: deploy job one, migrate in version 2, update its name to updated in version 3, and save recorded state (LOG.setup)
-=== Before repeat migration, the existing backup contains job name one
+=== Setup (LOG.setup)
+Current: job=updated; DMS version=3; old backup=one.
+
+=== 1. Before
+Expect: old backup=one; latest snapshot=updated.
+
 >>> gron.py .databricks/resources.backup.first.json
 json.state.resources.jobs.one.state.name = "one";
 
-=== Restore the latest recorded state without the history marker: INITIAL_REGISTER version 4, then deploy version 5
+>>> gron.py .databricks/resources.before-repeat.json
+json.state.resources.jobs.one.state.name = "updated";
+PASS: names checked
+
+=== 2. Repeat deploy
+Expect: register=4; deploy=5; name=repeated; created=0.
+
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 
 >>> update_file.py databricks.yml name: updated name: repeated
@@ -17,51 +27,46 @@ Current Deployment Version: [DATABRICKS_URL]/deployments/[NUMID]?version=5
 Updated jobs.one
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+PASS: repeat deployed
 
-=== Completed registration and deployment preserve the original resource ID
+=== 3. DMS records
+Expect: versions complete; original ID preserved; name=repeated.
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-versions deployments/[NUMID] -o json
-[{"version_id":"4","previous_version_id":"3","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"},{"version_id":"5","previous_version_id":"4","version_type":"VERSION_TYPE_DEPLOY","status":"VERSION_STATUS_COMPLETED","completion_reason":"VERSION_COMPLETE_SUCCESS"}]
+version 4: previous=3 type=DEPLOY status=COMPLETED completion=SUCCESS
+version 5: previous=4 type=DEPLOY status=COMPLETED completion=SUCCESS
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/4 -o json
-[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_INITIAL_REGISTER","status":"OPERATION_STATUS_SUCCEEDED"}]
+operation 4: key=jobs.one id=[ONE_ID] action=INITIAL_REGISTER status=SUCCEEDED
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/5 -o json
-[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","action_type":"OPERATION_ACTION_TYPE_UPDATE","status":"OPERATION_STATUS_SUCCEEDED"}]
+operation 5: key=jobs.one id=[ONE_ID] action=UPDATE status=SUCCEEDED
 
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
-[{"resource_key":"jobs.one","resource_id":"[ONE_ID]","last_action_type":"OPERATION_ACTION_TYPE_UPDATE","last_version_id":"5","state":{"name":"repeated","tasks":[],"depends_on":[]}}]
+resource: key=jobs.one id=[ONE_ID]
+  last_action=UPDATE version=5 name=repeated
+  tasks=[] dependencies=[]
 
-=== The backup captures the latest pre-repeat name updated, before deployment changes it to repeated
+=== 4. Backup copy
+Expect: backup=updated; bytes match latest and differ from first.
+
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.repeat.json
 
 >>> cat .databricks/resources.backup.repeat.json
 {
- "state_version": 3,
- "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
- "serial": 3,
- "state": {
-  "resources.jobs.one": {
-   "__id__": "[ONE_ID]",
-   "state": {
-    "deployment": {
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "updated",
-    "queue": {
-     "enabled": true
+  "state_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 3,
+  "resources": {
+    "resources.jobs.one": {
+      "id": "[ONE_ID]",
+      "name": "updated"
     }
-   }
   }
- }
 }
 
-=== The refreshed backup equals the restored resources.json byte for byte
 >>> cmp .databricks/resources.before-repeat.json .databricks/resources.backup.repeat.json
 
-=== The first backup (name one) is replaced by the latest snapshot (name updated)
 >>> musterr cmp -s .databricks/resources.backup.first.json .databricks/resources.backup.repeat.json
+PASS: backup checked

@@ -1,42 +1,50 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-resolution-${UNIQUE_NAME}/default/state"
 
-title "Setup: deploy with history enabled and save the remote-state snapshot (LOG.setup)"
+title "Setup (LOG.setup)\nCurrent: DMS enabled; remote reference snapshot saved.\n"
 {
     trace $CLI bundle deploy
     trace cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
 } &> LOG.setup
 
-title "Unforced debug uses remote state over local serial 999 / wrong lineage; cmp proves the stale cache is replaced"
-trace update_file.py .databricks/bundle/default/resources.json '"state_version": 3,' '"state_version": 3, "serial": 999,'
-trace update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
+title "1. Stale cache\nExpect: remote beats serial 999/wrong lineage; cache matches remote.\n"
+{
+    trace update_file.py .databricks/bundle/default/resources.json '"state_version": 3,' '"state_version": 3, "serial": 999,'
+    trace update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
+} &> LOG.stale-cache
+trace jq '{serial, lineage}' .databricks/bundle/default/resources.json
 trace $CLI bundle debug states 2>&1 | contains.py 'remote direct state' '!local ' '!stale-' '!serial=999'
 trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+echo "PASS: stale cache replaced"
 
-title "Copy YAML into JSON cache paths to simulate invalid JSON; remote state replaces the broken cache and removes Terraform state"
+title "2. Invalid cache\nInput: YAML in JSON cache paths.\nExpect: cache restored; Terraform absent; plan unchanged.\n"
 trace cp databricks.yml .databricks/bundle/default/resources.json
 trace mkdir -p .databricks/bundle/default/terraform
 trace cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
 trace $CLI bundle plan | contains.py 'Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged'
 trace test ! -e .databricks/bundle/default/terraform/terraform.tfstate
 trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+echo "PASS: invalid caches handled"
 rm -f "$OUT_REQUESTS"
 
-title "Unforced summary and open export resources.json; contains.py checks saved HTTP requests in LOG.*"
+title "3. Remote reads\nExpect: unforced summary/open both export remote resources.json.\n"
 trace $CLI bundle summary > LOG.summary.output
 print_requests.py --get //workspace/export > LOG.summary.requests
 trace contains.py '/api/2.0/workspace/export' 'resources.json' < LOG.summary.requests > LOG.summary.requests-checked
 trace $CLI bundle open foo > LOG.open.output
 print_requests.py --get //workspace/export > LOG.open.requests
 trace contains.py '/api/2.0/workspace/export' 'resources.json' < LOG.open.requests > LOG.open.requests-checked
+echo "PASS: summary and open checked"
 
-title "Without remote state the plan must fail; cmp proves malformed local cache bytes remain unchanged"
+title "4. Missing remote\nExpect: bad JSON fails; local cache bytes remain unchanged.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace delete "$state_path/resources.json"
 trace cp databricks.yml .databricks/bundle/default/resources.json
 trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'invalid character'
 trace cmp databricks.yml .databricks/bundle/default/resources.json
+echo "PASS: failure preserved cache"
 
-title "Restore the remote snapshot for cleanup; destroy output is kept in LOG.destroy"
-trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.remote.json --format AUTO --overwrite
-$CLI bundle destroy --auto-approve &> LOG.destroy
+{
+    trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.remote.json --format AUTO --overwrite
+    trace $CLI bundle destroy --auto-approve
+} &> LOG.cleanup
 rm -f "$OUT_REQUESTS"
