@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -103,6 +105,50 @@ func TestProvisionCreatesAndValidatesVenv(t *testing.T) {
 	assert.Equal(t, "3.12", res.Resolved.PythonVersion)
 	assert.Truef(t, hasMajorPrefix(res.Resolved.DBConnectVersion, "17"),
 		"expected databricks-connect major 17, got %q", res.Resolved.DBConnectVersion)
+}
+
+// TestProvisionWorkspaceMember runs the real pipeline from a member of a uv
+// workspace with two members. uv sync creates the shared venv at the workspace
+// root, the constraint block lands in the root pyproject.toml, and uv applies it
+// (the lock honors the artifact's pyarrow<19 pin, a databricks-connect
+// dependency).
+func TestProvisionWorkspaceMember(t *testing.T) {
+	requireRealProvision(t)
+	root := t.TempDir()
+	for _, m := range []string{"a", "b"} {
+		dir := filepath.Join(root, "bundles", m)
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, pyprojectFile),
+			[]byte("[project]\nname = \""+m+"\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(root, pyprojectFile),
+		[]byte("[project]\nname = \"root\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n\n[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n"), 0o644))
+	member := filepath.Join(root, "bundles", "a")
+	srv := serverlessConstraintServer(t)
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: false, ProjectDir: member,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "5"},
+		Compute: stubCompute{}, PM: NewUvManager(),
+	}
+	res, err := p.Run(realProvisionCtx(t))
+	require.NoError(t, err)
+	assert.Equal(t, "../../.venv", res.VenvPath)
+	assert.FileExists(t, venvPython(filepath.Join(root, venvDir)))
+	assert.NoDirExists(t, filepath.Join(member, venvDir))
+
+	rootPyproject, err := os.ReadFile(filepath.Join(root, pyprojectFile))
+	require.NoError(t, err)
+	assert.Contains(t, string(rootPyproject), `"pyarrow<19"`)
+
+	lock, err := os.ReadFile(filepath.Join(root, "uv.lock"))
+	require.NoError(t, err)
+	m := regexp.MustCompile(`name = "pyarrow"\nversion = "(\d+)\.`).FindSubmatch(lock)
+	require.NotNil(t, m, "uv.lock has no pyarrow entry")
+	major, err := strconv.Atoi(string(m[1]))
+	require.NoError(t, err)
+	assert.Less(t, major, 19, "the root constraint pyarrow<19 must apply")
 }
 
 // TestProvisionValidateIgnoresActiveVirtualEnv is the regression guard for the
