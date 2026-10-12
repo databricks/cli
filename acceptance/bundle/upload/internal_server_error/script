@@ -1,2 +1,2 @@
-fault.py --body-contains "/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/files/file_to_upload.txt" "POST /api/2.0/workspace/import" 500 0 1000
+fault.py --body-contains "Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/files/file_to_upload.txt" "POST /api/2.0/workspace/import" 500 0 1000
 musterr $CLI bundle deploy
