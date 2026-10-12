@@ -166,8 +166,8 @@ func activateHint(venvPath string) string {
 }
 
 // quoteForCmd wraps path in double quotes when cmd.exe would otherwise split
-// it or read a special character in it (UV_PROJECT_ENVIRONMENT can name such a
-// folder).
+// it at a space or a command separator (UV_PROJECT_ENVIRONMENT can name such a
+// folder). Quotes do not stop %VAR% expansion; such folder names are rare.
 func quoteForCmd(path string) string {
 	if strings.ContainsAny(path, " \t&^()<>|,;=!") {
 		return `"` + path + `"`

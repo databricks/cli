@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -349,13 +350,18 @@ func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error 
 		p.venv = filepath.Clean(filepath.VolumeName(venvBase) + name)
 		p.venvRel = p.venv
 	default:
-		// uv joins a relative value to the symlink-resolved root, so ".." in it
-		// climbs the real folders.
-		resolvedBase, err := filepath.EvalSymlinks(venvBase)
-		if err != nil {
-			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
+		// uv joins a relative value to its working folder. On Unix that folder is
+		// symlink-resolved, so ".." in the value climbs the real folders; Windows
+		// keeps the path as given and resolves ".." by text.
+		base := venvBase
+		if runtime.GOOS != "windows" {
+			resolved, err := filepath.EvalSymlinks(venvBase)
+			if err != nil {
+				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
+			}
+			base = resolved
 		}
-		p.venv = filepath.Join(resolvedBase, name)
+		p.venv = filepath.Join(base, name)
 		p.venvRel = filepath.Join(rootRel, name)
 	}
 	return nil

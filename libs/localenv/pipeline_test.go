@@ -1538,6 +1538,16 @@ func resolvedPath(t *testing.T, path string) string {
 	return resolved
 }
 
+// uvJoinBase returns the folder uv joins a relative UV_PROJECT_ENVIRONMENT to:
+// symlink-resolved on Unix, as given on Windows.
+func uvJoinBase(t *testing.T, base string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return base
+	}
+	return resolvedPath(t, base)
+}
+
 func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 	// uv puts the project environment at UV_PROJECT_ENVIRONMENT: an absolute
 	// path as is, a relative one against the (symlink-resolved) workspace root,
@@ -1550,7 +1560,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 		setup        func(t *testing.T) (projectDir, base string, pm fakePM)
 		value        string
 		wantVenv     func(base string) string
-		wantVenvPath string
+		wantVenvPath func(venv string) string
 	}{
 		{
 			name: "relative, standalone",
@@ -1559,8 +1569,8 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        "custom-env",
-			wantVenv:     func(base string) string { return filepath.Join(resolvedPath(t, base), "custom-env") },
-			wantVenvPath: "custom-env",
+			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
 		},
 		{
 			name: "relative, workspace member",
@@ -1571,8 +1581,8 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return member, root, fakePM{py: "3.12", dbc: "17.2.0", root: root}
 			},
 			value:        "custom-env",
-			wantVenv:     func(base string) string { return filepath.Join(resolvedPath(t, base), "custom-env") },
-			wantVenvPath: "../../custom-env",
+			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "../../custom-env" },
 		},
 		{
 			name: "relative with .. through a symlinked project",
@@ -1587,7 +1597,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 			},
 			value:        filepath.Join("..", "env"),
 			wantVenv:     func(base string) string { return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env") },
-			wantVenvPath: "../env",
+			wantVenvPath: func(string) string { return "../env" },
 		},
 		{
 			name: "relative with a trailing slash",
@@ -1596,8 +1606,8 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        "custom-env/",
-			wantVenv:     func(base string) string { return filepath.Join(resolvedPath(t, base), "custom-env") },
-			wantVenvPath: "custom-env",
+			wantVenv:     func(base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
 		},
 		{
 			// On Windows a rooted path keeps the drive of the root, as in uv.
@@ -1611,8 +1621,8 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 			},
 			value:    `\envs\x`,
 			wantVenv: func(base string) string { return filepath.VolumeName(base) + `\envs\x` },
-			// The drive comes from the project, so the case derives it below.
-			wantVenvPath: "",
+			// The drive comes from the project.
+			wantVenvPath: filepath.ToSlash,
 		},
 		{
 			name: "absolute",
@@ -1622,7 +1632,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 			},
 			value:        abs,
 			wantVenv:     func(string) string { return abs },
-			wantVenvPath: filepath.ToSlash(abs),
+			wantVenvPath: func(string) string { return filepath.ToSlash(abs) },
 		},
 	}
 	for _, tc := range tests {
@@ -1637,11 +1647,7 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 			want := tc.wantVenv(base)
 			assert.Equal(t, want, pm.postProvisionVenv)
 			assert.Equal(t, want, pm.validateVenv)
-			wantVenvPath := tc.wantVenvPath
-			if wantVenvPath == "" {
-				wantVenvPath = filepath.ToSlash(want)
-			}
-			assert.Equal(t, wantVenvPath, res.VenvPath)
+			assert.Equal(t, tc.wantVenvPath(want), res.VenvPath)
 		})
 	}
 }
