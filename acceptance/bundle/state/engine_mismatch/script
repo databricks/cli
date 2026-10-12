@@ -1,4 +1,3 @@
-export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 mkdir -p .databricks/bundle/default/terraform
 echo '{"serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/terraform/terraform.tfstate
 

@@ -1,4 +1,3 @@
-export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 export DATABRICKS_BUNDLE_ENGINE=""
 mkdir -p .databricks/bundle/default/terraform
 echo "{" > .databricks/bundle/default/terraform/terraform.tfstate

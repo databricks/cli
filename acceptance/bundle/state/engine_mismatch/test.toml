@@ -1,1 +1,4 @@
+# Exercises local file-backed state; DMS remote-state behavior is covered in bundle/dms/state-resolution.
+EnvMatrix.DMS = [""]
+
 Ignore = [".databricks"]
