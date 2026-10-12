@@ -74,9 +74,12 @@ type Pipeline struct {
 	res *Result
 
 	// venv is the absolute virtualenv folder that provision seeds and validate
-	// inspects; venvRel is the same folder relative to ProjectDir, reported as
-	// Result.VenvPath. Both are set in preflight.
-	venv, venvRel string
+	// inspects. Set in preflight.
+	venv string
+
+	// venvRel is the venv folder relative to ProjectDir, reported as
+	// Result.VenvPath. Set in preflight.
+	venvRel string
 
 	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
 	// in tests so backup names are deterministic.

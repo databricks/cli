@@ -219,7 +219,7 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir, venv string) 
 	return nil
 }
 
-// Validate inspects the project's virtual environment: the Python minor version, the
+// Validate inspects the virtual environment at venv: the Python minor version, the
 // databricks-connect and standalone-pyspark distribution versions, and whether
 // databricks-connect actually imports. A missing databricks-connect or pyspark yields
 // an empty version rather than an error (PackageNotFoundError is caught), so the probe
