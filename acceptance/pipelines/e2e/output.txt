@@ -22,7 +22,7 @@ Created pipelines.lakeflow_project_etl
 Files: 13 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WORKSPACE_ID]
 
 === Run pipeline
 >>> [CLI] pipelines run
@@ -30,9 +30,9 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 
-Update ID: [UUID]
+Update ID: [UUID][1]
 
 Update for pipeline completed successfully.
 
@@ -46,17 +46,17 @@ Created pipelines.lakeflow_project_etl_2
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 View your job sample_job here: [DATABRICKS_URL]/jobs/[SAMPLE_JOB_ID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
-View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WORKSPACE_ID]
+View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID][2]?w=[WORKSPACE_ID]
 
 === Assert the second pipeline is created
->>> [CLI] pipelines get [UUID]
+>>> [CLI] pipelines get [UUID][2]
 {
   "creator_user_name": "[USERNAME]",
   "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
   "last_modified": [UNIX_TIME_MILLIS],
   "name": "[dev [USERNAME]] lakeflow_project_etl_2",
-  "pipeline_id": "[UUID]",
+  "pipeline_id": "[UUID][2]",
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "channel": "CURRENT",
@@ -66,9 +66,9 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
     },
     "development": true,
     "edition": "ADVANCED",
-    "id": "[UUID]",
+    "id": "[UUID][2]",
     "name": "[dev [USERNAME]] lakeflow_project_etl_2",
-    "storage": "dbfs:/pipelines/[UUID]",
+    "storage": "dbfs:/pipelines/[UUID][2]",
     "tags": {
       "dev": "[USERNAME]"
     }
@@ -81,9 +81,9 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][2]/updates/[UUID][3]
 
-Update ID: [UUID]
+Update ID: [UUID][3]
 
 Update for pipeline completed successfully.
 

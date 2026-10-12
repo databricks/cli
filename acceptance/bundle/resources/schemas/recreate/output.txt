@@ -80,8 +80,8 @@ Error: Schema 'main.myschema' does not exist.
   },
   "enable_predictive_optimization": "INHERIT",
   "full_name": "newmain.myschema",
-  "metastore_id": "[UUID]",
+  "metastore_id": "[UUID][0]",
   "name": "myschema",
   "owner": "[USERNAME]",
-  "schema_id": "[UUID]"
+  "schema_id": "[UUID][1]"
 }

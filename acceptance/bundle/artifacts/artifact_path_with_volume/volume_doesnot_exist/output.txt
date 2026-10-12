@@ -6,15 +6,15 @@
   "browse_only": false,
   "catalog_name": "main",
   "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
+  "created_at": [UNIX_TIME_MILLIS],
   "created_by": "[USERNAME]",
   "enable_predictive_optimization": "INHERIT",
   "full_name": "main.schema-[UNIQUE_NAME]",
-  "metastore_id": "[UUID]",
+  "metastore_id": "[UUID][0]",
   "name": "schema-[UNIQUE_NAME]",
   "owner": "[USERNAME]",
-  "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
+  "schema_id": "[UUID][1]",
+  "updated_at": [UNIX_TIME_MILLIS],
   "updated_by": "[USERNAME]"
 }
 

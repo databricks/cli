@@ -7,14 +7,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Running pipeline with --refresh flag and specific tables
 >>> [CLI] bundle run my_pipeline --refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 
-Update ID: [UUID]
+Update ID: [UUID][1]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "refresh_selection": [
       "table1",
@@ -25,14 +25,14 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh-all flag
 >>> [CLI] bundle run my_pipeline --full-refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][2]
 
-Update ID: [UUID]
+Update ID: [UUID][2]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh": true
   }
@@ -40,14 +40,14 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh flag and specific tables
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][3]
 
-Update ID: [UUID]
+Update ID: [UUID][3]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -58,14 +58,14 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh flag and --refresh flag
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][4]
 
-Update ID: [UUID]
+Update ID: [UUID][4]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",

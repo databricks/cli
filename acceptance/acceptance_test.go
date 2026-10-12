@@ -948,8 +948,8 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
-	// UniqueUUID defaults to false: number distinct UUIDs only when a test opts in.
-	testdiff.PrepareReplacementsUUID(t, &repls, isTruePtr(config.UniqueUUID))
+	// UniqueUUID defaults to true: number distinct UUIDs unless the test opts out.
+	testdiff.PrepareReplacementsUUID(t, &repls, config.UniqueUUID == nil || *config.UniqueUUID)
 
 	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)

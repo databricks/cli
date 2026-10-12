@@ -21,14 +21,14 @@ Warning: The "development" property of pipelines is deprecated. Use "mode: devel
   at resources.pipelines.my_pipeline.development
   in databricks.yml:18:24
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 
-Update ID: [UUID]
+Update ID: [UUID][1]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "development": true
   }
@@ -44,14 +44,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml switch_to_dev: {} switch_to_dev: {mode: development}
 
 >>> [CLI] bundle run my_pipeline -t switch_to_dev
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][2]/updates/[UUID][3]
 
-Update ID: [UUID]
+Update ID: [UUID][3]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][2]/updates",
   "body": {
     "development": true
   }
@@ -67,14 +67,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml switch_from_dev: {mode: development} switch_from_dev: {}
 
 >>> [CLI] bundle run my_pipeline -t switch_from_dev
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][4]/updates/[UUID][5]
 
-Update ID: [UUID]
+Update ID: [UUID][5]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][4]/updates",
   "body": {}
 }
 
@@ -91,9 +91,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 false
 
 >>> [CLI] bundle run my_pipeline -t ui_toggle
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[MY_PIPELINE_ID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[MY_PIPELINE_ID]/updates/[UUID][6]
 
-Update ID: [UUID]
+Update ID: [UUID][6]
 
 >>> print_requests.py //pipelines
 {

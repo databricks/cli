@@ -4,6 +4,12 @@
 # Recording adds minutes without new coverage the rest of the suite provides.
 EnvMatrix.DMS = [""]
 
+# Several template tests diff.py-compare one template's fresh output against a sibling
+# template's committed golden (e.g. serverless-customcatalog vs serverless). Numbering
+# UUIDs per file would make those comparisons spurious, and the distinction adds no
+# value for a rendered template, so keep [UUID] flat across the subtree.
+UniqueUUID = false
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''

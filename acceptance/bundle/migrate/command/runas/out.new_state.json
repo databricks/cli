@@ -1,11 +1,11 @@
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][0]",
  "serial": 5,
  "state": {
   "resources.pipelines.foo": {
-   "__id__": "[UUID]",
+   "__id__": "[UUID][1]",
    "state": {
     "catalog": "main",
     "channel": "CURRENT",
@@ -23,16 +23,16 @@
     ],
     "name": "DABs Revenue Pipeline",
     "run_as": {
-     "service_principal_name": "[UUID]"
+     "service_principal_name": "[UUID][2]"
     },
     "serverless": true,
     "target": "team_eng_deco"
    }
   },
   "resources.pipelines.foo.permissions": {
-   "__id__": "/pipelines/[UUID]",
+   "__id__": "/pipelines/[UUID][1]",
    "state": {
-    "object_id": "/pipelines/[UUID]",
+    "object_id": "/pipelines/[UUID][1]",
     "__embed__": [
      {
       "level": "CAN_VIEW",

@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 1,
   "plan": {
     "resources.pipelines.my": {
@@ -40,7 +40,7 @@
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
+        "id": "[UUID][1]",
         "last_modified": [UNIX_TIME_MILLIS],
         "libraries": [
           {
@@ -50,7 +50,7 @@
           }
         ],
         "name": "test-pipeline-[UNIQUE_NAME]",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][1]",
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
         "storage": "dbfs:/pipelines/custom"

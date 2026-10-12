@@ -19,12 +19,12 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 >>> diff out.original_state.json out.backup_state.json
 
 >>> jq .state."resources.pipelines.test_pipeline".state.tags.volume_storage_location out.new_state.json
-"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+"s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]"
 
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
@@ -36,7 +36,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][3] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -48,7 +48,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][4] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -64,20 +64,20 @@ Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --get //jobs/get
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID][5] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID][5] interactive/none engine/direct auth/pat"
 
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=6 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+resources.json: remote direct state serial=6 lineage="[UUID][2]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
 
 === Extra plan: should have no drift
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
@@ -105,8 +105,8 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 >>> replay_tfstate.py .databricks/terraform-prod-requests.json .databricks/terraform-prod.tfstate -t prod
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][6]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
-terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID][6]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][6]"

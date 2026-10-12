@@ -35,7 +35,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "project_id": "test-pg-proj-hard-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
-  "uid": "[UUID]"
+  "uid": "[UUID][0]"
 }
 
 >>> [CLI] postgres get-project projects/test-pg-proj-soft-[UNIQUE_NAME]
@@ -58,7 +58,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "project_id": "test-pg-proj-soft-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
-  "uid": "[UUID]"
+  "uid": "[UUID][1]"
 }
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
