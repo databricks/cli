@@ -3,14 +3,12 @@
 package pipelines
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -49,10 +47,6 @@ func deployCommand() *cobra.Command {
 				if cmd.Flag("fail-on-active-runs").Changed {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
 				}
-			},
-			PostStateResolutionFunc: func(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateDesc) error {
-				b.MigratingToDMS = state.Engine.IsDirect() && !state.IsDMS() && utils.ConfiguresDeploymentHistory(ctx, b)
-				return nil
 			},
 			Verbose:         verbose,
 			SkipInitContext: false,

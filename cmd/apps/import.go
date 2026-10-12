@@ -361,12 +361,8 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	b, err = bundleutils.ProcessBundle(deployCmd, bundleutils.ProcessOptions{
 		SkipInitContext: true,
 		Deploy:          true,
-		PostStateResolutionFunc: func(ctx context.Context, b *bundle.Bundle, state *statemgmt.StateDesc) error {
-			b.MigratingToDMS = state.Engine.IsDirect() && !state.IsDMS() && bundleutils.ConfiguresDeploymentHistory(ctx, b)
-			return nil
-		},
-		FastValidate: true,
-		AlwaysPull:   true,
+		FastValidate:    true,
+		AlwaysPull:      true,
 		InitFunc: func(b *bundle.Bundle) {
 			b.AutoApprove = true
 		},

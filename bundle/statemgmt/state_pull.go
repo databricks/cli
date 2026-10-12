@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
@@ -126,7 +125,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState selects the newest Terraform or direct state.
-// Deployment history selects only remote state and refreshes the direct cache.
+// Deployment history selects only remote state and caches it locally when present.
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
@@ -143,9 +142,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	if logdiag.HasError(ctx) {
 		return nil
 	}
-	localDirectExists := slices.ContainsFunc(states, func(state *StateDesc) bool {
-		return state.IsLocal && state.Engine.IsDirect()
-	})
 	if historyEnabled {
 		states = slices.DeleteFunc(states, func(state *StateDesc) bool {
 			if !state.IsLocal {
@@ -192,17 +188,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if len(states) == 0 {
-		if historyEnabled && localDirectExists {
-			// The ignored direct cache must not be reopened when remote state is absent.
-			content, err := json.Marshal(dstate.NewDatabase("", 0))
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("serializing empty cached resource state: %w", err))
-				return winner
-			}
-			if err := atomicfile.Write(localPathDirect, content, 0o600, atomicfile.MkDir(0o700)); err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("overwriting cached resource state %s: %w", filepath.ToSlash(localPathDirect), err))
-			}
-		}
 		return winner
 	}
 
