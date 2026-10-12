@@ -152,6 +152,16 @@ func TestActivateHintWorkspaceMember(t *testing.T) {
 	}
 }
 
+func TestActivateHintQuotesSpaces(t *testing.T) {
+	// UV_PROJECT_ENVIRONMENT can name a folder with spaces.
+	hint := activateHint("my env")
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, `"my env\Scripts\activate"`, hint)
+	} else {
+		assert.Equal(t, `source "my env/bin/activate"`, hint)
+	}
+}
+
 func TestActivateHint(t *testing.T) {
 	hint := activateHint(".venv")
 	if runtime.GOOS == "windows" {

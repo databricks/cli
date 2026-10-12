@@ -155,9 +155,18 @@ func activateHint(venvPath string) string {
 	if runtime.GOOS == "windows" {
 		// venvPath is in slash form; cmd.exe reads "/" as a switch character, so a
 		// relative path such as ../../.venv needs backslashes.
-		return filepath.FromSlash(venvPath) + `\Scripts\activate`
+		return quoteIfSpaced(filepath.FromSlash(venvPath) + `\Scripts\activate`)
 	}
-	return "source " + venvPath + "/bin/activate"
+	return "source " + quoteIfSpaced(venvPath+"/bin/activate")
+}
+
+// quoteIfSpaced wraps path in double quotes when it holds a space, so the
+// shell reads it as one argument (UV_PROJECT_ENVIRONMENT can name such a folder).
+func quoteIfSpaced(path string) string {
+	if strings.ContainsAny(path, " \t") {
+		return `"` + path + `"`
+	}
+	return path
 }
 
 // failureClause maps the failing phase to a human clause for the failure line,

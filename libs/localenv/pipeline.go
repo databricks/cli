@@ -78,8 +78,9 @@ type Pipeline struct {
 	// inspects. Set in preflight.
 	venv string
 
-	// venvRel is the venv folder relative to ProjectDir, reported as
-	// Result.VenvPath. Set in preflight.
+	// venvRel is the venv folder relative to ProjectDir (absolute when
+	// UV_PROJECT_ENVIRONMENT is absolute), reported as Result.VenvPath. Set in
+	// preflight.
 	venvRel string
 
 	// workspaceRoot is the uv workspace root when ProjectDir is a workspace
@@ -328,28 +329,35 @@ func (p *Pipeline) run(ctx context.Context) error {
 }
 
 // setVenv sets the venv folder where uv sync puts the project environment:
-// UV_PROJECT_ENVIRONMENT when set, else .venv, relative to venvBase (the
-// workspace root or ProjectDir). rootRel is venvBase relative to ProjectDir
-// ("" outside a workspace), counted between symlink-resolved folders like every
-// relative path the OS resolves.
+// UV_PROJECT_ENVIRONMENT when set, else .venv in venvBase (the workspace root
+// or ProjectDir). rootRel is venvBase relative to the symlink-resolved
+// ProjectDir ("" outside a workspace; see discoverWorkspaceRoot).
 func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error {
 	name := env.Get(ctx, EnvUvProjectEnvironment)
 	if name == "" {
-		name = venvDir
-	}
-	if !filepath.IsAbs(name) {
-		p.venv = filepath.Join(venvBase, name)
-		p.venvRel = filepath.Join(rootRel, name)
+		p.venv = filepath.Join(venvBase, venvDir)
+		p.venvRel = filepath.Join(rootRel, venvDir)
 		return nil
 	}
-	p.venv = name
-	resolved, err := filepath.EvalSymlinks(p.ProjectDir)
-	if err == nil {
-		p.venvRel, err = filepath.Rel(resolved, name)
+	// uv uses an absolute value as is. On Windows a rooted path such as \envs\x
+	// is not absolute, and uv keeps only the drive of the root for it. An
+	// absolute venv is reported as is: a relative path cannot cross drives.
+	if filepath.IsAbs(name) || strings.HasPrefix(filepath.ToSlash(name), "/") {
+		if !filepath.IsAbs(name) {
+			name = filepath.VolumeName(venvBase) + name
+		}
+		p.venv = name
+		p.venvRel = name
+		return nil
 	}
+	// uv joins a relative value to the symlink-resolved root, so ".." in it
+	// climbs the real folders.
+	resolvedBase, err := filepath.EvalSymlinks(venvBase)
 	if err != nil {
-		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "%s=%s cannot be reached by a path relative to the project folder; use a path on the same volume", EnvUvProjectEnvironment, filepath.ToSlash(name)))
+		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
 	}
+	p.venv = filepath.Join(resolvedBase, name)
+	p.venvRel = filepath.Join(rootRel, name)
 	return nil
 }
 

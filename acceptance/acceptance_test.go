@@ -278,6 +278,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
+	// from the host shell would move the venv the localenv tests expect.
+	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
+
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.
