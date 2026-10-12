@@ -339,6 +339,9 @@ func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error 
 		p.venvRel = filepath.Join(rootRel, venvDir)
 		return nil
 	}
+	// The value is used as uv uses it: not cleaned, because uv follows a symlink
+	// in it before it applies "..". Only a trailing separator is dropped.
+	name = strings.TrimRight(name, `/\`)
 	// uv uses an absolute value as is. On Windows a rooted path such as \envs\x
 	// is not absolute, and uv keeps only the drive of the root for it. An
 	// absolute venv is reported as is: a relative path cannot cross drives.
@@ -354,10 +357,13 @@ func (p *Pipeline) setVenv(ctx context.Context, venvBase, rootRel string) error 
 	// climbs the real folders.
 	resolvedBase, err := filepath.EvalSymlinks(venvBase)
 	if err != nil {
-		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
+		return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "cannot resolve %s to place %s=%s", filepath.ToSlash(venvBase), EnvUvProjectEnvironment, filepath.ToSlash(name)))
 	}
-	p.venv = filepath.Join(resolvedBase, name)
-	p.venvRel = filepath.Join(rootRel, name)
+	p.venv = resolvedBase + string(filepath.Separator) + name
+	p.venvRel = name
+	if rootRel != "" {
+		p.venvRel = rootRel + string(filepath.Separator) + name
+	}
 	return nil
 }
 
@@ -786,10 +792,10 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	}
 	p.markOK(PhaseValidate, detail)
 
-	// venvPath is reported relative to the project root (spec §6.1), not as an
-	// absolute path: the VS Code consumer already knows the project root (it sets
-	// the working directory when it shells out). For a standalone project this is
-	// ".venv"; for a workspace member it is computed between the symlink-resolved
+	// venvPath is reported relative to the project root (spec §6.1): the VS Code
+	// consumer already knows the project root (it sets the working directory when
+	// it shells out). It is absolute only when UV_PROJECT_ENVIRONMENT is absolute.
+	// For a standalone project this is ".venv"; for a workspace member it is computed between the symlink-resolved
 	// folders (see discoverWorkspaceRoot), for example "../../.venv".
 	p.res.VenvPath = filepath.ToSlash(p.venvRel)
 	if p.res.Resolved != nil {

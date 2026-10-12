@@ -1,0 +1,14 @@
+# With UV_PROJECT_ENVIRONMENT set, the shared environment is that folder
+# (relative to the workspace root), not .venv. The name holds a space, so the
+# activate hint quotes it. A fake uv on PATH stands in for the
+# network-dependent sync (see acceptance/cmd/psql).
+mv fake-uv.sh uv
+chmod +x uv
+cleanup() {
+  rm -f uv
+}
+trap cleanup EXIT
+export PATH="$(pwd):$PATH"
+export UV_PROJECT_ENVIRONMENT="custom env"
+
+withdir bundles/a trace $CLI environments setup-local --serverless-version 4

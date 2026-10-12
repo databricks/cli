@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
 
@@ -157,11 +158,11 @@ func activateHint(venvPath string) string {
 		// relative path such as ../../.venv needs backslashes.
 		return quoteIfSpaced(filepath.FromSlash(venvPath) + `\Scripts\activate`)
 	}
-	return "source " + quoteIfSpaced(venvPath+"/bin/activate")
+	return "source " + shellquote.BashArg(venvPath+"/bin/activate")
 }
 
-// quoteIfSpaced wraps path in double quotes when it holds a space, so the
-// shell reads it as one argument (UV_PROJECT_ENVIRONMENT can name such a folder).
+// quoteIfSpaced wraps path in double quotes when it holds a space, so cmd.exe
+// reads it as one argument (UV_PROJECT_ENVIRONMENT can name such a folder).
 func quoteIfSpaced(path string) string {
 	if strings.ContainsAny(path, " \t") {
 		return `"` + path + `"`

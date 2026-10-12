@@ -1586,8 +1586,48 @@ func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
 				return link, real, fakePM{py: "3.12", dbc: "17.2.0"}
 			},
 			value:        filepath.Join("..", "env"),
-			wantVenv:     func(base string) string { return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env") },
+			wantVenv:     func(base string) string { return resolvedPath(t, base) + "/../env" },
 			wantVenvPath: "../env",
+		},
+		{
+			// uv follows link before it applies "..", so the path must not be
+			// cleaned lexically.
+			name: "relative through a symlink in the value",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS == "windows" {
+					t.Skip("symlinks need extra privileges on Windows")
+				}
+				dir := writeProject(t)
+				require.NoError(t, os.Symlink(filepath.Join(t.TempDir(), "elsewhere"), filepath.Join(dir, "link")))
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "link/../custom-env",
+			wantVenv:     func(base string) string { return resolvedPath(t, base) + "/link/../custom-env" },
+			wantVenvPath: "link/../custom-env",
+		},
+		{
+			name: "relative with a trailing slash",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "custom-env/",
+			wantVenv:     func(base string) string { return filepath.Join(resolvedPath(t, base), "custom-env") },
+			wantVenvPath: "custom-env",
+		},
+		{
+			// On Windows a rooted path keeps the drive of the root, as in uv.
+			name: "rooted without a drive",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a rooted path without a drive exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        `\envs\x`,
+			wantVenv:     func(base string) string { return filepath.VolumeName(base) + `\envs\x` },
+			wantVenvPath: filepath.ToSlash(`\envs\x`),
 		},
 		{
 			name: "absolute",
