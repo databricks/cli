@@ -8,7 +8,7 @@ import (
 )
 
 func withCommandExecIdInUserAgent(ctx context.Context) context.Context {
-	// A random identifier that will allow us to correlate multiple API requests made by
+	// A UUID that will allow us to correlate multiple API requests made by
 	// the same CLI invocation.
 	return useragent.InContext(ctx, "cmd-exec-id", cmdctx.ExecId(ctx))
 }

@@ -5,10 +5,7 @@
 // '_', which read as separators in user agent and log values.
 package shortid
 
-import (
-	"crypto/rand"
-	"crypto/sha256"
-)
+import "crypto/sha256"
 
 const (
 	alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -29,14 +26,6 @@ func encode(b []byte) string {
 		n /= uint64(len(alphabet))
 	}
 	return string(out)
-}
-
-// New returns a random identifier.
-func New() string {
-	b := make([]byte, numBytes)
-	// Read never returns an error since Go 1.24.
-	_, _ = rand.Read(b)
-	return encode(b)
 }
 
 // Hash returns the identifier derived from the SHA-256 hash of s.

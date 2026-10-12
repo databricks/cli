@@ -3,7 +3,7 @@ package cmdctx
 import (
 	"context"
 
-	"github.com/databricks/cli/libs/shortid"
+	"github.com/google/uuid"
 )
 
 // key is a package-local type to use for context keys.
@@ -35,12 +35,12 @@ func GenerateExecId(ctx context.Context) context.Context {
 	if v := ctx.Value(execIdKey); v != nil {
 		panic("cmdctx.SetExecId called twice on the same context")
 	}
-	return context.WithValue(ctx, execIdKey, shortid.New())
+	return context.WithValue(ctx, execIdKey, uuid.New().String())
 }
 
-// ExecId returns a short random identifier (see libs/shortid) that is
-// guaranteed to be the same throughout the lifetime of the command execution,
-// and is generated anew for each invocation of the CLI.
+// ExecId returns a UUID value that is guaranteed to be the same throughout
+// the lifetime of the command execution, and unique for each invocation of the
+// CLI.
 func ExecId(ctx context.Context) string {
 	v := ctx.Value(execIdKey)
 	if v == nil {

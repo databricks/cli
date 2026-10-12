@@ -1,20 +1,8 @@
 #!/usr/bin/env python3
-"""
-Update ACC_REPLS to replace the cmd-exec-id from the first recorded request that has one in its
-User-Agent with [CMD_EXEC_ID_HASH]. The telemetry cmd_exec_id field is then only
-replaced if it matches the id the CLI actually sent.
-
-Requires IncludeRequestHeaders = ["User-Agent"].
-"""
-
 import json
 import os
 import re
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-from add_repl import add_repl
 
 
 def extract_cmd_exec_id():
@@ -48,4 +36,5 @@ def extract_cmd_exec_id():
 
 
 if __name__ == "__main__":
-    add_repl(extract_cmd_exec_id(), "CMD_EXEC_ID_HASH")
+    exec_id = extract_cmd_exec_id()
+    print(exec_id)
