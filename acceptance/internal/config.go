@@ -63,6 +63,13 @@ type TestConfig struct {
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
 
+	// If true, distinct UUIDs in an output are numbered ([UUID][0], [UUID][1], ...) so
+	// the golden pins which value appears where. If absent, defaults to false and every
+	// UUID collapses to [UUID]. Enable it for tests that need to tell distinct UUIDs
+	// apart; leave it off when they appear in a non-deterministic order (the index
+	// assignment would be unstable).
+	UniqueUUID *bool
+
 	// List of server stubs to load. Example configuration:
 	//
 	// [[Server]]
