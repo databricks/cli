@@ -5,9 +5,8 @@ trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy 2>&1 | contai
 replace_ids.py
 trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
 trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
-trace cp databricks.yml .databricks/bundle/default/resources.json
 
-title "Config enables recording despite the disabled environment and invalid local cache: register version 2, then deploy version 3"
+title "Config enables recording despite the disabled environment: register version 2, then deploy version 3"
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
 update_file.py databricks.yml 'name: one' 'name: updated'
