@@ -227,13 +227,12 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	}
 }
 
-// PrepareReplacementsUUID registers the UUID replacement. When unique is true,
-// distinct UUIDs in a single output are numbered ([UUID][0], [UUID][1], ...) so the
-// golden pins which value appears where; a single distinct UUID stays [UUID], even
-// if repeated. When false, every UUID collapses to [UUID] regardless of value.
-func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext, unique bool) {
+// PrepareReplacementsUUID registers the UUID replacement. Distinct UUIDs in a single
+// output are numbered ([UUID][0], [UUID][1], ...) so the golden pins which value
+// appears where; a single distinct UUID stays [UUID], even if repeated.
+func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.Repls = append(r.Repls, Replacement{Old: uuidRegex, New: "[UUID]", Distinct: unique})
+	r.Repls = append(r.Repls, Replacement{Old: uuidRegex, New: "[UUID]", Distinct: true})
 }
 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {

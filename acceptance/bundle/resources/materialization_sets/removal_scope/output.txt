@@ -44,13 +44,13 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> print_requests.py --keep //materialization-sets
 {
   "method": "PATCH",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID][0]",
   "q": {
-    "request_id": "[UUID]",
+    "request_id": "[UUID][1]",
     "update_mask": "*"
   },
   "body": {
-    "materialization_set_id": "[UUID]",
+    "materialization_set_id": "[UUID][0]",
     "materialized_features": [
       {
         "cron_schedule_trigger": {
@@ -71,5 +71,5 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> print_requests.py --get //feature-engineering/operations
 {
   "method": "GET",
-  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+  "path": "/api/2.0/feature-engineering/operations/[UUID][2]"
 }

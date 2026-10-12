@@ -24,7 +24,7 @@ func TestReplacement_Encoded(t *testing.T) {
 func TestReplacement_UUID(t *testing.T) {
 	var repls ReplacementsContext
 
-	PrepareReplacementsUUID(t, &repls, true)
+	PrepareReplacementsUUID(t, &repls)
 
 	// A lone UUID stays unsuffixed.
 	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
@@ -33,7 +33,7 @@ func TestReplacement_UUID(t *testing.T) {
 func TestReplacement_UUIDUnique(t *testing.T) {
 	var repls ReplacementsContext
 
-	PrepareReplacementsUUID(t, &repls, true)
+	PrepareReplacementsUUID(t, &repls)
 
 	input := "a: 123e4567-e89b-12d3-a456-426614174000\n" +
 		"b: 00000000-0000-0000-0000-000000000001\n" +
@@ -41,18 +41,6 @@ func TestReplacement_UUIDUnique(t *testing.T) {
 	expected := "a: [UUID][0]\n" +
 		"b: [UUID][1]\n" +
 		"a again: [UUID][0]"
-	assert.Equal(t, expected, repls.Replace(input))
-}
-
-func TestReplacement_UUIDNotUnique(t *testing.T) {
-	var repls ReplacementsContext
-
-	PrepareReplacementsUUID(t, &repls, false)
-
-	input := "a: 123e4567-e89b-12d3-a456-426614174000\n" +
-		"b: 00000000-0000-0000-0000-000000000001"
-	expected := "a: [UUID]\n" +
-		"b: [UUID]"
 	assert.Equal(t, expected, repls.Replace(input))
 }
 
