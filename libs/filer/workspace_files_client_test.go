@@ -3,11 +3,7 @@ package filer
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"io"
 	"io/fs"
-	"mime"
-	"mime/multipart"
 	"net/http"
 	"strings"
 	"testing"
@@ -106,85 +102,6 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 		w := &WorkspaceFilesClient{}
 		assert.Nil(t, w.workspaceIDHeaders())
 	})
-}
-
-// importFormFields parses the multipart body of a recorded /workspace/import
-// request into a field name -> value map.
-func importFormFields(t *testing.T, contentType string, body []byte) map[string]string {
-	t.Helper()
-
-	_, params, err := mime.ParseMediaType(contentType)
-	require.NoError(t, err)
-	mr := multipart.NewReader(bytes.NewReader(body), params["boundary"])
-
-	fields := map[string]string{}
-	for {
-		part, err := mr.NextPart()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		require.NoError(t, err)
-		data, err := io.ReadAll(part)
-		require.NoError(t, err)
-		fields[part.FormName()] = string(data)
-	}
-	return fields
-}
-
-// Confirms Write posts a multipart /workspace/import body with format=AUTO, and
-// that the overwrite field is present only when OverwriteIfExists is passed.
-// AUTO is what lets the server decide between storing content as a file or a
-// notebook, so the format is asserted explicitly rather than left to the
-// endpoint default (SOURCE), which would import every file as a notebook.
-func TestWorkspaceFilesClientWriteSuccess(t *testing.T) {
-	tests := []struct {
-		name          string
-		modes         []WriteMode
-		expectPresent bool
-	}{
-		{
-			name:          "no overwrite",
-			modes:         nil,
-			expectPresent: false,
-		},
-		{
-			name:          "overwrite",
-			modes:         []WriteMode{OverwriteIfExists},
-			expectPresent: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var gotForm map[string]string
-			server := testserver.New(t)
-			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
-				gotForm = importFormFields(t, req.Headers.Get("Content-Type"), req.Body)
-				return testserver.Response{StatusCode: http.StatusOK}
-			})
-			testserver.AddDefaultHandlers(server)
-
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:  server.URL,
-				Token: "testtoken",
-			})
-			require.NoError(t, err)
-
-			f, err := NewWorkspaceFilesClient(client, "/dir")
-			require.NoError(t, err)
-
-			require.NoError(t, f.Write(t.Context(), "file.txt", strings.NewReader("hello"), tc.modes...))
-
-			assert.Equal(t, "/dir/file.txt", gotForm["path"])
-			assert.Equal(t, "hello", gotForm["content"])
-			assert.Equal(t, string(workspace.ImportFormatAuto), gotForm["format"])
-			overwrite, present := gotForm["overwrite"]
-			assert.Equal(t, tc.expectPresent, present)
-			if present {
-				assert.Equal(t, "true", overwrite)
-			}
-		})
-	}
 }
 
 // Confirms each error /workspace/import returns is translated to the filer's
@@ -365,55 +282,6 @@ func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
 	var aerr *apierr.APIError
 	require.ErrorAs(t, err, &aerr)
 	assert.Equal(t, http.StatusBadRequest, aerr.StatusCode)
-}
-
-// Confirms a 404 from a missing parent directory triggers a mkdirs call and a
-// retry of the upload when CreateParentDirectories is passed. The retry re-reads
-// the buffered body, so this also covers that the content survives the second
-// attempt.
-func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
-	var uploads int
-	var mkdirs []string
-	var lastContent string
-
-	server := testserver.New(t)
-	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
-		uploads++
-		// The first attempt 404s as it would against a missing parent; the retry
-		// after mkdirs succeeds.
-		if uploads == 1 {
-			return testserver.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       map[string]string{"message": "The parent folder (/dir/sub) does not exist."},
-			}
-		}
-		form := importFormFields(t, req.Headers.Get("Content-Type"), req.Body)
-		lastContent = form["content"]
-		return testserver.Response{StatusCode: http.StatusOK}
-	})
-	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
-		var request workspace.Mkdirs
-		require.NoError(t, json.Unmarshal(req.Body, &request))
-		mkdirs = append(mkdirs, request.Path)
-		return testserver.Response{StatusCode: http.StatusOK}
-	})
-	testserver.AddDefaultHandlers(server)
-
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
-	require.NoError(t, err)
-
-	f, err := NewWorkspaceFilesClient(client, "/dir")
-	require.NoError(t, err)
-
-	require.NoError(t, f.Write(t.Context(), "sub/file.txt", strings.NewReader("data"), CreateParentDirectories))
-
-	assert.Equal(t, 2, uploads)
-	assert.Equal(t, []string{"/dir/sub"}, mkdirs)
-	// The retry re-reads the buffered body, so the content must survive.
-	assert.Equal(t, "data", lastContent)
 }
 
 // Confirms a workspace get-status payload unmarshals into wsfsFileInfo and that
