@@ -1,0 +1,2 @@
+errcode trace $CLI bundle validate -t bracket
+errcode trace $CLI bundle validate -t comma

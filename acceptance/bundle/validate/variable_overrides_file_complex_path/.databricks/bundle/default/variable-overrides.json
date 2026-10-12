@@ -1,0 +1,13 @@
+{
+  "task": {
+    "task_key": "main",
+    "spark_python_task": {
+      "python_file": "./src/main.py"
+    },
+    "libraries": [
+      {
+        "whl": "./src/lib.whl"
+      }
+    ]
+  }
+}

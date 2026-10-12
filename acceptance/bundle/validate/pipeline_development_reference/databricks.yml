@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    other:
+      name: other
+      development: true
+    main:
+      name: main
+      development: ${resources.pipelines.other.development}

@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.bar
+Created jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== run resolves the referenced job id into the int job_id field
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
+
+[TIMESTAMP] "job foo" RUNNING
+[TIMESTAMP] "job foo" TERMINATED SUCCESS

@@ -1,0 +1,4 @@
+# Warning order is not deterministic, so sort the output lines.
+trace $CLI bundle validate 2>&1 | sort
+
+trace $CLI bundle validate -o json 2>/dev/null | jq .resources.pipelines.main.development
