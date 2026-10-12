@@ -18,7 +18,7 @@
   },
   "greenfield": false,
   "venvPath": "../../.venv",
-  "workspaceRoot": "[TEST_TMP_DIR]",
+  "uvWorkspaceRoot": "[TEST_TMP_DIR]",
   "pythonResolution": "uv_install_succeeded",
   "phases": [
     {
@@ -54,7 +54,7 @@
   ],
   "error": null,
   "backupPath": "[TEST_TMP_DIR]/bundles/a/pyproject.toml.bak",
-  "workspaceBackupPath": "[TEST_TMP_DIR]/pyproject.toml.bak",
+  "uvWorkspaceBackupPath": "[TEST_TMP_DIR]/pyproject.toml.bak",
   "durationMs": [DURATION_MS]
 }
 
@@ -66,7 +66,7 @@
   databricks-connect  17.2.0
   Virtual env         ../../.venv
   pyproject.toml      updated
-  Workspace root      [TEST_TMP_DIR]
+  uv workspace root   [TEST_TMP_DIR]
   Root pyproject.toml unchanged
 
 Next steps:

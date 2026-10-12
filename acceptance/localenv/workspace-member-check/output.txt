@@ -2,11 +2,11 @@
 >>> [CLI] environments setup-local --serverless-version 4 --dry-run
 warning: requires-python ">=3.10" is replaced by the environment's ">=3.12"
 Plan: [TEST_TMP_DIR]/bundles/a/pyproject.toml
-Plan: [TEST_TMP_DIR]/pyproject.toml (workspace root)
+Plan: [TEST_TMP_DIR]/pyproject.toml (uv workspace root)
   changed region: requires-python
   changed region: databricks-connect
   changed region: tool.databricks.environment
-  changed region: tool.uv.constraint-dependencies (workspace root)
+  changed region: tool.uv.constraint-dependencies (uv workspace root)
 Check complete. No files were modified.
 
 >>> [CLI] environments setup-local --serverless-version 4 --dry-run --output json
@@ -30,12 +30,12 @@ Check complete. No files were modified.
   "plan": {
     "wouldWrite": "[TEST_TMP_DIR]/bundles/a/pyproject.toml",
     "wouldBackup": "[TEST_TMP_DIR]/bundles/a/pyproject.toml.bak",
-    "wouldWriteWorkspace": "[TEST_TMP_DIR]/pyproject.toml",
-    "wouldBackupWorkspace": "[TEST_TMP_DIR]/pyproject.toml.bak",
+    "wouldWriteUvWorkspace": "[TEST_TMP_DIR]/pyproject.toml",
+    "wouldBackupUvWorkspace": "[TEST_TMP_DIR]/pyproject.toml.bak",
     "wouldInstallPython": "3.12",
-    "diff": "--- pyproject.toml\n+++ pyproject.toml.new\n@@ -1,4 +1,12 @@\n [project]\n name = \"a\"\n version = \"0.1.0\"\n-requires-python = \"\u003e=3.10\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = [\n+    \"databricks-connect~=17.2.0\",\n+]\n+\n+[tool.databricks.environment]\n+environment_version = \"4\"\n--- workspace root pyproject.toml\n+++ workspace root pyproject.toml.new\n@@ -5,3 +5,11 @@\n \n [tool.uv.workspace]\n members = [\"bundles/*\"]\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
+    "diff": "--- pyproject.toml\n+++ pyproject.toml.new\n@@ -1,4 +1,12 @@\n [project]\n name = \"a\"\n version = \"0.1.0\"\n-requires-python = \"\u003e=3.10\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = [\n+    \"databricks-connect~=17.2.0\",\n+]\n+\n+[tool.databricks.environment]\n+environment_version = \"4\"\n--- uv workspace root pyproject.toml\n+++ uv workspace root pyproject.toml.new\n@@ -5,3 +5,11 @@\n \n [tool.uv.workspace]\n members = [\"bundles/*\"]\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
   },
-  "workspaceRoot": "[TEST_TMP_DIR]",
+  "uvWorkspaceRoot": "[TEST_TMP_DIR]",
   "phases": [
     {
       "phase": "preflight",

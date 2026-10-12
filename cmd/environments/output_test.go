@@ -175,7 +175,7 @@ func TestRenderSuccessWorkspaceMember(t *testing.T) {
 
 	out := renderText(t, res, nil)
 
-	assert.Contains(t, out, "Workspace root")
+	assert.Contains(t, out, "uv workspace root")
 	assert.Contains(t, out, "/repo")
 	assert.Contains(t, out, "Root pyproject.toml")
 	assert.Contains(t, out, "constraints updated (backup: /repo/pyproject.toml.bak)")
@@ -188,7 +188,7 @@ func TestRenderSuccessStandaloneOmitsWorkspaceRows(t *testing.T) {
 
 	out := renderText(t, res, nil)
 
-	assert.NotContains(t, out, "Workspace root")
+	assert.NotContains(t, out, "uv workspace root")
 	assert.NotContains(t, out, "Root pyproject.toml")
 }
 
@@ -198,7 +198,7 @@ func TestRenderDryRunWorkspaceMember(t *testing.T) {
 	res.DryRun = true
 	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteWorkspace: "/repo/pyproject.toml"}
 	out := renderText(t, res, nil)
-	assert.Contains(t, out, "Plan: /repo/pyproject.toml (workspace root)")
+	assert.Contains(t, out, "Plan: /repo/pyproject.toml (uv workspace root)")
 }
 
 func TestRenderSuccessWorkspaceMemberUnchangedRoot(t *testing.T) {

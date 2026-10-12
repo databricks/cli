@@ -217,8 +217,8 @@ type Plan struct {
 	WouldBackup string `json:"wouldBackup,omitempty"`
 	// WouldWriteWorkspace and WouldBackupWorkspace name the workspace root
 	// pyproject.toml and its planned backup, for a uv workspace member only.
-	WouldWriteWorkspace  string `json:"wouldWriteWorkspace,omitempty"`
-	WouldBackupWorkspace string `json:"wouldBackupWorkspace,omitempty"`
+	WouldWriteWorkspace  string `json:"wouldWriteUvWorkspace,omitempty"`
+	WouldBackupWorkspace string `json:"wouldBackupUvWorkspace,omitempty"`
 	WouldInstallPython   string `json:"wouldInstallPython,omitempty"`
 	Diff                 string `json:"diff"`
 
@@ -325,7 +325,7 @@ type Result struct {
 	// WorkspaceRoot is the uv workspace root (absolute, slash form) when the
 	// project is a workspace member. The [tool.uv] constraint block and the venv
 	// live there. Empty for a standalone project.
-	WorkspaceRoot    string           `json:"workspaceRoot,omitempty"`
+	WorkspaceRoot    string           `json:"uvWorkspaceRoot,omitempty"`
 	PythonResolution PythonResolution `json:"pythonResolution,omitempty"`
 	// PythonInterpreter is the exact interpreter chosen by the installed-Python
 	// fallback, named in the text summary so the user can tell which interpreter
@@ -343,7 +343,7 @@ type Result struct {
 	BackupPath      string         `json:"backupPath,omitempty"`
 	// WorkspaceBackupPath is the backup of the workspace root pyproject.toml, set
 	// only when the run changed that file.
-	WorkspaceBackupPath string `json:"workspaceBackupPath,omitempty"`
+	WorkspaceBackupPath string `json:"uvWorkspaceBackupPath,omitempty"`
 	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
 	// CLI pipeline only; the extension measures its own end-to-end latency (process
 	// spawn, interpreter adoption) separately.

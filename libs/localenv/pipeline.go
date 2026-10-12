@@ -217,7 +217,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 		p.res.WorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
 		if !p.Check {
 			if err := ensureWritable(p.workspaceRoot); err != nil {
-				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "workspace root %s is not writable", filepath.ToSlash(p.workspaceRoot)))
+				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "uv workspace root %s is not writable", filepath.ToSlash(p.workspaceRoot)))
 			}
 		}
 	}
@@ -490,7 +490,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if p.Check {
 		diff := pyprojectDiff(pyprojectFile, baseBytes, merged, greenfield)
 		if root != nil {
-			diff += pyprojectDiff("workspace root "+pyprojectFile, root.base, root.merged, false)
+			diff += pyprojectDiff("uv workspace root "+pyprojectFile, root.base, root.merged, false)
 		}
 		plan := &Plan{
 			WouldWrite:         filepath.ToSlash(pyproject),
@@ -590,7 +590,7 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootM
 			p.res.WorkspaceBackupPath = filepath.ToSlash(rootBackup)
 		}
 		if perr != nil {
-			perr.Msg = "workspace root: " + perr.Msg
+			perr.Msg = "uv workspace root: " + perr.Msg
 			return p.fail(PhaseMerge, mutated || rootMutated, perr)
 		}
 	}

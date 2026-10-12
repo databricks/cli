@@ -33,7 +33,7 @@ const (
 	regionRequiresPython        = "requires-python"
 	regionDatabricksConnect     = "databricks-connect"
 	regionToolUv                = "tool.uv.constraint-dependencies"
-	regionWorkspaceToolUv       = regionToolUv + " (workspace root)"
+	regionWorkspaceToolUv       = regionToolUv + " (uv workspace root)"
 	regionDatabricksEnvironment = "tool.databricks.environment"
 )
 
