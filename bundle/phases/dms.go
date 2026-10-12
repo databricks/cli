@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"path"
@@ -13,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -200,13 +198,13 @@ func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 		FilePath: b.Config.Workspace.FilePath,
 	}
 	// With an immutable folder, file_path is a reference to the snapshot, which only
-	// resolves once the snapshot is uploaded. Its path is already known from the plan.
+	// resolves once the snapshot is uploaded. Its path is already known from the staged zip.
 	if b.IsImmutableFolder() {
-		snapshotPath, err := immutableSnapshotPath(b)
-		if err != nil {
-			return dms.Metadata{}, err
+		snapshot, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]
+		if !ok {
+			return dms.Metadata{}, fmt.Errorf("no %s in the bundle", resources.SnapshotKey)
 		}
-		ws.FilePath = path.Join(snapshotPath, "files")
+		ws.FilePath = path.Join(snapshot.FullPath(), "files")
 	}
 	// In a source-linked deployment files are not copied, so resources read them
 	// from the sync root instead of file_path (see bundle/deploy/metadata.Compute).
@@ -222,30 +220,6 @@ func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 	}
 	p.Workspace = ws
 	return p, nil
-}
-
-// immutableSnapshotPath returns the workspace path of the immutable folder snapshot. The
-// snapshot is not uploaded yet at this point, but its content-addressed path is already known.
-func immutableSnapshotPath(b *bundle.Bundle) (string, error) {
-	if sv, ok := b.DeploymentBundle.StateCache.Load(resources.SnapshotKey); ok {
-		state, ok := sv.Value.(*dresources.SnapshotState)
-		if !ok {
-			return "", fmt.Errorf("unexpected state type %T for %s", sv.Value, resources.SnapshotKey)
-		}
-		return state.FullPath, nil
-	}
-
-	// An unchanged snapshot has no planned state when deploying from a saved plan. Its
-	// recorded state is what the plan would have held.
-	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
-	if !ok {
-		return "", fmt.Errorf("no state for %s", resources.SnapshotKey)
-	}
-	var state dresources.SnapshotState
-	if err := json.Unmarshal(entry.State, &state); err != nil {
-		return "", fmt.Errorf("failed to read state of %s: %w", resources.SnapshotKey, err)
-	}
-	return state.FullPath, nil
 }
 
 // deploymentModeToSDK maps the bundle target's mode to the DMS enum. An unset mode
