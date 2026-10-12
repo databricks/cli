@@ -207,10 +207,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// creates it, and keeps its constraint block in the root pyproject.toml, the
 	// only file uv reads constraint-dependencies from.
 	// https://docs.astral.sh/uv/concepts/projects/workspaces/
-	p.workspaceRoot = p.discoverWorkspaceRoot(ctx)
+	var rootRel string
+	p.workspaceRoot, rootRel = p.discoverWorkspaceRoot(ctx)
 	venvBase := p.ProjectDir
+	p.venvRel = venvDir
 	if p.workspaceRoot != "" {
 		venvBase = p.workspaceRoot
+		p.venvRel = filepath.Join(rootRel, venvDir)
 		p.res.WorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
 		if !p.Check {
 			if err := ensureWritable(p.workspaceRoot); err != nil {
@@ -219,7 +222,6 @@ func (p *Pipeline) run(ctx context.Context) error {
 		}
 	}
 	p.venv = filepath.Join(venvBase, venvDir)
-	p.venvRel = venvDir
 	p.markOK(PhasePreflight, detail)
 
 	// Phase: resolve — compute target → environment key.
@@ -743,7 +745,8 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	// venvPath is reported relative to the project root (spec §6.1), not as an
 	// absolute path: the VS Code consumer already knows the project root (it sets
 	// the working directory when it shells out). For a standalone project this is
-	// ".venv".
+	// ".venv"; for a workspace member it is computed between the symlink-resolved
+	// folders (see discoverWorkspaceRoot), for example "../../.venv".
 	p.res.VenvPath = filepath.ToSlash(p.venvRel)
 	if p.res.Resolved != nil {
 		if managed {

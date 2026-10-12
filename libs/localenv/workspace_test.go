@@ -34,13 +34,15 @@ func memberLayout(t *testing.T) (root, member string) {
 func TestDiscoverWorkspaceRootMember(t *testing.T) {
 	root, member := memberLayout(t)
 	p := &Pipeline{ProjectDir: member, PM: rootPM{root: root}}
-	assert.Equal(t, root, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Equal(t, root, got)
 }
 
 func TestDiscoverWorkspaceRootStandalone(t *testing.T) {
 	_, member := memberLayout(t)
 	p := &Pipeline{ProjectDir: member, PM: rootPM{root: member}}
-	assert.Empty(t, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Empty(t, got)
 }
 
 func TestDiscoverWorkspaceRootSymlinkedSameDir(t *testing.T) {
@@ -52,7 +54,8 @@ func TestDiscoverWorkspaceRootSymlinkedSameDir(t *testing.T) {
 	require.NoError(t, os.Symlink(member, link))
 	// uv prints the resolved path; ProjectDir is the symlinked one.
 	p := &Pipeline{ProjectDir: link, PM: rootPM{root: member}}
-	assert.Empty(t, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Empty(t, got)
 }
 
 func TestDiscoverWorkspaceRootSkipsGreenfield(t *testing.T) {
@@ -60,13 +63,15 @@ func TestDiscoverWorkspaceRootSkipsGreenfield(t *testing.T) {
 	member := filepath.Join(root, "new")
 	require.NoError(t, os.MkdirAll(member, 0o755))
 	p := &Pipeline{ProjectDir: member, PM: rootPM{root: root}}
-	assert.Empty(t, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Empty(t, got)
 }
 
 func TestDiscoverWorkspaceRootUvFailure(t *testing.T) {
 	_, member := memberLayout(t)
 	p := &Pipeline{ProjectDir: member, PM: rootPM{err: errors.New("unrecognized subcommand 'workspace'")}}
-	assert.Empty(t, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Empty(t, got)
 }
 
 func TestWorkspaceDirArgs(t *testing.T) {
@@ -208,5 +213,58 @@ func TestDiscoverWorkspaceRootKeepsProjectPathForm(t *testing.T) {
 	// the link. The root must come back in ProjectDir's form so the venv path
 	// relative to the project stays "../../.venv".
 	p := &Pipeline{ProjectDir: filepath.Join(link, "bundles", "a"), PM: rootPM{root: resolved}}
-	assert.Equal(t, link, p.discoverWorkspaceRoot(t.Context()))
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	assert.Equal(t, link, got)
+}
+
+// symlinkBelowRootLayout reaches the member through a link to the workspace's
+// bundles folder (link -> <root>/bundles), so the link sits below the root.
+func symlinkBelowRootLayout(t *testing.T) (resolvedRoot, projectDir string) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+	root, _ := memberLayout(t)
+	link := filepath.Join(t.TempDir(), "link")
+	require.NoError(t, os.Symlink(filepath.Join(root, "bundles"), link))
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err)
+	return resolvedRoot, filepath.Join(link, "a")
+}
+
+func TestDiscoverWorkspaceRootSymlinkBelowRoot(t *testing.T) {
+	resolvedRoot, projectDir := symlinkBelowRootLayout(t)
+	// Joining "../.." onto the link path would give the link's parent, not the
+	// root; the root must still name the real workspace root.
+	p := &Pipeline{ProjectDir: projectDir, PM: rootPM{root: resolvedRoot}}
+	got, _ := p.discoverWorkspaceRoot(t.Context())
+	rel, err := resolvedRel(got, resolvedRoot)
+	require.NoError(t, err)
+	assert.Equal(t, ".", rel, "discovered %s, want %s", got, resolvedRoot)
+}
+
+func TestPipelineWorkspaceMemberVenvPathWithResolvedUvRoot(t *testing.T) {
+	// Real uv prints the symlink-resolved root (macOS /private/var).
+	p, root, _ := newMemberPipeline(t)
+	resolved, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err)
+	p.PM = fakePM{py: "3.12", dbc: "17.2.0", root: resolved}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "../../.venv", res.VenvPath)
+}
+
+func TestPipelineWorkspaceMemberSymlinkBelowRoot(t *testing.T) {
+	resolvedRoot, projectDir := symlinkBelowRootLayout(t)
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, pyprojectFile),
+		[]byte("[project]\nname = \"a\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+	p := newServerlessTestPipeline(t, projectDir)
+	p.PM = fakePM{py: "3.12", dbc: "17.2.0", root: resolvedRoot}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	// Relative to the member's real folder (<root>/bundles/a), which is what the
+	// OS resolves a relative path against.
+	assert.Equal(t, "../../.venv", res.VenvPath)
+	rootBytes, err := os.ReadFile(filepath.Join(resolvedRoot, pyprojectFile))
+	require.NoError(t, err)
+	assert.Contains(t, string(rootBytes), "constraint-dependencies")
 }
