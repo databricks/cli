@@ -8,5 +8,5 @@ trace test ! -e .databricks/bundle/default/terraform/terraform.tfstate
 echo "{" > .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'resources.json' 'unexpected end'
 trace cp .databricks/bundle/default/resources.json .databricks/resources.malformed.json
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan | contains.py 'Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged'
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'unexpected end'
 trace cmp .databricks/resources.malformed.json .databricks/bundle/default/resources.json

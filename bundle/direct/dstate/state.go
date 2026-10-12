@@ -127,9 +127,6 @@ type OpenDmsArgs struct {
 	//
 	// Equivalent to serial for a file based deployment that uses resources.json to track state,
 	LastVersionID int
-
-	// SkipLocalState ignores the local cache when a history-enabled pull found no remote state.
-	SkipLocalState bool
 }
 
 type Header struct {
@@ -508,22 +505,18 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	// is reopened (see bind.go), and a stale value would misroute a non-recording open.
 	db.recordsHistory = false
 
-	if dmsDeployment.SkipLocalState {
-		db.Data = NewDatabase("", 0)
-	} else {
-		// The state file is the source of truth for whether this deployment records history: read it
-		// first.
-		data, err := os.ReadFile(db.Path)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				db.Data = NewDatabase("", 0)
-			} else {
-				return err
-			}
+	// The state file is the source of truth for whether this deployment records history: read it
+	// first.
+	data, err := os.ReadFile(db.Path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			db.Data = NewDatabase("", 0)
 		} else {
-			if err := json.Unmarshal(data, &db.Data); err != nil {
-				return err
-			}
+			return err
+		}
+	} else {
+		if err := json.Unmarshal(data, &db.Data); err != nil {
+			return err
 		}
 	}
 
@@ -539,7 +532,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	recording := bool(withDeploymentHistory)
 
 	walPath := db.Path + walSuffix
-	_, err := os.Stat(walPath)
+	_, err = os.Stat(walPath)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		// no WAL, nothing to do

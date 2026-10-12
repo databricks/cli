@@ -413,7 +413,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if b.MigratingToDMS {
 				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
 				b.DeploymentBundle.StateDB.VersionID = lastVersionID
-			} else if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID, SkipLocalState: stateDesc.SourcePath == ""}); err != nil {
+			} else if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -660,7 +660,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID, SkipLocalState: stateDesc.SourcePath == ""}); err != nil {
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
 	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
