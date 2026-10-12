@@ -1,0 +1,5 @@
+title "default limit does not show a hint when exactly 10 rows are available\n"
+trace $CLI pipelines show main.default.people
+
+title "wire SQL fetches one extra row\n"
+trace print_requests.py //api/2.0/sql/statements
