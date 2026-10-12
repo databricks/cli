@@ -1,5 +1,9 @@
 
 === Setup: deploy job one, migrate in version 2, update its name to updated in version 3, and save recorded state (LOG.setup)
+=== Before repeat migration, the existing backup contains job name one
+>>> gron.py .databricks/resources.backup.first.json
+json.state.resources.jobs.one.state.name = "one";
+
 === Restore the latest recorded state without the history marker: INITIAL_REGISTER version 4, then deploy version 5
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/dms-repeated-migration-[UNIQUE_NAME]/default/state/resources.json --file .databricks/resources.before-repeat.json --format AUTO --overwrite
 
