@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -101,6 +102,11 @@ func namePrefixContainsUserIdentifier(prefix string, u *config.User) bool {
 // contain the current username or current user's shortname.
 func findNonUserPath(b *bundle.Bundle) string {
 	containsName := func(path string) bool {
+		// Immutable folder snapshot paths are already unique per deployment: they are
+		// keyed by a hash of state_path (which is checked below) and the content hash.
+		if strings.HasPrefix(path, resources.SnapshotFullPathRef) {
+			return true
+		}
 		username := b.Config.Workspace.CurrentUser.UserName
 		shortname := b.Config.Workspace.CurrentUser.ShortName
 		return strings.Contains(path, username) || strings.Contains(path, shortname)

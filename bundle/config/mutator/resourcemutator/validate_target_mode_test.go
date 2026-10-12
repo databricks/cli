@@ -168,6 +168,13 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	diags = validateDevelopmentMode(b)
 	require.ErrorContains(t, diags.Error(), "root_path must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'")
 
+	// Test with immutable folder snapshot paths
+	b = mockBundle(config.Development)
+	b.Config.Workspace.FilePath = resources.SnapshotFullPathRef + "/files"
+	b.Config.Workspace.ArtifactPath = resources.SnapshotFullPathRef + "/artifacts"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+
 	// Test with a bundle that has an unpaused trigger pause status
 	b = mockBundle(config.Development)
 	b.Config.Presets.TriggerPauseStatus = config.Unpaused
