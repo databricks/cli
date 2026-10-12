@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from add_repl import add_repl
+from add_repl import add_repl, id_repl_name
 from print_state import get_resources, get_state_file
 
 
@@ -82,7 +82,7 @@ def main():
 
     if id:
         print(id)
-        add_repl(str(id), args.name.upper() + "_ID")
+        add_repl(str(id), id_repl_name(args.name))
 
 
 if __name__ == "__main__":
