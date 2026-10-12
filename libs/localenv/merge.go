@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 // errMultilineString and errNoProjectTable are the conditions under which
@@ -211,14 +213,23 @@ func MergeToolUvBlock(target []byte, deps []string) (merged []byte, changed, rep
 	if err != nil {
 		return nil, false, false, err
 	}
+	// The line-based merge matches only the plain [tool.uv] spelling. Other valid
+	// spellings ([ tool.uv ], [tool."uv"], a quoted key) can make it define a table
+	// or key twice. This file is shared by every workspace member, so never return
+	// a merge that no longer parses.
+	if _, err := toml.Decode(string(merged), &map[string]any{}); err != nil {
+		return nil, false, false, fmt.Errorf("merged workspace root pyproject.toml is not valid TOML; write [tool.uv] and constraint-dependencies without quotes or spaces: %w", err)
+	}
 	return merged, changed, replaced, nil
 }
 
-// hasConstraintDeps reports whether lines hold a managed block or a
-// constraint-dependencies key in the [tool.uv] table.
+// hasConstraintDeps reports whether lines hold pins: a managed block with at
+// least one entry, or a constraint-dependencies key in the [tool.uv] table.
 func hasConstraintDeps(lines []string) bool {
-	if _, _, found := markerBounds(lines); found {
-		return true
+	if start, stop, found := markerBounds(lines); found {
+		return slices.ContainsFunc(lines[start+1:stop], func(l string) bool {
+			return strings.HasPrefix(strings.TrimSpace(l), `"`)
+		})
 	}
 	header, end, ok := tableBounds(lines, "[tool.uv]")
 	if !ok {

@@ -298,9 +298,9 @@ const (
 	// validate hard-fail, which keys on the installed venv rather than the mode.
 	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
 	// WarnWorkspaceConstraintsReplaced: the project is a uv workspace member and
-	// the workspace root already had a managed constraint block with different
-	// pins (for example from another bundle's run). The new pins replace them, and
-	// every member of the workspace now resolves against them.
+	// the run replaced constraint pins the workspace root already had, from an
+	// earlier run (for example for another bundle) or written by the user. Every
+	// member of the workspace now resolves against the new pins.
 	WarnWorkspaceConstraintsReplaced = "W_WORKSPACE_CONSTRAINTS_REPLACED"
 )
 

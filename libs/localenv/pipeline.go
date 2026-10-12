@@ -481,7 +481,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	if err != nil {
 		return nil, nil, greenfield, err
 	}
-	if root != nil && !bytes.Equal(root.base, root.merged) {
+	if root != nil && root.changed {
 		changedRegions = append(changedRegions, regionWorkspaceToolUv)
 	}
 
@@ -507,7 +507,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		}
 		if root != nil {
 			plan.WouldWriteWorkspace = filepath.ToSlash(root.path)
-			if !bytes.Equal(root.base, root.merged) {
+			if root.changed {
 				if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
 					plan.WouldBackupWorkspace = filepath.ToSlash(backupName)
 				}
@@ -520,9 +520,10 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 
 // rootMerge is the planned change to the workspace root pyproject.toml.
 type rootMerge struct {
-	path   string
-	base   []byte
-	merged []byte
+	path    string
+	base    []byte
+	merged  []byte
+	changed bool
 }
 
 // planRootMerge merges the constraint block into the workspace root
@@ -537,7 +538,7 @@ func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, 
 	if err != nil {
 		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "read workspace root pyproject.toml %s failed", filepath.ToSlash(path)))
 	}
-	merged, _, replaced, err := MergeToolUvBlock(base, deps)
+	merged, changed, replaced, err := MergeToolUvBlock(base, deps)
 	if err != nil {
 		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge workspace root constraints failed"))
 	}
@@ -549,7 +550,7 @@ func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, 
 			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),
 		})
 	}
-	return &rootMerge{path: path, base: base, merged: merged}, nil
+	return &rootMerge{path: path, base: base, merged: merged, changed: changed}, nil
 }
 
 // pyprojectDiff renders the unified diff the --dry-run plan reports for one

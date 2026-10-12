@@ -58,6 +58,21 @@
   "durationMs": [DURATION_MS]
 }
 
+>>> [CLI] environments setup-local --serverless-version 4
+✔ Local environment ready
+
+  Compute target      serverless 4
+  Python              3.12
+  databricks-connect  17.2.0
+  Virtual env         ../../.venv
+  pyproject.toml      updated
+  Workspace root      [TEST_TMP_DIR]
+  Root pyproject.toml unchanged
+
+Next steps:
+  • Activate it:  source ../../.venv/bin/activate
+  • Or select ../../.venv as the Python interpreter in VS Code / Cursor
+
 >>> cat pyproject.toml
 [project]
 name = "root"

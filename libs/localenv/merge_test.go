@@ -1356,12 +1356,17 @@ func TestMergeToolUvBlockDottedKeyGuard(t *testing.T) {
 		{"dotted key in [tool]", "[tool]\nuv.workspace.members = [\"bundles/*\"]\n", true},
 		{"inline tool table", "tool = { uv = { workspace = { members = [\"bundles/*\"] } } }\n", true},
 		{"inline uv table in [tool]", "[tool]\nuv = { workspace = { members = [\"bundles/*\"] } }\n", true},
+		// Header spellings the line-based merge does not match; the merged file
+		// would define [tool.uv] twice.
+		{"header with spaces", "[ tool.uv ]\ndev-dependencies = []\n", true},
+		{"quoted header", "[tool.\"uv\"]\ndev-dependencies = []\n", true},
+		{"quoted constraint key", "[tool.uv]\n\"constraint-dependencies\" = [\"y==1\"]\n", true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, _, err := MergeToolUvBlock([]byte(tc.in), []string{"x==1"})
 			if tc.wantErr {
-				assert.ErrorIs(t, err, errDottedToolUv)
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -1379,6 +1384,7 @@ func TestMergeToolUvBlockReportsReplacedPins(t *testing.T) {
 		{"only a comment names the key", "# constraint-dependencies are added by setup-local\n[tool.uv.workspace]\nmembers = [\"a\"]\n", false},
 		{"user pins", "[tool.uv]\nconstraint-dependencies = [\"urllib3<2\"]\n", true},
 		{"managed pins", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"old==1\",\n]\n" + managedMarkerEnd + "\n", true},
+		{"empty managed block", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n]\n" + managedMarkerEnd + "\n", false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
