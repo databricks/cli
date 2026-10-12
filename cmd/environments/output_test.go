@@ -168,7 +168,7 @@ func TestRenderSuccessWorkspaceMember(t *testing.T) {
 	assert.Contains(t, out, "Workspace root")
 	assert.Contains(t, out, "/repo")
 	assert.Contains(t, out, "Root pyproject.toml")
-	assert.Contains(t, out, "constraints written (backup: /repo/pyproject.toml.bak)")
+	assert.Contains(t, out, "constraints updated (backup: /repo/pyproject.toml.bak)")
 }
 
 func TestRenderSuccessStandaloneOmitsWorkspaceRows(t *testing.T) {
@@ -189,4 +189,18 @@ func TestRenderDryRunWorkspaceMember(t *testing.T) {
 	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteWorkspace: "/repo/pyproject.toml"}
 	out := renderText(t, res, nil)
 	assert.Contains(t, out, "Plan: /repo/pyproject.toml (workspace root)")
+}
+
+func TestRenderSuccessWorkspaceMemberUnchangedRoot(t *testing.T) {
+	// --no-constraints or an idempotent re-run: the root file was not changed.
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.VenvPath = "../../.venv"
+	res.WorkspaceRoot = "/repo"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "Root pyproject.toml")
+	assert.Contains(t, out, "unchanged")
+	assert.NotContains(t, out, "constraints updated")
 }

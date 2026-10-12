@@ -118,9 +118,11 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
 	if res.WorkspaceRoot != "" {
-		rootDetail := "constraints written"
+		// The root file changes only when its constraint block changes, and every
+		// change writes a backup; --no-constraints and a no-op re-run leave it alone.
+		rootDetail := "unchanged"
 		if res.WorkspaceBackupPath != "" {
-			rootDetail += " (backup: " + res.WorkspaceBackupPath + ")"
+			rootDetail = "constraints updated (backup: " + res.WorkspaceBackupPath + ")"
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Workspace root", res.WorkspaceRoot))
 		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Root pyproject.toml", rootDetail))
