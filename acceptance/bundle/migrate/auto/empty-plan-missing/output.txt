@@ -1,0 +1,12 @@
+
+=== deploy --plan with a missing plan file fails after the empty migration prepared the direct state
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy --plan does-not-exist.json
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Error: reading plan file: open does-not-exist.json: no such file or directory
+
+
+Exit code: 1
+
+=== Terraform state is untouched - the empty migration was never committed or swept
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/terraform/terraform.tfstate

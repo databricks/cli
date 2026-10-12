@@ -484,7 +484,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		} else if allEmptyChange(ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
@@ -523,11 +523,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
-			ch.Reason = reason
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
 		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
-			ch.Reason = reason
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
 		} else {
 			ch.Action = deployplan.Update
 		}
@@ -740,6 +738,21 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 	return "", false
 }
 
+// recreateOrBackendDefault decides the action for a change that matched a
+// recreate_on_changes rule. An immutable field the config never set (old and new
+// nil) but the backend populated (remote set) is treated as a backend default and
+// left in place: the user does not manage it, and recreating to drop it would be
+// destructive (e.g. dropping an out-of-band UC trace location on an MLflow
+// experiment). This makes the backend default implicit for every optional immutable
+// field, so an explicit backend_defaults entry is only needed for a non-recreate
+// field. Any other change to an immutable field still recreates.
+func recreateOrBackendDefault(ch *deployplan.ChangeDesc, reason string) (deployplan.ActionType, string) {
+	if ch.Old == nil && ch.New == nil && ch.Remote != nil {
+		return deployplan.Skip, deployplan.ReasonImmutableBackendValue
+	}
+	return deployplan.Recreate, reason
+}
+
 // shouldSkipBackendDefault checks if a change should be skipped because the remote value
 // is a known backend default. Applies when old and new are nil but remote is set.
 // If the rule has allowed values, the remote value must match one of them.
@@ -817,6 +830,49 @@ func allEmpty(values ...any) bool {
 
 	}
 	return true
+}
+
+// allEmptyChange reports whether a change is an empty no-op that should be skipped.
+// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero scalar, "", empty map).
+//
+// The one exception is a genuine local change involving an explicit zero scalar: a value
+// force-sent on either side of the diff that differs from the other side is a real change the
+// config makes, so it must be applied rather than dismissed as empty. This covers both setting
+// gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field (Old nil,
+// New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes for a field
+// nobody set (Old and New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+//
+// The check reads only Old (saved state) and New (desired state); both are derived from config
+// (saveState persists newState, never the remote read), so a non-nil zero here always means the
+// value was explicitly configured. The backend-supplied Remote value is only consulted by the
+// allEmpty gate above, so backend normalization of a zero (e.g. "" <-> null) never triggers this.
+func allEmptyChange(ch *deployplan.ChangeDesc) bool {
+	if !allEmpty(ch.Old, ch.New, ch.Remote) {
+		return false
+	}
+	if (isZeroScalar(ch.Old) || isZeroScalar(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return false
+	}
+	return true
+}
+
+// isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
+// Strings are left out to stay in line with the DropEmptyStrings mutator, which drops an
+// explicit "" before the plan runs.
+func isZeroScalar(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Bool:
+		return rv.IsZero()
+	default:
+		return false
+	}
 }
 
 func isEmpty(rv reflect.Value) bool {
@@ -977,7 +1033,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
+	// A field is safe to read from the remote cache when the target either has no
+	// changes (Skip) or keeps its ID and the field cannot have changed: an
+	// immutable field (FieldTriggersRecreate) or a backend-assigned stable output
+	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
+	// ${resources.X.name} resolve during an in-place update instead of delaying,
+	// which would otherwise recreate dependents that reference it as their parent.
+	canReadRemoteCache := targetAction == deployplan.Skip ||
+		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
@@ -1155,8 +1218,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
-		// gets deployed and saved. The terraform engine leaves the escape in place for
-		// Terraform itself to unescape; the direct engine has to do it here.
+		// gets deployed and saved.
 		//
 		// This runs on the typed state rather than the dynamic config so that
 		// extractReferences below still sees the escaped form and does not mistake

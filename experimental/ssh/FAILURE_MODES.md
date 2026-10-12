@@ -178,6 +178,11 @@ The server checks this every 60 seconds and attempts to restore a lost registrat
 Volume registration is refreshed every 60 seconds, independently of this workspace-file check.
 An unavailable daemon produces a warning rather than preventing SSH startup.
 
+On serverless, the server does not register. Its startup logs contain
+`Skipping SSH filesystem registration on serverless` instead, and
+`/Workspace/.proc/self/metadata/pid` naming the bootstrap REPL is expected: that process
+anchors filesystem access for the whole session.
+
 This registration only covers the server and its descendants. A detached process that
 leaves that ancestry can still lose access. The compute can also terminate the server
 after the bootstrap notebook exits; registration does not extend either lifetime.

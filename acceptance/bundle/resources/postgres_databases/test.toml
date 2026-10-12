@@ -5,7 +5,6 @@ CloudEnvs.gcp = false
 CloudEnvs.azure = false
 
 # Run on both direct and Terraform modes
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 
 Ignore = [
     "databricks.yml",
@@ -14,7 +13,7 @@ Ignore = [
 
 [[Repls]]
 # Clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+Old = '\?o=\[(WORKSPACE_ID|ALPHANUMID)\]'
 New = ''
 Order = 1000
 

@@ -35,11 +35,11 @@ Building python_artifact...
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.some_other_job
-Files: 17 uploaded, 0 deleted
+Files: 15 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job --python-params param1,param2
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS

@@ -7,8 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -26,9 +24,7 @@ func (e ErrResourceIsRunning) Error() string {
 	return fmt.Sprintf("%s %s is running", e.resourceType, e.resourceId)
 }
 
-type checkRunningResources struct {
-	engine engine.EngineType
-}
+type checkRunningResources struct{}
 
 func (l *checkRunningResources) Name() string {
 	return "check-running-resources"
@@ -39,28 +35,16 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	var err error
-	var state ExportedResourcesMap
-
-	if l.engine.IsDirect() {
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
 	w := b.WorkspaceClient(ctx)
-	err = checkAnyResourceRunning(ctx, w, state)
+	err := checkAnyResourceRunning(ctx, w, b.DeploymentBundle.ExportState(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
 }
 
-func CheckRunningResource(engine engine.EngineType) bundle.Mutator {
-	return &checkRunningResources{engine: engine}
+func CheckRunningResource() bundle.Mutator {
+	return &checkRunningResources{}
 }
 
 func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {

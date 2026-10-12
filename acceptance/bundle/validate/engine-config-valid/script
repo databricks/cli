@@ -1,2 +1,6 @@
 trace $CLI bundle validate
-trace $CLI bundle validate -t terraform-target
+# engine: terraform was removed in v1.20.0, so the terraform-target now fails validation.
+trace musterr $CLI bundle validate -t terraform-target
+
+# bundle.engine takes priority over the env var, so the error names the config setting even when both say terraform.
+DATABRICKS_BUNDLE_ENGINE=terraform trace musterr $CLI bundle validate -t terraform-target

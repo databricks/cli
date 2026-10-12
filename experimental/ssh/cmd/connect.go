@@ -60,12 +60,14 @@ Connect to a dedicated cluster:
 	var baseEnvironment string
 	var autoApprove bool
 	var usagePolicyID string
+	var keepDetachedProcesses bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
+	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
@@ -128,32 +130,33 @@ Connect to a dedicated cluster:
 			environmentVersion = 0
 		}
 		opts := client.ClientOptions{
-			Profile:              wsClient.Config.Profile,
-			ClusterID:            clusterID,
-			ConnectionName:       connectionName,
-			Accelerator:          accelerator,
-			ProxyMode:            proxyMode,
-			IDE:                  ide,
-			ServerMetadata:       serverMetadata,
-			ShutdownDelay:        shutdownDelay,
-			MaxClients:           maxClients,
-			HandoverTimeout:      handoverTimeout,
-			KeepaliveInterval:    defaultKeepaliveInterval,
-			ReleasesDir:          releasesDir,
-			ServerTimeout:        resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
-			TaskStartupTimeout:   startupTimeout,
-			AutoStartCluster:     autoStartCluster,
-			ClientPublicKeyName:  clientPublicKeyName,
-			ClientPrivateKeyName: clientPrivateKeyName,
-			ServerPublicKeyName:  serverPublicKeyName,
-			KnownHostsDir:        knownHostsDir,
-			Liteswap:             liteswap,
-			SkipSettingsCheck:    skipSettingsCheck,
-			EnvironmentVersion:   environmentVersion,
-			BaseEnvironment:      baseEnvironment,
-			AdditionalArgs:       args,
-			AutoApprove:          autoApprove,
-			UsagePolicyID:        usagePolicyID,
+			Profile:               wsClient.Config.Profile,
+			ClusterID:             clusterID,
+			ConnectionName:        connectionName,
+			Accelerator:           accelerator,
+			ProxyMode:             proxyMode,
+			IDE:                   ide,
+			ServerMetadata:        serverMetadata,
+			ShutdownDelay:         shutdownDelay,
+			MaxClients:            maxClients,
+			HandoverTimeout:       handoverTimeout,
+			KeepaliveInterval:     defaultKeepaliveInterval,
+			ReleasesDir:           releasesDir,
+			ServerTimeout:         resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
+			TaskStartupTimeout:    startupTimeout,
+			AutoStartCluster:      autoStartCluster,
+			ClientPublicKeyName:   clientPublicKeyName,
+			ClientPrivateKeyName:  clientPrivateKeyName,
+			ServerPublicKeyName:   serverPublicKeyName,
+			KnownHostsDir:         knownHostsDir,
+			Liteswap:              liteswap,
+			SkipSettingsCheck:     skipSettingsCheck,
+			EnvironmentVersion:    environmentVersion,
+			BaseEnvironment:       baseEnvironment,
+			AdditionalArgs:        args,
+			AutoApprove:           autoApprove,
+			UsagePolicyID:         usagePolicyID,
+			KeepDetachedProcesses: keepDetachedProcesses,
 		}
 		if err := opts.Validate(); err != nil {
 			return err

@@ -4,3 +4,7 @@ provided_id_fields:
   # schedule, so it recreates (delete + create).
   - field: branch
     reason: id_field
+stable_output_fields:
+  # name ("{branch}/snapshot-schedule") is backend-assigned at creation and
+  # immutable; see the stable_output_fields doc in config.go and ES-2202624.
+  - field: name

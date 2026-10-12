@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"testing"
 
+	cliauth "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -15,6 +18,54 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewFilesAPIClientDoesNotResolveAmbientConfig(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		assert.Equal(t, "Bearer resolved-token", req.Headers.Get("Authorization"))
+		assert.Empty(t, req.Headers.Get(cliauth.WorkspaceIDHeader))
+		return ""
+	})
+
+	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "resolved-token",
+		WorkspaceID: cliauth.WorkspaceIDNone,
+	})
+	require.NoError(t, err)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, []byte(`
+[DEFAULT]
+host = https://ambient.test
+token = ambient-token
+workspace_id = ambient-profile-workspace
+`), 0o600))
+
+	testCases := []struct {
+		name        string
+		configFile  string
+		workspaceID string
+	}{
+		{name: "config file", configFile: configFile},
+		{name: "environment", workspaceID: "ambient-env-workspace"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFile)
+			t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+			t.Setenv("DATABRICKS_WORKSPACE_ID", tc.workspaceID)
+
+			client, err := newFilesAPIClient(t.Context(), workspaceClient.Config)
+			require.NoError(t, err)
+
+			filePath := "/Volumes/main/schema/volume/file"
+			_, err = client.GetFileMetadata(t.Context(), files.GetFileMetadataRequest{FilePath: &filePath})
+			require.NoError(t, err)
+		})
+	}
+}
 
 func deleteDirectoryWithError(t *testing.T, statusCode int, errorCode, reason string) error {
 	t.Helper()

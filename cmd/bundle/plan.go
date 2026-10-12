@@ -58,7 +58,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			},
 		}
 
-		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
+		b, _, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				return root.ErrAlreadyPrinted
 			}
 		}
-		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
+		plan := phases.RunPlan(ctx, b)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

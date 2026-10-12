@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
@@ -75,12 +76,10 @@ func assertNoUnsupportedFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
-// config turned the feature off, or an operation that never records (unbind) reached it. Callers
-// present an operation-appropriate message via errors.Is.
-var ErrUnsettingRecording = errors.New(`unsetting experimental.deployment_history is not supported
-
-This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle`)
+// ErrUnsettingRecording is returned by Open when an operation that does not support deployment
+// history (such as unbind) reaches a recorded state. Callers present an operation-appropriate
+// message via errors.Is.
+var ErrUnsettingRecording = errors.New("this operation is not supported for a deployment that records deployment history")
 
 type DeploymentState struct {
 	Path    string
@@ -98,10 +97,6 @@ type DeploymentState struct {
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
-
-	// dmsClient talks to the deployment metadata service. Open builds it from the workspace
-	// client when the deployment records history; nil otherwise.
-	dmsClient *dms.Client
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -181,7 +176,7 @@ type WALEntry struct {
 // (after approval) - which is why it is not an Open option. It also records the id a first deploy
 // just created, which Open could not know, so CompleteVersion later has it.
 func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int) {
-	buf := dms.StartOperationBuffer(ctx, db.dmsClient, deploymentID, versionID)
+	buf := dms.StartOperationBuffer(ctx, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -225,7 +220,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, db.VersionID
+	deploymentID, versionID := db.DeploymentID, db.VersionID
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
@@ -239,7 +234,12 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	if !success {
 		reason = bundledeployments.VersionCompleteVersionCompleteFailure
 	}
-	if err := client.CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
+	w := cmdctx.WorkspaceClient(ctx)
+	_, err := w.BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
+		Name:             dms.VersionName(deploymentID, versionID),
+		CompletionReason: reason,
+	})
+	if err != nil {
 		return false, err
 	}
 	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", deploymentID, versionID, reason)
@@ -427,12 +427,6 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	return db.isDeploymentMetadataService()
 }
 
-// DmsClient returns the deployment metadata service client Open built from the workspace client,
-// or nil when the deployment does not record history.
-func (db *DeploymentState) DmsClient() *dms.Client {
-	return db.dmsClient
-}
-
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
 // one if the state does not have one yet. It is the single place the lineage is
 // initialized, shared so the direct deployment engine (when it writes state, via
@@ -573,12 +567,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
-		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
+		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
-To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.deployment_history from your bundle configuration
-  2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.deployment_history back and deploy again`)
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
@@ -588,17 +579,24 @@ To record this bundle's history, start it over as a new deployment:
 	if recorded {
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.
-		client, err := dms.NewClient(cmdctx.WorkspaceClient(ctx))
-		if err != nil {
-			return err
-		}
-		db.dmsClient = client
 		db.DeploymentID = dmsDeployment.DeploymentID
 
 		if dmsDeployment.DeploymentID != "" {
-			resources, err := db.dmsClient.ListResources(ctx, dmsDeployment.DeploymentID)
+			w := cmdctx.WorkspaceClient(ctx)
+			recorded, err := w.BundleDeployments.ListResourcesAll(ctx, bundledeployments.ListResourcesRequest{
+				Parent: dms.DeploymentName(dmsDeployment.DeploymentID),
+			})
 			if err != nil {
-				return err
+				return fmt.Errorf("listing resources from the deployment history service: %w", err)
+			}
+			resources := make([]dms.Resource, len(recorded))
+			for i, res := range recorded {
+				// DMS keys drop the "resources." prefix; add it back for local state.
+				resources[i] = dms.Resource{
+					Key:   dms.StatePrefix + res.ResourceKey,
+					ID:    res.ResourceId,
+					State: res.State,
+				}
 			}
 			if err := db.applyDMSState(resources); err != nil {
 				return err
@@ -876,6 +874,16 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	return appendJSONLine(db.walFile, walHead)
 }
 
+// Persist writes the current in-memory state to its file immediately, without a WAL cycle.
+// Used to materialize a freshly opened state that produces no WAL entries - e.g. an empty
+// migrated state - as a base file on disk, so a later write has a base and Finalize's
+// header-only WAL leaves it intact.
+func (db *DeploymentState) Persist() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.unlockedSave()
+}
+
 // IsOpen reports whether the state has been opened (for read or write). It lets
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.
@@ -969,31 +977,7 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	dir := filepath.Dir(db.Path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
-	}
-
-	// CreateTemp creates the file with mode 0o600, matching the state file.
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
-	}
-	tmpPath := tmp.Name()
-	// Cleans up the temp file on failure; a no-op once the rename succeeded.
-	defer os.Remove(tmpPath)
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return fmt.Errorf("failed to write %#v: %w", tmpPath, err)
-	}
-
-	// Close before the rename: on Windows the file must not be open for writing.
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
-	}
-
-	if err := os.Rename(tmpPath, db.Path); err != nil {
+	if err := atomicfile.Write(db.Path, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 

@@ -193,7 +193,8 @@ func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, 
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
 		client.WithCredentials(configCredentials{cfg: cfg}),
-		client.WithoutProfileResolution(),
+		client.WithoutConfigFile(),
+		client.WithoutEnv(),
 	}
 	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
 	// "none" sentinel means "no workspace ID", so it is not forwarded.
@@ -212,7 +213,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// Check that target path exists if CreateParentDirectories mode is not set
 	if !slices.Contains(mode, CreateParentDirectories) {
 		dir := path.Dir(absPath)
-		_, err := w.client.GetDirectoryMetadata(ctx, &files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
+		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
 		if err != nil {
 			// This API returns a 404 if the directory doesn't exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -246,7 +247,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return mapUploadError(uerr, absPath)
 	}
 
-	_, err = w.client.UploadFile(ctx, &files.UploadFileRequest{
+	_, err = w.client.UploadFile(ctx, files.UploadFileRequest{
 		FilePath:  &absPath,
 		Contents:  io.NopCloser(reader),
 		Overwrite: &overwrite,
@@ -294,7 +295,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, err
 	}
 
-	resp, err := w.client.DownloadFile(ctx, &files.DownloadFileRequest{FilePath: &absPath})
+	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath})
 
 	// Return early on success.
 	if err == nil {
@@ -326,7 +327,7 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteFile(ctx, &files.DeleteFileRequest{FilePath: &absPath})
+	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath})
 
 	// Return early on success.
 	if err == nil {
@@ -352,7 +353,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteDirectory(ctx, &files.DeleteDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath})
 
 	// Return early on success.
 	if err == nil {
@@ -474,7 +475,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	}
 
 	var entries []fs.DirEntry
-	for entry, err := range w.client.ListDirectoryContentsIter(ctx, &files.ListDirectoryContentsRequest{
+	for entry, err := range w.client.ListDirectoryContentsIter(ctx, files.ListDirectoryContentsRequest{
 		DirectoryPath: &absPath,
 	}) {
 		if err != nil {
@@ -512,7 +513,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	_, err = w.client.CreateDirectory(ctx, &files.CreateDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath})
 
 	// This API returns a 409 when a file already exists at the path (the create
 	// is not idempotent over a file).
@@ -530,7 +531,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, err
 	}
 
-	resp, err := w.client.GetFileMetadata(ctx, &files.GetFileMetadataRequest{FilePath: &absPath})
+	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath})
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
@@ -556,7 +557,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, err
 	}
 
-	_, err = w.client.GetDirectoryMetadata(ctx, &files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
+	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
 
 	// If the HEAD requests succeeds, the directory exists.
 	if err == nil {

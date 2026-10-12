@@ -1,0 +1,63 @@
+export DOCKER_CONFIG="$HOME/docker"
+export DOCKER_LOG="$HOME/docker.log"
+mkdir -p "$DOCKER_CONFIG"
+cp "$TESTDIR/docker" "$HOME/bin/docker"
+chmod +x "$HOME/bin/docker"
+
+title "push image"
+trace databricks air images push \
+  -p docker-test \
+  -s nvidia/cuda:13.4.1 \
+  --catalog my-catalog \
+  --schema my-schema \
+  --artifact cuda:13.4.1-cudnn-devel-ubuntu26.04
+
+title "inferred region and workspace ID requests\n"
+trace print_requests.py --get //api
+
+title "docker commands\n"
+cat "$DOCKER_LOG"
+
+title "missing image is pulled for AIR; destination defaults to source"
+export DOCKER_TEST_MODE=missing
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "forced pull and JSON output"
+unset DOCKER_TEST_MODE
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull -o json > "$HOME/result.json"
+# Parsing the complete stdout fails if Docker progress or human-readable text leaks into it.
+trace jq -e '{v, data}' "$HOME/result.json"
+
+title "daemon failure must not pull"
+export DOCKER_TEST_MODE=daemon-error
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "inspect failure must not pull"
+export DOCKER_TEST_MODE=inspect-error
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "incompatible local image must not be pushed"
+export DOCKER_TEST_MODE=arm64
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "incompatible pulled image must not be pushed"
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+
+title "pull failure must not be pushed"
+export DOCKER_TEST_MODE=pull-error
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+
+title "invalid destination and removed flags"
+unset DOCKER_TEST_MODE
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact invalid.name
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema team_-training
+trace musterr databricks air images push --region us-west-2
+trace musterr databricks air images push --image artifact
+
+title "reject oversized catalog.schema.artifact before Docker operations"
+cp "$DOCKER_LOG" "$HOME/docker.before-length.log"
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact "$(cat oversized-artifact.txt)"
+cmp "$DOCKER_LOG" "$HOME/docker.before-length.log"
+
+title "all docker commands\n"
+cat "$DOCKER_LOG"

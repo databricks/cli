@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from add_repl import add_repl
+from add_repl import add_repl, id_repl_name
 from print_state import get_resources, get_state_file
 
 
@@ -61,7 +61,7 @@ def main():
             it = iter_ids_direct(filename)
 
     for name, id in it:
-        add_repl(id, name.upper() + "_ID")
+        add_repl(id, id_repl_name(name))
 
 
 if __name__ == "__main__":

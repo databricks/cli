@@ -1,8 +1,6 @@
 mkdir .git
 cat > .gitignore << EOF
 .databricks/
-script
-test.toml
 EOF
 
 # Use an ephemeral remote directory so concurrent test runs do not interfere.

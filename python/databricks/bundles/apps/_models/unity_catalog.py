@@ -19,17 +19,17 @@ class UnityCatalog:
 
     logs_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL logs.
+    Unity Catalog table for OTEL logs.
     """
 
     metrics_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL metrics.
+    Unity Catalog table for OTEL metrics.
     """
 
     traces_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL traces (spans).
+    Unity Catalog table for OTEL traces (spans).
     """
 
     @classmethod
@@ -45,17 +45,17 @@ class UnityCatalogDict(TypedDict, total=False):
 
     logs_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL logs.
+    Unity Catalog table for OTEL logs.
     """
 
     metrics_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL metrics.
+    Unity Catalog table for OTEL metrics.
     """
 
     traces_table: VariableOr[str]
     """
-    [Public Preview] Unity Catalog table for OTEL traces (spans).
+    Unity Catalog table for OTEL traces (spans).
     """
 
 

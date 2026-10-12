@@ -1,0 +1,5 @@
+Ignore = [
+    "home",
+]
+
+Timeout = "30s"

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Test pnpm (default) — should keep pnpm lockfiles, remove npm lockfile
+trace $CLI apps init --name test-app-pnpm --skip-install
+
+echo "=== test-app-pnpm lockfiles ==="
+ls -1 test-app-pnpm/ | grep -E "lock|shrinkwrap|workspace" || echo "(none)"
+
+# Test npm — should keep npm lockfile, remove pnpm lockfiles
+trace $CLI apps init --name test-app-npm --package-manager npm --skip-install
+
+echo "=== test-app-npm lockfiles ==="
+ls -1 test-app-npm/ | grep -E "lock|shrinkwrap|workspace" || echo "(none)"
+
+title "Npm accepts a shrinkwrap template with a pnpm lockfile"
+trace $CLI apps init --name shrinkwrap-app --template shrinkwrap-template --package-manager npm --skip-install
+diff.py shrinkwrap-template/npm-shrinkwrap.json shrinkwrap-app/npm-shrinkwrap.json
+test ! -e shrinkwrap-app/pnpm-lock.yaml
+test ! -e shrinkwrap-app/package-lock.json
+ls -1 shrinkwrap-app/ | grep -E "lock|shrinkwrap|workspace"

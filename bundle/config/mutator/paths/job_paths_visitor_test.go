@@ -113,6 +113,8 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		JobSettings: jobs.JobSettings{
 			Environments: []jobs.JobEnvironment{
 				environment0,
+				{Spec: &compute.Environment{ProjectEnvironment: "../pyproject.toml"}},
+				{Spec: &compute.Environment{ProjectEnvironment: "/Workspace/shared/pyproject.toml"}},
 			},
 		},
 	}
@@ -126,7 +128,44 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	var expected []dyn.Path
+	expected := []dyn.Path{
+		dyn.MustPathFromString("resources.jobs.job0.environments[1].spec.project_environment"),
+		dyn.MustPathFromString("resources.jobs.job0.environments[2].spec.project_environment"),
+	}
+
+	assert.ElementsMatch(t, expected, actual)
+}
+
+func TestVisitJobPaths_environmentVariables(t *testing.T) {
+	job0 := &resources.Job{
+		JobSettings: jobs.JobSettings{
+			EnvironmentVariables: []jobs.JobEnvironmentVariables{
+				{
+					EnvironmentVariablesKey: "default",
+					Spec: &jobs.JobEnvironmentVariablesSpec{
+						Files: []string{
+							"./a.env",
+							"./b.env",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	root := config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"job0": job0,
+			},
+		},
+	}
+
+	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	expected := []dyn.Path{
+		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[0]"),
+		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[1]"),
+	}
 
 	assert.ElementsMatch(t, expected, actual)
 }

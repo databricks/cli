@@ -121,6 +121,14 @@ func TestValidate(t *testing.T) {
 			name: "usage policy with connection name",
 			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1"},
 		},
+		{
+			name: "keep detached processes with serverless",
+			opts: client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true},
+		},
+		{
+			name: "keep detached processes with cluster ID",
+			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedProcesses: true},
+		},
 	}
 
 	for _, tt := range tests {
@@ -333,6 +341,18 @@ func TestToProxyCommand(t *testing.T) {
 			name: "serverless with server lifecycle flags",
 			opts: client.ClientOptions{ConnectionName: "my-conn", ShutdownDelay: 2 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour},
 			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --max-clients=25 --server-timeout=48h0m0s",
+		},
+		{
+			// Carried into the ProxyCommand so a reconnect through ssh asks for the same
+			// mode, instead of starting a server that would sweep the detached work.
+			name: "dedicated cluster keeping detached processes",
+			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --keep-detached-processes",
+		},
+		{
+			name: "serverless keeping detached processes",
+			opts: client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
+			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=5m0s --keep-detached-processes",
 		},
 		{
 			name: "with metadata",

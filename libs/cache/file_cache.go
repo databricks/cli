@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
@@ -278,38 +279,9 @@ func (fc *fileCache) readFromCacheJSON(ctx context.Context, cachePath string) ([
 }
 
 // writeToCacheJSON writes data to the cache file atomically.
-// Uses atomic write: writes to temp file first, then renames to actual cache file.
 func (fc *fileCache) writeToCacheJSON(ctx context.Context, cachePath string, data []byte) {
-	// Create temporary file in the same directory for atomic operation
-	tempFile, err := os.CreateTemp(fc.baseDir, ".cache-*.tmp")
-	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to create temp cache file: %v", err)
-		return
-	}
-	tempPath := tempFile.Name()
-	defer func() {
-		_ = tempFile.Close()
-		_ = os.Remove(tempPath) // Clean up temp file if still exists
-	}()
-
-	// Write data to temp file
-	if _, err := tempFile.Write(data); err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to write to temp cache file: %v", err)
-		return
-	}
-
-	if err := tempFile.Close(); err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to close temp cache file: %v", err)
-		return
-	}
-
-	// On Windows, os.Rename fails if target exists, so remove it first
-	// This is a best-effort operation - if it fails because file doesn't exist, that's fine
-	_ = os.Remove(cachePath)
-
-	// Atomically rename temp file to actual cache file
-	if err := os.Rename(tempPath, cachePath); err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to rename temp cache file: %v", err)
+	if err := atomicfile.Write(cachePath, data, 0o600); err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to write cache file: %v", err)
 	}
 }
 

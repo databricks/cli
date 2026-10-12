@@ -1,3 +1,7 @@
 Cloud = false
 
 RecordRequests = true
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

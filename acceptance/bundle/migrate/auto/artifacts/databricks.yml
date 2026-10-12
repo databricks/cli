@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Auto-Migrate Artifacts Job"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          libraries:
+            - whl: ./dist/*.whl

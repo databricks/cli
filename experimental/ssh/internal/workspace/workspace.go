@@ -22,6 +22,11 @@ type WorkspaceMetadata struct {
 	// UsagePolicyID records the usage policy the server's job was submitted with, so a
 	// reconnect can tell whether a running server matches the requested usage policy.
 	UsagePolicyID string `json:"usage_policy_id,omitempty"`
+	// KeepDetachedProcesses records whether the server's bootstrap notebook will hold the job
+	// run open for detached processes after the server exits (--keep-detached-processes), so a
+	// reconnect can tell whether a running server honours the requested mode. False, and so
+	// absent, when the session did not ask for it.
+	KeepDetachedProcesses bool `json:"keep_detached_processes,omitempty"`
 }
 
 func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {

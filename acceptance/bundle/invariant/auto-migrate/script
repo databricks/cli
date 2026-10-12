@@ -1,0 +1,19 @@
+# Invariant to test: auto-migration on deploy is successful, no drift after deploy
+# Additional checks: no internal errors / panics in any commands
+
+unset DATABRICKS_BUNDLE_ENGINE
+
+invariant_setup
+
+# Replay a prior terraform deployment (per-config fixture captured once from a real terraform
+# run), standing in for the terraform deploy now that these tests must not run terraform.
+invariant_deploy LOG.replay replay_tfstate.py "$TESTDIR/../fixtures/$INPUT_CONFIG.requests.json" "$TESTDIR/../fixtures/$INPUT_CONFIG.tfstate"
+
+# Deploy on the direct default (engine unset): this migrates the terraform state to the
+# direct engine before deploying, exercising the auto path. Not invariant_deploy -- the
+# config was already validated by the terraform deploy above, so a failure here is a bug,
+# not an invalid config (and it must not re-emit the INPUT_CONFIG_OK marker).
+trace $CLI bundle deploy &> LOG.migrate
+cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
+
+invariant_verify_no_drift

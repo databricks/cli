@@ -22,10 +22,8 @@ var resourcesPrefix = dyn.MustPathFromString("resources")
 // unrelated resource may reference a resource that was never deployed, whose ${...}.id
 // falls back to an empty config string and then fails int type-checking.
 //
-// The state consultation only applies to the direct engine (its state DB holds fields
-// like the immutable snapshot's full_path that never reach the config); with terraform
-// the state DB is closed and everything resolves from config, which is where state load
-// has already written each resource's id.
+// The state DB holds fields like the immutable snapshot's full_path that never reach the
+// config, so it must be open.
 func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target dyn.Path) error {
 	return cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Fall back to the fully-normalized config so references to fields that are
@@ -53,11 +51,6 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target dy
 // lookupStateField returns the value at resources.<group>.<name>.<field...> from the
 // resource's persisted state, if that resource is in state and holds the field.
 func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
-	// The state DB is only opened for the direct engine; with terraform there is no
-	// state to consult and references resolve from config alone.
-	if !b.StateDB.IsOpen() {
-		return dyn.InvalidValue, false
-	}
 	if len(path) < 4 || path[0].Key() != "resources" {
 		return dyn.InvalidValue, false
 	}

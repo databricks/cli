@@ -1,0 +1,13 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+
+targets:
+  dev:
+    mode: development
+    default: true

@@ -516,6 +516,40 @@ func TestU2MClientIDFromProfile(t *testing.T) {
 	}
 }
 
+func TestU2MResourcesFromProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile *profile.Profile
+		want    []string
+	}{
+		{name: "no profile"},
+		{
+			name:    "implicit auth type",
+			profile: &profile.Profile{Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
+		},
+		{
+			name:    "M2M auth type",
+			profile: &profile.Profile{AuthType: "oauth-m2m", Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
+		},
+		{
+			name:    "U2M auth type single resource",
+			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
+			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github"},
+		},
+		{
+			name:    "U2M auth type multiple resources",
+			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github, https://workspace.test/ai-gateway/mcp/system.ai.slack"},
+			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github", "https://workspace.test/ai-gateway/mcp/system.ai.slack"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, u2mResourcesFromProfile(tt.profile))
+		})
+	}
+}
+
 func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
@@ -797,6 +831,12 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			wantErr: "--configure-serverless requires --host to be specified",
 		},
 		{
+			name:    "resource is incompatible",
+			setFlag: "resource",
+			flagVal: "https://workspace.test/ai-gateway/mcp-services/system.ai.github",
+			wantErr: "--resource requires --host to be specified",
+		},
+		{
 			name: "no flags set is ok",
 		},
 	}
@@ -807,6 +847,7 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			cmd.Flags().String("workspace-id", "", "")
 			cmd.Flags().Bool("configure-cluster", false, "")
 			cmd.Flags().Bool("configure-serverless", false, "")
+			cmd.Flags().StringArray("resource", nil, "")
 
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))

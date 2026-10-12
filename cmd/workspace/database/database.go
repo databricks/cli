@@ -1516,7 +1516,7 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd.Short = `List all synced database tables in a Database Instance.`
 	cmd.Long = `List all synced database tables in a Database Instance.
 
-  This API is currently unimplemented, but exposed for Terraform support.
+  List synced database tables in a Database Instance.
 
   Arguments:
     INSTANCE_NAME: Name of the instance to get synced tables for.`

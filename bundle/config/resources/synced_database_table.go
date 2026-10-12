@@ -14,6 +14,7 @@ import (
 
 type SyncedDatabaseTable struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.SyncedDatabaseTable
 }
 

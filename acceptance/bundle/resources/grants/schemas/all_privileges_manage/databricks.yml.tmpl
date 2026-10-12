@@ -1,0 +1,18 @@
+bundle:
+  name: schema-grants-all-privileges-manage-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_all_priv_manage_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        # Config declares both MANAGE and ALL_PRIVILEGES for the principal.
+        # ALL_PRIVILEGES does not imply MANAGE (UC treats MANAGE as a distinct
+        # privilege), so both must reach the backend. Reproduces the bug where
+        # normalizeAssignments collapses the list to just ALL_PRIVILEGES and
+        # silently drops MANAGE.
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - MANAGE
+            - ALL_PRIVILEGES

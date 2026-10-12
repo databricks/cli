@@ -1,0 +1,9 @@
+experiment_name: b300-submit-smoke
+command: nvidia-smi
+compute:
+  accelerator_type: GPU_8xB300
+  num_accelerators: 8
+environment:
+  version: 6
+  dependencies: []
+max_retries: 0

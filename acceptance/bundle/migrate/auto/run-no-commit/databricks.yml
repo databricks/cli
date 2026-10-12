@@ -1,0 +1,6 @@
+bundle: {name: test-bundle}
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Auto-Migrate Run"

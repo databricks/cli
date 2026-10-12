@@ -7,6 +7,10 @@ from typing import Literal
 class TransformerFormat(Enum):
     STRING = "STRING"
     JSON = "JSON"
+    AVRO = "AVRO"
+    PROTOBUF = "PROTOBUF"
 
 
-TransformerFormatParam = Literal["STRING", "JSON"] | TransformerFormat
+TransformerFormatParam = (
+    Literal["STRING", "JSON", "AVRO", "PROTOBUF"] | TransformerFormat
+)

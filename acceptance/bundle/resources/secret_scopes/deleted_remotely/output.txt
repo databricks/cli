@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle deploy -qq
+
+=== delete the scope outside of the bundle
+>>> [CLI] secrets delete-scope test-scope
+
+=== plan should recreate the scope
+>>> [CLI] bundle plan
+create secret_scopes.my_scope
+create secret_scopes.my_scope.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== deploy should recreate the scope
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] secrets list-scopes -o json
+test-scope
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.secret_scopes.my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

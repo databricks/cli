@@ -1,4 +1,2 @@
 Cloud = false
 RecordRequests = false
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

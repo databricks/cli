@@ -316,7 +316,9 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		if finished.Load() || ctx.Err() != nil {
 			closeErr = pc.close()
 		}
-		return errors.Join(closeErr, pc.closeConnection(), pc.closeSource(src))
+		// Cleanup can win the errgroup's first-error race with the I/O loops.
+		// Preserve parent cancellation even when the close control frame fails.
+		return errors.Join(ctx.Err(), closeErr, pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -533,7 +535,18 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 			// reattachment to recover bytes the close-frame exchange did not drain.
 			if handover := pc.handoverState.Load(); handover != nil {
 				var closeConnSignal error
-				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				switch {
+				case websocket.IsCloseError(err, websocket.CloseNormalClosure):
+					// A normal close ends the old connection cleanly, usually as the peer's side of
+					// the handover. Complete the swap even when the session is ending: teardown then
+					// closes the replacement connection gracefully, and a resumable peer does not
+					// wait for a reattach.
+				case ctx.Err() != nil:
+					// The session is ending and teardown closed the connection under the handover
+					// (see the ctx.Err() check below). Pass the cancellation on, so the handover
+					// initiator does not report a failed handover for an ordinary exit.
+					closeConnSignal = ctx.Err()
+				default:
 					closeConnSignal = errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket during handover: %w", err))
 				}
 				// Signal the current connection is closed to the handover initiator (initiateHandover or acceptHandover).

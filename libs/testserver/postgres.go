@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -15,6 +17,14 @@ import (
 
 func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
+}
+
+// nextTraceID returns a 32-hex-character id shaped like the trace ids the real API puts
+// in error messages, so acceptance goldens normalize local and cloud identically.
+func nextTraceID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 // Backend defaults applied to a project's status when the spec omits them.
@@ -250,6 +260,20 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 
 	project.UpdateTime = nowTime()
 	s.PostgresProjects[name] = project
+
+	// Whole-spec mask + a body that omits default_endpoint_settings, while the stored
+	// settings are non-default, makes the real API 500 ("could not be processed"): it
+	// resets the message and the emptied autoscaling limits fail validation. The other
+	// masked fields are applied first, though — the failure is a partial write, so the
+	// mutation above is persisted and only this response reports the error. When the
+	// settings are already default, or the message is masked by its own path, the
+	// omission is tolerated. Probed against a real workspace 2026-09-21.
+	if wholeSpecMasked(req.URL.Query().Get("update_mask")) &&
+		(updateProject.Spec == nil || updateProject.Spec.DefaultEndpointSettings == nil) &&
+		project.Status != nil && isNonDefaultEndpointSettings(project.Status.DefaultEndpointSettings) {
+		return postgresErrorResponse(500, "INTERNAL_ERROR",
+			fmt.Sprintf("The request could not be processed. Please try again later and contact Databricks if the problem persists. [TraceId: %s]", nextTraceID()))
+	}
 
 	return Response{
 		Body: s.createOperationLocked(project.Name, project),
@@ -937,27 +961,109 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 	if mask == "" {
 		return nil
 	}
+	wildcard := false
 	for path := range strings.SplitSeq(mask, ",") {
 		path = strings.TrimSpace(path)
+		if path == "*" {
+			// The API accepts the wildcard, then requires every field populated;
+			// see wildcardMissingField.
+			wildcard = true
+			continue
+		}
 		if path == "" || slices.Contains(allowed, path) {
 			continue
 		}
 		resp := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Unknown field path in update_mask: '%s'", path))
 		return &resp
 	}
+	var body map[string]any
+	_ = json.Unmarshal(req.Body, &body)
+	if wildcard {
+		if path := wildcardMissingField(body, allowed, oneofGroups); path != "" {
+			resp := missingMaskedFieldResponse(path)
+			return &resp
+		}
+		return nil
+	}
 	// An unknown path is reported ahead of a missing one, matching the API.
 	if path := missingMaskedField(req, oneofGroups); path != "" {
 		resp := missingMaskedFieldResponse(path)
 		return &resp
 	}
-	var body map[string]any
-	if err := json.Unmarshal(req.Body, &body); err == nil {
-		if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
-			resp := missingMaskedFieldResponse(group)
-			return &resp
-		}
+	if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
+		resp := missingMaskedFieldResponse(group)
+		return &resp
 	}
 	return nil
+}
+
+// wholeSpecMasked reports whether the update_mask names the whole spec message (a bare
+// "spec" path), as the Terraform provider does.
+func wholeSpecMasked(mask string) bool {
+	for path := range strings.SplitSeq(mask, ",") {
+		if strings.TrimSpace(path) == "spec" {
+			return true
+		}
+	}
+	return false
+}
+
+// isNonDefaultEndpointSettings reports whether the settings differ from what create
+// materializes by default (autoscaling 1..1, 86400s suspend).
+func isNonDefaultEndpointSettings(s *postgres.ProjectDefaultEndpointSettings) bool {
+	if s == nil {
+		return false
+	}
+	if s.AutoscalingLimitMinCu != defaultAutoscalingLimitMinCu || s.AutoscalingLimitMaxCu != defaultAutoscalingLimitMaxCu {
+		return true
+	}
+	return s.SuspendTimeoutDuration != nil && s.SuspendTimeoutDuration.AsDuration() != defaultSuspendTimeout
+}
+
+// wildcardMissingField returns the first spec field that update_mask=* requires but the
+// body does not carry. The wildcard expands to every settable leaf, and — unlike a bare
+// message mask — the API then demands each one be present (probed against a real
+// workspace: * with a create-shaped body is rejected field by field). The required set is
+// the leaf paths of `allowed`: an entry with no more-specific entry beneath it, a oneof
+// group counting as satisfied by any of its members.
+func wildcardMissingField(body map[string]any, allowed []string, oneofGroups map[string][]string) string {
+	var required []string
+	for _, p := range allowed {
+		if !strings.HasPrefix(p, "spec.") {
+			// "spec" itself and the initial_* specs are not spec leaves.
+			continue
+		}
+		isParent := false
+		for _, q := range allowed {
+			if q != p && strings.HasPrefix(q, p+".") {
+				isParent = true
+				break
+			}
+		}
+		if !isParent {
+			required = append(required, p)
+		}
+	}
+	slices.Sort(required)
+	for _, p := range required {
+		if members, ok := oneofGroups[p]; ok {
+			satisfied := false
+			for _, m := range members {
+				if bodyHasPath(body, strings.Split(m, ".")) {
+					satisfied = true
+					break
+				}
+			}
+			if !satisfied {
+				return p
+			}
+			continue
+		}
+		if !bodyHasPath(body, strings.Split(p, ".")) {
+			return p
+		}
+	}
+	return ""
 }
 
 func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Response {
@@ -1711,14 +1817,32 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	return Response{Body: table}
 }
 
-// PostgresSyncedTableDelete deletes a postgres synced table.
+// PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
+// simulates eventual consistency, deletion is asynchronous and slow: the record is
+// not removed but left in DELETING, so GET keeps returning it and a create for the
+// same name keeps hitting 409 — the stuck-teardown race WaitAfterDelete waits out.
+// Otherwise (the default, and terraform, which recreates without polling) it is
+// removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresSyncedTables[name]; !exists {
+	table, exists := s.PostgresSyncedTables[name]
+	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
-	delete(s.PostgresSyncedTables, name)
+
+	if !s.eventualConsistency {
+		delete(s.PostgresSyncedTables, name)
+		return Response{Body: s.createOperationLocked(name, nil)}
+	}
+
+	if table.Status == nil {
+		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+	}
+	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
+	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
+	s.PostgresSyncedTables[name] = table
+
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 

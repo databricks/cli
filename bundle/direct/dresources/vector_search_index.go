@@ -216,23 +216,21 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 	return &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: config.EndpointUuid}, nil
 }
 
-// WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is
+// WaitAfterDelete polls GetIndex until the index is gone. The DELETE call is
 // asynchronous, so without this a `bundle destroy` would report success while
 // the index is still being torn down. The framework calls this after dropping
-// state so a wait-time failure leaves the bundle consistent.
+// state (so a wait-time failure leaves the bundle consistent) and maps the
+// terminal NotFound to success (see Adapter.WaitAfterDelete).
 //
 // This does NOT on its own make a recreate safe: the name is released after the
 // index disappears from GET, so createIndex retries the CREATE for the rest.
 func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id string) error {
 	_, err := retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
-		if getErr == nil {
-			return nil, retries.Continues("index still exists, waiting for deletion to complete")
+		if getErr != nil {
+			return nil, retries.Halt(getErr)
 		}
-		if errors.Is(getErr, apierr.ErrResourceDoesNotExist) || errors.Is(getErr, apierr.ErrNotFound) {
-			return &struct{}{}, nil
-		}
-		return nil, retries.Halt(getErr)
+		return nil, retries.Continues("index still exists, waiting for deletion to complete")
 	})
 	return err
 }

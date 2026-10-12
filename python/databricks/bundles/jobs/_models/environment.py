@@ -53,6 +53,13 @@ class Environment:
     List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
+    project_environment: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] File path of pyproject.toml file that defines the project-scoped environment.
+    """
+
     @classmethod
     def from_dict(cls, value: "EnvironmentDict") -> "Self":
         return _transform(cls, value)
@@ -97,6 +104,13 @@ class EnvironmentDict(TypedDict, total=False):
     java_dependencies: VariableOrList[str]
     """
     List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
+    """
+
+    project_environment: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] File path of pyproject.toml file that defines the project-scoped environment.
     """
 
 

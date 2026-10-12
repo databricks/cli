@@ -97,7 +97,7 @@ Please run this command before deploying to ensure configuration quality.`,
 			} else {
 				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
 			}
-			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
+			return fmt.Errorf("%s. Warnings are treated as errors in strict mode", prefix)
 		}
 
 		return err

@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -19,10 +20,54 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// TestWorkspaceID is the id of the fake workspace.
+const TestWorkspaceID = 900800700600
+
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        900800700600,
+	WorkspaceId:        TestWorkspaceID,
+}
+
+// ImportForm holds the fields of a multipart /workspace/import request.
+type ImportForm struct {
+	Path      string
+	Content   []byte
+	Format    string
+	Overwrite bool
+}
+
+// ParseImportForm parses the multipart body of a /workspace/import request.
+func ParseImportForm(req Request) (ImportForm, error) {
+	var form ImportForm
+	_, params, err := mime.ParseMediaType(req.Headers.Get("Content-Type"))
+	if err != nil {
+		return form, err
+	}
+	mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			return form, nil
+		}
+		if err != nil {
+			return form, err
+		}
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return form, err
+		}
+		switch part.FormName() {
+		case "path":
+			form.Path = string(data)
+		case "content":
+			form.Content = data
+		case "format":
+			form.Format = string(data)
+		case "overwrite":
+			form.Overwrite = string(data) == "true"
+		}
+	}
 }
 
 func AddDefaultHandlers(server *Server) {
@@ -75,7 +120,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {
 		return Response{
-			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
+			Headers: map[string][]string{"X-Databricks-Org-Id": {strconv.Itoa(TestWorkspaceID)}},
 			Body:    req.Workspace.MeUser(req.Token),
 		}
 	})
@@ -153,52 +198,22 @@ func AddDefaultHandlers(server *Server) {
 		// multipart form body. The multipart variant is what databricks-sdk-go's
 		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
 		// that still hits Workspace.Import directly.
-		contentType := req.Headers.Get("Content-Type")
-		mediaType, params, _ := mime.ParseMediaType(contentType)
+		mediaType, _, _ := mime.ParseMediaType(req.Headers.Get("Content-Type"))
 		if strings.HasPrefix(mediaType, "multipart/") {
-			mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
-			var (
-				filePath  string
-				content   []byte
-				format    string
-				overwrite bool
-			)
-			for {
-				part, err := mr.NextPart()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					return Response{
-						Body:       fmt.Sprintf("internal error: %s", err),
-						StatusCode: http.StatusInternalServerError,
-					}
-				}
-				data, err := io.ReadAll(part)
-				if err != nil {
-					return Response{
-						Body:       fmt.Sprintf("internal error: %s", err),
-						StatusCode: http.StatusInternalServerError,
-					}
-				}
-				switch part.FormName() {
-				case "path":
-					filePath = string(data)
-				case "content":
-					content = data
-				case "format":
-					format = string(data)
-				case "overwrite":
-					overwrite = string(data) == "true"
+			form, err := ParseImportForm(req)
+			if err != nil {
+				return Response{
+					Body:       fmt.Sprintf("internal error: %s", err),
+					StatusCode: http.StatusInternalServerError,
 				}
 			}
 
 			// Require format explicitly: the real endpoint defaults to SOURCE, which
 			// would import every upload as a notebook, so a caller that drops the
 			// field is a bug rather than a request for the fake's usual behavior.
-			if format != string(workspace.ImportFormatAuto) {
+			if form.Format != string(workspace.ImportFormatAuto) {
 				return Response{
-					Body:       fmt.Sprintf("internal error: The test server only supports auto format, got %q.", format),
+					Body:       fmt.Sprintf("internal error: The test server only supports auto format, got %q.", form.Format),
 					StatusCode: http.StatusInternalServerError,
 				}
 			}
@@ -207,13 +222,13 @@ func AddDefaultHandlers(server *Server) {
 			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import
 			// endpoint, including the AIP-193 ErrorInfo detail it attaches to path
 			// collisions (universe PR #2019174, WP-6031).
-			resp := req.Workspace.WorkspaceFilesImportFile(filePath, content, overwrite)
+			resp := req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 			if resp.StatusCode == http.StatusConflict {
 				return Response{
 					StatusCode: http.StatusBadRequest,
 					Body: map[string]any{
 						"error_code": "RESOURCE_ALREADY_EXISTS",
-						"message":    fmt.Sprintf("Path (%s) already exists.", filePath),
+						"message":    fmt.Sprintf("Path (%s) already exists.", form.Path),
 						"details": []map[string]any{
 							{
 								"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
@@ -351,6 +366,13 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {
 		return TestMetastore
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
+		return catalog.GetMetastoreSummaryResponse{
+			MetastoreId: TestMetastore.MetastoreId,
+			Region:      "us-west-2",
+		}
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
@@ -1103,6 +1125,19 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
+	// Cluster libraries:
+	server.Handle("POST", "/api/2.0/libraries/install", func(req Request) any {
+		return req.Workspace.LibrariesInstall(req)
+	})
+
+	server.Handle("POST", "/api/2.0/libraries/uninstall", func(req Request) any {
+		return req.Workspace.LibrariesUninstall(req)
+	})
+
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req Request) any {
+		return req.Workspace.LibrariesClusterStatus(req, req.URL.Query().Get("cluster_id"))
 	})
 
 	// MLflow Experiments:

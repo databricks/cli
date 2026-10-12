@@ -16,6 +16,7 @@ import (
 
 type Volume struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateVolumeRequestContent
 
 	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.

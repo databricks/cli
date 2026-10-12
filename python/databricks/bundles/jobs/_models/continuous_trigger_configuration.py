@@ -30,7 +30,7 @@ class ContinuousTriggerConfiguration:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
+    [Beta] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
     maintenance may run at any time.
     """
 
@@ -56,7 +56,7 @@ class ContinuousTriggerConfigurationDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
+    [Beta] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
     maintenance may run at any time.
     """
 

@@ -38,6 +38,7 @@ func (c PostgresRoleConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresRole struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresRoleConfig
 }
 

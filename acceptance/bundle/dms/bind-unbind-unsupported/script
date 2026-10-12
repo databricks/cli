@@ -12,5 +12,3 @@ trace musterr $CLI bundle deployment bind foo "$job_id"
 title "Deploy so the bundle records state, then unbind is refused too"
 trace $CLI bundle deploy
 trace musterr $CLI bundle deployment unbind foo
-
-rm -f "$OUT_REQUESTS"

@@ -13,6 +13,9 @@ __all__ = [
     "AutoFullRefreshPolicy",
     "AutoFullRefreshPolicyDict",
     "AutoFullRefreshPolicyParam",
+    "AvroTransformerOptions",
+    "AvroTransformerOptionsDict",
+    "AvroTransformerOptionsParam",
     "AwsAttributes",
     "AwsAttributesDict",
     "AwsAttributesParam",
@@ -31,6 +34,9 @@ __all__ = [
     "ConfluenceConnectorOptions",
     "ConfluenceConnectorOptionsDict",
     "ConfluenceConnectorOptionsParam",
+    "ConfluentSchemaRegistryOptions",
+    "ConfluentSchemaRegistryOptionsDict",
+    "ConfluentSchemaRegistryOptionsParam",
     "ConnectionParameters",
     "ConnectionParametersDict",
     "ConnectionParametersParam",
@@ -169,6 +175,8 @@ __all__ = [
     "OutlookOptions",
     "OutlookOptionsDict",
     "OutlookOptionsParam",
+    "ParseMode",
+    "ParseModeParam",
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
@@ -200,6 +208,9 @@ __all__ = [
     "PostgresSlotConfig",
     "PostgresSlotConfigDict",
     "PostgresSlotConfigParam",
+    "ProtobufTransformerOptions",
+    "ProtobufTransformerOptionsDict",
+    "ProtobufTransformerOptionsParam",
     "RabbitmqOptions",
     "RabbitmqOptionsDict",
     "RabbitmqOptionsParam",
@@ -221,6 +232,9 @@ __all__ = [
     "S3StorageInfo",
     "S3StorageInfoDict",
     "S3StorageInfoParam",
+    "SchemaRegistryConfig",
+    "SchemaRegistryConfigDict",
+    "SchemaRegistryConfigParam",
     "SchemaSpec",
     "SchemaSpecDict",
     "SchemaSpecParam",
@@ -293,6 +307,11 @@ from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicyDict,
     AutoFullRefreshPolicyParam,
 )
+from databricks.bundles.pipelines._models.avro_transformer_options import (
+    AvroTransformerOptions,
+    AvroTransformerOptionsDict,
+    AvroTransformerOptionsParam,
+)
 from databricks.bundles.pipelines._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesDict,
@@ -324,6 +343,11 @@ from databricks.bundles.pipelines._models.confluence_connector_options import (
     ConfluenceConnectorOptions,
     ConfluenceConnectorOptionsDict,
     ConfluenceConnectorOptionsParam,
+)
+from databricks.bundles.pipelines._models.confluent_schema_registry_options import (
+    ConfluentSchemaRegistryOptions,
+    ConfluentSchemaRegistryOptionsDict,
+    ConfluentSchemaRegistryOptionsParam,
 )
 from databricks.bundles.pipelines._models.connection_parameters import (
     ConnectionParameters,
@@ -560,6 +584,7 @@ from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptionsDict,
     OutlookOptionsParam,
 )
+from databricks.bundles.pipelines._models.parse_mode import ParseMode, ParseModeParam
 from databricks.bundles.pipelines._models.path_pattern import (
     PathPattern,
     PathPatternDict,
@@ -613,6 +638,11 @@ from databricks.bundles.pipelines._models.postgres_slot_config import (
     PostgresSlotConfigDict,
     PostgresSlotConfigParam,
 )
+from databricks.bundles.pipelines._models.protobuf_transformer_options import (
+    ProtobufTransformerOptions,
+    ProtobufTransformerOptionsDict,
+    ProtobufTransformerOptionsParam,
+)
 from databricks.bundles.pipelines._models.rabbitmq_options import (
     RabbitmqOptions,
     RabbitmqOptionsDict,
@@ -643,6 +673,11 @@ from databricks.bundles.pipelines._models.s3_storage_info import (
     S3StorageInfo,
     S3StorageInfoDict,
     S3StorageInfoParam,
+)
+from databricks.bundles.pipelines._models.schema_registry_config import (
+    SchemaRegistryConfig,
+    SchemaRegistryConfigDict,
+    SchemaRegistryConfigParam,
 )
 from databricks.bundles.pipelines._models.schema_spec import (
     SchemaSpec,

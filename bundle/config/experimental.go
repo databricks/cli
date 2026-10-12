@@ -7,7 +7,7 @@ type Experimental struct {
 	// single immutable snapshot rather than being synced individually. When true,
 	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
 	// workspace.file_path and workspace.artifact_path to the returned content-addressed
-	// path. Only supported with the direct deployment engine.
+	// path.
 	ImmutableFolder bool `json:"immutable_folder,omitempty"`
 
 	// By default Python wheel tasks deployed as is to Databricks platform.

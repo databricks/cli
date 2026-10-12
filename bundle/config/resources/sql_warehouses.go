@@ -13,6 +13,7 @@ import (
 
 type SqlWarehouse struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	sql.CreateWarehouseRequest
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.

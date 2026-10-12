@@ -1,0 +1,17 @@
+{
+  "[principal='deco-test-user@databricks.com']": {
+    "action": "update",
+    "old": {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "MANAGE"
+      ]
+    },
+    "remote": {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "MANAGE"
+      ]
+    }
+  }
+}

@@ -13,6 +13,7 @@ import (
 
 type MlflowModel struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ml.CreateModelRequest
 
 	Permissions []MlflowModelPermission `json:"permissions,omitempty"`

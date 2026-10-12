@@ -1,0 +1,69 @@
+
+=== Create: the declared library installs on the new cluster
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+=== Update: adding a library installs the declared set on the running cluster
+>>> print_requests.py //libraries/install //libraries/uninstall
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+=== Delete: emptying the libraries list uninstalls them
+>>> print_requests.py //libraries/uninstall //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

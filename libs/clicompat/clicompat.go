@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
@@ -318,8 +319,7 @@ func readLocalManifest(path string) (cachedManifest, error) {
 	return cachedManifest{manifest: m, modTime: info.ModTime()}, nil
 }
 
-// writeLocalManifest writes the manifest to the local cache path using a
-// temp-file-then-rename pattern for atomicity.
+// writeLocalManifest writes the manifest to the local cache path atomically.
 func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
 		return
@@ -329,31 +329,8 @@ func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 		log.Debugf(ctx, "Failed to marshal manifest for cache: %v", err)
 		return
 	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		log.Warnf(ctx, "Failed to create cache directory %s: %v", dir, err)
-		return
-	}
-	tmp, err := os.CreateTemp(dir, ".compat-manifest-*.tmp")
-	if err != nil {
-		log.Warnf(ctx, "Failed to create temp cache file: %v", err)
-		return
-	}
-	tmpPath := tmp.Name()
-	defer func() {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-	}()
-	if _, err := tmp.Write(data); err != nil {
-		log.Debugf(ctx, "Failed to write temp cache file: %v", err)
-		return
-	}
-	if err := tmp.Close(); err != nil {
-		log.Debugf(ctx, "Failed to close temp cache file: %v", err)
-		return
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		log.Warnf(ctx, "Failed to rename temp cache file: %v", err)
+	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
+		log.Warnf(ctx, "Failed to write cache file: %v", err)
 	}
 }
 

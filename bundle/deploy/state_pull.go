@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -44,37 +45,22 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	local, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR, 0o600)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer local.Close()
-
 	data := remote.Bytes()
 	err = validateRemoteStateCompatibility(bytes.NewReader(data))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if !isLocalStateStale(local, bytes.NewReader(data)) {
+	// A missing or unreadable local file counts as stale, so we write the remote copy.
+	localData, _ := os.ReadFile(statePath)
+	if !isLocalStateStale(bytes.NewReader(localData), bytes.NewReader(data)) {
 		log.Infof(ctx, "Local deployment state is the same or newer, ignoring remote state")
 		return nil
 	}
 
-	// Truncating the file before writing
-	err = local.Truncate(0)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	_, err = local.Seek(0, 0)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	// Write file to disk.
 	log.Infof(ctx, "Writing remote deployment state file to local cache directory")
-	_, err = io.Copy(local, bytes.NewReader(data))
-	if err != nil {
+	if err := atomicfile.Write(statePath, data, 0o600); err != nil {
 		return diag.FromErr(err)
 	}
 

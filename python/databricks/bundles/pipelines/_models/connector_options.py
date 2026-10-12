@@ -182,14 +182,14 @@ class ConnectorOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Smartsheet specific options for ingestion
+    [Beta] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] TikTok Ads specific options for ingestion
+    [Beta] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
@@ -309,14 +309,14 @@ class ConnectorOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Smartsheet specific options for ingestion
+    [Beta] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] TikTok Ads specific options for ingestion
+    [Beta] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]

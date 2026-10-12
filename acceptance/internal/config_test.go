@@ -128,18 +128,18 @@ func TestExpandEnvMatrix(t *testing.T) {
 			},
 		},
 		{
-			name: "exclude with terraform and readplan example",
+			name: "exclude with dms and readplan example",
 			matrix: map[string][]string{
-				"DATABRICKS_BUNDLE_ENGINE": {"terraform", "direct"},
-				"READPLAN":                 {"0", "1"},
+				"DMS":      {"", "true"},
+				"READPLAN": {"0", "1"},
 			},
 			exclude: map[string][]string{
-				"noplantf": {"READPLAN=1", "DATABRICKS_BUNDLE_ENGINE=terraform"},
+				"nodmsplan": {"READPLAN=1", "DMS=true"},
 			},
 			expected: [][]string{
-				{"DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=0"},
-				{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN=0"},
-				{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN=1"},
+				{"DMS=", "READPLAN=0"},
+				{"DMS=", "READPLAN=1"},
+				{"DMS=true", "READPLAN=0"},
 			},
 		},
 		{
@@ -203,43 +203,25 @@ func TestExpandEnvMatrix(t *testing.T) {
 	}
 }
 
-func TestSubsetExpanded_DirectBias(t *testing.T) {
-	// Across many test dirs, DATABRICKS_BUNDLE_ENGINE=direct should be selected ~10/11 of the time.
+func TestSubsetExpanded(t *testing.T) {
 	expanded := [][]string{
-		{"DATABRICKS_BUNDLE_ENGINE=terraform"},
-		{"DATABRICKS_BUNDLE_ENGINE=direct"},
+		{"DMS=", "READPLAN="},
+		{"DMS=true", "READPLAN="},
+		{"DMS=true", "READPLAN=1"},
 	}
-	directCount := 0
-	total := 1000
-	for i := range total {
-		r := SubsetExpanded(expanded, fmt.Sprintf("test/dir%d", i), false)
-		if r[0][0] == "DATABRICKS_BUNDLE_ENGINE=direct" {
-			directCount++
-		}
-	}
-	ratio := float64(directCount) / float64(total)
-	assert.InDelta(t, float64(10)/11, ratio, 0.05, "expected ~10/11 direct, got %.1f%%", ratio*100)
-}
+	result := SubsetExpanded(expanded, "test/dir")
+	require.Len(t, result, 1)
+	assert.Contains(t, expanded, result[0])
+	// Consistent for the same dir.
+	assert.Equal(t, result, SubsetExpanded(expanded, "test/dir"))
 
-func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
-	// When script uses $DATABRICKS_BUNDLE_ENGINE, one combo per engine value is returned.
-	expanded := [][]string{
-		{"DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN="},
-		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN="},
-		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN=1"},
+	// Every variant gets picked for some dir.
+	seen := make(map[string]bool)
+	for i := range 100 {
+		r := SubsetExpanded(expanded, fmt.Sprintf("test/dir%d", i))
+		seen[strings.Join(r[0], ",")] = true
 	}
-	result := SubsetExpanded(expanded, "test/dir", true)
-	require.Len(t, result, 2)
-	engines := make(map[string]bool)
-	for _, envset := range result {
-		for _, kv := range envset {
-			if strings.HasPrefix(kv, "DATABRICKS_BUNDLE_ENGINE=") {
-				engines[kv] = true
-			}
-		}
-	}
-	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=terraform"])
-	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=direct"])
+	assert.Len(t, seen, len(expanded))
 }
 
 func TestLoadConfigPhaseIsNotInherited(t *testing.T) {

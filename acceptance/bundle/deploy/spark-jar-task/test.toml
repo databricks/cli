@@ -1,5 +1,4 @@
 Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 
 Ignore = [
     'myjar/PrintArgs.jar',
@@ -14,3 +13,7 @@ Response.Body = '''
 	"logs": "Hello from Jar!\n[]"
 }
 '''
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

@@ -27,10 +27,7 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
-from databricks.bundles.pipelines._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -111,7 +108,9 @@ class Pipeline(Resource):
 
     development: VariableOrOptional[bool] = None
     """
-    Whether the pipeline is in Development mode. Defaults to false.
+    [DEPRECATED] Whether the pipeline is in Development mode. Defaults to false.
+    
+    Deprecated: set development mode for each update instead.
     """
 
     edition: VariableOrOptional[str] = None
@@ -308,7 +307,9 @@ class PipelineDict(TypedDict, total=False):
 
     development: VariableOrOptional[bool]
     """
-    Whether the pipeline is in Development mode. Defaults to false.
+    [DEPRECATED] Whether the pipeline is in Development mode. Defaults to false.
+    
+    Deprecated: set development mode for each update instead.
     """
 
     edition: VariableOrOptional[str]

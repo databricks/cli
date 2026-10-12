@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -78,7 +79,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 
 				// Get the offset of the key by subtracting the length of the key and the '"' character
 				keyOffset := decoder.InputOffset() - int64(len(key)+1)
-				loc := []dyn.Location{o.GetPosition(keyOffset)}
+				loc := []diag.Location{o.GetPosition(keyOffset)}
 
 				// Decode the value recursively
 				val, err := decodeValue(decoder, o)
@@ -92,7 +93,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 			if _, err := decoder.Token(); err != nil {
 				return invalidValueWithLocation(decoder, o), err
 			}
-			return dyn.NewValue(obj, []dyn.Location{location}), nil
+			return dyn.NewValue(obj, []diag.Location{location}), nil
 		case '[':
 			location = o.GetPosition(offset - 1)
 			// Decode JSON array
@@ -108,20 +109,20 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 			if _, err := decoder.Token(); err != nil {
 				return invalidValueWithLocation(decoder, o), err
 			}
-			return dyn.NewValue(arr, []dyn.Location{location}), nil
+			return dyn.NewValue(arr, []diag.Location{location}), nil
 		}
 	case json.Number:
 		// Integers that overflow int64 fall back to float64, matching the decoder's behavior without UseNumber.
 		if i64, err := tok.Int64(); err == nil {
-			return dyn.NewValue(i64, []dyn.Location{location}), nil
+			return dyn.NewValue(i64, []diag.Location{location}), nil
 		}
 		f64, err := tok.Float64()
 		if err != nil {
 			return invalidValueWithLocation(decoder, o), fmt.Errorf("invalid number %q: %w", tok.String(), err)
 		}
-		return dyn.NewValue(f64, []dyn.Location{location}), nil
+		return dyn.NewValue(f64, []diag.Location{location}), nil
 	default:
-		return dyn.NewValue(tok, []dyn.Location{location}), nil
+		return dyn.NewValue(tok, []diag.Location{location}), nil
 	}
 
 	return invalidValueWithLocation(decoder, o), fmt.Errorf("unexpected token: %v", token)
@@ -129,5 +130,5 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 
 func invalidValueWithLocation(decoder *json.Decoder, o *Offset) dyn.Value {
 	location := o.GetPosition(decoder.InputOffset())
-	return dyn.InvalidValue.WithLocations([]dyn.Location{location})
+	return dyn.InvalidValue.WithLocations([]diag.Location{location})
 }

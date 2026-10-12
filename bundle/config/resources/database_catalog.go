@@ -14,6 +14,7 @@ import (
 
 type DatabaseCatalog struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.DatabaseCatalog
 }
 

@@ -95,7 +95,9 @@ func newBackfillFeatures() *cobra.Command {
 
 	cmd.Flags().Var(&backfillFeaturesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&backfillFeaturesReq.BudgetPolicyId, "budget-policy-id", backfillFeaturesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this backfill.`)
 	cmd.Flags().StringVar(&backfillFeaturesReq.RequestId, "request-id", backfillFeaturesReq.RequestId, `Idempotency token for the request.`)
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "backfill-features"
 	cmd.Short = `Backfill features.`
@@ -1513,7 +1515,9 @@ func newPurgeFeatureEntities() *cobra.Command {
 
 	cmd.Flags().Var(&purgeFeatureEntitiesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.BudgetPolicyId, "budget-policy-id", purgeFeatureEntitiesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this purge.`)
 	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.RequestId, "request-id", purgeFeatureEntitiesReq.RequestId, `Optional UUID4 idempotency token for the request.`)
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "purge-feature-entities"
 	cmd.Short = `Purge feature values for entities.`
@@ -1636,7 +1640,7 @@ func newUpdateFeature() *cobra.Command {
     FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
       the feature's resource identifier; the catalog_name, schema_name, and name
       fields below are OUTPUT_ONLY decomposed views of this value.
-    UPDATE_MASK: The list of fields to update.
+    UPDATE_MASK: Fields to update. The only supported path is description.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 

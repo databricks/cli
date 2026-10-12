@@ -20,7 +20,7 @@ Exit code: [KILLED]
 {
   "k": "resources.jobs.job_a",
   "v": {
-    "__id__": "[NUMID]",
+    "__id__": "[JOB_A_ID]",
     "state": {
       "deployment": {
         "kind": "BUNDLE",

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type checkForSameNameLibraries struct{}
@@ -17,14 +18,16 @@ var patterns = []dyn.Pattern{
 	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	envDepsPattern.Append(dyn.AnyIndex()),
 	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 }
 
 type libData struct {
 	fullPath   string
-	locations  []dyn.Location
-	paths      []dyn.Path
+	locations  []diag.Location
+	paths      []*structpath.PathNode
 	otherPaths []string
 }
 
@@ -53,13 +56,13 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 				if !ok {
 					libs[lib] = &libData{
 						fullPath:   libPath,
-						locations:  []dyn.Location{libraryValue.Location()},
-						paths:      []dyn.Path{p},
+						locations:  []diag.Location{libraryValue.Location()},
+						paths:      dyn.ToStructPaths(p),
 						otherPaths: []string{},
 					}
 				} else if lp.fullPath != libPath {
 					lp.locations = append(lp.locations, libraryValue.Location())
-					lp.paths = append(lp.paths, p)
+					lp.paths = append(lp.paths, dyn.ToStructPath(p))
 					lp.otherPaths = append(lp.otherPaths, libPath)
 				}
 

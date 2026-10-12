@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# A schema without custom_max_retention_hours. The terraform databricks_schema resource cannot set
+# that field, so schema.yml (which carries it for the direct field-removal check) is excluded from
+# the migrate invariant; this terraform-compatible schema keeps migrate coverage for schemas.
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+      comment: This is a test schema
+      grants:
+        - principal: account users
+          privileges:
+            - USE_SCHEMA

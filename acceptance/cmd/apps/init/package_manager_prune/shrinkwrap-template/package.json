@@ -1,0 +1,7 @@
+{
+  "name": "{{.projectName}}",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node --version"
+  }
+}

@@ -1,9 +1,13 @@
 package api
 
 import (
+	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -228,6 +232,83 @@ func TestResolveOrgID(t *testing.T) {
 			assert.Equal(t, c.want, got)
 		})
 	}
+}
+
+// TestBuildRequestBody covers how --json is turned into the value passed to
+// the SDK: verbatim bytes for body methods (so large integers survive), a
+// UseNumber decode for query-string methods (so they survive there too), and
+// client-side rejection of malformed JSON with a positioned error.
+func TestBuildRequestBody(t *testing.T) {
+	// A >2^53 integer whose low digits a float64 round-trip would drop.
+	const bigJSON = `{"job_id": 18000000000000000123}`
+
+	t.Run("no --json -> nil body", func(t *testing.T) {
+		var p flags.JsonFlag
+		got, err := buildRequestBody(http.MethodPost, &p)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	})
+
+	// Body methods send the bytes verbatim, unchanged from the flag.
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch} {
+		t.Run(method+" sends verbatim bytes", func(t *testing.T) {
+			var p flags.JsonFlag
+			require.NoError(t, p.Set(bigJSON))
+			got, err := buildRequestBody(method, &p)
+			require.NoError(t, err)
+			assert.Equal(t, []byte(bigJSON), got)
+		})
+	}
+
+	// A literal `null` maps to no body, not the four bytes "null".
+	t.Run("body method maps null to no body", func(t *testing.T) {
+		var p flags.JsonFlag
+		require.NoError(t, p.Set(`null`))
+		got, err := buildRequestBody(http.MethodPost, &p)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	})
+
+	// Query-string methods decode with UseNumber, so a large integer stays an
+	// exact json.Number (not a float64 that makeQueryString would render as
+	// 1.8e+19).
+	for _, method := range []string{http.MethodGet, http.MethodDelete, http.MethodHead} {
+		t.Run(method+" decodes with UseNumber", func(t *testing.T) {
+			var p flags.JsonFlag
+			require.NoError(t, p.Set(bigJSON))
+			got, err := buildRequestBody(method, &p)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]any{"job_id": json.Number("18000000000000000123")}, got)
+		})
+	}
+
+	// Malformed JSON is rejected client-side with the positioned error, on
+	// both branches.
+	for _, method := range []string{http.MethodPost, http.MethodGet} {
+		t.Run(method+" rejects malformed JSON with a positioned error", func(t *testing.T) {
+			var p flags.JsonFlag
+			require.NoError(t, p.Set(`{"a": 1,}`))
+			_, err := buildRequestBody(method, &p)
+			assert.ErrorContains(t, err, "error decoding JSON at (inline):1:9")
+		})
+	}
+}
+
+// TestRenderResponse covers the two paths of the response renderer: an empty
+// body renders `null` (as the decode-into-any path did), and a non-empty body
+// is re-indented with its integer literals intact.
+func TestRenderResponse(t *testing.T) {
+	t.Run("empty body renders null", func(t *testing.T) {
+		ctx, out := cmdio.NewTestContextWithStdout(t.Context())
+		require.NoError(t, renderResponse(ctx, nil))
+		assert.Equal(t, "null\n", out.String())
+	})
+
+	t.Run("large integer preserved and indented", func(t *testing.T) {
+		ctx, out := cmdio.NewTestContextWithStdout(t.Context())
+		require.NoError(t, renderResponse(ctx, json.RawMessage(`{"job_id":18000000000000000123}`)))
+		assert.Equal(t, "{\n  \"job_id\": 18000000000000000123\n}\n", out.String())
+	})
 }
 
 // TestNormalizeWorkspaceID covers the helper that strips the CLI-only

@@ -2,7 +2,8 @@
 mkdir -p whl
 echo "test wheel content" > whl/source.whl
 
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json)
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"

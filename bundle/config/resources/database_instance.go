@@ -14,6 +14,7 @@ import (
 
 type DatabaseInstance struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.DatabaseInstance
 
 	Permissions []Permission `json:"permissions,omitempty"`

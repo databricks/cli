@@ -39,6 +39,7 @@ type SecretScopePermission struct {
 
 type SecretScope struct { //nolint:recvcheck // pointer receiver needed for UnmarshalJSON, value for other methods
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// A unique name to identify the secret scope.
 	Name string `json:"name"`

@@ -122,6 +122,42 @@ func TestClaudeToolingInstalled_LogsPluginVersion(t *testing.T) {
 	assert.Contains(t, out, "skipping install hint")
 }
 
+func TestMaybeHint_CustomClaudeConfigDir(t *testing.T) {
+	setClaudeAgent(t)
+	for _, tc := range []struct {
+		name             string
+		customInstalled  bool
+		defaultInstalled bool
+		wantHint         bool
+	}{
+		{"custom plugin", true, false, false},
+		{"both plugins", true, true, false},
+		{"default plugin only", false, true, true},
+		{"neither plugin", false, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			customHome := t.TempDir()
+			ctx, stderr := claudeCtx(t, home)
+			ctx = env.Set(ctx, "CLAUDE_CONFIG_DIR", filepath.Join(customHome, ".claude"))
+			manifest := `{"plugins":{"databricks@local":[{"version":"1.0.0"}]}}`
+			if tc.customInstalled {
+				writePluginManifest(t, customHome, manifest)
+			}
+			if tc.defaultInstalled {
+				writePluginManifest(t, home, manifest)
+			}
+
+			MaybeHint(ctx, regularCmd())
+			if tc.wantHint {
+				assert.Contains(t, stderr.String(), hintText)
+			} else {
+				assert.Empty(t, stderr.String())
+			}
+		})
+	}
+}
+
 func TestMaybeHint_SkillsInstalledSilent(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()

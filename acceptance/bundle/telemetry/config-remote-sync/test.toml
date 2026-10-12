@@ -6,4 +6,3 @@ GOOS.windows = false
 # supports (all terraform config-remote-sync coverage lives in the Cloud=true
 # acceptance/bundle/config-remote-sync tests). Direct is the default engine for
 # new bundles, and the telemetry is engine-agnostic above the state layer.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

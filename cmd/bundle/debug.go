@@ -13,7 +13,6 @@ func newDebugCommand() *cobra.Command {
 		// This command group is currently intended for the Databricks VSCode extension only
 		Hidden: true,
 	}
-	cmd.AddCommand(debug.NewTerraformCommand())
 	cmd.AddCommand(debug.NewRefSchemaCommand())
 	cmd.AddCommand(debug.NewStatesCommand())
 	cmd.AddCommand(debug.NewRenderTemplateSchemaCommand())

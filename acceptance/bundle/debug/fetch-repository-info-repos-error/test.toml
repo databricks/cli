@@ -2,4 +2,3 @@
 Cloud = false
 
 # This exercises git.FetchRepositoryInfo, which is independent of the deploy engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

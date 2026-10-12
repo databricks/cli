@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -207,6 +208,7 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 	ctx := cmd.Context()
+	liteswap.Apply(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
@@ -335,6 +337,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	cfg := &config.Config{}
+	liteswap.Apply(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	profile, hasProfileFlag := profileFlagValue(cmd)

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 )
@@ -107,7 +108,7 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 		if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
 			return fmt.Errorf("failed to backup SSH config before migration: %w", err)
 		}
-		return os.WriteFile(configPath, replaceLine(content, oldIncludeLine, includeLine), 0o600)
+		return atomicfile.Write(configPath, replaceLine(content, oldIncludeLine, includeLine), 0o600)
 	}
 
 	if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
@@ -119,7 +120,7 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 	}
 	newContent += string(content)
 
-	err = os.WriteFile(configPath, []byte(newContent), 0o600)
+	err = atomicfile.Write(configPath, []byte(newContent), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to update SSH config file with Include directive: %w", err)
 	}
@@ -191,13 +192,7 @@ func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, 
 		return false, nil
 	}
 
-	configDir := filepath.Dir(configPath)
-	err = os.MkdirAll(configDir, 0o700)
-	if err != nil {
-		return false, fmt.Errorf("failed to create config directory: %w", err)
-	}
-
-	err = os.WriteFile(configPath, []byte(hostConfig), 0o600)
+	err = atomicfile.Write(configPath, []byte(hostConfig), 0o600, atomicfile.MkDir(0o700))
 	if err != nil {
 		return false, fmt.Errorf("failed to write host config file: %w", err)
 	}
