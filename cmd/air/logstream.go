@@ -114,6 +114,10 @@ type logRequest struct {
 	// `air run --watch -o json` to emit STATUS events.
 	onStatusChange func(current, previous string)
 	retryTracker   *retryTracker
+	// exitOnCompletion ends the stream once every node of the latest attempt has
+	// printed the entry script's success summary, without waiting for Jobs to
+	// report the run terminal. Used by `air run --watch`.
+	exitOnCompletion bool
 }
 
 // logRunStatus is the subset of a run's state the log path needs, resolved once
@@ -355,6 +359,14 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
+	// nodeCount is the run's node count as reported by the log endpoint; 0 until
+	// a response carries it.
+	nodeCount int
+	// completion watches the streamed node for the success summary of
+	// completionAttempt. It only triggers the per-attempt check in
+	// allNodesCompleted, and a retry starts a fresh matcher.
+	completion        completionMatcher
+	completionAttempt int
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -460,6 +472,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 
 		st.reportStatusChange()
 		st.req.reportRetry(st.ctx, st.out, st.status, st.onFirstLog)
+		if st.status.latestAttempt != st.completionAttempt {
+			st.completion = completionMatcher{}
+			st.completionAttempt = st.status.latestAttempt
+		}
 
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
@@ -518,6 +534,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
 		}
+		if st.req.exitOnCompletion && st.allNodesCompleted() {
+			log.Infof(st.ctx, "air logs: run %d completed on all %d node(s); not waiting for Jobs to report it terminal", st.req.runID, st.nodeCount)
+			return true, nil
+		}
 		if !st.firstLogSeen {
 			emptyStreamPolls++
 			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
@@ -531,6 +551,45 @@ func (st *bricklensStreamer) run() (bool, error) {
 			return false, err
 		}
 	}
+}
+
+// allNodesCompleted reports whether every node of the run's latest attempt has
+// printed the entry script's success summary. The streamed node's summary only
+// triggers the check: every node, the streamed one included, is then read with an
+// explicit attempt number, so all summaries come from the same attempt. Best
+// effort: an unknown node count or a failed fetch reads as not completed, so the
+// stream keeps following the run.
+func (st *bricklensStreamer) allNodesCompleted() bool {
+	if !st.completion.completed || st.nodeCount < 1 {
+		return false
+	}
+	for node := range st.nodeCount {
+		if !st.nodeCompleted(node, st.completionAttempt) {
+			return false
+		}
+	}
+	return true
+}
+
+// nodeCompleted searches the newest lines of a node's log for an attempt for the
+// success summary. From the stream start rather than the live cursor, since the
+// node may have finished before the lookback window.
+func (st *bricklensStreamer) nodeCompleted(node, attempt int) bool {
+	resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, bricklensLogsQuery{
+		fromSeconds:   st.streamStartSec,
+		pageSize:      completionTailLines,
+		attemptNumber: attempt,
+		nodeIndex:     node,
+	})
+	if err != nil {
+		log.Debugf(st.ctx, "air logs: completion check for node %d failed: %v", node, err)
+		return false
+	}
+	var m completionMatcher
+	for _, rec := range slices.Backward(resp.LogRecords) {
+		m.observe(rec.Body)
+	}
+	return m.completed
 }
 
 func waitForNextBricklensPoll(ctx context.Context, pollStarted time.Time) error {
@@ -634,6 +693,7 @@ func (st *bricklensStreamer) drainPages(toSec int64, suppressInitialHistory bool
 			if st.seen.has(rec) {
 				continue
 			}
+			st.completion.observe(rec.Body)
 			if !suppressInitialHistory || (nano != 0 && nano > initialTailNano) {
 				st.emit(rec.Body)
 				emitted++
@@ -678,6 +738,7 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 	for {
 		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, q)
 		if err == nil {
+			st.nodeCount = max(st.nodeCount, resp.NodeCount)
 			return resp, nil
 		}
 

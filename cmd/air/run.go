@@ -202,15 +202,18 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 
 		// --watch: stream the submitted run's logs until it reaches a terminal
 		// state, then exit with the run's outcome. This is the same pipeline as
-		// `air logs <run>` (Bricklens with MLflow fallback).
+		// `air logs <run>` (Bricklens with MLflow fallback). It exits early once
+		// every node's entry script reports success, since Jobs lags the user
+		// command's exit by tens of seconds.
 		maxRetries := cfg.maxRetries()
 		req := logRequest{
-			runID:        runID,
-			attempt:      -1,
-			tailLines:    -1,
-			jsonOutput:   jsonOut,
-			maxRetries:   &maxRetries,
-			retryTracker: newRetryTracker(logRunStatus{}),
+			runID:            runID,
+			attempt:          -1,
+			tailLines:        -1,
+			jsonOutput:       jsonOut,
+			maxRetries:       &maxRetries,
+			retryTracker:     newRetryTracker(logRunStatus{}),
+			exitOnCompletion: true,
 		}
 
 		watchCtx, stop := notifyInterrupt(ctx)
@@ -258,7 +261,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// the Bricklens path, so the terminal status must come from the run's
 		// actual state — correct whether Bricklens or the MLflow fallback served
 		// the logs.
-		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID, err), dashboardURL)
 		return err
 	}
 
@@ -360,12 +363,17 @@ func printLogsDivider(ctx context.Context, out io.Writer) {
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the
-// closing --watch envelope. The run is terminal once streaming returns; if the
-// status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
-func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+// closing --watch envelope. If the status can't be re-fetched, "UNKNOWN" is
+// reported rather than guessing.
+func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64, streamErr error) string {
 	status, err := resolveRunStatus(ctx, w, runID)
 	if err != nil {
 		return "UNKNOWN"
+	}
+	// A stream that returned success on a still-active run stopped early on every
+	// node's success summary; Jobs reports the run terminal only later.
+	if streamErr == nil && !status.terminal() {
+		return "SUCCESS"
 	}
 	return status.displayState()
 }
