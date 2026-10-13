@@ -1,110 +1,81 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/folders"
 	"github.com/stretchr/testify/require"
 )
-
-const dmsEndpointsFileEnv = "DMS_CLI_ENDPOINTS_FILE"
-
-var dmsLiteboxSettingsKeys = []string{
-	"DMS_LITEBOX_URL", "DMS_LITEBOX_CERT", "DMS_LITEBOX_KEY", "DMS_LITEBOX_CA",
-}
 
 // ConfigureDMSLiteboxFromFile fills missing LITE settings from the local fixture's discovery file.
 func ConfigureDMSLiteboxFromFile(t *testing.T) {
 	t.Helper()
-	dir, err := os.Getwd()
-	require.NoError(t, err)
-	settings, err := loadDMSLiteboxSettings(t.Context(), dir)
-	require.NoError(t, err)
-	for _, key := range dmsLiteboxSettingsKeys {
-		if env.Get(t.Context(), key) == "" && settings[key] != "" {
-			t.Setenv(key, settings[key])
+	ctx := t.Context()
+	keys := []string{"DMS_LITEBOX_URL", "DMS_LITEBOX_CERT", "DMS_LITEBOX_KEY", "DMS_LITEBOX_CA"}
+	missing := false
+	for _, key := range keys {
+		if env.Get(ctx, key) == "" {
+			missing = true
 		}
 	}
-}
-
-func loadDMSLiteboxSettings(ctx context.Context, dir string) (map[string]string, error) {
-	settings := make(map[string]string, len(dmsLiteboxSettingsKeys))
-	complete := true
-	for _, key := range dmsLiteboxSettingsKeys {
-		settings[key] = env.Get(ctx, key)
-		complete = complete && settings[key] != ""
-	}
-	if complete {
-		return settings, nil
+	if !missing {
+		return
 	}
 
-	file := env.Get(ctx, dmsEndpointsFileEnv)
+	acceptanceDir, err := os.Getwd()
+	require.NoError(t, err)
+	file := env.Get(ctx, "DMS_CLI_ENDPOINTS_FILE")
 	explicit := file != ""
 	if !explicit {
-		var err error
-		file, err = findDMSLiteboxSettings(dir)
-		if err != nil {
-			return nil, err
-		}
+		file = findDMSLiteboxSettings(t, filepath.Dir(acceptanceDir))
 		if file == "" {
-			return settings, nil
+			return
 		}
 	}
 	if !filepath.IsAbs(file) {
-		file = filepath.Join(dir, file)
+		file = filepath.Join(acceptanceDir, file)
 	}
 	data, err := os.ReadFile(file)
 	if !explicit && errors.Is(err, os.ErrNotExist) {
-		return settings, nil
+		return
 	}
-	if err != nil {
-		return nil, fmt.Errorf("read DMS LITE settings %s: %w", filepath.ToSlash(file), err)
-	}
-	var config struct {
+	require.NoError(t, err, "read DMS LITE settings %s", file)
+	var settings struct {
 		URL  string `json:"url"`
 		Cert string `json:"cert"`
 		Key  string `json:"key"`
 		CA   string `json:"ca"`
 	}
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("parse DMS LITE settings %s: %w", filepath.ToSlash(file), err)
-	}
-	defaults := []string{config.URL, config.Cert, config.Key, config.CA}
-	for i, key := range dmsLiteboxSettingsKeys {
-		if settings[key] == "" {
-			settings[key] = defaults[i]
+	require.NoError(t, json.Unmarshal(data, &settings), "parse DMS LITE settings %s", file)
+	for _, setting := range []struct{ key, value string }{
+		{"DMS_LITEBOX_URL", settings.URL},
+		{"DMS_LITEBOX_CERT", settings.Cert},
+		{"DMS_LITEBOX_KEY", settings.Key},
+		{"DMS_LITEBOX_CA", settings.CA},
+	} {
+		if env.Get(ctx, setting.key) == "" && setting.value != "" {
+			t.Setenv(setting.key, setting.value)
 		}
 	}
-	return settings, nil
 }
 
-func findDMSLiteboxSettings(dir string) (string, error) {
+func findDMSLiteboxSettings(t *testing.T, dir string) string {
+	t.Helper()
 	for {
-		root, err := folders.FindDirWithLeaf(dir, ".git")
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
+		file := filepath.Join(dir, "bundle", "metadata-service", "test", ".lite", "cli-endpoints.json")
+		_, err := os.Stat(file)
+		if err == nil {
+			return file
 		}
-		if err != nil {
-			return "", fmt.Errorf("find Git checkout for DMS LITE settings: %w", err)
+		require.ErrorIs(t, err, os.ErrNotExist, "find DMS LITE settings %s", file)
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
 		}
-		fixture := filepath.Join(root, "bundle", "metadata-service", "test")
-		info, err := os.Stat(fixture)
-		if err == nil && info.IsDir() {
-			return filepath.Join(fixture, ".lite", "cli-endpoints.json"), nil
-		}
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("find DMS LITE fixture: %w", err)
-		}
-		dir = filepath.Dir(root)
-		if dir == root {
-			return "", nil
-		}
+		dir = parent
 	}
 }
