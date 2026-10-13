@@ -27,7 +27,11 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 		CurrentBranch: "projects/task",
 		WorktreeRoot:  worktree,
 	}
+	gitDirectoryWant := want
+	gitDirectoryWant.WorktreeRoot = dir
+	noGitRoot := filepath.VolumeName(dir) + string(filepath.Separator)
 	testutil.WriteFile(t, filepath.Join(dir, ".git", "refs", "heads", want.CurrentBranch), want.LatestCommit)
+	testutil.WriteFile(t, filepath.Join(dir, ".git", "HEAD"), "ref: refs/heads/"+want.CurrentBranch)
 	testutil.WriteFile(t, filepath.Join(dir, ".git", "worktrees", "my_worktree", "HEAD"), "ref: refs/heads/"+want.CurrentBranch)
 	testutil.WriteFile(t, filepath.Join(dir, ".git", "config"), "[remote \"origin\"]\n\turl = "+want.OriginURL)
 	file := testutil.Touch(t, worktree, "subdir", "README.md")
@@ -53,9 +57,9 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 				CurrentBranch: "api-main", WorktreeRoot: "/Workspace/Users/me/api",
 			},
 		},
-		{name: "git directory", path: dir},
-		{name: "no git metadata", path: t.TempDir()},
-		{name: "missing path", path: filepath.Join(worktree, "missing")},
+		{name: "git directory", path: dir, want: gitDirectoryWant},
+		{name: "no git metadata", path: noGitRoot, wantErr: fs.ErrNotExist},
+		{name: "missing path", path: filepath.Join(worktree, "missing"), wantErr: fs.ErrNotExist},
 		{name: "malformed gitfile", path: malformed, want: RepositoryInfo{WorktreeRoot: malformed}},
 		{
 			name: "permission denied", path: worktree, status: http.StatusForbidden,
@@ -85,4 +89,10 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestFetchRepositoryInfoMissingLocalPath(t *testing.T) {
+	got, err := FetchRepositoryInfo(t.Context(), filepath.Join(t.TempDir(), "missing"), nil)
+	require.NoError(t, err)
+	assert.Equal(t, RepositoryInfo{}, got)
 }

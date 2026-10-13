@@ -71,38 +71,11 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 
 func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	info, err := FetchRepositoryInfoAPI(ctx, path, w)
-	if err != nil || info.WorktreeRoot != "" {
-		return info, err
+	if err == nil && info.WorktreeRoot == "" {
+		// Fall back to Git information from .git for unsupported Git folders like worktree folders
+		return fetchRepositoryInfoDotGit(ctx, path)
 	}
-
-	// Linked worktrees lack Workspace Git metadata but have a local .git file.
-	localPath := path
-	localInfo, err := os.Stat(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return info, nil
-	}
-	if err != nil {
-		return info, err
-	}
-	if !localInfo.IsDir() {
-		localPath = filepath.Dir(path)
-	}
-
-	root, err := folders.FindDirWithLeaf(localPath, GitDirectoryName)
-	if errors.Is(err, fs.ErrNotExist) {
-		return info, nil
-	}
-	if err != nil {
-		return info, err
-	}
-	gitFile, err := os.Lstat(filepath.Join(root, GitDirectoryName))
-	if err != nil {
-		return info, err
-	}
-	if !gitFile.Mode().IsRegular() {
-		return info, nil
-	}
-	return fetchRepositoryInfoDotGit(ctx, root)
+	return info, err
 }
 
 // FetchRepositoryInfoAPI reads Workspace Git metadata, the primary source on a Runtime.
@@ -185,6 +158,13 @@ func ensureWorkspacePrefix(p string) string {
 
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
+	localInfo, err := os.Stat(path)
+	if err != nil {
+		return result, err
+	}
+	if !localInfo.IsDir() {
+		path = filepath.Dir(path)
+	}
 
 	rootDir, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if rootDir == "" {
