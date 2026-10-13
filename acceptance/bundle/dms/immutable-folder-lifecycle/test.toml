@@ -1,0 +1,6 @@
+Cloud = false
+
+# The snapshot path is content-addressed.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[SNAPSHOT_HASH]'

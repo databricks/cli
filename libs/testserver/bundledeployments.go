@@ -34,6 +34,53 @@ const dmsDeploymentNodeName = "resources.deployment.json"
 // created.
 var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
+// dmsResourceTypes are the resource_key prefixes the service maps to a resource type. A staged
+// operation with any other prefix is rejected, so a resource type the service does not know
+// cannot be recorded. Mirrors PREFIX_MAP in universe's
+// bundle/metadata-service/src/main/java/com/databricks/deploymentmetadataservice/parser/ResourceTypes.java.
+var dmsResourceTypes = map[string]bool{
+	"jobs":                         true,
+	"pipelines":                    true,
+	"models":                       true,
+	"registered_models":            true,
+	"experiments":                  true,
+	"model_serving_endpoints":      true,
+	"quality_monitors":             true,
+	"schemas":                      true,
+	"volumes":                      true,
+	"clusters":                     true,
+	"dashboards":                   true,
+	"apps":                         true,
+	"catalogs":                     true,
+	"external_locations":           true,
+	"secret_scopes":                true,
+	"alerts":                       true,
+	"sql_warehouses":               true,
+	"database_instances":           true,
+	"database_catalogs":            true,
+	"synced_database_tables":       true,
+	"postgres_projects":            true,
+	"postgres_branches":            true,
+	"postgres_endpoints":           true,
+	"postgres_catalogs":            true,
+	"postgres_databases":           true,
+	"postgres_roles":               true,
+	"postgres_synced_tables":       true,
+	"vector_search_endpoints":      true,
+	"vector_search_indexes":        true,
+	"job_runs":                     true,
+	"genie_spaces":                 true,
+	"instance_pools":               true,
+	"secrets":                      true,
+	"cluster_policies":             true,
+	"postgres_snapshot_schedules":  true,
+	"model_services":               true,
+	"mcp_services":                 true,
+	"model_provider_services":      true,
+	"agent_services":               true,
+	"internal_immutable_snapshots": true,
+}
+
 // DmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
 // can serve back what deploys wrote.
@@ -330,7 +377,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		switch {
 		case staged.ResourceKey == "":
 			return dmsInvalidArgument("operations.resource_key is required")
-		case !strings.Contains(staged.ResourceKey, "."):
+		case !hasKnownResourceType(staged.ResourceKey):
 			return dmsInvalidArgument("operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): " + staged.ResourceKey)
 		case staged.ActionType == "":
 			return dmsInvalidArgument("operations.action_type is required and must not be UNSPECIFIED for resource " + staged.ResourceKey)
@@ -633,6 +680,13 @@ func (s *FakeWorkspace) ListOperations(deploymentID, versionID string) Response 
 		response.Operations[i] = *op
 	}
 	return Response{Body: response}
+}
+
+// hasKnownResourceType reports whether the part of resourceKey before its first '.' is a resource
+// type the service knows.
+func hasKnownResourceType(resourceKey string) bool {
+	prefix, _, found := strings.Cut(resourceKey, ".")
+	return found && dmsResourceTypes[prefix]
 }
 
 // leavesLiveResource reports whether a failed operation of this type leaves a resource behind
