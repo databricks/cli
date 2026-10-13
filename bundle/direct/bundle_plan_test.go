@@ -175,6 +175,22 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 	}
 }
 
+func TestSchemaCatalogRemoteOnlyPropertiesSkipped(t *testing.T) {
+	for _, resource := range []string{"schemas", "catalogs"} {
+		t.Run(resource, func(t *testing.T) {
+			cfg := dresources.GetResourceConfig(resource)
+			path, err := structpath.ParsePath("properties")
+			require.NoError(t, err)
+			_, ok := shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{
+				Old:    nil,
+				New:    nil,
+				Remote: map[string]string{"owner": "root"},
+			})
+			assert.True(t, ok)
+		})
+	}
+}
+
 // A field present in StateType but absent from RemoteType (input-only, e.g. external
 // locations' skip_validation) reads back nil, so a coincidental new == remote must NOT
 // trip RemoteAlreadySet — that would skip a real local change. A field present in RemoteType

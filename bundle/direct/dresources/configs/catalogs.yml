@@ -19,3 +19,7 @@ updatable_id_fields:
 backend_defaults:
   # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
   - field: properties['unity.catalog.managed.*.defaults.*']
+  # The SDK cannot send an empty map to clear properties the config never
+  # declared, so a bound catalog with out-of-band properties would otherwise
+  # plan an Update on every deploy (#6986).
+  - field: properties
