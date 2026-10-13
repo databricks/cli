@@ -34,6 +34,46 @@ const dmsDeploymentNodeName = "resources.deployment.json"
 // created.
 var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
+// dmsResourceTypes mirrors the resource_key prefixes in Universe's bundle/metadata-service.
+// NOTE: When adding a type here, also add the corresponding enum in bundle/metadata-service/service.proto
+// and prefix mapping in parser/ResourceTypes.java in Universe.
+var dmsResourceTypes = []string{
+	"alerts",
+	"apps",
+	"catalogs",
+	"cluster_policies",
+	"clusters",
+	"dashboards",
+	"database_catalogs",
+	"database_instances",
+	"experiments",
+	"external_locations",
+	"genie_spaces",
+	"instance_pools",
+	"job_runs",
+	"jobs",
+	"model_serving_endpoints",
+	"models",
+	"pipelines",
+	"postgres_branches",
+	"postgres_catalogs",
+	"postgres_databases",
+	"postgres_endpoints",
+	"postgres_projects",
+	"postgres_roles",
+	"postgres_synced_tables",
+	"quality_monitors",
+	"registered_models",
+	"schemas",
+	"secret_scopes",
+	"secrets",
+	"sql_warehouses",
+	"synced_database_tables",
+	"vector_search_endpoints",
+	"vector_search_indexes",
+	"volumes",
+}
+
 // DmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
 // can serve back what deploys wrote.
@@ -327,10 +367,11 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	}
 	seen := make(map[string]bool, len(staged.Operations))
 	for _, staged := range staged.Operations {
+		resourceType, _, hasPrefix := strings.Cut(staged.ResourceKey, ".")
 		switch {
 		case staged.ResourceKey == "":
 			return dmsInvalidArgument("operations.resource_key is required")
-		case !strings.Contains(staged.ResourceKey, "."):
+		case !hasPrefix || !slices.Contains(dmsResourceTypes, resourceType):
 			return dmsInvalidArgument("operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): " + staged.ResourceKey)
 		case staged.ActionType == "":
 			return dmsInvalidArgument("operations.action_type is required and must not be UNSPECIFIED for resource " + staged.ResourceKey)
