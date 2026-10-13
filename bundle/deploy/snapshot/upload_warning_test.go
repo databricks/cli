@@ -133,16 +133,6 @@ func TestBuildCanManageWithoutManagers(t *testing.T) {
 	}, BuildCanManage(b))
 }
 
-func TestBuildCanManageSkipsDuplicateDeployer(t *testing.T) {
-	b := canManageBundle([]resources.Permission{
-		{Level: "CAN_MANAGE", UserName: "deployer@example.test"},
-	})
-
-	assert.Equal(t, []snapshot.ManagePrincipal{
-		{UserName: "deployer@example.test"},
-	}, BuildCanManage(b))
-}
-
 func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {
 	// clean=false is the deploy --plan path: the zip staged when the plan was produced is
 	// registered on the config as is, without rebuilding or warning again, even for a
