@@ -18,7 +18,7 @@ To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go 
 ## Local DMS LITE tests
 
 Start `//bundle/metadata-service/test:cli-testenv-bin` with `bin/lite up` in Universe,
-then run `go test ./acceptance -run 'TestDmsAcc/bundle/dms/no-drift$' -v -count=1`.
+then run `go test ./acceptance -run 'TestAccept/bundle/dms/no-drift$' -v -count=1`.
 The runner starts at the CLI root and searches its ancestors for
 `bundle/metadata-service/test/.lite/cli-endpoints.json`. The file provides the
 gateway URL and client certificate paths. This works both when the CLI is nested
@@ -27,7 +27,7 @@ outside Universe, set `DMS_CLI_ENDPOINTS_FILE` to the discovery file's path.
 
 Set `DMS_CLI_ENDPOINTS_FILE` to use a different settings file; the old
 `DMS_LITEBOX_*` connection variables are not used.
-Local `TestAccept` runs also discover this file automatically, using Go mocks when
+Local `TestAccept` runs discover this file automatically, using Go mocks when
 no settings are found. Cloud runs do not read the file.
 The discovery file does not guarantee the fixture is running;
 restart LITE to refresh it after stopping the environment.

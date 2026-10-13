@@ -18,12 +18,6 @@ type dmsLiteboxSettings struct {
 	CA   string `json:"ca"`
 }
 
-// HasDMSLiteboxSettings reports whether the local fixture has a settings file.
-func HasDMSLiteboxSettings(t *testing.T) bool {
-	t.Helper()
-	return loadDMSLiteboxSettings(t) != nil
-}
-
 func loadDMSLiteboxSettings(t *testing.T) *dmsLiteboxSettings {
 	t.Helper()
 	acceptanceDir, err := os.Getwd()
