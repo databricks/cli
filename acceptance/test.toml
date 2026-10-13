@@ -78,3 +78,6 @@ New = '"plan_version": [PLAN_VERSION],'
 [[Repls]]
 Old = 'json\.plan_version = 2;'
 New = 'json.plan_version = [PLAN_VERSION];'
+
+# The lineage hash (libs/shortid) is not masked: fixture lineages hash to stable values, and
+# tests with a freshly minted lineage register its hash with read_lineage.py.
