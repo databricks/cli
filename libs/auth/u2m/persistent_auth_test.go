@@ -15,6 +15,8 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -70,26 +72,23 @@ func TestToken(t *testing.T) {
 
 func TestToken_WithProfile(t *testing.T) {
 	profileKey := "my-profile"
-	cache := &tokenStoreMock{
-		lookup: func(key string) (*oauth2.Token, error) {
-			if key != profileKey {
-				t.Fatalf("lookup(): want key %q, got %q", profileKey, key)
-			}
-			return &oauth2.Token{
-				AccessToken: "profile-token",
-				Expiry:      time.Now().Add(1 * time.Hour),
-			}, nil
-		},
-	}
 	arg, err := NewProfileAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz", profileKey)
 	if err != nil {
 		t.Fatalf("NewProfileAccountOAuthArgument(): want no error, got %v", err)
 	}
+	cache := storage.NewMemoryStore()
 	p, err := NewPersistentAuth(t.Context(), WithTokenStore(cache), WithOAuthArgument(arg))
 	if err != nil {
 		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
 	}
 	defer p.Close()
+	err = cache.Put(profileKey, NewEntry(&oauth2.Token{
+		AccessToken: "profile-token",
+		Expiry:      time.Now().Add(1 * time.Hour),
+	}, TokenRequestParams{}))
+	if err != nil {
+		t.Fatalf("cache.Put(): want no error, got %v", err)
+	}
 
 	tok, err := p.Token()
 	if err != nil {
@@ -1581,5 +1580,302 @@ func TestChallenge_Discovery(t *testing.T) {
 	}
 	if returnedToken.RefreshToken != "discovery-refresh-token" {
 		t.Errorf("refresh token = %q, want %q", returnedToken.RefreshToken, "discovery-refresh-token")
+	}
+}
+
+// recordingStore counts writes and deletes. With putErr set, each Put stores
+// replacement instead and returns putErr, as if another process won the race.
+type recordingStore struct {
+	storage.Store
+	puts        int
+	deletes     int
+	putErr      error
+	replacement storage.Entry
+}
+
+func (s *recordingStore) Put(key string, entry storage.Entry) error {
+	s.puts++
+	if s.putErr != nil {
+		if err := s.Store.Put(key, s.replacement); err != nil {
+			return err
+		}
+		return s.putErr
+	}
+	return s.Store.Put(key, entry)
+}
+
+func (s *recordingStore) Delete(key string) error {
+	s.deletes++
+	return s.Store.Delete(key)
+}
+
+const (
+	testProfile = "TEST"
+	testHost    = "https://workspace.test"
+)
+
+func testProfileArg(t *testing.T) BasicWorkspaceOAuthArgument {
+	t.Helper()
+	arg, err := NewProfileWorkspaceOAuthArgument(testHost, testProfile)
+	require.NoError(t, err)
+	return arg
+}
+
+// fetchToken reads the cached token like `auth token`, with or without
+// --force-refresh.
+func fetchToken(pa *PersistentAuth, force bool) (*oauth2.Token, error) {
+	if force {
+		return pa.ForceRefreshToken()
+	}
+	return pa.Token()
+}
+
+func checksumRefreshClient() *http.Client {
+	return &http.Client{Transport: fixtures.SliceTransport{{
+		Method:   http.MethodPost,
+		Resource: "/oidc/v1/token",
+		Response: `{"access_token":"candidate","refresh_token":"new-refresh","token_type":"Bearer","expires_in":3600}`,
+	}}}
+}
+
+func TestPersistentAuthRejectsChangedLoginBeforeRefresh(t *testing.T) {
+	arg := testProfileArg(t)
+	for _, tt := range []struct {
+		name     string
+		stored   string
+		wantHint string
+		// wantErr is a target for assert.ErrorAs.
+		wantErr any
+	}{
+		{
+			name:     "scopes changed",
+			stored:   checksum(TokenRequestParams{Scopes: []string{"sql"}}),
+			wantHint: "databricks auth describe",
+			wantErr:  new(*ProfileChangedError),
+		},
+		{
+			name:     "client ID changed",
+			stored:   checksum(TokenRequestParams{ClientID: "custom"}),
+			wantHint: "databricks auth describe",
+			wantErr:  new(*ProfileChangedError),
+		},
+		{
+			name:     "missing",
+			wantHint: "databricks auth login --profile TEST",
+			wantErr:  new(*ProfileChecksumMissingError),
+		},
+	} {
+		// The token is expired, so a missing check would refresh it.
+		for _, force := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/force=%t", tt.name, force), func(t *testing.T) {
+				inner := storage.NewMemoryStore()
+				entry := storage.Entry{
+					Token: &oauth2.Token{
+						AccessToken:  "old",
+						RefreshToken: "refresh",
+						Expiry:       time.Now().Add(-time.Hour),
+					},
+					ProfileChecksum: tt.stored,
+				}
+				require.NoError(t, inner.Put(testProfile, entry))
+				store := &recordingStore{Store: inner}
+				pa, err := NewPersistentAuth(t.Context(), WithTokenStore(store), WithOAuthArgument(arg),
+					WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}))
+				require.NoError(t, err)
+
+				token, err := fetchToken(pa, force)
+
+				assert.ErrorAs(t, err, tt.wantErr)
+				assert.ErrorContains(t, err, tt.wantHint)
+				assert.Nil(t, token)
+				assert.Zero(t, store.puts)
+				assert.Zero(t, store.deletes)
+				got, err := inner.Lookup(testProfile)
+				require.NoError(t, err)
+				assert.Equal(t, entry, got)
+			})
+		}
+	}
+}
+
+func TestWithTokenRequestParams(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		params       TokenRequestParams
+		wantClientID string
+	}{
+		{
+			name:         "empty client ID keeps the default",
+			params:       TokenRequestParams{Scopes: []string{"sql"}},
+			wantClientID: appClientID,
+		},
+		{
+			name: "custom client ID",
+			params: TokenRequestParams{
+				ClientID: "custom",
+				Scopes:   []string{"sql"},
+			},
+			wantClientID: "custom",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			pa, err := NewPersistentAuth(t.Context(), WithOAuthArgument(testProfileArg(t)), WithTokenRequestParams(tt.params))
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantClientID, pa.clientID)
+			assert.Equal(t, tt.params.Scopes, pa.scopes)
+		})
+	}
+}
+
+func TestPersistentAuthAcceptsMatchingAndHostKeyedEntries(t *testing.T) {
+	profileArg := testProfileArg(t)
+	hostArg, err := NewBasicWorkspaceOAuthArgument(testHost)
+	require.NoError(t, err)
+	for _, tt := range []struct {
+		name     string
+		arg      OAuthArgument
+		checksum string
+	}{
+		{
+			name:     "matching profile",
+			arg:      profileArg,
+			checksum: checksum(TokenRequestParams{}),
+		},
+		{
+			name: "legacy host",
+			arg:  hostArg,
+		},
+		{
+			name:     "host copy of profile token",
+			arg:      hostArg,
+			checksum: "other-profile-checksum",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			store := storage.NewMemoryStore()
+			require.NoError(t, store.Put(tt.arg.GetCacheKey(), storage.Entry{
+				Token: &oauth2.Token{
+					AccessToken: "token",
+					Expiry:      time.Now().Add(time.Hour),
+				},
+				ProfileChecksum: tt.checksum,
+			}))
+			pa, err := NewPersistentAuth(t.Context(), WithTokenStore(store), WithOAuthArgument(tt.arg))
+			require.NoError(t, err)
+
+			token, err := pa.Token()
+
+			require.NoError(t, err)
+			assert.Equal(t, "token", token.AccessToken)
+		})
+	}
+}
+
+func TestPersistentAuthRefreshPreservesChecksum(t *testing.T) {
+	profileArg := testProfileArg(t)
+	hostArg, err := NewBasicWorkspaceOAuthArgument(testHost)
+	require.NoError(t, err)
+	for _, tt := range []struct {
+		name     string
+		arg      OAuthArgument
+		checksum string
+	}{
+		{
+			name:     "profile",
+			arg:      profileArg,
+			checksum: checksum(TokenRequestParams{}),
+		},
+		{
+			name:     "host copy",
+			arg:      hostArg,
+			checksum: "other-profile-checksum",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			store := storage.NewMemoryStore()
+			require.NoError(t, store.Put(tt.arg.GetCacheKey(), storage.Entry{
+				Token: &oauth2.Token{
+					AccessToken:  "expired",
+					RefreshToken: "refresh",
+					Expiry:       time.Now().Add(-time.Hour),
+				},
+				ProfileChecksum: tt.checksum,
+			}))
+			pa, err := NewPersistentAuth(t.Context(), WithTokenStore(store), WithOAuthArgument(tt.arg),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}), WithHttpClient(checksumRefreshClient()))
+			require.NoError(t, err)
+
+			_, err = pa.Token()
+
+			require.NoError(t, err)
+			entry, err := store.Lookup(tt.arg.GetCacheKey())
+			require.NoError(t, err)
+			assert.Equal(t, "candidate", entry.Token.AccessToken)
+			assert.Equal(t, "new-refresh", entry.Token.RefreshToken)
+			assert.Equal(t, tt.checksum, entry.ProfileChecksum)
+		})
+	}
+}
+
+func TestPersistentAuthRecoveryValidatesChecksum(t *testing.T) {
+	arg := testProfileArg(t)
+	current := checksum(TokenRequestParams{})
+	for _, tt := range []struct {
+		name         string
+		checksum     string
+		wantAccepted bool
+	}{
+		{
+			name:         "matching",
+			checksum:     current,
+			wantAccepted: true,
+		},
+		{
+			name:     "changed",
+			checksum: checksum(TokenRequestParams{Scopes: []string{"sql"}}),
+		},
+		{
+			name: "missing",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			inner := storage.NewMemoryStore()
+			require.NoError(t, inner.Put(testProfile, storage.Entry{
+				Token: &oauth2.Token{
+					AccessToken:  "old",
+					RefreshToken: "refresh",
+				},
+				ProfileChecksum: current,
+			}))
+			storeErr := errors.New("concurrent update")
+			store := &recordingStore{
+				Store:  inner,
+				putErr: storeErr,
+				replacement: storage.Entry{
+					Token: &oauth2.Token{
+						AccessToken:  "winner",
+						RefreshToken: "winner-refresh",
+						Expiry:       time.Now().Add(time.Hour),
+					},
+					ProfileChecksum: tt.checksum,
+				},
+			}
+			pa, err := NewPersistentAuth(t.Context(), WithTokenStore(store), WithOAuthArgument(arg),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}), WithHttpClient(checksumRefreshClient()))
+			require.NoError(t, err)
+
+			token, err := pa.ForceRefreshToken()
+
+			if tt.wantAccepted {
+				require.NoError(t, err)
+				assert.Equal(t, "winner", token.AccessToken)
+			} else {
+				assert.ErrorIs(t, err, storeErr)
+				assert.Nil(t, token)
+			}
+			assert.Equal(t, 1, store.puts)
+			assert.Zero(t, store.deletes)
+		})
 	}
 }

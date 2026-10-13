@@ -26,6 +26,10 @@ var ErrNotFound = errors.New("token not found")
 type Entry struct {
 	// Token is the cached OAuth token. Always set for stored entries.
 	Token *oauth2.Token
+
+	// ProfileChecksum describes the settings used at login. Backends only
+	// persist it. PersistentAuth decides whether the entry can still be used.
+	ProfileChecksum string
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no

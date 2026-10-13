@@ -18,7 +18,7 @@ func setup(t *testing.T) string {
 func TestStoreAndLookup(t *testing.T) {
 	c, err := NewFileStore(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)
-	err = c.Put("x", Entry{Token: &oauth2.Token{
+	err = c.Put("x", Entry{ProfileChecksum: "checksum", Token: &oauth2.Token{
 		AccessToken: "abc",
 	}})
 	require.NoError(t, err)
@@ -31,6 +31,10 @@ func TestStoreAndLookup(t *testing.T) {
 	got, err := c.Lookup("x")
 	require.NoError(t, err)
 	assert.Equal(t, "abc", got.Token.AccessToken)
+	assert.Equal(t, "checksum", got.ProfileChecksum)
+	legacy, err := c.Lookup("y")
+	require.NoError(t, err)
+	assert.Empty(t, legacy.ProfileChecksum)
 
 	_, err = c.Lookup("z")
 	assert.Equal(t, ErrNotFound, err)

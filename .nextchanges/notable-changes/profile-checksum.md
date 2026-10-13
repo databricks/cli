@@ -1,0 +1,1 @@
+* Reject a profile's cached OAuth token when the profile's client ID, scopes, or resources change after login, so a token can no longer be used with permissions the profile does not ask for. Run `databricks auth login` again for affected profiles. Profiles logged in with older CLI versions also need one new login. ([#7028](https://github.com/databricks/cli/pull/7028))

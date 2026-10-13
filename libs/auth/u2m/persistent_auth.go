@@ -179,6 +179,20 @@ func WithClientID(clientID string) PersistentAuthOption {
 	}
 }
 
+// WithTokenRequestParams sets the login settings that decide what the token
+// may do. Challenge sends them when logging in. Token and ForceRefreshToken
+// compare them with the settings a profile's cached token was created with.
+// An empty client ID keeps the default.
+func WithTokenRequestParams(params TokenRequestParams) PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		if params.ClientID != "" {
+			a.clientID = params.ClientID
+		}
+		a.scopes = params.Scopes
+		a.resources = params.Resources
+	}
+}
+
 // WithBrowser sets the browser function for the PersistentAuth.
 func WithBrowser(b func(url string) error) PersistentAuthOption {
 	return func(a *PersistentAuth) {
@@ -297,28 +311,53 @@ func NewPersistentAuth(ctx context.Context, opts ...PersistentAuthOption) (*Pers
 	return p, nil
 }
 
-// loadToken loads the cached OAuth2 token for the configured OAuthArgument
-// using GetCacheKey(). The returned token may be expired; callers are
-// responsible for deciding whether and how to refresh it.
-func (a *PersistentAuth) loadToken() (*oauth2.Token, error) {
-	e, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
+// loadEntry returns the cached entry if it was created for the current login
+// settings. The token may be expired. Callers decide whether to refresh it.
+func (a *PersistentAuth) loadEntry() (storage.Entry, error) {
+	key := a.oAuthArgument.GetCacheKey()
+	e, err := a.store.Lookup(key)
 	if err != nil {
-		return nil, fmt.Errorf("cache: %w", err)
+		return storage.Entry{}, fmt.Errorf("cache: %w", err)
 	}
-	return e.Token, nil
+	// Host-keyed tokens are not checked. They come from logins without a
+	// profile, from older CLIs, or are the legacy host copy of a profile token,
+	// so no saved profile describes the settings they were created with.
+	// Discovery arguments have no host key and are never read from.
+	hostKeyed, ok := a.oAuthArgument.(HostCacheKeyProvider)
+	if !ok || hostKeyed.GetHostCacheKey() == key {
+		return e, nil
+	}
+	if e.ProfileChecksum == "" {
+		return storage.Entry{}, &ProfileChecksumMissingError{Profile: key}
+	}
+	current := TokenRequestParams{
+		ClientID:  a.clientID,
+		Scopes:    a.scopes,
+		Resources: a.resources,
+	}
+	if e.ProfileChecksum != checksum(current) {
+		logger.Debugf(a.ctx, "profile %q: cached token checksum does not match the current settings: params=%+v", key, current.normalized())
+		return storage.Entry{}, &ProfileChangedError{Profile: key}
+	}
+	return e, nil
 }
 
 // Token loads the OAuth2 token for the given OAuthArgument from the cache. If
 // the token is expired or close to expiry, it is refreshed using the refresh
 // token. When a proactive refresh (token still valid but near expiry) fails,
 // the existing token is returned so the caller is not blocked.
+//
+// For a token stored under a profile name, it returns *ProfileChangedError or
+// *ProfileChecksumMissingError when the cached token does not fit the current
+// login settings.
 func (a *PersistentAuth) Token() (*oauth2.Token, error) {
-	t, err := a.loadToken()
+	e, err := a.loadEntry()
 	if err != nil {
 		return nil, err
 	}
+	t := e.Token
 	if needsRefresh(t) {
-		if refreshedToken, err := a.refresh(t); err == nil {
+		if refreshedToken, err := a.refresh(e); err == nil {
 			t = refreshedToken
 		} else if !t.Valid() {
 			return nil, fmt.Errorf("token refresh: %w", err)
@@ -334,13 +373,14 @@ func (a *PersistentAuth) Token() (*oauth2.Token, error) {
 // refreshes it unconditionally, and stores the refreshed token back under the
 // same key. Unlike Token(), if the refresh fails the error is always returned
 // -- the caller explicitly asked for a fresh token, so silently falling back
-// to a stale one would be incorrect.
+// to a stale one would be incorrect. It returns the same profile errors as
+// Token before attempting a refresh.
 func (a *PersistentAuth) ForceRefreshToken() (*oauth2.Token, error) {
-	t, err := a.loadToken()
+	e, err := a.loadEntry()
 	if err != nil {
 		return nil, err
 	}
-	t, err = a.refresh(t)
+	t, err := a.refresh(e)
 	if err != nil {
 		return nil, fmt.Errorf("forced token refresh: %w", err)
 	}
@@ -389,7 +429,7 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 			delay *= storeUpdateRecoveryDelayFactor
 		}
 
-		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
+		cached, err := a.loadEntry()
 		if err == nil && isFreshReplacement(old, candidate, cached.Token) {
 			return cached.Token
 		}
@@ -405,7 +445,8 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 // cached refresh token, both attempt a refresh, and race to update the cache.
 // This should be fixed in a follow-up by adding cross-process coordination
 // around refresh and cache writes.
-func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) {
+func (a *PersistentAuth) refresh(entry storage.Entry) (*oauth2.Token, error) {
+	oldToken := entry.Token
 	// Fail fast with ErrMissingRefreshToken instead of letting the oauth2
 	// library attempt to refresh and return a misleading error (e.g. "token
 	// expired" when the real problem is that the cached token is not
@@ -459,7 +500,8 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 		}
 		return nil, err
 	}
-	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
+	// Keep the login checksum. A refresh does not change the login settings.
+	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t, ProfileChecksum: entry.ProfileChecksum})
 	if err != nil {
 		if cached := a.recoverStoreUpdate(oldToken, t); cached != nil {
 			return cached, nil
@@ -474,7 +516,8 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 // URL. The user is redirected to the callback server on appRedirectAddr. The
 // callback server listens for the redirect from the identity provider and
 // exchanges the authorization code for an access token. The caller is
-// responsible for storing the returned token.
+// responsible for storing the returned token, as the entry returned by
+// NewEntry.
 func (a *PersistentAuth) Challenge() (*oauth2.Token, error) {
 	if a.discoveryMode {
 		return a.discoveryChallenge()
@@ -609,7 +652,7 @@ func (a *PersistentAuth) validateArg() error {
 func (a *PersistentAuth) resolveScopes() []string {
 	scopes := a.scopes
 	if len(scopes) == 0 {
-		scopes = []string{"all-apis"}
+		scopes = []string{defaultScope}
 	}
 	if !a.disableOfflineAccess {
 		scopes = append([]string{"offline_access"}, scopes...)

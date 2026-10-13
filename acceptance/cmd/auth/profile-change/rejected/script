@@ -1,0 +1,27 @@
+title "Scopes changed in the profile\n"
+check $CLI auth login --host "$DATABRICKS_HOST" --profile scopes --scopes sql,all-apis
+update_file.py "./home/.databrickscfg" "sql,all-apis" "jobs"
+check $CLI auth token --profile scopes
+check $CLI auth token --profile scopes --force-refresh
+check $CLI clusters list --profile scopes
+check $CLI auth login --profile scopes
+check $CLI auth token --profile scopes
+check $CLI clusters list --profile scopes
+
+title "Client ID changed in the profile\n"
+check $CLI auth login --host "$DATABRICKS_HOST" --profile client --client-id first-client
+update_file.py "./home/.databrickscfg" "first-client" "second-client"
+check $CLI auth token --profile client
+check $CLI clusters list --profile client
+check $CLI auth login --profile client
+check $CLI auth token --profile client
+check $CLI clusters list --profile client
+
+title "Resource changed in the profile\n"
+check $CLI auth login --host "$DATABRICKS_HOST" --profile changed --resource "$DATABRICKS_HOST/changed-a"
+update_file.py "./home/.databrickscfg" "$DATABRICKS_HOST/changed-a" "$DATABRICKS_HOST/changed-b"
+check $CLI auth token --profile changed
+check $CLI clusters list --profile changed
+check $CLI auth login --profile changed
+check $CLI auth token --profile changed
+check $CLI clusters list --profile changed

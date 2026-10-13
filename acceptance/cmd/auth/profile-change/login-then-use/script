@@ -1,0 +1,14 @@
+title "Default settings\n"
+check $CLI auth login --host "$DATABRICKS_HOST" --profile plain
+check $CLI auth token --profile plain
+check $CLI clusters list --profile plain
+
+title "Custom scopes\n"
+check $CLI auth login --host "$DATABRICKS_HOST" --profile scopes --scopes sql,all-apis
+check $CLI auth token --profile scopes
+check $CLI clusters list --profile scopes
+
+title "Logging in again with the saved settings\n"
+check $CLI auth login --profile scopes
+check $CLI auth token --profile scopes
+check $CLI clusters list --profile scopes

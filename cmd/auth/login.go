@@ -87,12 +87,12 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 	return auth.IntrospectToken(ctx, host, accessToken, nil)
 }
 
-// storeLoginToken persists a token after login has finished any optional
+// storeLoginToken persists an entry after login has finished any optional
 // profile update.
-func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
+func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, entry storage.Entry) error {
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
-	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
+	if err := tokenStore.Put(key, entry); err != nil {
 		storeErr := fmt.Errorf("store token: %w", err)
 		// The profile is already saved, but the old token may still be present.
 		// Delete it so later commands cannot use it with the updated profile.
@@ -327,20 +327,16 @@ a new profile is created.
 		if err != nil {
 			return err
 		}
-		persistentAuthOpts := []u2m.PersistentAuthOption{
+		params := u2m.TokenRequestParams{
+			ClientID:  clientID,
+			Scopes:    scopesList,
+			Resources: resources,
+		}
+		persistentAuth, err := u2m.NewPersistentAuth(ctx,
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-		}
-		if clientID != "" {
-			persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
-		}
-		if len(scopesList) > 0 {
-			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
-		}
-		if len(resources) > 0 {
-			persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resources))
-		}
-		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
+			u2m.WithTokenRequestParams(params),
+		)
 		if err != nil {
 			return err
 		}
@@ -439,7 +435,7 @@ a new profile is created.
 			}
 		}
 
-		if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
+		if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, u2m.NewEntry(token, params)); err != nil {
 			return err
 		}
 		if profileName != "" {
@@ -704,16 +700,15 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		scopesList = textutil.SplitAndTrim(in.existingProfile.Scopes)
 	}
 
+	params := u2m.TokenRequestParams{
+		ClientID: in.clientID,
+		Scopes:   scopesList,
+	}
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-	}
-	if in.clientID != "" {
-		opts = append(opts, u2m.WithClientID(in.clientID))
-	}
-	if len(scopesList) > 0 {
-		opts = append(opts, u2m.WithScopes(scopesList))
+		u2m.WithTokenRequestParams(params),
 	}
 	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
 	if discoveryHost != "" {
@@ -805,7 +800,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		}
 		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
 	}
-	if err := storeLoginToken(ctx, in.tokenStore, in.mode, arg, tok); err != nil {
+	if err := storeLoginToken(ctx, in.tokenStore, in.mode, arg, u2m.NewEntry(tok, params)); err != nil {
 		return err
 	}
 

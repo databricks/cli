@@ -1,0 +1,5 @@
+ok        [CLI] auth login --host [DATABRICKS_URL] --profile p --scopes sql,all-apis
+
+=== Reordered scopes in the profile
+ok        [CLI] auth token --profile p
+ok        [CLI] clusters list --profile p

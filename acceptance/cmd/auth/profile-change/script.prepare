@@ -1,0 +1,17 @@
+sethome "./home"
+export BROWSER="browser.py"
+
+# check runs a command and prints its outcome on one line, so a section reads
+# like a table of expected results. "rejected" means the cached token does not
+# match the settings the command uses. Any other error is printed in full.
+# Leading KEY=value arguments set environment variables for the command.
+check() {
+    if env "$@" >LOG.check 2>&1; then
+        echo "ok        $*"
+    elif grep -q "does not match this command's settings" LOG.check; then
+        echo "rejected  $*"
+    else
+        echo "FAILED    $*"
+        cat LOG.check
+    fi
+}

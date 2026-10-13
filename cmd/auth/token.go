@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -80,13 +79,11 @@ and secret is not supported.`,
 			persistentAuthOpts: nil,
 		})
 		if err != nil {
-			if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputJSON {
-				if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
-					if outputErr := writeTokenErrorOutput(cmd.OutOrStdout(), err); outputErr != nil {
-						return outputErr
-					}
-					return root.ErrAlreadyPrinted
+			if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputJSON && auth.IsLoginRequired(err) {
+				if outputErr := writeTokenErrorOutput(cmd.OutOrStdout(), err); outputErr != nil {
+					return outputErr
 				}
+				return root.ErrAlreadyPrinted
 			}
 			return err
 		}
@@ -237,6 +234,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 			return nil, err
 		}
+		// One match uses that profile's key, and several prompt or fail. No
+		// match keeps the lookup host-keyed, which PersistentAuth does not check
+		// (see PersistentAuth.loadEntry).
 		if len(matchingProfiles) > 1 {
 			configPath, _ := args.profiler.GetPath(ctx)
 			if configPath == "" {
@@ -289,12 +289,10 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenStore(storage.OAuthTokenStore(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
-	if clientID := u2m.ClientIDFromProfile(existingProfile); clientID != "" {
-		allArgs = append(allArgs, u2m.WithClientID(clientID))
-	}
-	if resources := u2m.ResourcesFromProfile(existingProfile); len(resources) > 0 {
-		allArgs = append(allArgs, u2m.WithResources(resources))
-	}
+	// PersistentAuth compares these with the settings used at login. Without a
+	// profile the token is host-keyed and not checked (see
+	// PersistentAuth.loadEntry).
+	allArgs = append(allArgs, u2m.WithTokenRequestParams(u2m.TokenRequestParamsFromProfile(existingProfile)))
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
@@ -444,35 +442,20 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 
 	loginArgs.Profile = profileName
 
-	// Preserve scopes from the existing profile so the inline login
-	// uses the same scopes the user previously configured.
-	var scopesList []string
-	if existingProfile != nil && existingProfile.Scopes != "" {
-		scopesList = textutil.SplitAndTrim(existingProfile.Scopes)
-	}
-
-	// Preserve RFC 8707 resource indicators from the existing profile so the
-	// inline login requests the same resources the user previously configured.
-	resourcesList := u2m.ResourcesFromProfile(existingProfile)
+	// Preserve the client ID, scopes and RFC 8707 resource indicators from the
+	// existing profile so the inline login requests what the user previously
+	// configured.
+	params := u2m.TokenRequestParamsFromProfile(existingProfile)
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
 		return "", nil, err
 	}
-	persistentAuthOpts := []u2m.PersistentAuthOption{
+	persistentAuth, err := u2m.NewPersistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-	}
-	if clientID := u2m.ClientIDFromProfile(existingProfile); clientID != "" {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
-	}
-	if len(scopesList) > 0 {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
-	}
-	if len(resourcesList) > 0 {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resourcesList))
-	}
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
+		u2m.WithTokenRequestParams(params),
+	)
 	if err != nil {
 		return "", nil, err
 	}
@@ -496,8 +479,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		AccountID:   loginArgs.AccountID,
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:      scopesList,
-		ClientID:    u2m.ClientIDFromProfile(existingProfile),
+		Scopes:      params.Scopes,
+		ClientID:    params.ClientID,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
@@ -505,10 +488,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	// TODO: resources is not supported in the SDK yet. This function is
 	// a short-cut to add the property to the profile until it is supported
 	// in the SDK.
-	if err := databrickscfg.SaveResourcesToProfile(ctx, profileName, env.Get(ctx, "DATABRICKS_CONFIG_FILE"), resourcesList); err != nil {
+	if err := databrickscfg.SaveResourcesToProfile(ctx, profileName, env.Get(ctx, "DATABRICKS_CONFIG_FILE"), params.Resources); err != nil {
 		return "", nil, err
 	}
-	if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
+	if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, u2m.NewEntry(token, params)); err != nil {
 		return "", nil, err
 	}
 

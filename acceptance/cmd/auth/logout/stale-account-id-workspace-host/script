@@ -20,7 +20,8 @@ cat > "./home/.databricks/token-cache.json" <<EOF
   "tokens": {
     "logfood": {
       "access_token": "logfood-cached-token",
-      "token_type": "Bearer"
+      "token_type": "Bearer",
+      "profile_checksum": "46123320576e828068e9582e08b5bc7fef4b61796070362caa45c4e488d0b668"
     },
     "${DATABRICKS_HOST}": {
       "access_token": "logfood-host-token",

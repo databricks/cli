@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
@@ -84,12 +86,13 @@ var errNoHost = errors.New("no host provided")
 
 // Configure implements [config.CredentialsStrategy].
 //
-// IMPORTANT: This credentials strategy ignores the scopes specified in the
-// config and purely relies on the scopes from the loaded CLI token. This can
-// lead to mismatches if the token was obtained with different scopes than the
-// ones configured in the current profile. This is a temporary limitation that
-// will be addressed in a future release by adding support for dynamic token
-// downscoping.
+// IMPORTANT: This credentials strategy does not request the scopes specified
+// in the config. It uses the cached CLI token, which carries the scopes from
+// login. For named profiles, PersistentAuth rejects the token when the
+// configured scopes differ from the ones used at login. Host-keyed tokens are
+// not checked (see PersistentAuth.loadEntry), so a scope mismatch there goes
+// unnoticed. Support for dynamic token downscoping in a future release would
+// remove this limitation.
 func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (credentials.CredentialsProvider, error) {
 	if cfg.Host == "" {
 		return nil, errNoHost
@@ -105,14 +108,15 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	opts := []u2m.PersistentAuthOption{
+	params, err := c.tokenParamsFromConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	ts, err := c.persistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenStore(storage.OAuthTokenStore(ctx, tokenStore, mode)),
-	}
-	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
-		opts = append(opts, u2m.WithClientID(cfg.ClientID))
-	}
-	ts, err := c.persistentAuth(ctx, opts...)
+		u2m.WithTokenRequestParams(params),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +124,58 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 		auth.NewCachedTokenSource(ts, auth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
 	)
 	return cp, nil
+}
+
+// tokenParamsFromConfig returns the login settings in cfg. Refresh does not
+// send them, but PersistentAuth compares them with the ones used at login.
+func (c CLICredentials) tokenParamsFromConfig(cfg *config.Config) (u2m.TokenRequestParams, error) {
+	params := u2m.TokenRequestParams{Scopes: cfg.Scopes}
+	// Client ID and resources belong to databricks-cli profiles only.
+	// u2m.TokenRequestParamsFromProfile applies the same rule for `auth token`,
+	// so both read a profile the same way.
+	if cfg.AuthType != c.Name() {
+		return params, nil
+	}
+	params.ClientID = cfg.ClientID
+	// Without a profile the token is host-keyed and not checked (see
+	// PersistentAuth.loadEntry), so there are no resources to read.
+	if cfg.Profile == "" {
+		return params, nil
+	}
+	resources, err := profileResources(cfg)
+	if err != nil {
+		return u2m.TokenRequestParams{}, err
+	}
+	params.Resources = resources
+	return params, nil
+}
+
+// profileResources reads the profile's resources from its config file,
+// because the resolved Config has no resources field. Other settings are not
+// read again, so if the file is edited concurrently, resources may be newer
+// than the rest of cfg.
+func profileResources(cfg *config.Config) ([]string, error) {
+	path := cfg.ConfigFile
+	// A profile can set config_file after its file was opened. Its recorded
+	// source identifies the file actually loaded, rather than that new value.
+	if attr := cfg.GetAuthDetails().Configuration["config_file"]; attr != nil && attr.Source.Type == config.SourceFile {
+		path = attr.Source.Name
+	}
+	file, err := config.LoadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("load resources for profile %q: %w", cfg.Profile, err)
+	}
+	section := file.Section(cfg.Profile)
+	if len(section.Keys()) == 0 {
+		return nil, fmt.Errorf("profile %q not found in %s", cfg.Profile, file.Path())
+	}
+	// Match the profile loader's own-section keys, without INI parent inheritance.
+	resources := section.KeysHash()["resources"]
+	if resources == "" {
+		return nil, nil
+	}
+	// PersistentAuth trims and drops blank entries before comparing.
+	return strings.Split(resources, ","), nil
 }
 
 // persistentAuth returns a token source. It is a convenience function that

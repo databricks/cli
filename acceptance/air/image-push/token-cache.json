@@ -5,7 +5,8 @@
       "access_token": "cached-access-token",
       "token_type": "Bearer",
       "refresh_token": "test-refresh-token",
-      "expiry": "2099-01-01T00:00:00Z"
+      "expiry": "2099-01-01T00:00:00Z",
+      "profile_checksum": "46123320576e828068e9582e08b5bc7fef4b61796070362caa45c4e488d0b668"
     }
   }
 }

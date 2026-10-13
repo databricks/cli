@@ -63,7 +63,7 @@ func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	arg, err := u2m.NewProfileWorkspaceOAuthArgument("https://workspace.example.test", profileName)
 	require.NoError(t, err)
 
-	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
+	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, storage.Entry{Token: &oauth2.Token{AccessToken: "new-token"}})
 
 	assert.ErrorIs(t, err, storeErr)
 	_, err = inner.Lookup(profileName)
@@ -779,6 +779,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 		introspectionErr: errors.New("introspection failed"),
 	}
 
+	store := storage.NewMemoryStore()
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
 	err = discoveryLogin(ctx, discoveryLoginInputs{
 		dc:          dc,
@@ -786,7 +787,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 		timeout:     time.Second,
 		scopes:      "all-apis, ,sql,",
 		browserFunc: func(string) error { return nil },
-		tokenStore:  newTestStore(),
+		tokenStore:  store,
 	})
 	require.NoError(t, err)
 
@@ -800,6 +801,11 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
+
+	// Later reads compare the settings saved to the profile with this checksum.
+	entry, err := store.Lookup("DISCOVERY")
+	require.NoError(t, err)
+	assert.Equal(t, loginChecksum(*savedProfile), entry.ProfileChecksum)
 }
 
 func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {

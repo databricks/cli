@@ -1,0 +1,6 @@
+check $CLI auth login --host "$DATABRICKS_HOST" --profile p --scopes sql,all-apis
+
+title "Reordered scopes in the profile\n"
+update_file.py "./home/.databrickscfg" "sql,all-apis" "all-apis,sql"
+check $CLI auth token --profile p
+check $CLI clusters list --profile p

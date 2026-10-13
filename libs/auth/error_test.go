@@ -2,9 +2,11 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -32,6 +34,41 @@ func TestAuthTypeDisplayName(t *testing.T) {
 	assert.Equal(t, "Azure CLI (azure-cli)", AuthTypeDisplayName("azure-cli"))
 	assert.Equal(t, "OAuth Machine-to-Machine (oauth-m2m)", AuthTypeDisplayName("oauth-m2m"))
 	assert.Equal(t, "some-future-auth", AuthTypeDisplayName("some-future-auth"))
+}
+
+// TestLoginRequiredErrors checks that the login errors are recognized and
+// that RewriteAuthError returns them unchanged as final.
+func TestLoginRequiredErrors(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "profile changed",
+			err:  fmt.Errorf("wrapped: %w", &u2m.ProfileChangedError{Profile: "TEST"}),
+			want: true,
+		},
+		{
+			name: "checksum missing",
+			err:  &u2m.ProfileChecksumMissingError{Profile: "TEST"},
+			want: true,
+		},
+		{
+			name: "other error",
+			err:  errors.New("network down"),
+			want: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsLoginRequired(tt.err))
+
+			final, err := RewriteAuthError(t.Context(), "https://workspace.test", "", "TEST", tt.err)
+
+			assert.Equal(t, tt.want, final)
+			assert.Same(t, tt.err, err)
+		})
+	}
 }
 
 func TestEnrichAuthError_NonAPIError(t *testing.T) {
