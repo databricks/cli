@@ -86,8 +86,8 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diags.Extend(diag.FromErr(err))
 	}
-  
-  b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
+
+	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
 		CanManage:  BuildCanManage(b),
@@ -117,7 +117,7 @@ func stageZip(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics, 
 	}
 	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
 	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
-		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
+		return "", nil, fmt.Errorf("failed to write snapshot zip: %w", err)
 	}
 
 	var diags diag.Diagnostics
@@ -260,7 +260,7 @@ func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot
 		return prev.Generation, nil
 	}
 	if !b.Config.Bundle.Force {
-		return 0, fmt.Errorf("the immutable snapshot of the last deployment was modified outside of the bundle (break glass):\n  %s\nTo deploy a new snapshot and point resources at it, use --force", contentPath)
+		return 0, fmt.Errorf("the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag")
 	}
 	return prev.Generation + 1, nil
 }

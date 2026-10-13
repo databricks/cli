@@ -18,9 +18,7 @@ OK: deployed to the current snapshot layout
 >>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/tampered
 
 >>> musterr [CLI] bundle deploy
-Error: the immutable snapshot of the last deployment was modified outside of the bundle (break glass):
-  /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot
-To deploy a new snapshot and point resources at it, use --force
+Error: the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag
 
 Files: 0 uploaded, 0 deleted
 
