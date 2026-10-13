@@ -29,6 +29,47 @@ var TestMetastore = catalog.MetastoreAssignment{
 	WorkspaceId:        TestWorkspaceID,
 }
 
+// ImportForm holds the fields of a multipart /workspace/import request.
+type ImportForm struct {
+	Path      string
+	Content   []byte
+	Format    string
+	Overwrite bool
+}
+
+// ParseImportForm parses the multipart body of a /workspace/import request.
+func ParseImportForm(req Request) (ImportForm, error) {
+	var form ImportForm
+	_, params, err := mime.ParseMediaType(req.Headers.Get("Content-Type"))
+	if err != nil {
+		return form, err
+	}
+	mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			return form, nil
+		}
+		if err != nil {
+			return form, err
+		}
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return form, err
+		}
+		switch part.FormName() {
+		case "path":
+			form.Path = string(data)
+		case "content":
+			form.Content = data
+		case "format":
+			form.Format = string(data)
+		case "overwrite":
+			form.Overwrite = string(data) == "true"
+		}
+	}
+}
+
 func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
 		return req.Workspace.ClusterPoliciesList(req)
@@ -153,6 +194,54 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/import", func(req Request) any {
+		// /workspace/import accepts both a JSON body (matching workspace.Import) and a
+		// multipart form body. The multipart variant is what databricks-sdk-go's
+		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
+		// that still hits Workspace.Import directly.
+		mediaType, _, _ := mime.ParseMediaType(req.Headers.Get("Content-Type"))
+		if strings.HasPrefix(mediaType, "multipart/") {
+			form, err := ParseImportForm(req)
+			if err != nil {
+				return Response{
+					Body:       fmt.Sprintf("internal error: %s", err),
+					StatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			// Require format explicitly: the real endpoint defaults to SOURCE, which
+			// would import every upload as a notebook, so a caller that drops the
+			// field is a bug rather than a request for the fake's usual behavior.
+			if form.Format != string(workspace.ImportFormatAuto) {
+				return Response{
+					Body:       fmt.Sprintf("internal error: The test server only supports auto format, got %q.", form.Format),
+					StatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			// Translate any 409 from the shared fake into the 400 + errorCode
+			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import
+			// endpoint, including the AIP-193 ErrorInfo detail it attaches to path
+			// collisions (universe PR #2019174, WP-6031).
+			resp := req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+			if resp.StatusCode == http.StatusConflict {
+				return Response{
+					StatusCode: http.StatusBadRequest,
+					Body: map[string]any{
+						"error_code": "RESOURCE_ALREADY_EXISTS",
+						"message":    fmt.Sprintf("Path (%s) already exists.", form.Path),
+						"details": []map[string]any{
+							{
+								"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+								"reason": "RESOURCE_ALREADY_EXISTS",
+								"domain": "workspace.databricks.com",
+							},
+						},
+					},
+				}
+			}
+			return resp
+		}
+
 		var request workspace.Import
 		err := json.Unmarshal(req.Body, &request)
 		if err != nil {

@@ -1,0 +1,18 @@
+RecordRequests = true
+
+# All sync uploads go through the same /workspace/import multipart code path; running
+# both engine variants is unnecessary here.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+  "large.bin",
+  "empty.txt",
+  "pyNb.py",
+  "sqlNb.sql",
+  "scalaNb.scala",
+  "plain-script.py",
+  "dashboard.lvdash.json",
+  "héllo.txt",
+  "with spaces.txt",
+  ".databricks",
+]

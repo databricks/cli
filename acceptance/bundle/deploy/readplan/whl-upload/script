@@ -5,9 +5,8 @@
 
 title "bundle deploy uploads the wheel"
 trace $CLI bundle deploy
-# An import-file request uploaded the wheel to its .../artifacts/.internal/ workspace path.
-# raw_body is the wheel's binary payload; drop it to keep the golden readable.
-trace print_requests.py //artifacts/.internal --del-field raw_body
+# The wheel was uploaded to its .../artifacts/.internal/ workspace path.
+trace print_workspace_imports | grep artifacts/.internal
 
 trace $CLI bundle destroy --auto-approve
 # Discard destroy's requests so the saved-plan deploy below starts from a clean recording.
@@ -19,9 +18,9 @@ title "bundle deploy --plan also uploads the wheel"
 $CLI bundle plan -o json > tmp.plan.json
 $CLI bundle plan -o json | nostamp > out.plan.json
 trace $CLI bundle deploy --plan tmp.plan.json
-# The same import-file request uploads the wheel to the .../artifacts/.internal/ path the
-# job task points at, matching the plain `bundle deploy` above.
-trace print_requests.py //artifacts/.internal --del-field raw_body
+# The wheel is uploaded to the same .../artifacts/.internal/ path the job task points at,
+# matching the plain `bundle deploy` above.
+trace print_workspace_imports | grep artifacts/.internal
 
 trace $CLI bundle destroy --auto-approve
 rm "$OUT_REQUESTS"
