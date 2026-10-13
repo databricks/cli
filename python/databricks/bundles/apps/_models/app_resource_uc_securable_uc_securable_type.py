@@ -9,9 +9,10 @@ class AppResourceUcSecurableUcSecurableType(Enum):
     TABLE = "TABLE"
     FUNCTION = "FUNCTION"
     CONNECTION = "CONNECTION"
+    MODEL_SERVICE = "MODEL_SERVICE"
 
 
 AppResourceUcSecurableUcSecurableTypeParam = (
-    Literal["VOLUME", "TABLE", "FUNCTION", "CONNECTION"]
+    Literal["VOLUME", "TABLE", "FUNCTION", "CONNECTION", "MODEL_SERVICE"]
     | AppResourceUcSecurableUcSecurableType
 )

@@ -1,6 +1,7 @@
 resources.alerts.*.create_time	string	ALL
 resources.alerts.*.custom_description	string	ALL
 resources.alerts.*.custom_summary	string	ALL
+resources.alerts.*.custom_template_format	sql.CustomTemplateFormat	ALL
 resources.alerts.*.display_name	string	ALL
 resources.alerts.*.effective_run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.effective_run_as.service_principal_name	string	ALL
@@ -85,6 +86,9 @@ resources.apps.*.active_deployment.git_source.git_repository.url	string	ALL
 resources.apps.*.active_deployment.git_source.resolved_commit	string	ALL
 resources.apps.*.active_deployment.git_source.source_code_path	string	ALL
 resources.apps.*.active_deployment.git_source.tag	string	ALL
+resources.apps.*.active_deployment.health_check	*apps.AppHealthCheck	ALL
+resources.apps.*.active_deployment.health_check.path	string	ALL
+resources.apps.*.active_deployment.health_check.timeout	*duration.Duration	ALL
 resources.apps.*.active_deployment.mode	apps.AppDeploymentMode	ALL
 resources.apps.*.active_deployment.source_code_path	string	ALL
 resources.apps.*.active_deployment.status	*apps.AppDeploymentStatus	ALL
@@ -181,6 +185,9 @@ resources.apps.*.pending_deployment.git_source.git_repository.url	string	ALL
 resources.apps.*.pending_deployment.git_source.resolved_commit	string	ALL
 resources.apps.*.pending_deployment.git_source.source_code_path	string	ALL
 resources.apps.*.pending_deployment.git_source.tag	string	ALL
+resources.apps.*.pending_deployment.health_check	*apps.AppHealthCheck	ALL
+resources.apps.*.pending_deployment.health_check.path	string	ALL
+resources.apps.*.pending_deployment.health_check.timeout	*duration.Duration	ALL
 resources.apps.*.pending_deployment.mode	apps.AppDeploymentMode	ALL
 resources.apps.*.pending_deployment.source_code_path	string	ALL
 resources.apps.*.pending_deployment.status	*apps.AppDeploymentStatus	ALL
@@ -2210,6 +2217,17 @@ resources.model_provider_services.*.config.azure_openai.direct.entra_service_pri
 resources.model_provider_services.*.config.azure_openai.direct.entra_service_principal.tenant_id	string	ALL
 resources.model_provider_services.*.config.azure_openai.direct.service_credential	*catalog.ModelProviderServiceConfigServiceCredential	ALL
 resources.model_provider_services.*.config.azure_openai.direct.service_credential.name	string	ALL
+resources.model_provider_services.*.config.bedrock_mantle	*catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct	*catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key	*catalog.ModelProviderServiceConfigAwsAccessKey	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.access_key_id	string	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.secret_access_key	*catalog.ModelProviderServiceConfigProviderSecret	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.secret_access_key.plaintext	string	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.secret_access_key.secret_reference	*catalog.ModelProviderServiceConfigSecretReference	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.secret_access_key.secret_reference.name	string	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.region	string	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.service_credential	*catalog.ModelProviderServiceConfigServiceCredential	ALL
+resources.model_provider_services.*.config.bedrock_mantle.direct.service_credential.name	string	ALL
 resources.model_provider_services.*.config.custom	*catalog.ModelProviderServiceConfigCustomProviderConfig	ALL
 resources.model_provider_services.*.config.custom.direct	*catalog.ModelProviderServiceConfigCustomProviderDirectConfig	ALL
 resources.model_provider_services.*.config.custom.direct.api_key	*catalog.ModelProviderServiceConfigProviderSecret	ALL
@@ -2265,6 +2283,8 @@ resources.model_provider_services.*.config.openai.direct.api_key.secret_referenc
 resources.model_provider_services.*.config.openai.direct.api_key.secret_reference.name	string	ALL
 resources.model_provider_services.*.config.openai.direct.base_url	string	ALL
 resources.model_provider_services.*.config.openai.direct.organization	string	ALL
+resources.model_provider_services.*.config.pricing	*catalog.ModelProviderServiceConfigProviderPricingConfig	ALL
+resources.model_provider_services.*.config.pricing.default_discount_basis_points	int	ALL
 resources.model_provider_services.*.config.provider_type	catalog.ModelProviderServiceConfigExternalModelProviderType	ALL
 resources.model_provider_services.*.config.rate_limits	[]catalog.RateLimit	ALL
 resources.model_provider_services.*.config.rate_limits[*]	catalog.RateLimit	ALL
@@ -2275,6 +2295,7 @@ resources.model_provider_services.*.config.rate_limits[*].requests	int64	ALL
 resources.model_provider_services.*.config.rate_limits[*].tokens	int64	ALL
 resources.model_provider_services.*.config.targets	[]catalog.ModelProviderServiceConfigModelTargetConfig	ALL
 resources.model_provider_services.*.config.targets[*]	catalog.ModelProviderServiceConfigModelTargetConfig	ALL
+resources.model_provider_services.*.config.targets[*].endpoint_route	string	ALL
 resources.model_provider_services.*.config.targets[*].model	string	ALL
 resources.model_provider_services.*.config.targets[*].native_api_types	[]string	ALL
 resources.model_provider_services.*.config.targets[*].native_api_types[*]	string	ALL
@@ -2312,6 +2333,7 @@ resources.model_services.*.config.routing.destinations[*].destination_type	catal
 resources.model_services.*.config.routing.destinations[*].external_model_config	*catalog.ModelServiceConfigExternalModelConfig	ALL
 resources.model_services.*.config.routing.destinations[*].external_model_config.model_provider_service	string	ALL
 resources.model_services.*.config.routing.destinations[*].external_model_config.target	catalog.ModelProviderServiceConfigModelTargetConfig	ALL
+resources.model_services.*.config.routing.destinations[*].external_model_config.target.endpoint_route	string	ALL
 resources.model_services.*.config.routing.destinations[*].external_model_config.target.model	string	ALL
 resources.model_services.*.config.routing.destinations[*].external_model_config.target.native_api_types	[]string	ALL
 resources.model_services.*.config.routing.destinations[*].external_model_config.target.native_api_types[*]	string	ALL
@@ -2330,6 +2352,7 @@ resources.model_services.*.config.routing.fallback.destinations[*].destination_t
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config	*catalog.ModelServiceConfigExternalModelConfig	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.model_provider_service	string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target	catalog.ModelProviderServiceConfigModelTargetConfig	ALL
+resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target.endpoint_route	string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target.model	string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target.native_api_types	[]string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].external_model_config.target.native_api_types[*]	string	ALL
@@ -3693,6 +3716,7 @@ resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
 resources.pipelines.*.parameters	map[string]string	ALL
 resources.pipelines.*.parameters.*	string	ALL
+resources.pipelines.*.parent_path	string	ALL
 resources.pipelines.*.photon	bool	ALL
 resources.pipelines.*.pipeline_id	string	REMOTE
 resources.pipelines.*.restart_window	*pipelines.RestartWindow	ALL
@@ -4223,6 +4247,7 @@ resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
 resources.sql_warehouses.*.state	sql.State	REMOTE
+resources.sql_warehouses.*.statement_timeout	int	ALL
 resources.sql_warehouses.*.tags	*sql.EndpointTags	ALL
 resources.sql_warehouses.*.tags.custom_tags	[]sql.EndpointTagPair	ALL
 resources.sql_warehouses.*.tags.custom_tags[*]	sql.EndpointTagPair	ALL
