@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 // TokenKeyProvider supplies the primary key used to store an OAuth token.
 type TokenKeyProvider interface {
 	GetCacheKey() string
@@ -56,6 +58,11 @@ func (s *DualWritingStore) Put(key string, e Entry) error {
 	}
 	_ = s.inner.Put(hostKey, e)
 	return nil
+}
+
+// Lock implements [Store]; delegates to the inner store.
+func (s *DualWritingStore) Lock(ctx context.Context) (func(), error) {
+	return s.inner.Lock(ctx)
 }
 
 // Lookup implements [Store]; delegates to the inner store.
