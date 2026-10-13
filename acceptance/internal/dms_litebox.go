@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
@@ -27,9 +26,6 @@ var liteboxPermissionTypes = []string{"directories", "files", "notebooks", "work
 // to its shared fakes, retaining request recording and mocks for other APIs.
 func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	t.Helper()
-	if env.Get(t.Context(), "CLOUD_ENV") != "" {
-		return
-	}
 	settings := loadDMSLiteboxSettings(t)
 	if settings == nil {
 		return
