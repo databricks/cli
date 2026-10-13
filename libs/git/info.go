@@ -5,9 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
@@ -158,13 +156,6 @@ func ensureWorkspacePrefix(p string) string {
 
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
-	localInfo, err := os.Stat(path)
-	if err != nil {
-		return result, err
-	}
-	if !localInfo.IsDir() {
-		path = filepath.Dir(path)
-	}
 
 	rootDir, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if rootDir == "" {

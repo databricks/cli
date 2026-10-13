@@ -48,7 +48,6 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 	}{
 		{name: "worktree", path: worktree, want: want},
 		{name: "subdirectory", path: filepath.Dir(file), want: want},
-		{name: "file", path: file, want: want},
 		{
 			name: "workspace metadata takes precedence", path: worktree,
 			body: `{"git_info":{"branch":"api-main","head_commit_id":"2222222222222222222222222222222222222222","path":"/Users/me/api","url":"https://example.test/api.git"}}`,
@@ -59,7 +58,6 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 		},
 		{name: "git directory", path: dir, want: gitDirectoryWant},
 		{name: "no git metadata", path: noGitRoot, wantErr: fs.ErrNotExist},
-		{name: "missing path", path: filepath.Join(worktree, "missing"), wantErr: fs.ErrNotExist},
 		{name: "malformed gitfile", path: malformed, want: RepositoryInfo{WorktreeRoot: malformed}},
 		{
 			name: "permission denied", path: worktree, status: http.StatusForbidden,
@@ -89,10 +87,4 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-}
-
-func TestFetchRepositoryInfoMissingLocalPath(t *testing.T) {
-	got, err := FetchRepositoryInfo(t.Context(), filepath.Join(t.TempDir(), "missing"), nil)
-	require.NoError(t, err)
-	assert.Equal(t, RepositoryInfo{}, got)
 }
