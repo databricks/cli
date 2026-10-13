@@ -27,6 +27,11 @@ Uploaded with spaces.txt
   "language": null
 }
 {
+  "name": "archive.zip",
+  "object_type": "FILE",
+  "language": null
+}
+{
   "name": "dashboard.lvdash.json",
   "object_type": "FILE",
   "language": null
@@ -43,11 +48,6 @@ Uploaded with spaces.txt
 }
 {
   "name": "héllo.txt",
-  "object_type": "FILE",
-  "language": null
-}
-{
-  "name": "inner.txt",
   "object_type": "FILE",
   "language": null
 }

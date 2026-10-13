@@ -13,7 +13,8 @@ fi
 
 # No release artifacts locally and they're never executed; stand in empty archives.
 mkdir -p releases
-python3 -c "import zipfile; [zipfile.ZipFile(f'releases/databricks_cli_linux_{a}.zip', 'w').close() for a in ('amd64', 'arm64')]"
+: >releases/databricks_cli_linux_amd64.zip
+: >releases/databricks_cli_linux_arm64.zip
 CLI_RELEASES_DIR="$PWD/releases"
 
 # The state a user reconnecting with a reused name is in: an entry for this connection

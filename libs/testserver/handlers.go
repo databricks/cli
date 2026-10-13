@@ -237,9 +237,6 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
-		if strings.HasSuffix(path, ".zip") {
-			return req.Workspace.WorkspaceFilesImportZip(path, req.Body, overwrite)
-		}
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
 	})
 

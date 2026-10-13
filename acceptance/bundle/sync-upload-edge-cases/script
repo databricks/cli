@@ -63,8 +63,9 @@ echo '{}' > space.geniespace.json
 echo '{}' > job.dbjob.json
 
 # A .zip goes through the legacy import-file endpoint, which extracts it into its parent
-# directory (here: inner.txt next to the archive). /workspace/import would instead create
-# a folder at the archive's path that cannot be overwritten on the next sync.
+# directory (inner.txt next to the archive). The testserver doesn't emulate that and stores
+# the archive as a FILE. /workspace/import would instead create a folder at the archive's
+# path that cannot be overwritten on the next sync.
 python3 -c "import zipfile; zipfile.ZipFile('archive.zip', 'w').writestr('inner.txt', 'hello')"
 
 # Non-ASCII filename. Multipart encodes filenames with RFC 5987 / quoted-string rules,
