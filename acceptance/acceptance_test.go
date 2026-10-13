@@ -152,16 +152,20 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if os.Getenv("CLOUD_ENV") == "" {
+		internal.ConfigureDMSLiteboxFromFile(t)
+	}
 	testAccept(t, InprocessMode, nil, false)
 }
 
 // TestDmsAcc runs acceptance tests against local DMS, selected with go test -run.
 // The in-process runner skips unrelated tool builds and old CLI downloads.
 func TestDmsAcc(t *testing.T) {
-	if os.Getenv("DMS_LITEBOX_URL") == "" {
-		t.Skip("DMS_LITEBOX_URL is not set")
-	}
 	require.Empty(t, os.Getenv("CLOUD_ENV"), "Litebox must not use a cloud workspace")
+	internal.ConfigureDMSLiteboxFromFile(t)
+	if os.Getenv("DMS_LITEBOX_URL") == "" {
+		t.Skip("No local DMS settings found; start the LITE fixture or set DMS_CLI_ENDPOINTS_FILE")
+	}
 	testAccept(t, true, nil, true)
 }
 
