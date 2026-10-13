@@ -240,8 +240,16 @@ func hasConstraintDeps(lines []string) bool {
 			continue
 		}
 		last, _ := constraintDepsArrayEnd(lines, i, end)
-		_, value, _ := strings.Cut(strings.Join(lines[i:last+1], "\n"), "=")
-		return strings.ContainsAny(value, `"'`)
+		// Drop comments, so a quote in a comment of an empty array is not a pin.
+		var value strings.Builder
+		for _, l := range lines[i : last+1] {
+			if c := commentStart(l); c >= 0 {
+				l = l[:c]
+			}
+			value.WriteString(l)
+		}
+		_, v, _ := strings.Cut(value.String(), "=")
+		return strings.ContainsAny(v, `"'`)
 	}
 	return false
 }

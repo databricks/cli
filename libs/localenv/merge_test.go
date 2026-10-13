@@ -1385,6 +1385,8 @@ func TestMergeToolUvBlockReportsReplacedPins(t *testing.T) {
 		{"user pins", "[tool.uv]\nconstraint-dependencies = [\"urllib3<2\"]\n", true},
 		{"managed pins", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"old==1\",\n]\n" + managedMarkerEnd + "\n", true},
 		{"empty unmarked key", "[tool.uv]\nconstraint-dependencies = []\n", false},
+		{"quote only in a comment", "[tool.uv]\nconstraint-dependencies = [\n    # \"placeholder\"\n]  # 'none yet'\n", false},
+		{"pin with a trailing comment", "[tool.uv]\nconstraint-dependencies = [\n    \"urllib3<2\", # why\n]\n", true},
 		{"empty managed block", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n]\n" + managedMarkerEnd + "\n", false},
 	}
 	for _, tc := range tests {

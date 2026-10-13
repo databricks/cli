@@ -301,11 +301,26 @@ func TestApplyMergeRootFailureBeforeAnyWriteIsNotDiskMutated(t *testing.T) {
 	p.res.Phases = initialPhases()
 	missing := filepath.Join(t.TempDir(), pyprojectFile)
 
-	err = p.applyMerge(t.Context(), current, &rootMerge{path: missing, merged: []byte("x")}, false)
+	err = p.applyMerge(t.Context(), current, &rootMerge{path: missing, merged: []byte("x"), changed: true}, false)
 	require.Error(t, err)
 	require.NotNil(t, p.res.Error)
 	assert.False(t, p.res.Error.DiskMutated)
 	assert.Contains(t, p.res.Error.Error(), "workspace root")
+}
+
+func TestApplyMergeSkipsUnchangedRoot(t *testing.T) {
+	// The plan already read the root and found no change, so applyMerge must not
+	// touch it again: a missing root file is not an error here.
+	_, member := memberLayout(t)
+	current, err := os.ReadFile(filepath.Join(member, pyprojectFile))
+	require.NoError(t, err)
+	p := &Pipeline{ProjectDir: member, res: NewResult()}
+	p.res.Phases = initialPhases()
+	missing := filepath.Join(t.TempDir(), pyprojectFile)
+
+	err = p.applyMerge(t.Context(), current, &rootMerge{path: missing, merged: []byte("x")}, false)
+	require.NoError(t, err)
+	assert.Empty(t, p.res.UvWorkspaceBackupPath)
 }
 
 func TestDiscoverWorkspaceRootSymlinkChangesDepth(t *testing.T) {

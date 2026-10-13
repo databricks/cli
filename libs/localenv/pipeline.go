@@ -207,6 +207,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// creates it, and keeps its constraint block in the root pyproject.toml, the
 	// only file uv reads constraint-dependencies from.
 	// https://docs.astral.sh/uv/concepts/projects/workspaces/
+	// Every run asks uv, also for a standalone project: only uv applies its member
+	// globs and exclude rules, and one call costs little next to uv sync.
 	var rootRel string
 	p.workspaceRoot, rootRel = p.discoverWorkspaceRoot(ctx)
 	// A discovery failure keeps the standalone behavior, but an interrupt must
@@ -511,7 +513,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			}
 		}
 		// Unlike the member file, the root is reported only when the run changes
-		// it; Result.WorkspaceRoot already names the root.
+		// it; Result.UvWorkspaceRoot already names the root.
 		if root != nil && root.changed {
 			plan.WouldWriteUvWorkspace = filepath.ToSlash(root.path)
 			if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
@@ -587,7 +589,7 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootM
 	if perr != nil {
 		return p.fail(PhaseMerge, mutated, perr)
 	}
-	if root != nil {
+	if root != nil && root.changed {
 		// The member is written first, so a root failure reports disk as mutated
 		// when either write changed it.
 		rootBackup, rootMutated, perr := p.writePyproject(root.path, root.merged, false)
