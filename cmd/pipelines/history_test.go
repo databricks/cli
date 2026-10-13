@@ -250,9 +250,9 @@ func TestFilterUpdates(t *testing.T) {
 			expectedLast:  400,
 		},
 		{
-			name:          "no updates - empty slice",
+			name:          "no updates with time filter",
 			updates:       noUpdates,
-			startTime:     nil,
+			startTime:     new(int64(500)),
 			endTime:       nil,
 			expectedCount: 0,
 			expectedFirst: 0,

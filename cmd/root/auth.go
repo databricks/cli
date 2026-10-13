@@ -56,12 +56,12 @@ func initProfileFlag(cmd *cobra.Command) {
 // isPATOnSPOGWithoutWorkspaceID reports whether the resolved config is a PAT
 // profile pointing at a SPOG host with no workspace_id set. The SDK strips the
 // routing identifier from the request, which lands on the account-plane where
-// PATs aren't accepted. The legacy "none" sentinel (auth.WorkspaceIDNone) is
+// PATs aren't accepted. The legacy "none" sentinel (profile.WorkspaceIDNone) is
 // treated as empty here, matching the convention used elsewhere in the repo
 // (e.g. libs/databrickscfg/profile/profiler.go).
 func isPATOnSPOGWithoutWorkspaceID(cfg *config.Config) bool {
 	return cfg.AuthType == auth.AuthTypePat &&
-		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) &&
 		auth.HasUnifiedHostSignal(cfg.DiscoveryURL)
 }
 
@@ -260,7 +260,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
-		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) {
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) {
 		// Account-only profile (created with --skip-workspace): account_id is
 		// set but workspace_id is absent (new shape) or the legacy "none"
 		// sentinel. Without a workspace_id the SDK would either send "none" as

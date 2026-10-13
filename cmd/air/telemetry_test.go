@@ -61,10 +61,11 @@ func TestAirRunTelemetry(t *testing.T) {
 				return jobs.SubmitRunResponse{RunId: 555}
 			})
 			var uploadedSize int64
-			server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
-				p := req.Vars["path"]
-				if strings.HasSuffix(p, ".tar.gz") {
-					uploadedSize = int64(len(req.Body))
+			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+				form, err := testserver.ParseImportForm(req)
+				assert.NoError(t, err)
+				if strings.HasSuffix(form.Path, ".tar.gz") {
+					uploadedSize = int64(len(form.Content))
 					time.Sleep(20 * time.Millisecond)
 					if tc.failUpload {
 						return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]string{
@@ -72,7 +73,7 @@ func TestAirRunTelemetry(t *testing.T) {
 						}}
 					}
 				}
-				return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
+				return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 			})
 			stubValidateConfig(server)
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
