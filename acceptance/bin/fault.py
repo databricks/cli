@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Set up a fault rule on the testserver for the current test token.
 
-Usage: fault.py [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
+Usage: fault.py [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
 
   --after-handler  run the handler first; keep its effect and replace only the response
+  --body-contains  only fire when the request body contains SUBSTR, e.g. to target one
+                   file's /workspace/import upload (all uploads share that path)
   PATTERN     HTTP method and path, supports trailing * wildcard,
               e.g. "PUT /api/2.0/permissions/pipelines/*"
   STATUS_CODE HTTP status code to return, e.g. 504
@@ -33,8 +35,17 @@ after_handler = "--after-handler" in args
 if after_handler:
     args.remove("--after-handler")
 
+body_contains = ""
+if "--body-contains" in args:
+    i = args.index("--body-contains")
+    body_contains = args[i + 1]
+    del args[i : i + 2]
+
 if len(args) not in (4, 5):
-    print(f"usage: {sys.argv[0]} [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]", file=sys.stderr)
+    print(
+        f"usage: {sys.argv[0]} [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 pattern, status_code, offset, times = args[0], int(args[1]), int(args[2]), int(args[3])
@@ -49,6 +60,7 @@ data = json.dumps(
         "offset": offset,
         "times": times,
         "after_handler": after_handler,
+        "body_contains": body_contains,
     }
 ).encode()
 

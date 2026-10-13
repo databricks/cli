@@ -16,5 +16,5 @@
 }
 
 === Expecting the code_source tarball to be uploaded
->>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/code.tgz"
+>>> print_workspace_imports
+/Workspace/foo/bar/artifacts/.internal/code.tgz

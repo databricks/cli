@@ -10,7 +10,7 @@ title "Opt in via env var; inject 403 on the resources.json push so the deploy f
 # push fails the deploy - unlike a declined deploy, the migration is not discarded, so the
 # local direct state remains and a retry finishes the push. (A push failure is a hard error on
 # any direct deploy, not just a migrating one.)
-fault.py "POST /api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" 403 0 1
+fault.py --body-contains "Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" "POST /api/2.0/workspace/import" 403 0 1
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
