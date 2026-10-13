@@ -15,16 +15,17 @@ import (
 func emptyDMSLiteboxSettingsContext(t *testing.T) context.Context {
 	t.Helper()
 	ctx := env.Set(t.Context(), dmsEndpointsFileEnv, "")
-	for _, key := range dmsLiteboxSettingsKeys {
-		ctx = env.Set(ctx, key, "")
-	}
+	ctx = env.Set(ctx, "DMS_LITEBOX_URL", "")
+	ctx = env.Set(ctx, "DMS_LITEBOX_CERT", "")
+	ctx = env.Set(ctx, "DMS_LITEBOX_KEY", "")
+	ctx = env.Set(ctx, "DMS_LITEBOX_CA", "")
 	return ctx
 }
 
 func writeDMSLiteboxSettings(t *testing.T, file string) {
 	t.Helper()
 	data, err := json.Marshal(map[string]string{
-		"url": "https://127.0.0.1:12345", "workspace_url": "https://127.0.0.1:12346",
+		"url":  "https://127.0.0.1:12345",
 		"cert": "certificate.crt", "key": "certificate.key", "ca": "ca.crt",
 	})
 	require.NoError(t, err)
@@ -54,7 +55,6 @@ func TestDMSLiteboxSettingsDiscovery(t *testing.T) {
 			settings, err := loadDMSLiteboxSettings(emptyDMSLiteboxSettingsContext(t), dir)
 			require.NoError(t, err)
 			assert.Equal(t, "https://127.0.0.1:12345", settings["DMS_LITEBOX_URL"])
-			assert.Equal(t, "https://127.0.0.1:12346", settings["DMS_LITEBOX_WORKSPACE_URL"])
 			assert.Equal(t, "certificate.crt", settings["DMS_LITEBOX_CERT"])
 			assert.Equal(t, "certificate.key", settings["DMS_LITEBOX_KEY"])
 			assert.Equal(t, "ca.crt", settings["DMS_LITEBOX_CA"])
@@ -72,7 +72,6 @@ func TestDMSLiteboxSettingsExplicitFileAndOverrides(t *testing.T) {
 		settings, err := loadDMSLiteboxSettings(ctx, dir)
 		require.NoError(t, err)
 		assert.Equal(t, "https://127.0.0.1:54321", settings["DMS_LITEBOX_URL"])
-		assert.Equal(t, "https://127.0.0.1:12346", settings["DMS_LITEBOX_WORKSPACE_URL"])
 		assert.Equal(t, "ca.crt", settings["DMS_LITEBOX_CA"])
 	}
 }
@@ -108,9 +107,10 @@ func TestDMSLiteboxSettingsInvalidFile(t *testing.T) {
 
 func TestDMSLiteboxSettingsExplicitEnvironmentNeedsNoFile(t *testing.T) {
 	ctx := env.Set(emptyDMSLiteboxSettingsContext(t), dmsEndpointsFileEnv, "missing.json")
-	for _, key := range dmsLiteboxSettingsKeys {
-		ctx = env.Set(ctx, key, "explicit")
-	}
+	ctx = env.Set(ctx, "DMS_LITEBOX_URL", "explicit")
+	ctx = env.Set(ctx, "DMS_LITEBOX_CERT", "explicit")
+	ctx = env.Set(ctx, "DMS_LITEBOX_KEY", "explicit")
+	ctx = env.Set(ctx, "DMS_LITEBOX_CA", "explicit")
 	settings, err := loadDMSLiteboxSettings(ctx, t.TempDir())
 	require.NoError(t, err)
 	for _, key := range dmsLiteboxSettingsKeys {

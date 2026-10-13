@@ -32,7 +32,6 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		return
 	}
 	dmsURL := liteboxURL(t, "DMS_LITEBOX_URL")
-	workspaceURL := liteboxURL(t, "DMS_LITEBOX_WORKSPACE_URL")
 
 	certFile, keyFile := env.Get(t.Context(), "DMS_LITEBOX_CERT"), env.Get(t.Context(), "DMS_LITEBOX_KEY")
 	caFile := env.Get(t.Context(), "DMS_LITEBOX_CA")
@@ -64,10 +63,7 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		},
 	}
 	handler := func(r testserver.Request) any {
-		target := *workspaceURL
-		if isDMSPath(r.URL.Path) {
-			target = *dmsURL
-		}
+		target := *dmsURL
 		target.Path, target.RawPath, target.RawQuery = r.URL.Path, r.URL.RawPath, r.URL.RawQuery
 		req, err := http.NewRequestWithContext(r.Context, r.Method, target.String(), bytes.NewReader(r.Body))
 		if err != nil {

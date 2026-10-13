@@ -17,7 +17,7 @@ import (
 const dmsEndpointsFileEnv = "DMS_CLI_ENDPOINTS_FILE"
 
 var dmsLiteboxSettingsKeys = []string{
-	"DMS_LITEBOX_URL", "DMS_LITEBOX_WORKSPACE_URL", "DMS_LITEBOX_CERT", "DMS_LITEBOX_KEY", "DMS_LITEBOX_CA",
+	"DMS_LITEBOX_URL", "DMS_LITEBOX_CERT", "DMS_LITEBOX_KEY", "DMS_LITEBOX_CA",
 }
 
 // ConfigureDMSLiteboxFromFile fills missing LITE settings from the local fixture's discovery file.
@@ -68,16 +68,15 @@ func loadDMSLiteboxSettings(ctx context.Context, dir string) (map[string]string,
 		return nil, fmt.Errorf("read DMS LITE settings %s: %w", filepath.ToSlash(file), err)
 	}
 	var config struct {
-		URL          string `json:"url"`
-		WorkspaceURL string `json:"workspace_url"`
-		Cert         string `json:"cert"`
-		Key          string `json:"key"`
-		CA           string `json:"ca"`
+		URL  string `json:"url"`
+		Cert string `json:"cert"`
+		Key  string `json:"key"`
+		CA   string `json:"ca"`
 	}
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("parse DMS LITE settings %s: %w", filepath.ToSlash(file), err)
 	}
-	defaults := []string{config.URL, config.WorkspaceURL, config.Cert, config.Key, config.CA}
+	defaults := []string{config.URL, config.Cert, config.Key, config.CA}
 	for i, key := range dmsLiteboxSettingsKeys {
 		if settings[key] == "" {
 			settings[key] = defaults[i]
