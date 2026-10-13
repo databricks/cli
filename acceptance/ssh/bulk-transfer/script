@@ -32,8 +32,7 @@ else
 
   # No release artifacts locally and they're never executed; stand in empty archives.
   mkdir -p releases
-  : >releases/databricks_cli_linux_amd64.zip
-  : >releases/databricks_cli_linux_arm64.zip
+  python3 -c "import zipfile; [zipfile.ZipFile(f'releases/databricks_cli_linux_{a}.zip', 'w').close() for a in ('amd64', 'arm64')]"
   CONNECT_FLAGS="--releases-dir=$PWD/releases --known-hosts-dir=known-hosts"
 fi
 

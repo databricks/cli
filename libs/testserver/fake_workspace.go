@@ -1,10 +1,12 @@
 package testserver
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -913,6 +915,54 @@ func detectNotebookLanguage(extension string, body []byte) (workspace.Language, 
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	return s.importFile(filePath, body, overwrite, true)
+}
+
+// WorkspaceFilesImportZip mirrors the legacy import-file endpoint for a .zip path: it
+// extracts the archive's entries into the zip's parent directory instead of storing
+// the archive itself.
+func (s *FakeWorkspace) WorkspaceFilesImportZip(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+
+	resp, ok := func() (Response, bool) {
+		defer s.LockUnlock()()
+		return s.requireParentDirectory(zipPath)
+	}()
+	if !ok {
+		return resp
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"message": "Failed to unzip with error: " + err.Error()},
+		}
+	}
+
+	parent := path.Dir(zipPath)
+	for _, entry := range zr.File {
+		target := path.Join(parent, entry.Name)
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: target})
+			continue
+		}
+		s.WorkspaceMkdirs(workspace.Mkdirs{Path: path.Dir(target)})
+		rc, err := entry.Open()
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.WorkspaceFilesImportFile(target, data, overwrite); resp.StatusCode != 0 && resp.StatusCode != http.StatusOK {
+			return resp
+		}
+	}
+	return Response{}
 }
 
 // WorkspaceImportRawFile stores body as a file without notebook detection, as

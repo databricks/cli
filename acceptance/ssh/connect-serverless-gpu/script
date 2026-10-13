@@ -2,8 +2,7 @@ if [ -z "${CLOUD_ENV:-}" ]; then
   # Local runs have no release artifacts and never execute the uploaded
   # binaries, so stand in empty archives (dev name omits the version).
   mkdir -p releases
-  : >releases/databricks_cli_linux_amd64.zip
-  : >releases/databricks_cli_linux_arm64.zip
+  python3 -c "import zipfile; [zipfile.ZipFile(f'releases/databricks_cli_linux_{a}.zip', 'w').close() for a in ('amd64', 'arm64')]"
   CLI_RELEASES_DIR="$PWD/releases"
 fi
 

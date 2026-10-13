@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"path"
 	"slices"
 	"strings"
@@ -116,8 +117,8 @@ var autoImportAssetExtensions = []string{".lvdash.json", ".dbalert.json", ".desi
 
 // importRequest returns the workspace path and /workspace/import options for a file,
 // matching how the legacy import-file endpoint stored it. Other files avoid format=AUTO
-// because it types them by name: it rejects names reserved for other assets
-// (e.g. .geniespace.json, .lwquery.ipynb) and imports .zip archives as folders.
+// because it types them by name and rejects names reserved for other assets
+// (e.g. .geniespace.json, .lwquery.ipynb).
 func importRequest(absPath string, content []byte) (string, []workspace.UploadOption) {
 	lower := strings.ToLower(absPath)
 	for _, ext := range autoImportAssetExtensions {
@@ -193,14 +194,26 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Upload with the SDK's multipart Workspace.Upload. The JSON-body workspace.Import
-	// caps content at 10 MB, the multipart form at the 500 MB workspace file limit.
-	uploadPath, opts := importRequest(absPath, body)
-	if slices.Contains(mode, OverwriteIfExists) {
-		opts = append(opts, workspace.UploadOverwrite())
+	overwrite := slices.Contains(mode, OverwriteIfExists)
+	if strings.HasSuffix(absPath, ".zip") {
+		// The legacy import-file endpoint extracts a .zip into its parent directory and
+		// overwrites existing entries. /workspace/import imports it as a new folder that
+		// cannot be overwritten, so zips stay on import-file until it supports that.
+		urlPath := fmt.Sprintf(
+			"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
+			url.PathEscape(strings.TrimLeft(absPath, "/")),
+			overwrite,
+		)
+		err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+	} else {
+		// Upload with the SDK's multipart Workspace.Upload. The JSON-body workspace.Import
+		// caps content at 10 MB, the multipart form at the 500 MB workspace file limit.
+		uploadPath, opts := importRequest(absPath, body)
+		if overwrite {
+			opts = append(opts, workspace.UploadOverwrite())
+		}
+		err = w.workspaceClient.Workspace.Upload(ctx, uploadPath, bytes.NewReader(body), opts...)
 	}
-
-	err = w.workspaceClient.Workspace.Upload(ctx, uploadPath, bytes.NewReader(body), opts...)
 
 	// Return early on success.
 	if err == nil {

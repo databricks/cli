@@ -62,7 +62,9 @@ echo '{"datasets":[],"pages":[]}' > dashboard.lvdash.json
 echo '{}' > space.geniespace.json
 echo '{}' > job.dbjob.json
 
-# format=AUTO imports a .zip as a folder; the archive must instead sync as a file.
+# A .zip goes through the legacy import-file endpoint, which extracts it into its parent
+# directory (here: inner.txt next to the archive). /workspace/import would instead create
+# a folder at the archive's path that cannot be overwritten on the next sync.
 python3 -c "import zipfile; zipfile.ZipFile('archive.zip', 'w').writestr('inner.txt', 'hello')"
 
 # Non-ASCII filename. Multipart encodes filenames with RFC 5987 / quoted-string rules,
@@ -81,6 +83,9 @@ remote_files=$($CLI bundle summary -o json 2>/dev/null | jq -r .workspace.file_p
 # reaches the CLI.
 trace MSYS_NO_PATHCONV=1 $CLI workspace list -o json "$remote_files" |
   jq 'sort_by(.path) | .[] | {name: (.path | sub(".*/"; "")), object_type, language}'
+
+title "the .zip is uploaded with the legacy import-file endpoint"
+trace print_requests.py //workspace-files/import-file --del-field raw_body --keep
 
 title "uploaded paths from each multipart POST /workspace/import (sorted)"
 trace print_workspace_imports | sort

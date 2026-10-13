@@ -27,11 +27,6 @@ Uploaded with spaces.txt
   "language": null
 }
 {
-  "name": "archive.zip",
-  "object_type": "FILE",
-  "language": null
-}
-{
   "name": "dashboard.lvdash.json",
   "object_type": "FILE",
   "language": null
@@ -48,6 +43,11 @@ Uploaded with spaces.txt
 }
 {
   "name": "héllo.txt",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "inner.txt",
   "object_type": "FILE",
   "language": null
 }
@@ -102,10 +102,19 @@ Uploaded with spaces.txt
   "language": null
 }
 
+=== the .zip is uploaded with the legacy import-file endpoint
+>>> print_requests.py //workspace-files/import-file --del-field raw_body --keep
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/archive.zip",
+  "q": {
+    "overwrite": "true"
+  }
+}
+
 === uploaded paths from each multipart POST /workspace/import (sorted)
 >>> print_workspace_imports
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/.gitignore
-/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/archive.zip
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/dashboard.lvdash.json
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/databricks.yml
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/empty.txt
@@ -129,7 +138,6 @@ Uploaded with spaces.txt
   sort_by(.name) | .[] | "\(.format) \(.name)"
  [OUTPUT_DIR]/out.requests.txt
 RAW .gitignore
-RAW archive.zip
 AUTO dashboard.lvdash.json
 RAW databricks.yml
 RAW empty.txt
