@@ -566,7 +566,7 @@ func TestProbeModelServicesPageError(t *testing.T) {
 
 func TestBuildAgentShimEvent(t *testing.T) {
 	for _, agent := range supportedAgents {
-		t.Run(fmt.Sprintf("%s has an appropriate enum for telemetry", agent.name), func(t *testing.T) {
+		t.Run(agent.name+" has an appropriate enum for telemetry", func(t *testing.T) {
 			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
 			assert.NotEqual(t, protos.SshAgentShimAgentUnspecified, got.Agent)
 		})
