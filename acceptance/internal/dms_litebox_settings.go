@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +28,7 @@ func loadDMSLiteboxSettings(t *testing.T) *dmsLiteboxSettings {
 	t.Helper()
 	acceptanceDir, err := os.Getwd()
 	require.NoError(t, err)
-	file := os.Getenv("DMS_CLI_ENDPOINTS_FILE")
+	file := env.Get(t.Context(), "DMS_CLI_ENDPOINTS_FILE")
 	explicit := file != ""
 	if !explicit {
 		file = findDMSLiteboxSettings(t, filepath.Dir(acceptanceDir))
