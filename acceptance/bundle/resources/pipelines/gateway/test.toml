@@ -1,7 +1,6 @@
-Cloud = true
-
-# Needs a SQL Server connection (CREATE CONNECTION) and Lakeflow Connect gateway ingestion,
-# which the aws-prod-ucws and azure-prod-ucws workspaces have.
-CloudEnvs.gcp = false
+# TODO: add `Cloud = true` once the -cli test envs can create the SQL Server connection and run
+# gateway pipelines (CREATE CONNECTION on the metastore, Lakeflow Connect gateway ingestion enabled).
+# Until then the cloud run fails with "User does not have CREATE CONNECTION". Verified manually on
+# aws-prod-ucws and azure-prod-ucws, which have both, with identical output.
 
 Ignore = ["databricks.yml"]

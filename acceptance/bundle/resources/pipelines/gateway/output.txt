@@ -15,6 +15,25 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Fields the backend added are not drift
+>>> [CLI] bundle plan -o json
+{
+  "continuous": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": true
+  },
+  "catalog": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": "main"
+  },
+  "schema": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": "gateway_storage_[UNIQUE_NAME]"
+  }
+}
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

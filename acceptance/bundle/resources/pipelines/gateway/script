@@ -20,5 +20,7 @@ ppid=$(read_id.py gw)
 trace $CLI pipelines get $ppid | gateway_fields
 
 title "Fields the backend added are not drift"
+# Remote values prove the backend set them; the config declares none of them.
+trace $CLI bundle plan -o json | jq '.plan["resources.pipelines.gw"].changes | {continuous, catalog, schema}'
 trace $CLI bundle plan | contains.py "0 to change"
 trace $CLI bundle deploy

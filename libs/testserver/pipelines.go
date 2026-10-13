@@ -97,7 +97,7 @@ func setGatewayDefaults(spec *pipelines.PipelineSpec) {
 	if gw == nil {
 		return
 	}
-	spec.Continuous = true
+	spec.Continuous = true //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 	spec.Catalog = gw.GatewayStorageCatalog
 	spec.Schema = gw.GatewayStorageSchema
 }
