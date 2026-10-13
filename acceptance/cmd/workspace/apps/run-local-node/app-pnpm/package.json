@@ -1,0 +1,8 @@
+{
+    "name": "app-pnpm",
+    "version": "1.0.0",
+    "description": "A Node.js app that uses pnpm",
+    "scripts": {
+        "build": "node build.js"
+    }
+}

@@ -54,7 +54,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpec, customEnv []string, prepareEnvironment bool) (runlocal.App, []string, error) {
 	ctx := cmd.Context()
 	cfg := cmdctx.ConfigUsed(ctx)
-	app, err := runlocal.NewApp(config, spec)
+	app, err := runlocal.NewApp(ctx, config, spec)
 	if err != nil {
 		return nil, nil, err
 	}
