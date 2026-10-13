@@ -191,7 +191,7 @@ func TestEnsurePythonFailsWhenFallbackFindsNothing(t *testing.T) {
 func TestVenvPythonPath(t *testing.T) {
 	// Validate invokes this interpreter directly (not via `uv run`) so it observes
 	// exactly the .venv that was provisioned, ignoring any active VIRTUAL_ENV.
-	got := venvPython(filepath.Join("p", "proj"))
+	got := venvPython(filepath.Join("p", "proj", ".venv"))
 	var want string
 	if runtime.GOOS == "windows" {
 		want = filepath.Join("p", "proj", ".venv", "Scripts", "python.exe")
@@ -474,4 +474,32 @@ func TestLineWithPrefix(t *testing.T) {
 	// A missing prefix reports not-found rather than a wrong line.
 	_, ok = lineWithPrefix("PYVER:3.12\n", validateDBCPrefix)
 	assert.False(t, ok)
+}
+
+func TestPostProvisionAndValidateRunInProjectDir(t *testing.T) {
+	// The venv can live outside the project (a uv workspace root), but uv and the
+	// probe interpreter still run in the project folder: uv reads its settings
+	// from there, and `python -c` puts the working folder first on sys.path.
+	project := filepath.Join("p", "proj")
+	venv := filepath.Join("p", ".venv")
+	ctx, stub := process.WithStub(t.Context())
+	var dirs []string
+	var args [][]string
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		dirs = append(dirs, cmd.Dir)
+		args = append(args, cmd.Args)
+		// The validate probe parses its prefixed lines from stdout.
+		_, err := cmd.Stdout.Write([]byte("PYVER:3.12\nDBCVER:\nPYSPARKVER:\nDBCIMPORT:\n"))
+		return err
+	})
+	m := &uvManager{bin: "uv"}
+
+	require.NoError(t, m.PostProvision(ctx, project, venv))
+	_, err := m.Validate(ctx, project, venv)
+	require.NoError(t, err)
+	assert.Equal(t, []string{project, project}, dirs)
+	// Both commands use the interpreter of the venv folder, not of the project.
+	require.Len(t, args, 2)
+	assert.Contains(t, args[0], venvPython(venv), "pip seed")
+	assert.Equal(t, venvPython(venv), args[1][0], "validate probe")
 }
