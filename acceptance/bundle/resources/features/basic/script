@@ -19,9 +19,10 @@ trace $CLI bundle deploy
 trace print_requests.py //feature-engineering
 trace $CLI feature-engineering get-feature main.myschema.myfeature | jq .description
 
-title "Change an immutable field (should plan a recreate)"
+title "Change an immutable field (should recreate)"
 trace update_file.py databricks.yml amount other_column
-trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //feature-engineering

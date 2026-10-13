@@ -147,13 +147,54 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] feature-engineering get-feature main.myschema.myfeature
 "DESCRIPTION2"
 
-=== Change an immutable field (should plan a recreate)
+=== Change an immutable field (should recreate)
 >>> update_file.py databricks.yml amount other_column
 
->>> [CLI] bundle plan
-recreate features.feature1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Recreated features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/features/main.myschema.myfeature"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/features",
+  "body": {
+    "description": "DESCRIPTION2",
+    "entities": [
+      {
+        "name": "account_id"
+      }
+    ],
+    "full_name": "main.myschema.myfeature",
+    "function": {
+      "aggregation_function": {
+        "count_function": {
+          "input": "other_column"
+        },
+        "time_window": {
+          "sliding": {
+            "slide_duration": "86400s",
+            "window_duration": "604800s"
+          }
+        }
+      }
+    },
+    "source": {
+      "delta_table_source": {
+        "full_name": "main.myschema.mysource"
+      }
+    },
+    "timeseries_column": {
+      "name": "event_ts"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
