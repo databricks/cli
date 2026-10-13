@@ -56,6 +56,34 @@ func TestUvArgs(t *testing.T) {
 		"python", "find", "--system", "--no-python-downloads", "cpython@==3.12.*",
 	}, m.pythonFindArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
+	assert.Equal(t, []string{"workspace", "dir"}, m.workspaceDirArgs())
+}
+
+func TestWorkspaceRootRunsInProjectDirAndTrimsOutput(t *testing.T) {
+	project := filepath.Join("p", "proj")
+	ctx, stub := process.WithStub(t.Context())
+	var dir string
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		dir = cmd.Dir
+		_, err := cmd.Stdout.Write([]byte("/repo\n"))
+		return err
+	})
+	m := &uvManager{bin: "uv"}
+
+	root, err := m.WorkspaceRoot(ctx, project)
+	require.NoError(t, err)
+	assert.Equal(t, "/repo", root)
+	assert.Equal(t, project, dir)
+	assert.Equal(t, []string{uvStubCommand("workspace dir")}, stub.Commands())
+}
+
+func TestWorkspaceRootReturnsUvError(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(`workspace dir`, errors.New("exit status 2"))
+	m := &uvManager{bin: "uv"}
+
+	_, err := m.WorkspaceRoot(ctx, "proj")
+	assert.Error(t, err)
 }
 
 func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {

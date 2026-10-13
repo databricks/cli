@@ -81,6 +81,10 @@ type Pipeline struct {
 	// Result.VenvPath. Set in preflight.
 	venvRel string
 
+	// workspaceRoot is the uv workspace root when ProjectDir is a workspace
+	// member, else "". Set in preflight.
+	workspaceRoot string
+
 	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
 	// in tests so backup names are deterministic.
 	nowFn func() time.Time
@@ -181,8 +185,6 @@ func (p *Pipeline) run(ctx context.Context) error {
 	if m := detectManager(p.ProjectDir); m != managerUv {
 		return p.fail(PhasePreflight, false, NewError(ErrManagerUnsupported, nil, "%s", managerGuidance(m)))
 	}
-	p.venvRel = venvDir
-	p.venv = filepath.Join(p.ProjectDir, p.venvRel)
 	// Under --dry-run the pipeline only reads and reports a plan, so it must not
 	// mutate anything at preflight. Two preflight steps can write:
 	//   - ensureWritable creates and removes a temp file (and would fail a
@@ -190,9 +192,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	//   - PackageManager.EnsureAvailable may install the manager (uv) if missing.
 	// Both exist to fail fast before real writes, which --dry-run never performs, so
 	// they are skipped in a dry run. Neither result is needed to compute the plan.
-	if p.Check {
-		p.markOK(PhasePreflight, "check")
-	} else {
+	detail := "check"
+	if !p.Check {
 		if err := ensureWritable(p.ProjectDir); err != nil {
 			return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "project directory %s is not writable", filepath.ToSlash(p.ProjectDir)))
 		}
@@ -200,8 +201,35 @@ func (p *Pipeline) run(ctx context.Context) error {
 		if err != nil {
 			return p.fail(PhasePreflight, false, asPipelineError(err, ErrUvMissing, "%s unavailable", p.PM.Name()))
 		}
-		p.markOK(PhasePreflight, p.PM.Name()+" "+version)
+		detail = p.PM.Name() + " " + version
 	}
+	// A uv workspace member shares the venv at the workspace root, where uv sync
+	// creates it, and keeps its constraint block in the root pyproject.toml, the
+	// only file uv reads constraint-dependencies from.
+	// https://docs.astral.sh/uv/concepts/projects/workspaces/
+	// Every run asks uv, also for a standalone project: only uv applies its member
+	// globs and exclude rules, and one call costs little next to uv sync.
+	var rootRel string
+	p.workspaceRoot, rootRel = p.discoverWorkspaceRoot(ctx)
+	// A discovery failure keeps the standalone behavior, but an interrupt must
+	// not: the run would go on to merge as a standalone project and write files.
+	if err := ctx.Err(); err != nil {
+		return p.fail(PhasePreflight, false, NewError(ErrCanceled, err, "interrupted"))
+	}
+	venvBase := p.ProjectDir
+	p.venvRel = venvDir
+	if p.workspaceRoot != "" {
+		venvBase = p.workspaceRoot
+		p.venvRel = filepath.Join(rootRel, venvDir)
+		p.res.UvWorkspaceRoot = filepath.ToSlash(p.workspaceRoot)
+		if !p.Check {
+			if err := ensureWritable(p.workspaceRoot); err != nil {
+				return p.fail(PhasePreflight, false, NewError(ErrNotWritable, err, "uv workspace root %s is not writable", filepath.ToSlash(p.workspaceRoot)))
+			}
+		}
+	}
+	p.venv = filepath.Join(venvBase, venvDir)
+	p.markOK(PhasePreflight, detail)
 
 	// Phase: resolve — compute target → environment key.
 	p.report(ctx, PhaseResolve)
@@ -228,9 +256,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// values, so c keeps the real artifact values throughout. --constraints-only maps
 	// to --no-dbconnect: it stops managing the pin (not reported here, not asserted in
 	// validate) but keeps the resolved value on c.
+	// A workspace member's constraint block goes to the workspace root (see
+	// planRootMerge). Discovery never reports a greenfield project as a member
+	// (see discoverWorkspaceRoot), so RenderFreshPyproject needs no such option.
 	opts := MergeOptions{
-		SkipConstraints: p.SkipConstraints,
-		SkipDBConnect:   p.Mode == ModeConstraintsOnly,
+		SkipConstraints:            p.SkipConstraints,
+		SkipDBConnect:              p.Mode == ModeConstraintsOnly,
+		ConstraintsAtWorkspaceRoot: p.workspaceRoot != "",
 	}
 
 	dbcVersion := dbcVersionFromPin(c.DatabricksConnect)
@@ -247,7 +279,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// The serverless environment version (empty for cluster targets) is written
 	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
+	mergedBytes, root, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
 	if err != nil {
 		return err
 	}
@@ -262,7 +294,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Apply the merged content to disk (backup first for existing projects).
-	if err := p.applyMerge(ctx, mergedBytes, greenfield); err != nil {
+	if err := p.applyMerge(ctx, mergedBytes, root, greenfield); err != nil {
 		return err
 	}
 	p.markOK(PhaseMerge, "")
@@ -385,7 +417,7 @@ func (p *Pipeline) plannedBackupName(dir string) (string, error) {
 // --dry-run). opts selects which managed axes are written. envVersion is the
 // serverless environment version to write into [tool.databricks.environment], or
 // "" for a cluster target.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, greenfield bool, err error) {
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, root *rootMerge, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 
 	// The merge base is the live pyproject.toml, not the backup. MergeManaged
@@ -406,7 +438,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// after detectManager saw it) must not be misread as greenfield — that
 		// would render a fresh file and overwrite the user's project with no
 		// backup. Fail instead of destroying unrecoverable state (invariant 2).
-		return nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
+		return nil, nil, false, p.fail(PhaseMerge, false, NewError(ErrMerge, rerr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
 	}
 	greenfield = baseBytes == nil
 
@@ -440,7 +472,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	} else {
 		merged, changedRegions, err = MergeManaged(baseBytes, effective, opts)
 		if err != nil {
-			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
+			return nil, nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
 		// Surface merge-quality warnings (overridden, consolidated, or duplicated pins,
 		// conflicting user constraints) from the pre-merge file. Greenfield has nothing of
@@ -452,12 +484,24 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective, opts), opts)...)
 	}
 
+	root, err = p.planRootMerge(c.ConstraintDeps, opts)
+	if err != nil {
+		return nil, nil, greenfield, err
+	}
+	if root != nil && root.changed {
+		changedRegions = append(changedRegions, regionWorkspaceToolUv)
+	}
+
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
 	// not need the diff.
 	if p.Check {
+		diff := pyprojectDiff(pyprojectFile, baseBytes, merged, greenfield)
+		if root != nil {
+			diff += pyprojectDiff("uv workspace root "+pyprojectFile, root.base, root.merged, false)
+		}
 		plan := &Plan{
 			WouldWrite:         filepath.ToSlash(pyproject),
-			Diff:               pyprojectDiff(pyprojectFile, baseBytes, merged, greenfield),
+			Diff:               diff,
 			ChangedRegions:     changedRegions,
 			WouldInstallPython: pyMinor,
 		}
@@ -468,9 +512,52 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
+		// Unlike the member file, the root is reported only when the run changes
+		// it; Result.UvWorkspaceRoot already names the root.
+		if root != nil && root.changed {
+			plan.WouldWriteUvWorkspace = filepath.ToSlash(root.path)
+			if backupName, statErr := p.plannedBackupName(p.workspaceRoot); statErr == nil {
+				plan.WouldBackupUvWorkspace = filepath.ToSlash(backupName)
+			}
+		}
 		p.res.Plan = plan
 	}
-	return merged, greenfield, nil
+	return merged, root, greenfield, nil
+}
+
+// rootMerge is the planned change to the workspace root pyproject.toml.
+type rootMerge struct {
+	path    string
+	base    []byte
+	merged  []byte
+	changed bool
+}
+
+// planRootMerge merges the constraint block into the workspace root
+// pyproject.toml. It returns nil when there is no workspace root or when
+// constraints are not managed (--no-constraints).
+func (p *Pipeline) planRootMerge(deps []string, opts MergeOptions) (*rootMerge, error) {
+	if p.workspaceRoot == "" || opts.SkipConstraints {
+		return nil, nil
+	}
+	path := filepath.Join(p.workspaceRoot, pyprojectFile)
+	base, err := os.ReadFile(path)
+	if err != nil {
+		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "read workspace root pyproject.toml %s failed", filepath.ToSlash(path)))
+	}
+	merged, changed, replaced, err := MergeToolUvBlock(base, deps)
+	if err != nil {
+		return nil, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge workspace root constraints failed"))
+	}
+	// Earlier pins are replaced, whether an earlier run (maybe for another
+	// bundle) wrote them or the user did, and the new ones apply to every member.
+	if replaced {
+		p.res.Warnings = append(p.res.Warnings, Warning{
+			Code:    WarnUvWorkspaceConstraintsReplaced,
+			Message: fmt.Sprintf("the constraint pins in %s are replaced; all members of this uv workspace share them", filepath.ToSlash(path)),
+		})
+	}
+	return &rootMerge{path: path, base: base, merged: merged, changed: changed}, nil
 }
 
 // pyprojectDiff renders the unified diff the --dry-run plan reports for one
@@ -492,7 +579,7 @@ func pyprojectDiff(label string, base, merged []byte, greenfield bool) string {
 
 // applyMerge writes the merged bytes to disk, backing up the current
 // pyproject.toml first. From the backup copy onward, disk has been mutated.
-func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield bool) error {
+func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, root *rootMerge, greenfield bool) error {
 	backup, mutated, perr := p.writePyproject(p.pyprojectPath(), mergedBytes, greenfield)
 	// A backup written before a failed write is still reported, so the consumer
 	// can restore from it.
@@ -501,6 +588,18 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 	}
 	if perr != nil {
 		return p.fail(PhaseMerge, mutated, perr)
+	}
+	if root != nil && root.changed {
+		// The member is written first, so a root failure reports disk as mutated
+		// when either write changed it.
+		rootBackup, rootMutated, perr := p.writePyproject(root.path, root.merged, false)
+		if rootBackup != "" {
+			p.res.UvWorkspaceBackupPath = filepath.ToSlash(rootBackup)
+		}
+		if perr != nil {
+			perr.Msg = "uv workspace root: " + perr.Msg
+			return p.fail(PhaseMerge, mutated || rootMutated, perr)
+		}
 	}
 	return nil
 }
@@ -655,7 +754,8 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string,
 	// venvPath is reported relative to the project root (spec §6.1), not as an
 	// absolute path: the VS Code consumer already knows the project root (it sets
 	// the working directory when it shells out). For a standalone project this is
-	// ".venv".
+	// ".venv"; for a workspace member it is computed between the symlink-resolved
+	// folders (see discoverWorkspaceRoot), for example "../../.venv".
 	p.res.VenvPath = filepath.ToSlash(p.venvRel)
 	if p.res.Resolved != nil {
 		if managed {
