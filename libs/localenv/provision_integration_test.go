@@ -107,18 +107,20 @@ func TestProvisionCreatesAndValidatesVenv(t *testing.T) {
 		"expected databricks-connect major 17, got %q", res.Resolved.DBConnectVersion)
 }
 
-// TestProvisionWorkspaceMember runs the real pipeline from a member of a uv
-// workspace with two members. uv sync creates the shared venv at the workspace
-// root, the constraint block lands in the root pyproject.toml, and uv applies it
-// (the lock honors the artifact's pyarrow<19 pin, a databricks-connect
-// dependency).
-func TestProvisionWorkspaceMember(t *testing.T) {
-	requireRealProvision(t)
+// requireUvWorkspaceDir skips unless uv has `uv workspace dir` (uv 0.9.9+).
+func requireUvWorkspaceDir(t *testing.T) {
+	t.Helper()
 	if _, err := process.Background(t.Context(), []string{mustUv(t, t.Context()), "workspace", "dir", "--help"}); err != nil {
 		t.Skipf("uv has no `workspace dir` command (added in uv 0.9.9): %v", err)
 	}
+}
+
+// writeUvWorkspace creates a uv workspace with members bundles/<name> and
+// returns its root.
+func writeUvWorkspace(t *testing.T, members ...string) string {
+	t.Helper()
 	root := t.TempDir()
-	for _, m := range []string{"a", "b"} {
+	for _, m := range members {
 		dir := filepath.Join(root, "bundles", m)
 		require.NoError(t, os.MkdirAll(dir, 0o755))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, pyprojectFile),
@@ -126,6 +128,18 @@ func TestProvisionWorkspaceMember(t *testing.T) {
 	}
 	require.NoError(t, os.WriteFile(filepath.Join(root, pyprojectFile),
 		[]byte("[project]\nname = \"root\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n\n[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n"), 0o644))
+	return root
+}
+
+// TestProvisionWorkspaceMember runs the real pipeline from a member of a uv
+// workspace with two members. uv sync creates the shared venv at the workspace
+// root, the constraint block lands in the root pyproject.toml, and uv applies it
+// (the lock honors the artifact's pyarrow<19 pin, a databricks-connect
+// dependency).
+func TestProvisionWorkspaceMember(t *testing.T) {
+	requireRealProvision(t)
+	requireUvWorkspaceDir(t)
+	root := writeUvWorkspace(t, "a", "b")
 	member := filepath.Join(root, "bundles", "a")
 	srv := serverlessConstraintServer(t)
 
@@ -152,6 +166,29 @@ func TestProvisionWorkspaceMember(t *testing.T) {
 	major, err := strconv.Atoi(string(m[1]))
 	require.NoError(t, err)
 	assert.Less(t, major, 19, "the root constraint pyarrow<19 must apply")
+}
+
+// TestProvisionWorkspaceMemberProjectEnvironment runs the real pipeline from a
+// workspace member with a relative UV_PROJECT_ENVIRONMENT, which uv resolves
+// against the workspace root.
+func TestProvisionWorkspaceMemberProjectEnvironment(t *testing.T) {
+	requireRealProvision(t)
+	requireUvWorkspaceDir(t)
+	root := writeUvWorkspace(t, "a")
+	member := filepath.Join(root, "bundles", "a")
+	srv := serverlessConstraintServer(t)
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: false, ProjectDir: member,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "5"},
+		Compute: stubCompute{}, PM: NewUvManager(),
+	}
+	res, err := p.Run(env.Set(realProvisionCtx(t), EnvUvProjectEnvironment, "custom-env"))
+	require.NoError(t, err)
+	assert.Equal(t, "../../custom-env", res.VenvPath)
+	assert.FileExists(t, venvPython(filepath.Join(root, "custom-env")))
+	assert.NoDirExists(t, filepath.Join(root, venvDir))
 }
 
 // TestProvisionValidateIgnoresActiveVirtualEnv is the regression guard for the

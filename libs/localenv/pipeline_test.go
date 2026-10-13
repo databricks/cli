@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1526,4 +1527,144 @@ func TestPyprojectDiffLabels(t *testing.T) {
 	g := pyprojectDiff("pyproject.toml", nil, []byte("b\n"), true)
 	assert.Contains(t, g, "+++ pyproject.toml")
 	assert.NotContains(t, g, ".new")
+}
+
+// resolvedPath returns path with symlinks resolved (macOS temp folders live
+// under /var, a symlink to /private/var).
+func resolvedPath(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+	return resolved
+}
+
+// uvJoinBase returns the folder uv joins a relative UV_PROJECT_ENVIRONMENT to:
+// symlink-resolved on Unix, as given on Windows.
+func uvJoinBase(t *testing.T, base string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return base
+	}
+	return resolvedPath(t, base)
+}
+
+func TestPipelineUsesUvProjectEnvironment(t *testing.T) {
+	// uv puts the project environment at UV_PROJECT_ENVIRONMENT: an absolute
+	// path as is, a relative one against the (symlink-resolved) workspace root,
+	// or the project root outside a workspace.
+	abs := filepath.Join(t.TempDir(), "envs", "proj")
+	tests := []struct {
+		name string
+		// setup returns the project folder, the folder a relative value is
+		// joined to, and the fake package manager.
+		setup        func(t *testing.T) (projectDir, base string, pm fakePM)
+		value        string
+		wantVenv     func(t *testing.T, base string) string
+		wantVenvPath func(venv string) string
+	}{
+		{
+			name: "relative, standalone",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "custom-env",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
+		},
+		{
+			name: "relative, workspace member",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				root, member := memberLayout(t)
+				require.NoError(t, os.WriteFile(filepath.Join(member, pyprojectFile),
+					[]byte("[project]\nname = \"a\"\nversion = \"0.1.0\"\nrequires-python = \">=3.10\"\n"), 0o644))
+				return member, root, fakePM{py: "3.12", dbc: "17.2.0", root: root}
+			},
+			value:        "custom-env",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "../../custom-env" },
+		},
+		{
+			name: "relative with .. through a symlinked project",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS == "windows" {
+					t.Skip("symlinks need extra privileges on Windows")
+				}
+				real := writeProject(t)
+				link := filepath.Join(t.TempDir(), "link")
+				require.NoError(t, os.Symlink(real, link))
+				return link, real, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value: filepath.Join("..", "env"),
+			wantVenv: func(t *testing.T, base string) string {
+				return filepath.Join(filepath.Dir(resolvedPath(t, base)), "env")
+			},
+			wantVenvPath: func(string) string { return "../env" },
+		},
+		{
+			name: "relative with a trailing slash",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        "custom-env/",
+			wantVenv:     func(t *testing.T, base string) string { return filepath.Join(uvJoinBase(t, base), "custom-env") },
+			wantVenvPath: func(string) string { return "custom-env" },
+		},
+		{
+			// On Windows a rooted path keeps the drive of the root, as in uv.
+			name: "rooted without a drive",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a rooted path without a drive exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:    `\envs\x`,
+			wantVenv: func(t *testing.T, base string) string { return filepath.VolumeName(base) + `\envs\x` },
+			// The drive comes from the project.
+			wantVenvPath: filepath.ToSlash,
+		},
+		{
+			// A Windows drive-relative value such as C:envs\x names a folder on
+			// that drive; uv uses it as is, so does the CLI.
+			name: "drive-relative",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				if runtime.GOOS != "windows" {
+					t.Skip("a drive-relative path exists only on Windows")
+				}
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        `C:envs\x`,
+			wantVenv:     func(*testing.T, string) string { return `C:envs\x` },
+			wantVenvPath: func(string) string { return "C:envs/x" },
+		},
+		{
+			name: "absolute",
+			setup: func(t *testing.T) (string, string, fakePM) {
+				dir := writeProject(t)
+				return dir, dir, fakePM{py: "3.12", dbc: "17.2.0"}
+			},
+			value:        abs,
+			wantVenv:     func(*testing.T, string) string { return abs },
+			wantVenvPath: func(string) string { return filepath.ToSlash(abs) },
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, base, fake := tc.setup(t)
+			pm := &venvRecordingPM{fakePM: fake}
+			p := newServerlessTestPipeline(t, projectDir)
+			p.PM = pm
+
+			res, err := p.Run(env.Set(t.Context(), EnvUvProjectEnvironment, tc.value))
+			require.NoError(t, err)
+			want := tc.wantVenv(t, base)
+			assert.Equal(t, want, pm.postProvisionVenv)
+			assert.Equal(t, want, pm.validateVenv)
+			assert.Equal(t, tc.wantVenvPath(want), res.VenvPath)
+		})
+	}
 }
