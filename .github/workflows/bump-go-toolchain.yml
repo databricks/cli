@@ -125,3 +125,14 @@ jobs:
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m "Add changelog fragment"
           git push origin "HEAD:$BRANCH"
+
+      # This PR is opened with GITHUB_TOKEN, which does not trigger the
+      # pull_request auto-merge workflow, so enable auto-merge here instead. It
+      # still blocks on the required maintainer approval. Idempotent across the
+      # daily re-runs of this workflow on the fixed branch.
+      - name: Enable auto-merge
+        if: steps.cpr.outputs.pull-request-number
+        env:
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto "$PR"
