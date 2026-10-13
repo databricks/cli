@@ -1,1 +1,2 @@
+# invalid databricks.yml to show that `pipelines history PIPELINE_ID` bypasses the bundle
 bundle: invalid
