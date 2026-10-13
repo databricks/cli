@@ -85,7 +85,8 @@ const (
 )
 
 type agentSpec struct {
-	name string
+	name          string
+	telemetryName protos.SshAgentShimAgent
 	// contextFlag passes the context file via this CLI flag (Claude's --append-system-prompt-file).
 	contextFlag string
 	// contextHomeFile writes the context to this $HOME instructions file (codex's AGENTS.md).
@@ -94,8 +95,8 @@ type agentSpec struct {
 
 // Currently limited to the agents whose Unity Gateway CLI command supports --workspace
 var supportedAgents = []agentSpec{
-	{name: "claude", contextFlag: "--append-system-prompt-file"},
-	{name: "codex", contextHomeFile: ".codex/AGENTS.md"},
+	{name: "claude", telemetryName: protos.SshAgentShimAgentClaudeCode, contextFlag: "--append-system-prompt-file"},
+	{name: "codex", telemetryName: protos.SshAgentShimAgentCodex, contextHomeFile: ".codex/AGENTS.md"},
 }
 
 // SupportedAgentNames lists the agents the ssh command registers a subcommand for.
@@ -237,22 +238,18 @@ func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimO
 // buildAgentShimEvent maps the agent name and outcome onto the telemetry event. It is
 // separated from logAgentShimEvent so the field mapping can be unit tested.
 func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+	// lookup agent by name so this function is the single decision point for
+	// telemetry and is easily testable
+	telemetryName := protos.SshAgentShimAgentUnspecified
+	agent, ok := agentByName(agentName)
+	if ok {
+		telemetryName = agent.telemetryName
+	}
 	return &protos.SshAgentShimEvent{
-		Agent:           agentNameToAgentEnum(agentName),
+		Agent:           telemetryName,
 		IsSuccess:       outcome.err == nil,
 		ErrorCategory:   outcome.category(),
 		SetupDurationMs: setupDuration.Milliseconds(),
-	}
-}
-
-func agentNameToAgentEnum(agentName string) protos.SshAgentShimAgent {
-	switch agentName {
-	case "claude":
-		return protos.SshAgentShimAgentClaudeCode
-	case "codex":
-		return protos.SshAgentShimAgentCodex
-	default:
-		return protos.SshAgentShimAgentUnspecified
 	}
 }
 

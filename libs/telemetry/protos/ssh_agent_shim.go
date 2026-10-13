@@ -82,7 +82,7 @@ const (
 )
 
 // The agent for an `ssh agent-shim <agent>` command invocation. Values are in
-// screaming snake case to match what JSON->proto serialization expects.
+// screaming snake case to match what JSON->proto deserialization expects.
 type SshAgentShimAgent string
 
 const (

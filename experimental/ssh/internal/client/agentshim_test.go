@@ -566,13 +566,16 @@ func TestProbeModelServicesPageError(t *testing.T) {
 
 func TestBuildAgentShimEvent(t *testing.T) {
 	for _, agent := range supportedAgents {
-		// This test will fail when you add a new supported agent without adding a new
-		// `SshAgentShimAgent` value in `libs/telemetry/protos/ssh_agent_shim.go`
-		t.Run(fmt.Sprintf("maps %s to an enum for telemetry", agent.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s has an appropriate enum for telemetry", agent.name), func(t *testing.T) {
 			got := buildAgentShimEvent(agent.name, agentShimOutcome{}, 0)
 			assert.NotEqual(t, protos.SshAgentShimAgentUnspecified, got.Agent)
 		})
 	}
+
+	t.Run("maps an unknown agent to unspecified", func(t *testing.T) {
+		got := buildAgentShimEvent("wibble", agentShimOutcome{}, 0)
+		assert.Equal(t, protos.SshAgentShimAgentUnspecified, got.Agent)
+	})
 
 	t.Run("successful launch reports success and no category", func(t *testing.T) {
 		got := buildAgentShimEvent("claude", agentShimOutcome{}, 1500*time.Millisecond)
