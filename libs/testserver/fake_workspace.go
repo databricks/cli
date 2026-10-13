@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -99,7 +100,14 @@ var (
 	idMutex      sync.Mutex
 	lastNowNano  int64
 	lastNowMilli int64
+	workspaceID  atomic.Int64
 )
+
+// nextWorkspaceID starts above common version numbers and counts, which scripts
+// can otherwise mask when registering literal ID replacements.
+func nextWorkspaceID() int64 {
+	return 1000 + workspaceID.Add(1)
+}
 
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
 func nextID() int64 {
@@ -444,22 +452,22 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace",
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			"/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			"/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			"/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			// The user home also exists under the /Workspace alias on real
 			// workspaces, so model it here too. Imports require the parent
@@ -467,17 +475,17 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			"/Workspace/Users": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users",
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			"/Workspace/Users/" + TestUser.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUser.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			"/Workspace/Users/" + TestUserSP.UserName: {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace/Users/" + TestUserSP.UserName,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 		},
 		files:        make(map[string]FileEntry),
@@ -824,7 +832,7 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 			s.directories[dir] = workspace.ObjectInfo{
 				ObjectType: "DIRECTORY",
 				Path:       dir,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			}
 		}
 	}
@@ -1049,7 +1057,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
 				Language:   lang,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			Data: body,
 		}
@@ -1061,7 +1069,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 			Info: workspace.ObjectInfo{
 				ObjectType: "FILE",
 				Path:       workspacePath,
-				ObjectId:   nextID(),
+				ObjectId:   nextWorkspaceID(),
 			},
 			Data: body,
 		}
@@ -1119,7 +1127,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 			ObjectType: "NOTEBOOK",
 			Path:       filePath,
 			Language:   language,
-			ObjectId:   nextID(),
+			ObjectId:   nextWorkspaceID(),
 		},
 		Data: body,
 	}

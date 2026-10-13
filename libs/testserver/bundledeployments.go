@@ -74,7 +74,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	if resp, ok := s.requireParentDirectory(nodePath); !ok {
 		return resp
 	}
-	objectID := nextID()
+	objectID := nextWorkspaceID()
 	s.files[nodePath] = FileEntry{
 		Info: workspace.ObjectInfo{
 			// The service registers its own node type, which get-status reports back;

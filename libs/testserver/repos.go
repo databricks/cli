@@ -26,7 +26,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 		}
 	}
 
-	repoId := nextID()
+	repoId := nextWorkspaceID()
 	id := strconv.FormatInt(repoId, 10)
 
 	repoInfo := workspace.RepoInfo{

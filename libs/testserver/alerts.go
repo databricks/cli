@@ -143,7 +143,7 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 		Info: workspace.ObjectInfo{
 			ObjectType: "FILE",
 			Path:       filePath,
-			ObjectId:   nextID(),
+			ObjectId:   nextWorkspaceID(),
 		},
 		Data: data,
 	}
