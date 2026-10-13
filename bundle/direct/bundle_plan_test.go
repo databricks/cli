@@ -187,6 +187,22 @@ func TestSchemaCatalogRemoteOnlyPropertiesSkipped(t *testing.T) {
 				Remote: map[string]string{"owner": "root"},
 			})
 			assert.True(t, ok)
+
+			_, ok = shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{
+				Old:    map[string]string{"owner": "root"},
+				New:    map[string]string{"owner": "root"},
+				Remote: map[string]string{"owner": "other"},
+			})
+			assert.False(t, ok)
+
+			child, err := structpath.ParsePath("properties['owner']")
+			require.NoError(t, err)
+			_, ok = shouldSkipBackendDefault(cfg, child, &deployplan.ChangeDesc{
+				Old:    "root",
+				New:    "root",
+				Remote: "other",
+			})
+			assert.False(t, ok)
 		})
 	}
 }
