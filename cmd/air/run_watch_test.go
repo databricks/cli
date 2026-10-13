@@ -196,8 +196,7 @@ func watchServerCompleted(t *testing.T) *httptest.Server {
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
 			_, _ = w.Write([]byte(runningRunBody))
 		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
-			newestFirst := r.URL.Query().Get("ascending") == "false"
-			_, _ = w.Write([]byte(logsBody(t, 1, 0, "0", append([]string{"step 1"}, successSummary...), newestFirst)))
+			_, _ = w.Write([]byte(logsBody(t, append([]string{"step 1"}, successSummary...))))
 		default:
 			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
 		}

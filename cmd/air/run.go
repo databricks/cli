@@ -203,8 +203,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// --watch: stream the submitted run's logs until it reaches a terminal
 		// state, then exit with the run's outcome. This is the same pipeline as
 		// `air logs <run>` (Bricklens with MLflow fallback). It exits early once
-		// every node's entry script reports success, since Jobs lags the user
-		// command's exit by tens of seconds.
+		// the streamed node's entry script reports success, since Jobs lags the
+		// user command's exit by tens of seconds.
 		maxRetries := cfg.maxRetries()
 		req := logRequest{
 			runID:            runID,
@@ -370,8 +370,8 @@ func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, run
 	if err != nil {
 		return "UNKNOWN"
 	}
-	// A stream that returned success on a still-active run stopped early on every
-	// node's success summary; Jobs reports the run terminal only later.
+	// A stream that returned success on a still-active run stopped early on the
+	// streamed node's success summary; Jobs reports the run terminal only later.
 	if streamErr == nil && !status.terminal() {
 		return "SUCCESS"
 	}

@@ -35,7 +35,6 @@ func (r logRecord) nano() int64 {
 type bricklensLogsResponse struct {
 	LogRecords    []logRecord `json:"log_records"`
 	NextPageToken string      `json:"next_page_token"`
-	NodeCount     int         `json:"node_count"`
 }
 
 // bricklensLogsQuery is the request-field surface of the log endpoint.

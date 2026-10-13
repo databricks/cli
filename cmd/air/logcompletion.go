@@ -16,7 +16,7 @@ import "strings"
 // "Completed at" is printed only for exit code 0; a failure prints "ERROR: Script
 // failed ..." instead, which is not treated as completion because the run may be
 // retried. Jobs reports the run terminal tens of seconds after the block, so
-// `air run --watch` uses it to stop as soon as every node has succeeded.
+// `air run --watch` uses it to stop as soon as the streamed node has succeeded.
 const (
 	summaryHeader         = "Execution Summary"
 	summaryRulePrefix     = "===="
@@ -25,13 +25,9 @@ const (
 	summarySuccessPrefix  = "Completed at "
 )
 
-// completionTailLines is how many of a node's newest log lines are searched for
-// the summary block.
-const completionTailLines = 20
-
 // completionMatcher recognizes the entry script's success summary in one node's
-// log lines, fed oldest-first. Only a consecutive block matches, so user output
-// that happens to contain one of the lines does not.
+// log lines, fed oldest-first across polls. Only a consecutive block matches, so
+// user output that happens to contain one of the lines does not.
 type completionMatcher struct {
 	step      int
 	completed bool

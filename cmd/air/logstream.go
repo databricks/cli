@@ -114,9 +114,9 @@ type logRequest struct {
 	// `air run --watch -o json` to emit STATUS events.
 	onStatusChange func(current, previous string)
 	retryTracker   *retryTracker
-	// exitOnCompletion ends the stream once every node of the latest attempt has
-	// printed the entry script's success summary, without waiting for Jobs to
-	// report the run terminal. Used by `air run --watch`.
+	// exitOnCompletion ends the stream once the streamed node prints the entry
+	// script's success summary, without waiting for Jobs to report the run
+	// terminal. Used by `air run --watch`.
 	exitOnCompletion bool
 }
 
@@ -359,16 +359,8 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
-	// nodeCount is the run's node count as reported by the log endpoint; 0 until
-	// a response carries it.
-	nodeCount int
-	// completion watches the streamed node for the success summary of
-	// completionAttempt and only triggers allNodesCompleted. completedNodes counts
-	// the leading nodes confirmed to have succeeded on that attempt, so a check
-	// resumes where the last one stopped. A retry resets all three.
-	completion        completionMatcher
-	completionAttempt int
-	completedNodes    int
+	// completion watches the streamed node's new lines for the success summary.
+	completion completionMatcher
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -474,11 +466,6 @@ func (st *bricklensStreamer) run() (bool, error) {
 
 		st.reportStatusChange()
 		st.req.reportRetry(st.ctx, st.out, st.status, st.onFirstLog)
-		if st.status.latestAttempt != st.completionAttempt {
-			st.completion = completionMatcher{}
-			st.completionAttempt = st.status.latestAttempt
-			st.completedNodes = 0
-		}
 
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
@@ -537,8 +524,8 @@ func (st *bricklensStreamer) run() (bool, error) {
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
 		}
-		if st.req.exitOnCompletion && st.allNodesCompleted() {
-			log.Infof(st.ctx, "air logs: run %d completed on all %d node(s); not waiting for Jobs to report it terminal", st.req.runID, st.nodeCount)
+		if st.req.exitOnCompletion && st.completion.completed {
+			log.Infof(st.ctx, "air logs: run %d succeeded on node %d; not waiting for Jobs to report it terminal", st.req.runID, st.req.node)
 			return true, nil
 		}
 		if !st.firstLogSeen {
@@ -554,45 +541,6 @@ func (st *bricklensStreamer) run() (bool, error) {
 			return false, err
 		}
 	}
-}
-
-// allNodesCompleted reports whether every node of completionAttempt has printed
-// the entry script's success summary. Every node, the streamed one included, is
-// read with an explicit attempt number, so all summaries come from the same
-// attempt. A node that succeeded stays succeeded, so later calls resume at the
-// first unconfirmed node. Best effort: an unknown node count or a failed fetch
-// reads as not completed, so the stream keeps following the run.
-func (st *bricklensStreamer) allNodesCompleted() bool {
-	if !st.completion.completed || st.nodeCount < 1 {
-		return false
-	}
-	for ; st.completedNodes < st.nodeCount; st.completedNodes++ {
-		if !st.nodeCompleted(st.completedNodes) {
-			return false
-		}
-	}
-	return true
-}
-
-// nodeCompleted searches the newest lines of a node's log for completionAttempt
-// for the success summary. From the stream start rather than the live cursor,
-// since the node may have finished before the lookback window.
-func (st *bricklensStreamer) nodeCompleted(node int) bool {
-	resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, bricklensLogsQuery{
-		fromSeconds:   st.streamStartSec,
-		pageSize:      completionTailLines,
-		attemptNumber: st.completionAttempt,
-		nodeIndex:     node,
-	})
-	if err != nil {
-		log.Debugf(st.ctx, "air logs: completion check for node %d failed: %v", node, err)
-		return false
-	}
-	var m completionMatcher
-	for _, rec := range slices.Backward(resp.LogRecords) {
-		m.observe(rec.Body)
-	}
-	return m.completed
 }
 
 func waitForNextBricklensPoll(ctx context.Context, pollStarted time.Time) error {
@@ -741,7 +689,6 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 	for {
 		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, q)
 		if err == nil {
-			st.nodeCount = max(st.nodeCount, resp.NodeCount)
 			return resp, nil
 		}
 
