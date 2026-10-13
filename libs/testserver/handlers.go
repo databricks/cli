@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -29,11 +30,55 @@ var TestMetastore = catalog.MetastoreAssignment{
 	WorkspaceId:        TestWorkspaceID,
 }
 
+// Extensions that format=AUTO maps to workspace asset types /workspace/import
+// cannot create, so the real endpoint rejects such uploads. Source of truth is
+// workspace-hierarchy/config/AssetConfig.scala in universe.
+var autoImportReservedExtensions = []string{
+	".dbcluster.json",
+	".dbclusterpolicy.json",
+	".dbjob.json",
+	".dbpipeline.json",
+	".deployment.json",
+	".geniedoc.json",
+	".geniespace.json",
+	".lakebase.json",
+	".lakebridge.json",
+	".lwquery.ipynb",
+	".omnigentchildsession.json",
+	".omnigentsession.json",
+}
+
+// autoImportUnsupported returns the response for a format=AUTO upload of filePath
+// that the real endpoint would not store as a file or notebook.
+func autoImportUnsupported(filePath string) (Response, bool) {
+	name := strings.ToLower(filePath)
+	if strings.HasSuffix(name, ".zip") {
+		// AUTO imports a .zip as a folder, which the fake does not model.
+		return Response{
+			Body:       "internal error: The test server does not support AUTO folder imports of .zip archives.",
+			StatusCode: http.StatusInternalServerError,
+		}, true
+	}
+	for _, ext := range autoImportReservedExtensions {
+		if strings.HasSuffix(name, ext) {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "Requested node type [UNKNOWN] is not supported",
+				},
+			}, true
+		}
+	}
+	return Response{}, false
+}
+
 // ImportForm holds the fields of a multipart /workspace/import request.
 type ImportForm struct {
 	Path      string
 	Content   []byte
 	Format    string
+	Language  string
 	Overwrite bool
 }
 
@@ -64,6 +109,8 @@ func ParseImportForm(req Request) (ImportForm, error) {
 			form.Content = data
 		case "format":
 			form.Format = string(data)
+		case "language":
+			form.Language = string(data)
 		case "overwrite":
 			form.Overwrite = string(data) == "true"
 		}
@@ -211,9 +258,24 @@ func AddDefaultHandlers(server *Server) {
 			// Require format explicitly: the real endpoint defaults to SOURCE, which
 			// would import every upload as a notebook, so a caller that drops the
 			// field is a bug rather than a request for the fake's usual behavior.
-			if form.Format != string(workspace.ImportFormatAuto) {
+			var resp Response
+			switch form.Format {
+			case string(workspace.ImportFormatRaw):
+				resp = req.Workspace.WorkspaceImportRawFile(form.Path, form.Content, form.Overwrite)
+			case string(workspace.ImportFormatSource):
+				resp = req.Workspace.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
+			case string(workspace.ImportFormatJupyter):
+				// The real endpoint reads the language from the notebook metadata.
+				_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
+				resp = req.Workspace.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
+			case string(workspace.ImportFormatAuto):
+				if unsupported, ok := autoImportUnsupported(form.Path); ok {
+					return unsupported
+				}
+				resp = req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+			default:
 				return Response{
-					Body:       fmt.Sprintf("internal error: The test server only supports auto format, got %q.", form.Format),
+					Body:       fmt.Sprintf("internal error: The test server only supports AUTO and RAW formats, got %q.", form.Format),
 					StatusCode: http.StatusInternalServerError,
 				}
 			}
@@ -222,7 +284,6 @@ func AddDefaultHandlers(server *Server) {
 			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import
 			// endpoint, including the AIP-193 ErrorInfo detail it attaches to path
 			// collisions (universe PR #2019174, WP-6031).
-			resp := req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 			if resp.StatusCode == http.StatusConflict {
 				return Response{
 					StatusCode: http.StatusBadRequest,

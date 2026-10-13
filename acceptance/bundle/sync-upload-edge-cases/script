@@ -22,8 +22,8 @@ python3 -c "open('large.bin', 'wb').write(b'\\0' * (12 * 1024 * 1024))"
 # Empty file (multipart encodes an empty `content` part — distinct from JSON's empty string).
 touch empty.txt
 
-# Python notebook: auto-detected as NOTEBOOK by /workspace/import; testserver mirrors
-# this and stores the object at the path with .py stripped.
+# Python notebook: the CLI detects the header and imports it with format=SOURCE at the
+# path with .py stripped.
 cat > pyNb.py <<'EOF'
 # Databricks notebook source
 print("hello")
@@ -41,17 +41,29 @@ cat > scalaNb.scala <<'EOF'
 println("hello")
 EOF
 
+# ipyNb.ipynb and query.lwquery.ipynb are committed Jupyter notebooks. The second name
+# ends in a suffix /workspace/import reserves for another asset type; it must still
+# import as a notebook.
+
 # Plain .py without the source header — should land as FILE, not NOTEBOOK,
 # even though the extension is .py.
 cat > plain-script.py <<'EOF'
 print("plain script, no header")
 EOF
 
-# Lakeview dashboard descriptor: the real /workspace/import assigns object_type=DASHBOARD
-# and preserves the .lvdash.json extension. The testserver doesn't emulate that and stores
-# it as a generic FILE — but the upload-side request shape (which is what this test asserts)
-# is identical.
+# Lakeview dashboard descriptor: uploaded with format=AUTO, which the real /workspace/import
+# imports as object_type=DASHBOARD and preserves the .lvdash.json extension. The testserver
+# doesn't emulate that and stores it as a generic FILE — but the upload-side request shape
+# (which is what this test asserts) is identical.
 echo '{"datasets":[],"pages":[]}' > dashboard.lvdash.json
+
+# Names format=AUTO would map to asset types /workspace/import cannot create
+# ("Requested node type [UNKNOWN] is not supported"). They must still sync as files.
+echo '{}' > space.geniespace.json
+echo '{}' > job.dbjob.json
+
+# format=AUTO imports a .zip as a folder; the archive must instead sync as a file.
+python3 -c "import zipfile; zipfile.ZipFile('archive.zip', 'w').writestr('inner.txt', 'hello')"
 
 # Non-ASCII filename. Multipart encodes filenames with RFC 5987 / quoted-string rules,
 # distinct from URL-encoding in the legacy import-file endpoint.
@@ -73,16 +85,18 @@ trace MSYS_NO_PATHCONV=1 $CLI workspace list -o json "$remote_files" |
 title "uploaded paths from each multipart POST /workspace/import (sorted)"
 trace print_workspace_imports | sort
 
-title "every upload set format=AUTO"
+title "format per upload: SOURCE/JUPYTER for notebooks, AUTO for dashboards, RAW for everything else"
 trace jq -rs '
   map(select(.path == "/api/2.0/workspace/import")) |
-  map(.body.multipart_form.format) | unique
+  map(select(.body.multipart_form.path | test("/files/"))) |
+  map({name: (.body.multipart_form.path | sub(".*/"; "")), format: .body.multipart_form.format}) |
+  sort_by(.name) | .[] | "\(.format) \(.name)"
 ' "$OUT_REQUESTS"
 
 title "recorded content for the small text inputs"
 trace jq -rs '
   map(select(.path == "/api/2.0/workspace/import")) |
-  map(select(.body.multipart_form.path | test("/(pyNb\\.py|sqlNb\\.sql|scalaNb\\.scala|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
+  map(select(.body.multipart_form.path | test("/(pyNb|sqlNb|scalaNb|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
   map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
   sort_by(.path) | .[]
 ' "$OUT_REQUESTS"

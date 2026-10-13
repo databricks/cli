@@ -154,7 +154,7 @@
   "body": {
     "multipart_form": {
       "content": "{\"ID\":\"[UUID]\",\"AcquisitionTime\":\"[TIMESTAMP]\",\"IsForced\":false,\"User\":\"[USERNAME]\"}",
-      "format": "AUTO",
+      "format": "RAW",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
     }
   }

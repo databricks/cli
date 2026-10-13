@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"path"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -108,6 +110,39 @@ type apiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
+// Extensions that format=AUTO imports as the same asset type the legacy import-file
+// endpoint created: dashboards, alerts and Lakeflow Designer files.
+var autoImportAssetExtensions = []string{".lvdash.json", ".dbalert.json", ".designer.py", ".designer.ipynb"}
+
+// importRequest returns the workspace path and /workspace/import options for a file,
+// matching how the legacy import-file endpoint stored it. Other files avoid format=AUTO
+// because it types them by name: it rejects names reserved for other assets
+// (e.g. .geniespace.json, .lwquery.ipynb) and imports .zip archives as folders.
+func importRequest(absPath string, content []byte) (string, []workspace.UploadOption) {
+	lower := strings.ToLower(absPath)
+	for _, ext := range autoImportAssetExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
+		}
+	}
+
+	isNotebook, language, _ := notebook.DetectBytes(absPath, content)
+	if !isNotebook {
+		return absPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatRaw)}
+	}
+
+	// Notebooks are imported without their extension and with an explicit format.
+	ext := path.Ext(absPath)
+	notebookPath := strings.TrimSuffix(absPath, ext)
+	if strings.EqualFold(ext, notebook.ExtensionJupyter) {
+		return notebookPath, []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatJupyter)}
+	}
+	return notebookPath, []workspace.UploadOption{
+		workspace.UploadFormat(workspace.ImportFormatSource),
+		workspace.UploadLanguage(language),
+	}
+}
+
 // WorkspaceFilesClient implements the files-in-workspace API.
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
@@ -158,15 +193,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Upload with the SDK's multipart Workspace.Upload; format=AUTO lets the server
-	// classify each payload as file or notebook. The JSON-body workspace.Import caps
-	// content at 10 MB, the multipart form at the 500 MB workspace file limit.
-	opts := []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
+	// Upload with the SDK's multipart Workspace.Upload. The JSON-body workspace.Import
+	// caps content at 10 MB, the multipart form at the 500 MB workspace file limit.
+	uploadPath, opts := importRequest(absPath, body)
 	if slices.Contains(mode, OverwriteIfExists) {
 		opts = append(opts, workspace.UploadOverwrite())
 	}
 
-	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), opts...)
+	err = w.workspaceClient.Workspace.Upload(ctx, uploadPath, bytes.NewReader(body), opts...)
 
 	// Return early on success.
 	if err == nil {

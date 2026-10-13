@@ -912,6 +912,16 @@ func detectNotebookLanguage(extension string, body []byte) (workspace.Language, 
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, true)
+}
+
+// WorkspaceImportRawFile stores body as a file without notebook detection, as
+// /workspace/import does for format=RAW.
+func (s *FakeWorkspace) WorkspaceImportRawFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, false)
+}
+
+func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, detectNotebooks bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -938,7 +948,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 	// line-comment syntax. Mirror the real workspace's auto-detection here so
 	// acceptance tests can assert the resulting object_type via /workspace/list.
 	extension := filepath.Ext(filePath)
-	if lang, isNotebook := detectNotebookLanguage(extension, body); isNotebook {
+	if lang, isNotebook := detectNotebookLanguage(extension, body); detectNotebooks && isNotebook {
 		// Notebooks are stripped of their extension by the workspace import API.
 		workspacePath = strings.TrimSuffix(filePath, extension)
 		s.files[workspacePath] = FileEntry{
