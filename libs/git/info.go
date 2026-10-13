@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
@@ -41,7 +43,7 @@ type response struct {
 	GitInfo *gitInfo `json:"git_info,omitempty"`
 }
 
-// Fetch repository information either by quering .git or by fetching it from API (for dabs-in-workspace case).
+// FetchRepositoryInfo reads Workspace Git metadata or a local .git checkout.
 //   - In case we could not find git repository (including when the path does not exist), all string fields of RepositoryInfo will be "" and err will be nil.
 //   - If there were any errors when trying to determine git root (e.g. API call returned an error or there were permission issues
 //     reading the file system), all strings fields of RepositoryInfo will be "" and err will be non-nil.
@@ -52,7 +54,7 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	var info RepositoryInfo
 	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		info, err = FetchRepositoryInfoAPI(ctx, path, w)
+		info, err = fetchRepositoryInfoFromWorkspace(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
 	}
@@ -67,10 +69,45 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	return info, err
 }
 
-// FetchRepositoryInfoAPI reads the metadata from the workspace API, which is what
-// FetchRepositoryInfo does on a Databricks Runtime. Exported so that
-// `bundle debug fetch-repository-info --workspace-api` can reach this path
-// off-runtime; the product calls it through FetchRepositoryInfo.
+func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+	info, err := FetchRepositoryInfoAPI(ctx, path, w)
+	if err != nil || info.WorktreeRoot != "" {
+		return info, err
+	}
+
+	// Linked worktrees lack Workspace Git metadata but have a local .git file.
+	localPath := path
+	localInfo, err := os.Stat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return info, nil
+	}
+	if err != nil {
+		return info, err
+	}
+	if !localInfo.IsDir() {
+		localPath = filepath.Dir(path)
+	}
+
+	root, err := folders.FindDirWithLeaf(localPath, GitDirectoryName)
+	if errors.Is(err, fs.ErrNotExist) {
+		return info, nil
+	}
+	if err != nil {
+		return info, err
+	}
+	gitFile, err := os.Lstat(filepath.Join(root, GitDirectoryName))
+	if err != nil {
+		return info, err
+	}
+	if !gitFile.Mode().IsRegular() {
+		return info, nil
+	}
+	return fetchRepositoryInfoDotGit(ctx, root)
+}
+
+// FetchRepositoryInfoAPI reads Workspace Git metadata, the primary source on a Runtime.
+// It is exported so `bundle debug fetch-repository-info --workspace-api` can use this backend
+// off Runtime; normal commands call FetchRepositoryInfo.
 //
 // A path that does not exist is reported as fs.ErrNotExist; callers that treat
 // that as "no repository here" must normalize it the way FetchRepositoryInfo does.
