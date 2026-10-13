@@ -1,5 +1,4 @@
 # --plan is direct-engine only.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # Saved plans don't carry the deployment stamp, so this test skips the DMS variant.
 EnvMatrix.DMS = [""]
 RecordRequests = true

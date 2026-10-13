@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/vfs"
 )
 
@@ -90,11 +90,12 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			continue
 		}
 
+		syncPath := structpath.NewPath(nil, "sync", "paths", i)
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid sync path %q", path),
-			Locations: b.Config.GetLocations(fmt.Sprintf("sync.paths[%d]", i)),
-			Paths:     []dyn.Path{dyn.NewPath(dyn.Key("sync"), dyn.Key("paths"), dyn.Index(i))},
+			Locations: b.Config.GetLocationsOf(syncPath),
+			Paths:     []*structpath.PathNode{syncPath},
 		})
 	}
 

@@ -1,0 +1,36 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/schemas",
+    "body": {
+      "catalog_name": "mycat",
+      "name": "myschema"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Test Migration Job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/files/notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  }
+]

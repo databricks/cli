@@ -1,0 +1,31 @@
+title "mode: development with pipeline development: false: deploy and run both use development: true"
+trace $CLI bundle deploy -t dev_false
+trace print_requests.py //pipelines | jq '{path, development: .body.development}'
+trace $CLI bundle run my_pipeline -t dev_false
+trace print_requests.py //pipelines
+
+title "Switched to mode: development without redeploying: run sends development: true"
+trace $CLI bundle deploy -t switch_to_dev
+rm "$OUT_REQUESTS"
+trace update_file.py databricks.yml "switch_to_dev: {}" "switch_to_dev: {mode: development}"
+trace $CLI bundle run my_pipeline -t switch_to_dev
+trace print_requests.py //pipelines
+
+title "Switched away from mode: development without redeploying: run does not send development"
+trace $CLI bundle deploy -t switch_from_dev
+rm "$OUT_REQUESTS"
+trace update_file.py databricks.yml "switch_from_dev: {mode: development}" "switch_from_dev: {}"
+trace $CLI bundle run my_pipeline -t switch_from_dev
+trace print_requests.py //pipelines
+
+title "Pipeline switched to production outside the bundle: run on a development target sends development: true"
+trace $CLI bundle deploy -t ui_toggle
+pipeline_id="$($CLI bundle summary -t ui_toggle -o json | jq -r '.resources.pipelines.my_pipeline.id')"
+add_repl "$pipeline_id" MY_PIPELINE_ID
+trace DATABRICKS_BUNDLE_TARGET=ui_toggle edit_resource.py pipelines "$pipeline_id" <<EOT
+r["development"] = False
+EOT
+trace DATABRICKS_BUNDLE_TARGET=ui_toggle $CLI pipelines get "$pipeline_id" | jq '.spec.development'
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t ui_toggle
+trace print_requests.py //pipelines

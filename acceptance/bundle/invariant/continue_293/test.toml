@@ -23,6 +23,9 @@ EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
 # cluster_policies resource is not supported on v0.293.0
 EnvMatrixExclude.no_cluster_policy = ["INPUT_CONFIG=cluster_policy.yml.tmpl"]
 
+# cluster libraries (clusters.libraries) are not supported on v0.293.0
+EnvMatrixExclude.no_cluster_libraries = ["INPUT_CONFIG=cluster_libraries.yml.tmpl"]
+
 # job_runs resource is not supported on v0.293.0
 EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
 

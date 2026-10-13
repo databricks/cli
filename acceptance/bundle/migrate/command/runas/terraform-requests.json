@@ -1,0 +1,56 @@
+[
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/directories/8790615267072834001",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_READ"
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "catalog": "main",
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+          }
+        }
+      ],
+      "name": "DABs Revenue Pipeline",
+      "run_as": {
+        "service_principal_name": "123b0db3-ba48-4e12-be3b-3b7898cdf000"
+      },
+      "serverless": true,
+      "target": "team_eng_deco"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/pipelines/79fe8a02-f7fe-ced0-79fe-8a02f7fed2b8",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_VIEW"
+        },
+        {
+          "permission_level": "IS_OWNER",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

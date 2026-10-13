@@ -1,6 +1,0 @@
-Hello from my func
-Got arguments:
-['my_test_code', 'one', 'two']
-UPDATED MY FUNC
-Got arguments:
-['my_test_code', 'one', 'two']

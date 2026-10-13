@@ -1,12 +1,16 @@
 
 >>> [CLI] bundle validate
+Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
+  at sync.exclude
+  in databricks.yml:6:5
+
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Validation OK!
+Found 1 warning
 
 >>> [CLI] bundle plan
 create apps.myapp
@@ -14,7 +18,7 @@ create pipelines.mypipeline
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests.py --nostamp ^//import-file/ ^//api/2.0/bundle
+>>> print_requests.py --nostamp ^//workspace/import ^//api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
@@ -27,10 +31,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created apps.myapp
 Created pipelines.mypipeline
-Files: 1 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --nostamp ^//import-file/ ^//api/2.0/bundle
+>>> print_requests.py --nostamp ^//workspace/import ^//api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
@@ -98,7 +102,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py --nostamp --sort ^//import-file/ ^//api/2.0/bundle
+>>> print_requests.py --nostamp --sort ^//workspace/import ^//api/2.0/bundle
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myapp"

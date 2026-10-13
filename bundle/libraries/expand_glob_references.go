@@ -14,12 +14,12 @@ import (
 
 type expand struct{}
 
-func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
+func matchError(p dyn.Path, l []diag.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   message,
 		Locations: l,
-		Paths:     []dyn.Path{p},
+		Paths:     dyn.ToStructPaths(p),
 	}
 }
 
@@ -198,6 +198,13 @@ var pipelineEnvDepsPattern = dyn.NewPattern(
 	dyn.Key("dependencies"),
 )
 
+var clusterLibrariesPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("clusters"),
+	dyn.AnyKey(),
+	dyn.Key("libraries"),
+)
+
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	expanders := []expandPattern{
 		{
@@ -215,6 +222,10 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		{
 			pattern: pipelineEnvDepsPattern,
 			fn:      expandEnvironmentDeps,
+		},
+		{
+			pattern: clusterLibrariesPattern,
+			fn:      expandLibraries,
 		},
 	}
 

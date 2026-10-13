@@ -11,6 +11,7 @@
     "nextchanges_sections": {
         "notable-changes": "Notable Changes",
         "cli": "CLI",
+        "air": "AI Runtime",
         "bundles": "Bundles",
         "dependency-updates": "Dependency Updates",
         "api-changes": "API Changes"

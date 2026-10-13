@@ -133,6 +133,10 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 		}
 	}
 
+	// Which fields the caller actually sent, so an explicit "comment": "" (the CLI force-sends it
+	// under update_mask=*) clears the value instead of being treated as "not provided".
+	fields, _ := parseUpdateFields(req.Body)
+
 	secret, exists := s.UCSecrets[fullName]
 	if !exists {
 		return Response{
@@ -148,7 +152,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	if updateSecret.Value != "" {
 		secret.Value = updateSecret.Value
 	}
-	if updateSecret.Comment != "" {
+	if _, ok := fields["comment"]; ok {
 		secret.Comment = updateSecret.Comment
 	}
 	if updateSecret.Owner != "" {

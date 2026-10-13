@@ -28,9 +28,7 @@ class DashboardTask:
 
     filters: VariableOrDict[str] = field(default_factory=dict)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+    Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
     The parameter value format is dependent on the filter type:
     - For text and single-select filters, provide a single value (e.g. `"value"`)
     - For date and datetime filters, provide the value in ISO 8601 format (e.g. `"2000-01-01T00:00:00"`)
@@ -67,9 +65,7 @@ class DashboardTaskDict(TypedDict, total=False):
 
     filters: VariableOrDict[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+    Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
     The parameter value format is dependent on the filter type:
     - For text and single-select filters, provide a single value (e.g. `"value"`)
     - For date and datetime filters, provide the value in ISO 8601 format (e.g. `"2000-01-01T00:00:00"`)

@@ -3,7 +3,6 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -145,18 +144,33 @@ func TestBuildCanManageSkipsDuplicateDeployer(t *testing.T) {
 }
 
 func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {
-	// clean=false is the deploy --plan path: the plan already carries the resource and
-	// its staged zip, so Apply must not rebuild, stage, or register anything (and must
-	// not warn), even for a bundle that would otherwise exceed the file limit.
+	// clean=false is the deploy --plan path: the zip staged when the plan was produced is
+	// registered on the config as is, without rebuilding or warning again, even for a
+	// bundle that would otherwise exceed the file limit.
 	ctx := testContext(t)
 	b := makeBundle(t, fileLimitWarning+1)
 	b.SetWorkpaceClient(setupTestClient(t))
-	m := &snapshotUpload{clean: false}
 
-	diags := m.Apply(ctx, b)
+	require.Len(t, (&snapshotUpload{clean: true}).Apply(ctx, b), 1)
+	staged := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]
+	require.NotNil(t, staged)
+
+	b.Config.Resources.Snapshots = nil
+	diags := (&snapshotUpload{clean: false}).Apply(ctx, b)
 
 	require.Empty(t, diags)
-	assert.Nil(t, b.Config.Resources.Snapshots)
-	_, err := os.Stat(b.GetLocalStateDir(ctx, "snapshots"))
-	assert.ErrorIs(t, err, fs.ErrNotExist, "no snapshots dir should be created")
+	reused := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]
+	require.NotNil(t, reused)
+	assert.Equal(t, staged.ZipPath, reused.ZipPath)
+	assert.Equal(t, staged.FullPath(), reused.FullPath())
+}
+
+func TestUploadNotCleanWithoutStagedZip(t *testing.T) {
+	b := makeBundle(t, 5)
+	b.SetWorkpaceClient(setupTestClient(t))
+
+	diags := (&snapshotUpload{clean: false}).Apply(testContext(t), b)
+
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary, "run 'bundle plan' again")
 }

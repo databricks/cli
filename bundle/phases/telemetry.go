@@ -198,6 +198,7 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
+	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.IsDeploymentMetadataService())
 
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -299,11 +300,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
 	}
 
-	// Record whether the deprecated terraform engine was explicitly opted into,
-	// separately per source. Only emitted when true; absence means "not opted in
-	// via this source". An invalid env value has already failed the command
-	// upstream via ResolveEngineSetting, so treating the FromEnv error as
-	// "not terraform" here cannot mask a real terraform opt-in.
+	// Record whether the removed terraform engine was still requested (the command
+	// then fails with the removal error), separately per source. Only emitted when
+	// true; absence means "not requested via this source". An invalid env value has
+	// already failed the command upstream via ValidateEngineSetting, so treating the
+	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
 	}

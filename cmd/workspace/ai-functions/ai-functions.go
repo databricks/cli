@@ -32,6 +32,7 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newAiClassify())
+	cmd.AddCommand(newAiDecide())
 	cmd.AddCommand(newAiExtract())
 	cmd.AddCommand(newAiParseDocument())
 
@@ -66,7 +67,9 @@ func newAiClassify() *cobra.Command {
 	cmd.Short = `Classify text into labels.`
 	cmd.Long = `Classify text into labels.
 
-  Classifies content according to a set of provided labels.`
+  Classifies content according to a set of provided labels. For REST API
+  requests, the default rate limit is 1,200 requests per minute per workspace.
+  Contact your Databricks account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -112,6 +115,79 @@ func newAiClassify() *cobra.Command {
 	return cmd
 }
 
+// start ai-decide command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var aiDecideOverrides []func(
+	*cobra.Command,
+	*aifunctions.AiDecideRequest,
+)
+
+func newAiDecide() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var aiDecideReq aifunctions.AiDecideRequest
+	var aiDecideJson flags.JsonFlag
+
+	cmd.Flags().Var(&aiDecideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: options
+
+	cmd.Use = "ai-decide"
+	cmd.Short = `*Beta* Get fast structured decisions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get fast structured decisions.
+
+  Turn text and structured data into decisions your application can use. Define
+  questions and criteria to choose an option, estimate a probability, or assign
+  a score given a provided state.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := aiDecideJson.Unmarshal(&aiDecideReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		response, err := w.AiFunctions.AiDecide(ctx, aiDecideReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range aiDecideOverrides {
+		fn(cmd, &aiDecideReq)
+	}
+
+	return cmd
+}
+
 // start ai-extract command
 
 // Slice with functions to override default command behavior.
@@ -136,7 +212,9 @@ func newAiExtract() *cobra.Command {
 	cmd.Long = `Extract structured data from text.
 
   Extracts structured data from text and documents according to a provided
-  schema.`
+  schema. For REST API requests, the default rate limit is 120 requests per
+  minute per workspace. Contact your Databricks account team to request a higher
+  limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

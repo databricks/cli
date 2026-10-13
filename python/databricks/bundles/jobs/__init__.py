@@ -7,6 +7,8 @@ __all__ = [
     "AiRuntimeTask",
     "AiRuntimeTaskDict",
     "AiRuntimeTaskParam",
+    "AiRuntimeTaskPriorityClass",
+    "AiRuntimeTaskPriorityClassParam",
     "AlertTask",
     "AlertTaskDict",
     "AlertTaskParam",
@@ -142,6 +144,12 @@ __all__ = [
     "JobEnvironment",
     "JobEnvironmentDict",
     "JobEnvironmentParam",
+    "JobEnvironmentVariables",
+    "JobEnvironmentVariablesDict",
+    "JobEnvironmentVariablesParam",
+    "JobEnvironmentVariablesSpec",
+    "JobEnvironmentVariablesSpecDict",
+    "JobEnvironmentVariablesSpecParam",
     "JobNotificationSettings",
     "JobNotificationSettingsDict",
     "JobNotificationSettingsParam",
@@ -345,6 +353,10 @@ from databricks.bundles.jobs._models.ai_runtime_task import (
     AiRuntimeTask,
     AiRuntimeTaskDict,
     AiRuntimeTaskParam,
+)
+from databricks.bundles.jobs._models.ai_runtime_task_priority_class import (
+    AiRuntimeTaskPriorityClass,
+    AiRuntimeTaskPriorityClassParam,
 )
 from databricks.bundles.jobs._models.alert_task import (
     AlertTask,
@@ -560,6 +572,16 @@ from databricks.bundles.jobs._models.job_environment import (
     JobEnvironment,
     JobEnvironmentDict,
     JobEnvironmentParam,
+)
+from databricks.bundles.jobs._models.job_environment_variables import (
+    JobEnvironmentVariables,
+    JobEnvironmentVariablesDict,
+    JobEnvironmentVariablesParam,
+)
+from databricks.bundles.jobs._models.job_environment_variables_spec import (
+    JobEnvironmentVariablesSpec,
+    JobEnvironmentVariablesSpecDict,
+    JobEnvironmentVariablesSpecParam,
 )
 from databricks.bundles.jobs._models.job_notification_settings import (
     JobNotificationSettings,

@@ -45,5 +45,9 @@ trace $CLI bundle destroy --auto-approve
 
 print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.txt
 
-# Clean up any orphaned old project (terraform doesn't delete it on recreation)
-$CLI postgres delete-project $project_id_1 2>/dev/null || true
+title "Old project is gone after recreate"
+echo
+# Local testserver returns not found; the cloud soft-deletes and returns the project with delete_time set.
+errcode $CLI postgres get-project $project_id_1 &> old_project.tmp
+grep -q -e 'not found' -e '"delete_time"' old_project.tmp && echo "Old project is deleted" || echo "Old project still exists"
+rm old_project.tmp

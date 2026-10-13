@@ -26,3 +26,7 @@ Ignore = [
     "python_wheel_wrapper.yml",
     "empty.yml",
 ]
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

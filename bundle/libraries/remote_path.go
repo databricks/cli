@@ -109,7 +109,7 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 			for _, location := range locations {
 				// Re-append the extras suffix that was stripped before upload.
 				remotePathWithExtras := remotePath + location.extras
-				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePathWithExtras, []dyn.Location{location.location}))
+				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePathWithExtras, []diag.Location{location.location}))
 				if err != nil {
 					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePathWithExtras, err)
 				}
@@ -139,6 +139,8 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		envDepsPattern.Append(dyn.AnyIndex()),
 		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 		// The AI Runtime task's code_source_path is a local archive (typically an

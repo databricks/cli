@@ -12,4 +12,5 @@ Ignore = [
 # Setting this environment variable prevents that conversion on windows.
 Env.MSYS_NO_PATHCONV = "1"
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+# bind is unsupported with deployment-history recording; pin DMS off so it runs on the plain cell.
+EnvMatrix.DMS = [""]

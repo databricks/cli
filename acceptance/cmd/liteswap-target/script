@@ -1,0 +1,15 @@
+title "Workspace command"
+DATABRICKS_LITESWAP_TARGET=dms trace $CLI clusters list
+trace print_requests.py --get //clusters/list
+
+title "Account command"
+DATABRICKS_LITESWAP_TARGET=dms DATABRICKS_ACCOUNT_ID=abc-123 trace $CLI account network-policies list-network-policies-rpc
+trace print_requests.py --get //network-policies
+
+title "Bundle command"
+DATABRICKS_LITESWAP_TARGET=dms trace $CLI bundle validate
+trace print_requests.py --get //scim/v2/Me
+
+title "No header when unset"
+trace $CLI clusters list
+trace print_requests.py --get //clusters/list | contains.py "!X-Databricks-Traffic-Id"

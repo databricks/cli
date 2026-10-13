@@ -12,11 +12,7 @@ Ignore = [
     "app",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
-    "direct",
-    # These tests work on terraform but commented out to save time on test run
-    #"terraform",
-]
+Env.DATABRICKS_BUNDLE_ENGINE = "direct"
 
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
@@ -25,6 +21,7 @@ EnvMatrix.INPUT_CONFIG = [
     "catalog_optional_fields.yml.tmpl",
     "cluster.yml.tmpl",
     "cluster_apply_policy_default_values.yml.tmpl",
+    "cluster_libraries.yml.tmpl",
     "cluster_policy.yml.tmpl",
     "dashboard.yml.tmpl",
     "job_apply_policy_default_values_job_cluster.yml.tmpl",
@@ -64,6 +61,7 @@ EnvMatrix.INPUT_CONFIG = [
     "postgres_synced_table.yml.tmpl",
     "registered_model.yml.tmpl",
     "schema.yml.tmpl",
+    "schema_tf_compat.yml.tmpl",
     "schema_empty_grants.yml.tmpl",
     "schema_grant_ref.yml.tmpl",
     "schema_uppercase_name.yml.tmpl",

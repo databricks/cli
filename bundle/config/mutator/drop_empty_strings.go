@@ -17,10 +17,10 @@ type dropEmptyStrings struct{}
 // either literally (policy_id: "") or via a variable that resolved to "", so
 // this must run after variable resolution.
 //
-// Both engines convert the resolved config through convert.ToTyped, which
+// The direct engine converts the resolved config through convert.ToTyped, which
 // force-sends explicitly-set zero values, defeating the omitempty tag. Dropping
-// here fixes it uniformly for terraform and direct and makes the result visible
-// in `bundle validate -o json`, which serializes the dynamic value.
+// here fixes it and makes the result visible in `bundle validate -o json`, which
+// serializes the dynamic value.
 func DropEmptyStrings() bundle.Mutator {
 	return &dropEmptyStrings{}
 }
@@ -43,11 +43,9 @@ func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return root, err
 		}
 
-		// It seems safe to send an empty description "" to the backend, but for apps
-		// it causes drift in terraform: the Apps API always returns "" for an unset
-		// description, so bundle/deploy/terraform/tfdyn/convert_app.go injects it
-		// anyway. To avoid an unnecessary difference between the direct and terraform
-		// engines, keep the empty apps description here instead of dropping it.
+		// Keep an empty apps description instead of dropping it: an app update without
+		// the field leaves the remote description unchanged, so removing description
+		// from config would never converge. Force-sending "" clears it.
 		return dyn.MapByPattern(root, dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey()), func(_ dyn.Path, app dyn.Value) (dyn.Value, error) {
 			if _, err := dyn.Get(app, "description"); err != nil {
 				return dyn.Set(app, "description", dyn.V(""))

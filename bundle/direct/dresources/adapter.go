@@ -79,7 +79,7 @@ type IResource interface {
 
 	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
 	// omits the node instead of planning a create, and apply drops the state entry instead of
-	// persisting one, so both engines converge on "this node does not exist".
+	// persisting one, so plan and apply converge on "this node does not exist".
 	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
 	IsEmptyState(newState any) bool
 
@@ -487,6 +487,20 @@ func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 		}
 	}
 	for _, p := range a.resourceConfig.ProvidedIDFields {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	return false
+}
+
+// FieldIsStableOutput reports whether the field is an output-only value the
+// backend fixes at creation and never changes on update (declared under
+// stable_output_fields). Like FieldTriggersRecreate, a caller that knows the ID
+// is preserved can conclude the field is unchanged, so its remote value is safe
+// to read.
+func (a *Adapter) FieldIsStableOutput(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.StableOutputFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}

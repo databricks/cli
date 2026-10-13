@@ -42,9 +42,8 @@ jobs:
 
           # govulncheck is pinned as a tool dependency in tools/go.mod; -modfile
           # resolves it from there while it scans the root module (the working
-          # directory). Only the root module ships; tools/ and
-          # bundle/internal/tf/codegen are build- and CI-only, so they are not
-          # scanned. Its vulnerability database is fetched from vuln.go.dev at
+          # directory). Only the root module ships; tools/ is build- and
+          # CI-only, so it is not scanned. Its vulnerability database is fetched from vuln.go.dev at
           # runtime, so the pinned binary still uses the latest advisories.
           #
           # -scan module reports every advisory affecting a required module,

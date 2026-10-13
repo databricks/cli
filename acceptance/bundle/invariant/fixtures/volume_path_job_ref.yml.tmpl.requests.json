@@ -1,0 +1,52 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job-foo-[UNIQUE_NAME]",
+      "queue": {
+        "enabled": true
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/volumes",
+    "body": {
+      "catalog_name": "main",
+      "name": "8790683801080979000",
+      "schema_name": "default",
+      "volume_type": "MANAGED"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job-process-[UNIQUE_NAME]",
+      "parameters": [
+        {
+          "default": "/Volumes/main/default/8790683801080979000",
+          "name": "data_path"
+        }
+      ],
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+]

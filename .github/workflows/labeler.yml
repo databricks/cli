@@ -1,0 +1,34 @@
+name: PR Labeler
+
+# Applies labels to PRs based on the files they touch, using the glob->label
+# mapping in .github/labeler.yml.
+#
+# WARNING:
+# This workflow uses pull_request_target so it can label PRs from forks (the
+# default GITHUB_TOKEN only has write access under pull_request_target, not
+# pull_request). It does NOT check out or execute any code from the PR: the
+# labeler action reads the changed-file list and the config from the base
+# branch via the API only. Do not add a checkout of the PR ref here.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+jobs:
+  label:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          # Only add labels; never remove labels that were applied manually or by other automation.
+          sync-labels: false

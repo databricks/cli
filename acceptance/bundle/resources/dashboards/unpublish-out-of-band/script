@@ -7,15 +7,15 @@ cleanup() {
 trap cleanup EXIT
 
 # Save raw plan (with DMS headers), then apply nostamp for golden file
-trace $CLI bundle plan -o json > plan_raw_initial.$DATABRICKS_BUNDLE_ENGINE.json
-cat plan_raw_initial.$DATABRICKS_BUNDLE_ENGINE.json | nostamp > out.plan_initial.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > plan_raw_initial.json
+cat plan_raw_initial.json | nostamp > out.plan_initial.json
 
 # Deploy the dashboard
 trace $CLI bundle deploy -qq
 DASHBOARD_ID=$(read_id.py dashboard1)
 add_repl "$(retry $CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
 
-trace print_state.py | grep publish > out.state.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_state.py | grep publish > out.state.json
 
 # Verify dashboard was deployed and is published
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{embed_credentials}'
@@ -25,13 +25,13 @@ trace $CLI lakeview unpublish $DASHBOARD_ID
 
 # Terraform: shows "skip" because it only reads draft state, not published state
 # Direct: shows "update" because Published field changes from false to true
-trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan > out.plan.txt
 
 # Save raw plan (with DMS headers), then apply nostamp for golden file
-$CLI bundle plan -o json > plan_raw.$DATABRICKS_BUNDLE_ENGINE.json
-cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-json_in_json_normalize.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > plan_raw.json
+cat plan_raw.json | nostamp > out.plan.json
+json_in_json_normalize.py out.plan.json
 
 trace $CLI bundle deploy -qq
 
-trace errcode $CLI lakeview get-published $DASHBOARD_ID &> out.get_published.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI lakeview get-published $DASHBOARD_ID &> out.get_published.txt

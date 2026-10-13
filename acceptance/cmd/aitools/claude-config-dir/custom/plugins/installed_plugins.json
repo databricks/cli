@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "plugins": {
+    "databricks@local": [{"scope": "user", "version": "1.0.0"}]
+  }
+}

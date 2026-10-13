@@ -1,0 +1,8 @@
+{
+  "name": "validation-invalidated-manifest",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "node ../update-manifest.cjs",
+    "typegen": "node ../update-manifest.cjs"
+  }
+}

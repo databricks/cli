@@ -34,7 +34,7 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
 Created instance_pools.test_instance_pool
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
@@ -61,7 +61,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Update the instance pool name
 >>> update_file.py databricks.yml my_instance_pool my_instance_pool_2
@@ -97,7 +97,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool_2
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Destroy the instance pool
 >>> [CLI] bundle destroy --auto-approve

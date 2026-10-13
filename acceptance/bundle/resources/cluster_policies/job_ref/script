@@ -1,7 +1,7 @@
 trace $CLI bundle deploy
 
-# Register [POL_ID] so the resolved reference in the job body is deterministic.
-pol_id=`read_id.py pol`
+# Register [POL_ID] and [J_ID] so the resolved references are deterministic.
+replace_ids.py
 
 title "Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id"
 trace print_requests.py //policies/clusters //jobs --nostamp

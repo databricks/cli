@@ -1,9 +1,11 @@
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Uploading code.tgz" > /dev/null
 
 title "Expecting code_source_path rewritten to the uploaded artifact remote path"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[].ai_runtime_task' "$OUT_REQUESTS"
 
 title "Expecting the code_source tarball to be uploaded"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep code.tgz | sort
+trace print_workspace_imports | grep code.tgz | sort
 
 rm "$OUT_REQUESTS"

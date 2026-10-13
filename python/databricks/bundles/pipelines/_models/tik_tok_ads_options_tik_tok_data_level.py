@@ -6,8 +6,6 @@ from typing import Literal
 
 class TikTokAdsOptionsTikTokDataLevel(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Data level for TikTok Ads report aggregation.
     """
 

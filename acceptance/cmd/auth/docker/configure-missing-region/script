@@ -1,0 +1,14 @@
+setup_docker_auth
+install_databricks_cli
+
+export DOCKER_CONFIG="$HOME/docker"
+cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
+
+trace musterr $CLI auth docker configure docker-test
+
+title "Profile and Docker state unchanged\n"
+cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"
+assert_not_exists.py "$DOCKER_CONFIG/config.json"
+assert_not_exists.py "$HOME/bin/docker-credential-databricks"
+assert_not_exists.py "$HOME/bin/docker-credential-databricks.cmd"
+printf 'No profile, Docker config, or credential helper changes\n'

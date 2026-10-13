@@ -1,9 +1,11 @@
 package server_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/server"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -112,6 +115,26 @@ func TestFuseUserInfo(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestStartFuseRegistrationSkipsServerless(t *testing.T) {
+	c, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host: "https://workspace.test", HostMetadataResolver: noHostMetadata, Token: "test-token",
+		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+			return nil, errors.New("unexpected request")
+		}),
+	})
+	require.NoError(t, err)
+
+	var out bytes.Buffer
+	ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	server.StartFuseRegistration(ctx, c, true)
+
+	logs := out.String()
+	assert.Contains(t, logs, "Skipping SSH filesystem registration on serverless; /Workspace and /Volumes access depends on the bootstrap notebook")
+	assert.NotContains(t, logs, "level=WARN")
+	assert.NotContains(t, logs, "level=ERROR")
 }
 
 func noHostMetadata(context.Context, string) (*config.HostMetadata, error) { return nil, nil }

@@ -28,6 +28,18 @@ class WebhookNotifications:
     An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.
     """
 
+    on_maintenance_complete: VariableOrList[Webhook] = field(default_factory=list)
+    """
+    An optional list of system notification IDs to call when platform-initiated maintenance completes for a continuous job.
+    A maximum of 3 destinations can be specified for the `on_maintenance_complete` property.
+    """
+
+    on_maintenance_start: VariableOrList[Webhook] = field(default_factory=list)
+    """
+    An optional list of system notification IDs to call when platform-initiated maintenance starts for a continuous job.
+    A maximum of 3 destinations can be specified for the `on_maintenance_start` property.
+    """
+
     on_start: VariableOrList[Webhook] = field(default_factory=list)
     """
     An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.
@@ -65,6 +77,18 @@ class WebhookNotificationsDict(TypedDict, total=False):
     on_failure: VariableOrList[WebhookParam]
     """
     An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.
+    """
+
+    on_maintenance_complete: VariableOrList[WebhookParam]
+    """
+    An optional list of system notification IDs to call when platform-initiated maintenance completes for a continuous job.
+    A maximum of 3 destinations can be specified for the `on_maintenance_complete` property.
+    """
+
+    on_maintenance_start: VariableOrList[WebhookParam]
+    """
+    An optional list of system notification IDs to call when platform-initiated maintenance starts for a continuous job.
+    A maximum of 3 destinations can be specified for the `on_maintenance_start` property.
     """
 
     on_start: VariableOrList[WebhookParam]

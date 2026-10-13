@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,8 +44,8 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.NewPath(dyn.Key("bar"))},
+		Locations: []diag.Location{{}},
+		Paths:     structpath.NewPathSlice("bar"),
 	}, diags[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -64,7 +65,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	m.SetLoc("foo", nil, dyn.V("val-foo"))
 
 	// Set the unknown field, with location information.
-	m.SetLoc("bar", []dyn.Location{
+	m.SetLoc("bar", []diag.Location{
 		{File: "hello.yaml", Line: 1, Column: 1},
 		{File: "world.yaml", Line: 2, Column: 2},
 	}, dyn.V("var-bar"))
@@ -77,11 +78,11 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 		Severity: diag.Warning,
 		Summary:  `unknown field: bar`,
 		// Assert location of the unknown field is included in the diagnostic.
-		Locations: []dyn.Location{
+		Locations: []diag.Location{
 			{File: "hello.yaml", Line: 1, Column: 1},
 			{File: "world.yaml", Line: 2, Column: 2},
 		},
-		Paths: []dyn.Path{dyn.EmptyPath},
+		Paths: dyn.ToStructPaths(dyn.EmptyPath),
 	}, diags[0])
 
 	// The field that can be mapped to the struct field is retained.
@@ -114,8 +115,8 @@ func TestNormalizeStructError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
-		Locations: []dyn.Location{vin.Get("foo").Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Get("foo").Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -241,7 +242,7 @@ func TestNormalizeStructVariableReference(t *testing.T) {
 	}
 
 	var typ Tmp
-	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("${var.foo}", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, vin, vout)
@@ -253,14 +254,14 @@ func TestNormalizeStructRandomStringError(t *testing.T) {
 	}
 
 	var typ Tmp
-	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("var foo", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -270,14 +271,14 @@ func TestNormalizeStructIntError(t *testing.T) {
 	}
 
 	var typ Tmp
-	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(1, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found int`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -305,8 +306,8 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.NewPath(dyn.Key("bar"))},
+		Locations: []diag.Location{{}},
+		Paths:     structpath.NewPathSlice("bar"),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -331,8 +332,8 @@ func TestNormalizeMapError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -372,7 +373,7 @@ func TestNormalizeMapNestedError(t *testing.T) {
 
 func TestNormalizeMapVariableReference(t *testing.T) {
 	var typ map[string]string
-	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("${var.foo}", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, vin, vout)
@@ -380,27 +381,27 @@ func TestNormalizeMapVariableReference(t *testing.T) {
 
 func TestNormalizeMapRandomStringError(t *testing.T) {
 	var typ map[string]string
-	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("var foo", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
 func TestNormalizeMapIntError(t *testing.T) {
 	var typ map[string]string
-	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(1, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found int`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -429,8 +430,8 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.NewPath(dyn.Index(2))},
+		Locations: []diag.Location{{}},
+		Paths:     []*structpath.PathNode{structpath.NewIndex(nil, 2)},
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -453,8 +454,8 @@ func TestNormalizeSliceError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -494,7 +495,7 @@ func TestNormalizeSliceNestedError(t *testing.T) {
 
 func TestNormalizeSliceVariableReference(t *testing.T) {
 	var typ []string
-	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("${var.foo}", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, vin, vout)
@@ -502,27 +503,27 @@ func TestNormalizeSliceVariableReference(t *testing.T) {
 
 func TestNormalizeSliceRandomStringError(t *testing.T) {
 	var typ []string
-	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("var foo", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
 func TestNormalizeSliceIntError(t *testing.T) {
 	var typ []string
-	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(1, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found int`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -536,20 +537,20 @@ func TestNormalizeString(t *testing.T) {
 
 func TestNormalizeStringNil(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(nil, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a string value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
 func TestNormalizeStringFromBool(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(true, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(true, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("true", vin.Locations()), vout)
@@ -557,7 +558,7 @@ func TestNormalizeStringFromBool(t *testing.T) {
 
 func TestNormalizeStringFromInt(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(123, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(123, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("123", vin.Locations()), vout)
@@ -565,7 +566,7 @@ func TestNormalizeStringFromInt(t *testing.T) {
 
 func TestNormalizeStringFromFloat(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(1.20, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(1.20, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
@@ -573,7 +574,7 @@ func TestNormalizeStringFromFloat(t *testing.T) {
 
 func TestNormalizeStringFromTime(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
@@ -587,8 +588,8 @@ func TestNormalizeStringError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{{}},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -602,14 +603,14 @@ func TestNormalizeBool(t *testing.T) {
 
 func TestNormalizeBoolNil(t *testing.T) {
 	var typ bool
-	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(nil, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a bool value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -622,6 +623,10 @@ func TestNormalizeBoolFromString(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"True", true},
+		{"False", false},
+		{"TRUE", true},
+		{"FALSE", false},
 		{"Y", true},
 		{"N", false},
 		{"on", true},
@@ -650,8 +655,8 @@ func TestNormalizeBoolFromStringError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected bool, found string`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -663,8 +668,8 @@ func TestNormalizeBoolError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected bool, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{{}},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -678,14 +683,14 @@ func TestNormalizeInt(t *testing.T) {
 
 func TestNormalizeIntNil(t *testing.T) {
 	var typ int
-	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(nil, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a int value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -705,8 +710,8 @@ func TestNormalizeIntFromFloatError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot accurately represent "1.5" as integer due to precision loss`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -734,8 +739,8 @@ func TestNormalizeIntFromStringError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot parse "abc" as an integer`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -747,8 +752,8 @@ func TestNormalizeIntError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected int, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{{}},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -762,14 +767,14 @@ func TestNormalizeFloat(t *testing.T) {
 
 func TestNormalizeFloatNil(t *testing.T) {
 	var typ float64
-	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(nil, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a float value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -793,8 +798,8 @@ func TestNormalizeFloatFromIntError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot accurately represent "9007199254740993" as floating point number due to precision loss`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -822,8 +827,8 @@ func TestNormalizeFloatFromStringError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot parse "abc" as a floating point number`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{vin.Location()},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -835,8 +840,8 @@ func TestNormalizeFloatError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected float, found map`,
-		Locations: []dyn.Location{{}},
-		Paths:     []dyn.Path{dyn.EmptyPath},
+		Locations: []diag.Location{{}},
+		Paths:     dyn.ToStructPaths(dyn.EmptyPath),
 	}, err[0])
 }
 
@@ -935,41 +940,41 @@ func TestNormalizeAnchorContainers(t *testing.T) {
 
 func TestNormalizeAnyFromSlice(t *testing.T) {
 	var typ any
-	v1 := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	v2 := dyn.NewValue(2, []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vin := dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	v1 := dyn.NewValue(1, []diag.Location{{File: "file", Line: 1, Column: 1}})
+	v2 := dyn.NewValue(2, []diag.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue([]dyn.Value{v1, v2}, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []diag.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromString(t *testing.T) {
 	var typ any
-	vin := dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue("string", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue("string", []diag.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromBool(t *testing.T) {
 	var typ any
-	vin := dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(false, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue(false, []diag.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromInt(t *testing.T) {
 	var typ any
-	vin := dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(10, []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue(10, []diag.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromTime(t *testing.T) {
 	var typ any
-	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []diag.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)

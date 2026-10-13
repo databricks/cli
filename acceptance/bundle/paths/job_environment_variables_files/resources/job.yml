@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    my_job:
+      name: my job
+      environment_variables:
+        - environment_variables_key: default
+          spec:
+            variables:
+              FOO: bar
+            files:
+              - ../env/common.env
+              - /Volumes/main/default/vol/shared.env
+              - /Workspace/Shared/shared.env
+      tasks:
+        - task_key: my_task
+          environment_key: default
+          environment_variables_key: default
+          spark_python_task:
+            python_file: /Workspace/Shared/main.py
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

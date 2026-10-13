@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -81,12 +81,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs.my-job-1", []dyn.Location{{File: "a/b/c"}})
-	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []dyn.Location{{File: "x/y/z"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []dyn.Location{{File: "u/v/w"}})
-	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-1", []dyn.Location{{File: "g/h/i"}})
-	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-2", []dyn.Location{{File: "j/k/l"}})
+	bundletest.SetLocation(b, "resources.jobs.my-job-1", []diag.Location{{File: "a/b/c"}})
+	bundletest.SetLocation(b, "resources.jobs.my-job-2", []diag.Location{{File: "d/e/f"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []diag.Location{{File: "x/y/z"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []diag.Location{{File: "u/v/w"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-1", []diag.Location{{File: "g/h/i"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-2", []diag.Location{{File: "j/k/l"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,

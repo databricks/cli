@@ -1,5 +1,4 @@
 # Genie spaces are only deployed via the direct deployment engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Uses a literal warehouse id and a version-sensitive serialized_space, so this
 # lifecycle test runs against the local mock server only (overrides the Cloud=true

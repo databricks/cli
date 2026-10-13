@@ -13,6 +13,13 @@ updates:
       databricks-sdk-go:
         patterns:
           - github.com/databricks/sdk-go/*
+      # The golang.org/x/* modules are released in lockstep and each bump pulls
+      # the others in transitively (e.g. x/net requires matching x/crypto and
+      # x/term). As separate PRs they all edit adjacent go.mod/go.sum lines and
+      # evict each other from the merge queue with a conflict, so group them.
+      golang-x:
+        patterns:
+          - golang.org/x/*
     ignore:
       # Ignore Databricks Go SDK because its upgrade requires code generation
       - dependency-name: github.com/databricks/databricks-sdk-go

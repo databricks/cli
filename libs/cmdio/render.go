@@ -287,6 +287,28 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderJSONBytes writes already-serialized JSON to the command's output,
+// re-indented and (on a color-capable stdout) colorized. Unlike Render it does
+// not decode the input into Go values, so it preserves the input's exact
+// tokens — integer literals beyond float64 precision and object key order
+// included.
+func RenderJSONBytes(ctx context.Context, raw []byte) error {
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, raw, "", "  "); err != nil {
+		return err
+	}
+	out := buf.Bytes()
+	if colorEnabled(ctx) {
+		out = colorizeJSON(out)
+	}
+	c := fromContext(ctx)
+	if _, err := c.out.Write(out); err != nil {
+		return err
+	}
+	_, err := c.out.Write([]byte{'\n'})
+	return err
+}
+
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {

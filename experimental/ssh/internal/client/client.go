@@ -53,6 +53,9 @@ const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+
+	serverMetadataTimeout      = 5 * time.Minute
+	serverMetadataPollInterval = 2 * time.Second
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -130,6 +133,8 @@ type ClientOptions struct {
 	AutoApprove bool
 	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
 	UsagePolicyID string
+	// Whether detached processes prevent idle shutdown of the SSH server. Bounded by --server-timeout.
+	KeepDetachedProcesses bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -250,6 +255,9 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+	}
+	if o.KeepDetachedProcesses {
+		proxyCommand += " --keep-detached-processes"
 	}
 
 	// Both of these are fixed when the server job is submitted, and for a host configured by
@@ -504,7 +512,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, version, opts)
 	}
 }
 
@@ -600,6 +608,8 @@ type serverMetadata struct {
 	ClusterID string
 	// UsagePolicyID the server was started with, used to decide whether a running server can be reused.
 	UsagePolicyID string
+	// KeepDetachedProcesses the server's run was submitted with, used the same way as UsagePolicyID.
+	KeepDetachedProcesses bool
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
@@ -647,10 +657,11 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	return serverMetadata{
-		Port:          wsMetadata.Port,
-		UserName:      string(bodyBytes),
-		ClusterID:     effectiveClusterID,
-		UsagePolicyID: wsMetadata.UsagePolicyID,
+		Port:                  wsMetadata.Port,
+		UserName:              string(bodyBytes),
+		ClusterID:             effectiveClusterID,
+		UsagePolicyID:         wsMetadata.UsagePolicyID,
+		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
 	}, nil
 }
 
@@ -719,6 +730,9 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		// Recorded in the server's metadata.json so reconnects can tell which usage policy
 		// the running server was started under.
 		"usagePolicyId": opts.UsagePolicyID,
+		// The bootstrap only needs to know whether to hold the run open. How long it ends up
+		// holding it is decided by the work itself, bounded by the run's own timeout.
+		"keepDetachedProcesses": strconv.FormatBool(opts.KeepDetachedProcesses),
 	}
 
 	task := jobs.SubmitTask{
@@ -861,6 +875,34 @@ func shellSingleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
+// agentWrapperScript returns one agent's on-PATH launcher: it resolves the uploaded
+// databricks CLI for the driver's arch, then delegates to `ssh agent-shim <agent>`.
+// wsHome anchors that binary path and is forwarded (via env) for the agent context.
+func agentWrapperScript(wsHome, version, agent string) string {
+	versionedDir := wsHome + "/.databricks/ssh-tunnel/" + version
+	// Mirror getReleaseName (minus .zip); ${_arch} is expanded on the remote.
+	subdir := strings.TrimSuffix(getReleaseName("${_arch}", version), ".zip")
+	// Single-quote the workspace/version-derived path so a username or version with
+	// shell metacharacters can't break (or inject into) the exec line, while leaving
+	// ${_arch} unquoted so the remote shell still expands it (getReleaseName always
+	// embeds it, so Cut always splits here).
+	before, after, _ := strings.Cut(subdir, "${_arch}")
+	binary := shellSingleQuote(versionedDir+"/"+before) + "${_arch}" + shellSingleQuote(after+"/databricks")
+
+	// buildRemoteShellArgs only installs launchers when wsHome is set, so it is
+	// always non-empty here.
+	exports := "export " + workspaceHomeEnv + "=" + shellSingleQuote(wsHome) + "\n"
+
+	return fmt.Sprintf(`#!/usr/bin/env bash
+# "%[3]s" launcher from "databricks ssh connect"; delegates to "ssh agent-shim %[3]s".
+case "$(uname -m)" in
+  x86_64|amd64) _arch=amd64 ;;
+  aarch64|arm64) _arch=arm64 ;;
+  *) echo "%[3]s: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+%[1]sexec %[2]s ssh agent-shim %[3]s "$@"`, exports, binary, agent)
+}
+
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
 // For the interactive case (no remote command given), it forces PTY allocation
@@ -872,9 +914,8 @@ func shellSingleQuote(s string) string {
 // would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
 // -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
 // re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
-// resolve to the environment interpreter. When wsHome is set, the shell first changes
-// into the user's workspace home folder; if that directory is missing the cd is
-// ignored and the shell still launches from $HOME.
+// resolve to the environment interpreter. It first installs a per-agent launcher
+// (see agentWrapperScript) on PATH, then cds into wsHome when set (else $HOME).
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
@@ -882,15 +923,39 @@ func shellSingleQuote(s string) string {
 // Note: this returns the remote command only. PTY allocation (-t) is added to
 // the ssh options *before* the destination by the caller; -t placed after the
 // host would be parsed as part of the remote command, not as ssh's flag.
-func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
+func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	cmd := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	shell := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	// For any interactive session, land in the user's workspace home when known;
+	// if that directory is missing the cd is ignored and the shell still launches
+	// from $HOME. This is independent of the launcher install below, so dedicated
+	// clusters keep the workspace cwd they had before agent launchers existed.
 	if wsHome != "" {
-		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+		shell = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + shell
 	}
-	return []string{cmd}
+	// The agent launchers are serverless-only for now: dedicated clusters have no
+	// story for persisting the shims or respecting existing installs. They also
+	// need the workspace path to locate the uploaded CLI. Otherwise just open the shell.
+	if !opts.IsServerlessMode() || wsHome == "" {
+		return []string{shell}
+	}
+	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal), then open the shell.
+	remoteShimDir := "$HOME/" + agentBinDir
+	var cmd strings.Builder
+	fmt.Fprintf(&cmd, "mkdir -p \"%s\"\n", remoteShimDir)
+	for _, agent := range SupportedAgentNames() {
+		fmt.Fprintf(&cmd, `cat > "%[1]s/%[2]s" <<'AGENT_SHIM_WRAPPER_EOF'
+%[3]s
+AGENT_SHIM_WRAPPER_EOF
+chmod +x "%[1]s/%[2]s"
+`, remoteShimDir, agent, agentWrapperScript(wsHome, version, agent))
+	}
+	// Append the shim dir (don't prepend) so the wrappers never shadow a real
+	// binary of the same name earlier on PATH.
+	fmt.Fprintf(&cmd, "export PATH=\"$PATH:%s\"\n", remoteShimDir)
+	return []string{cmd.String() + shell}
 }
 
 // buildSSHArgs assembles the argument list for the ssh client. Options come
@@ -902,7 +967,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 // Host key checking is strict rather than accept-new because the caller has already
 // pinned the server's key in knownHostsPath (see pinServerHostKey), so there is nothing
 // left to accept on trust.
-func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version string, opts ClientOptions) []string {
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
@@ -917,11 +982,11 @@ func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostNa
 		sshArgs = append(sshArgs, "-t")
 	}
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome, version)...)
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, version string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -945,7 +1010,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 		}
 	}
 
-	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, opts)
+	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
@@ -1302,6 +1367,14 @@ func usagePolicyMatches(storedPolicy, requestedPolicy string) bool {
 	return requestedPolicy == "" || storedPolicy == requestedPolicy
 }
 
+// keepDetachedMatches reports whether a running server holds its run open for detached
+// processes when this connection asked it to. The mode is fixed when the run is submitted, so
+// asking for it needs a server that has it; a connection that does not ask takes whatever is
+// already running.
+func keepDetachedMatches(stored, requested bool) bool {
+	return !requested || stored
+}
+
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
 	sessionID := opts.SessionIdentifier()
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
@@ -1313,10 +1386,13 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	// Start a new server when none is running, or when the running one was started under a
-	// different usage policy. A job's usage policy is fixed at submission, so we can't retarget
-	// the existing server; the new server overwrites metadata.json and the old one idles out via
-	// shutdownDelay.
-	needNewServer := err != nil || !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID)
+	// different usage policy or without keeping detached processes. Both are fixed at
+	// submission, so we can't retarget the existing server; the new server overwrites
+	// metadata.json, and its bootstrap terminates the running server on the cluster before
+	// starting (see cleanup() in ssh-server-bootstrap.py), which ends the previous run.
+	needNewServer := err != nil ||
+		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
+		!keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses)
 	if needNewServer {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
@@ -1328,7 +1404,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
 		sp.Update("Waiting for the SSH server to start...")
-		maxRetries := 30
+		maxRetries := int(serverMetadataTimeout / serverMetadataPollInterval)
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
 				return "", 0, "", ctx.Err()
@@ -1339,6 +1415,9 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			// server has overwritten metadata.json.
 			if err == nil && !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) {
 				err = fmt.Errorf("found a running SSH server with usage policy %q, waiting for the one with %q", meta.UsagePolicyID, opts.UsagePolicyID)
+			}
+			if err == nil && !keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses) {
+				err = errors.New("found a running SSH server that does not keep detached processes, waiting for the one that does")
 			}
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
@@ -1351,7 +1430,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
 			}
 			if retries < maxRetries-1 {
-				time.Sleep(2 * time.Second)
+				time.Sleep(serverMetadataPollInterval)
 			} else {
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}
@@ -1481,6 +1560,9 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
 		HasUsagePolicy:     opts.UsagePolicyID != "",
-		ErrorCategory:      outcome.category(),
+		// The connect side can only report that the knob was asked for. Whether any detached
+		// process was there to keep is reported by the server, at teardown.
+		KeepDetachedRequested: opts.KeepDetachedProcesses,
+		ErrorCategory:         outcome.category(),
 	}
 }

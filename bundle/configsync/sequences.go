@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -63,7 +64,7 @@ type blockResolver struct {
 	// path relative to a block can be looked up inside it.
 	blocks     map[sourceBlock]dyn.Value
 	target     string
-	byLocation map[dyn.Location]sourceBlock
+	byLocation map[diag.Location]sourceBlock
 }
 
 // newBlockResolver builds the location -> block mapping for the bundle's resources,
@@ -81,7 +82,7 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 	r := &blockResolver{
 		blocks:     make(map[sourceBlock]dyn.Value),
 		target:     b.Config.Bundle.Target,
-		byLocation: make(map[dyn.Location]sourceBlock),
+		byLocation: make(map[diag.Location]sourceBlock),
 	}
 
 	sourceFiles := slices.Sorted(maps.Keys(referencedFiles(root)))
@@ -258,7 +259,7 @@ func (r *blockResolver) indexWithinBlock(block sourceBlock, sequencePath dyn.Pat
 		return 0, false
 	}
 
-	locations := make(map[dyn.Location]struct{}, len(element.Locations()))
+	locations := make(map[diag.Location]struct{}, len(element.Locations()))
 	for _, location := range element.Locations() {
 		locations[location] = struct{}{}
 	}
@@ -499,7 +500,7 @@ func (r *blockResolver) blocksDefiningSequence(change resolvedChange, sequencePa
 		if err != nil {
 			continue
 		}
-		if slices.ContainsFunc(sequence.Locations(), func(l dyn.Location) bool { return l.File == block.file }) {
+		if slices.ContainsFunc(sequence.Locations(), func(l diag.Location) bool { return l.File == block.file }) {
 			blocks = append(blocks, block)
 		}
 	}

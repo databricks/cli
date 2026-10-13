@@ -26,6 +26,3 @@ ignore_remote_changes:
   # that drops all upserted vectors.
   - field: direct_access_index_spec.schema_json
     reason: normalized_by_backend
-backend_defaults:
-  # The Vector Search API assigns index_subtype when the config omits it
-  - field: index_subtype

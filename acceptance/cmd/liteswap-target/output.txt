@@ -1,0 +1,67 @@
+
+=== Workspace command
+>>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+>>> print_requests.py --get //clusters/list
+{
+  "headers": {
+    "X-Databricks-Traffic-Id": [
+      "testenv://liteswap/dms"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/clusters/list"
+}
+
+=== Account command
+>>> [CLI] account network-policies list-network-policies-rpc
+[
+  
+]
+
+>>> print_requests.py --get //network-policies
+{
+  "headers": {
+    "X-Databricks-Traffic-Id": [
+      "testenv://liteswap/dms"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/accounts/abc-123/network-policies"
+}
+
+=== Bundle command
+>>> [CLI] bundle validate
+Name: liteswap-target
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/liteswap-target/default
+
+Validation OK!
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "headers": {
+    "X-Databricks-Traffic-Id": [
+      "testenv://liteswap/dms"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== No header when unset
+>>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+>>> print_requests.py --get //clusters/list
+{
+  "method": "GET",
+  "path": "/api/2.1/clusters/list"
+}

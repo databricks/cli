@@ -193,9 +193,6 @@ def run_tests(
 
     # Cloud tests: run with CLOUD_ENV set and workspace access
     env["CLOUD_ENV"] = cloud_env
-    # Only tests using direct deployment are run on DBR.
-    # Terraform based tests are out of scope for DBR.
-    env["ENVFILTER"] = "DATABRICKS_BUNDLE_ENGINE=direct"
 
     if test_default_warehouse_id:
         env["TEST_DEFAULT_WAREHOUSE_ID"] = test_default_warehouse_id

@@ -33,6 +33,9 @@ __all__ = [
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfig",
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfigDict",
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfigParam",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam",
     "ModelProviderServiceConfigCustomProviderConfig",
     "ModelProviderServiceConfigCustomProviderConfigDict",
     "ModelProviderServiceConfigCustomProviderConfigParam",
@@ -70,6 +73,9 @@ __all__ = [
     "ModelProviderServiceConfigProviderSecret",
     "ModelProviderServiceConfigProviderSecretDict",
     "ModelProviderServiceConfigProviderSecretParam",
+    "ModelProviderServiceConfigSecretReference",
+    "ModelProviderServiceConfigSecretReferenceDict",
+    "ModelProviderServiceConfigSecretReferenceParam",
     "ModelProviderServiceConfigServiceCredential",
     "ModelProviderServiceConfigServiceCredentialDict",
     "ModelProviderServiceConfigServiceCredentialParam",
@@ -150,6 +156,11 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigAzureOpenAiProviderDirectConfigDict,
     ModelProviderServiceConfigAzureOpenAiProviderDirectConfigParam,
 )
+from databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_api_key_header_auth import (
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth,
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict,
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam,
+)
 from databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_config import (
     ModelProviderServiceConfigCustomProviderConfig,
     ModelProviderServiceConfigCustomProviderConfigDict,
@@ -208,6 +219,11 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigProviderSecret,
     ModelProviderServiceConfigProviderSecretDict,
     ModelProviderServiceConfigProviderSecretParam,
+)
+from databricks.bundles.model_provider_services._models.model_provider_service_config_secret_reference import (
+    ModelProviderServiceConfigSecretReference,
+    ModelProviderServiceConfigSecretReferenceDict,
+    ModelProviderServiceConfigSecretReferenceParam,
 )
 from databricks.bundles.model_provider_services._models.model_provider_service_config_service_credential import (
     ModelProviderServiceConfigServiceCredential,

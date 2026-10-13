@@ -1,0 +1,4 @@
+{
+  "name": "{{.projectName}}",
+  "lockfileVersion": 3
+}

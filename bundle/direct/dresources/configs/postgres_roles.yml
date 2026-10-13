@@ -2,6 +2,11 @@ ignore_local_changes:
   # replace_existing only takes effect on create; toggling it later is a no-op.
   - field: replace_existing
     reason: "input_only; cannot be updated after create"
+stable_output_fields:
+  # name ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") is
+  # backend-assigned at creation and immutable; see the stable_output_fields doc
+  # in config.go and ES-2202624.
+  - field: name
 recreate_on_changes:
   # parent and role_id are immutable (together they form the hierarchical name).
   - field: parent

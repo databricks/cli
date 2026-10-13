@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ func TestConvertPythonLocation(t *testing.T) {
 		Column: 2,
 	})
 
-	assert.Equal(t, dyn.Location{
+	assert.Equal(t, diag.Location{
 		File:   "src/examples/file.py",
 		Line:   1,
 		Column: 2,
@@ -38,7 +38,7 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "error summary",
-					Locations: []dyn.Location{
+					Locations: []diag.Location{
 						{
 							File:   "src/examples/file.py",
 							Line:   1,
@@ -55,7 +55,7 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "error summary",
-					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.job0.name")},
+					Paths:    structpath.NewPathSlice("resources", "jobs", "job0", "name"),
 				},
 			},
 		},

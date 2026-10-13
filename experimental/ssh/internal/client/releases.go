@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -108,12 +109,16 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		remoteBinaryPath := filepath.ToSlash(filepath.Join(remoteSubFolder, "databricks"))
 		remoteArchivePath := filepath.ToSlash(filepath.Join(remoteSubFolder, "databricks.zip"))
 
-		_, err := workspaceFiler.Stat(ctx, remoteBinaryPath)
-		if err == nil {
-			log.Infof(ctx, "File %s already exists in the workspace, skipping upload", remoteBinaryPath)
-			continue
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to check if file %s exists in workspace: %w", remoteBinaryPath, err)
+		if build.IsDevelopmentVersion(version) {
+			log.Infof(ctx, "Development version %s, overwriting %s in the workspace", version, remoteBinaryPath)
+		} else {
+			_, err := workspaceFiler.Stat(ctx, remoteBinaryPath)
+			if err == nil {
+				log.Infof(ctx, "File %s already exists in the workspace, skipping upload", remoteBinaryPath)
+				continue
+			} else if !errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("failed to check if file %s exists in workspace: %w", remoteBinaryPath, err)
+			}
 		}
 
 		releaseReader, err := getRelease(ctx, arch, version, releasesDir)

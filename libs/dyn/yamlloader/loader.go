@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"go.yaml.in/yaml/v3"
 )
@@ -13,7 +14,7 @@ import (
 // LocationError is an error with a YAML source location that can be displayed
 // to the user with a file path, line, and column number.
 type LocationError struct {
-	Loc     dyn.Location
+	Loc     diag.Location
 	Summary string
 }
 
@@ -30,7 +31,7 @@ type loader struct {
 	activeAliases map[*yaml.Node]bool
 }
 
-func errorf(loc dyn.Location, format string, args ...any) error {
+func errorf(loc diag.Location, format string, args ...any) error {
 	return fmt.Errorf("yaml (%s): %s", loc, fmt.Sprintf(format, args...))
 }
 
@@ -41,8 +42,8 @@ func newLoader(path string) *loader {
 	}
 }
 
-func (d *loader) location(node *yaml.Node) dyn.Location {
-	return dyn.Location{
+func (d *loader) location(node *yaml.Node) diag.Location {
+	return diag.Location{
 		File:   d.path,
 		Line:   node.Line,
 		Column: node.Column,
@@ -50,7 +51,7 @@ func (d *loader) location(node *yaml.Node) dyn.Location {
 }
 
 func (d *loader) load(node *yaml.Node) (dyn.Value, error) {
-	loc := dyn.Location{
+	loc := diag.Location{
 		File:   d.path,
 		Line:   node.Line,
 		Column: node.Column,
@@ -87,11 +88,11 @@ func (d *loader) load(node *yaml.Node) (dyn.Value, error) {
 	return value, nil
 }
 
-func (d *loader) loadDocument(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+func (d *loader) loadDocument(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	return d.load(node.Content[0])
 }
 
-func (d *loader) loadSequence(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+func (d *loader) loadSequence(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	acc := make([]dyn.Value, len(node.Content))
 	for i, n := range node.Content {
 		v, err := d.load(n)
@@ -102,10 +103,10 @@ func (d *loader) loadSequence(node *yaml.Node, loc dyn.Location) (dyn.Value, err
 		acc[i] = v
 	}
 
-	return dyn.NewValue(acc, []dyn.Location{loc}), nil
+	return dyn.NewValue(acc, []diag.Location{loc}), nil
 }
 
-func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+func (d *loader) loadMapping(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	var merge *yaml.Node
 
 	acc := dyn.NewMapping()
@@ -140,7 +141,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.InvalidValue, errorf(loc, "invalid key tag: %v", st)
 		}
 
-		loc := []dyn.Location{{
+		loc := []diag.Location{{
 			File:   d.path,
 			Line:   key.Line,
 			Column: key.Column,
@@ -155,7 +156,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 	}
 
 	if merge == nil {
-		return dyn.NewValue(acc, []dyn.Location{loc}), nil
+		return dyn.NewValue(acc, []diag.Location{loc}), nil
 	}
 
 	// Build location for the merge node.
@@ -196,28 +197,28 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 		out.Merge(m)
 	}
 
-	return dyn.NewValue(out, []dyn.Location{loc}), nil
+	return dyn.NewValue(out, []diag.Location{loc}), nil
 }
 
-func newIntValue(i64 int64, loc dyn.Location) dyn.Value {
+func newIntValue(i64 int64, loc diag.Location) dyn.Value {
 	// Use regular int type instead of int64 if possible.
 	if i64 >= math.MinInt32 && i64 <= math.MaxInt32 {
-		return dyn.NewValue(int(i64), []dyn.Location{loc})
+		return dyn.NewValue(int(i64), []diag.Location{loc})
 	}
-	return dyn.NewValue(i64, []dyn.Location{loc})
+	return dyn.NewValue(i64, []diag.Location{loc})
 }
 
-func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+func (d *loader) loadScalar(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	st := node.ShortTag()
 	switch st {
 	case "!!str":
-		return dyn.NewValue(node.Value, []dyn.Location{loc}), nil
+		return dyn.NewValue(node.Value, []diag.Location{loc}), nil
 	case "!!bool":
 		switch strings.ToLower(node.Value) {
 		case "true":
-			return dyn.NewValue(true, []dyn.Location{loc}), nil
+			return dyn.NewValue(true, []diag.Location{loc}), nil
 		case "false":
-			return dyn.NewValue(false, []dyn.Location{loc}), nil
+			return dyn.NewValue(false, []diag.Location{loc}), nil
 		default:
 			return dyn.InvalidValue, errorf(loc, "invalid bool value: %v", node.Value)
 		}
@@ -255,20 +256,20 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 			// Deal with infinity and NaN values.
 			switch v {
 			case ".inf":
-				return dyn.NewValue(f64, []dyn.Location{loc}), nil
+				return dyn.NewValue(f64, []diag.Location{loc}), nil
 			case ".nan":
-				return dyn.NewValue(math.NaN(), []dyn.Location{loc}), nil
+				return dyn.NewValue(math.NaN(), []diag.Location{loc}), nil
 			}
 
 			return dyn.InvalidValue, errorf(loc, "invalid float value: %v", node.Value)
 		}
-		return dyn.NewValue(f64, []dyn.Location{loc}), nil
+		return dyn.NewValue(f64, []diag.Location{loc}), nil
 	case "!!null":
-		return dyn.NewValue(nil, []dyn.Location{loc}), nil
+		return dyn.NewValue(nil, []diag.Location{loc}), nil
 	case "!!timestamp":
 		t, err := dyn.NewTime(node.Value)
 		if err == nil {
-			return dyn.NewValue(t, []dyn.Location{loc}), nil
+			return dyn.NewValue(t, []diag.Location{loc}), nil
 		}
 		return dyn.InvalidValue, errorf(loc, "invalid timestamp value: %v", node.Value)
 	default:
@@ -276,7 +277,7 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 	}
 }
 
-func (d *loader) loadAlias(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+func (d *loader) loadAlias(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	if d.activeAliases[node] {
 		return dyn.InvalidValue, errorf(loc, "cyclic reference to anchor %q", node.Value)
 	}

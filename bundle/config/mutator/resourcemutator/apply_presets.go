@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -100,6 +99,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		p.Name = prefix + p.Name
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
+			//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {
@@ -352,7 +352,7 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity:  diag.Error,
-		Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 	}}
 }
 

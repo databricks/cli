@@ -1,3 +1,0 @@
-Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-EnvMatrix.DMS = ["", "true"]

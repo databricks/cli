@@ -6,7 +6,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
 Created dashboards.test_dashboard
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === update the dashboard
@@ -15,7 +15,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "create_time": "[TIMESTAMP]",
   "dashboard_id": "[DASHBOARD_ID]",
   "display_name": "test dashboard",
-  "etag": "[NUMID]",
+  "etag": "80611981",
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources",
   "path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",

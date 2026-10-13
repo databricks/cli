@@ -63,7 +63,6 @@ linters:
           files:
             - "**"
             - "!**/bundle/internal/schema/**"
-            - "!**/bundle/internal/tf/codegen/**"
             - "!**/bundle/internal/validation/**"
             - "!**/internal/cligen/**"
           deny:

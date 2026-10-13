@@ -1,3 +1,5 @@
-trace $CLI jobs create --json '{"name":"abc"}'
+trace $CLI jobs create --json '{"name":"abc"}' | tee job.json.tmp
+add_repl "$(sed -n 's/.*"job_id": \([0-9]*\).*/\1/p' job.json.tmp)" JOB_ID
+rm job.json.tmp
 
 trace print_requests.py //jobs

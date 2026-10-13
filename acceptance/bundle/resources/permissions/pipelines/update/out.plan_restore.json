@@ -1,0 +1,63 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 4,
+  "plan": {
+    "resources.pipelines.foo": {
+      "action": "skip",
+      "remote_state": {
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[FOO_ID]",
+        "last_modified": [UNIX_TIME_MILLIS],
+        "name": "foo",
+        "pipeline_id": "[FOO_ID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[FOO_ID]"
+      },
+      "changes": {
+        "storage": {
+          "action": "skip",
+          "reason": "immutable_backend_value",
+          "remote": "dbfs:/pipelines/[FOO_ID]"
+        }
+      }
+    },
+    "resources.pipelines.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "/pipelines/[FOO_ID]",
+          "__embed__": [
+            {
+              "level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

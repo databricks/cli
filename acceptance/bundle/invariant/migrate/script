@@ -5,7 +5,9 @@ unset DATABRICKS_BUNDLE_ENGINE
 
 invariant_setup
 
-invariant_deploy LOG.deploy DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Replay a prior terraform deployment (per-config fixture captured once from a real terraform run),
+# standing in for the terraform deploy now that the invariant tests must not run the terraform engine.
+invariant_deploy LOG.replay replay_tfstate.py "$TESTDIR/../fixtures/$INPUT_CONFIG.requests.json" "$TESTDIR/../fixtures/$INPUT_CONFIG.tfstate"
 
 MIGRATE_ARGS=""
 # The terraform provider sorts depends_on entries alphabetically by task_key on Read

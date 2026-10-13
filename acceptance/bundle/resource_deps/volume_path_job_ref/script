@@ -8,9 +8,9 @@ trace $CLI bundle validate -o json | nostamp | jq '.resources.jobs, .resources.v
 # Untraced: with &> the trace header lands in the file, leaving it unfilterable. Capture the raw
 # plan aside and stamp it out into the golden instead.
 errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
-nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan.json > out.plan.json
 
 # Deploy and inspect the create-job request: the parameter default sent to
 # the Jobs API must be the interpolated volume_path.
-trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py --nostamp //jobs > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace errcode $CLI bundle deploy &> out.deploy.txt
+trace print_requests.py --nostamp //jobs > out.deploy.requests.json

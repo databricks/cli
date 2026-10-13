@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: test-cluster
+      spark_version: 13.3.x-scala2.12
+      node_type_id: n2-highmem-4
+      num_workers: 1
+      gcp_attributes:
+        availability: PREEMPTIBLE_GCP
+        zone_id: auto
+        #use_preemptible_executors: false

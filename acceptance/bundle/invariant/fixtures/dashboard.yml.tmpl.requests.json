@@ -1,0 +1,71 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/app"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/resources"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/lakeview/dashboards",
+    "body": {
+      "display_name": "test-dashboard-[UNIQUE_NAME]",
+      "parent_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/resources",
+      "serialized_dashboard": "{\"pages\":[{\"name\":\"page1\",\"displayName\":\"Test Page\"}]}\n",
+      "warehouse_id": "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/lakeview/dashboards/77d9d6ed0e90f2172a017254e91c8740/published",
+    "body": {
+      "embed_credentials": false,
+      "warehouse_id": "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/dashboards/77d9d6ed0e90f2172a017254e91c8740",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_READ"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

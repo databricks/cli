@@ -1,0 +1,23 @@
+bundle:
+  name: git-source-python-task
+
+# A spark_python_task in a job with git_source uses a repo-relative python_file.
+# Path translation is skipped for git_source jobs, so the task must be sent with
+# source: GIT, otherwise the backend rejects the relative path with
+# "Invalid python file reference".
+resources:
+  jobs:
+    foo:
+      name: foo
+      git_source:
+        git_url: https://github.com/databricks/cli.git
+        git_provider: gitHub
+        git_branch: main
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+          spark_python_task:
+            python_file: src/main.py

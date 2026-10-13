@@ -58,7 +58,7 @@ func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
 	return nil
 }
 
-func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID string) (*pipelines.StartUpdate, error) {
+func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID string, development bool) (*pipelines.StartUpdate, error) {
 	if err := o.Validate(pipeline); err != nil {
 		return nil, err
 	}
@@ -70,6 +70,10 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		FullRefresh:          o.FullRefreshAll,
 		FullRefreshSelection: o.FullRefresh,
 		ValidateOnly:         o.ValidateOnly,
+
+		// Only true is sent. When false the field is omitted, so the backend keeps
+		// using the pipeline-level development property while it is being deprecated.
+		Development: development,
 	}
 	return payload, nil
 }

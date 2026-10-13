@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -118,7 +119,7 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 			return nil, diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   le.Summary,
-				Locations: []dyn.Location{le.Loc},
+				Locations: []diag.Location{le.Loc},
 			}}
 		}
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
@@ -586,10 +587,10 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 // Best effort to get the location of configuration value at the specified path.
 // This function is useful to annotate error messages with the location, because
 // we don't want to fail with a different error message if we cannot retrieve the location.
-func (r Root) GetLocation(path string) dyn.Location {
+func (r Root) GetLocation(path string) diag.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {
-		return dyn.Location{}
+		return diag.Location{}
 	}
 	return v.Location()
 }
@@ -597,12 +598,39 @@ func (r Root) GetLocation(path string) dyn.Location {
 // Get all locations of the configuration value at the specified path. We need both
 // this function and it's singular version (GetLocation) because some diagnostics just need
 // the primary location and some need all locations associated with a configuration value.
-func (r Root) GetLocations(path string) []dyn.Location {
+func (r Root) GetLocations(path string) []diag.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {
 		return nil
 	}
 	return v.Locations()
+}
+
+// GetLocationOf is [Root.GetLocation] for a path node.
+func (r Root) GetLocationOf(path *structpath.PathNode) diag.Location {
+	v, ok := r.valueOf(path)
+	if !ok {
+		return diag.Location{}
+	}
+	return v.Location()
+}
+
+// GetLocationsOf is [Root.GetLocations] for a path node.
+func (r Root) GetLocationsOf(path *structpath.PathNode) []diag.Location {
+	v, ok := r.valueOf(path)
+	if !ok {
+		return nil
+	}
+	return v.Locations()
+}
+
+func (r Root) valueOf(path *structpath.PathNode) (dyn.Value, bool) {
+	p, ok := dyn.FromStructPath(path)
+	if !ok {
+		return dyn.InvalidValue, false
+	}
+	v, err := dyn.GetByPath(r.value, p)
+	return v, err == nil
 }
 
 // GetNodeAndType and returns parent resource node and type of the resource in direct backend.

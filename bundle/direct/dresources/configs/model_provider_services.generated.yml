@@ -15,6 +15,8 @@ ignore_remote_changes:
     reason: spec:input_only
   - field: config.custom.direct.api_key.plaintext
     reason: spec:input_only
+  - field: config.custom.direct.header_auth.api_key_value.plaintext
+    reason: spec:input_only
   - field: config.gemini_enterprise.direct.api_key.plaintext
     reason: spec:input_only
   - field: config.microsoft_foundry.direct.api_key.plaintext

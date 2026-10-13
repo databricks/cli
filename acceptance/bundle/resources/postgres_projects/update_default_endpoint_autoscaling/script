@@ -21,7 +21,7 @@ trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_l
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
-trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 trace $CLI postgres get-project "${project_name}" | jq '.status.default_endpoint_settings'
 
 title "Plan again: the change must leave no drift behind"

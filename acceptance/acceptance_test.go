@@ -37,6 +37,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -154,6 +155,16 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, nil, false)
 }
 
+// TestDmsAcc runs acceptance tests against local DMS, selected with go test -run.
+// The in-process runner skips unrelated tool builds and old CLI downloads.
+func TestDmsAcc(t *testing.T) {
+	if os.Getenv("DMS_LITEBOX_URL") == "" {
+		t.Skip("DMS_LITEBOX_URL is not set")
+	}
+	require.Empty(t, os.Getenv("CLOUD_ENV"), "Litebox must not use a cloud workspace")
+	testAccept(t, true, nil, true)
+}
+
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
@@ -176,7 +187,7 @@ func TestInprocessMode(t *testing.T) {
 	// selftest/server too, which meant a second setup after StartDefaultServer had
 	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
 	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
-	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	// for the same reason - selftest/basic uses neither the wheel nor yamlfmt.
 	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
@@ -194,29 +205,8 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
-// helperScriptUsesEngineCache caches whether a _script helper in a given directory
-// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
-// Since _script helpers are shared across many tests, caching avoids redundant reads.
-var helperScriptUsesEngineCache sync.Map
-
-// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
-// contains $DATABRICKS_BUNDLE_ENGINE.
-func anyHelperScriptUsesEngine(dir string) bool {
-	if dir == "" || dir == "." {
-		return false
-	}
-	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
-		return v.(bool)
-	}
-	content, err := os.ReadFile(filepath.Join(dir, "_script"))
-	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
-		anyHelperScriptUsesEngine(filepath.Dir(dir))
-	helperScriptUsesEngineCache.Store(dir, result)
-	return result
-}
-
 // hasRunFilter returns true if the -run flag contains '=', indicating a specific
-// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+// EnvMatrix variant was requested (e.g. DMS=true).
 func hasRunFilter() bool {
 	f := flag.Lookup("test.run")
 	return f != nil && strings.Contains(f.Value.String(), "=")
@@ -253,7 +243,7 @@ func requirePrerequisites(t *testing.T) bool {
 
 // selectedTests, when non-empty, limits the run to those test directories.
 // skipToolBuilds skips building the tools that the selected tests do not use
-// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// (the databricks-bundles wheel, yamlfmt); it must stay false for a
 // full run.
 func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
@@ -309,9 +299,23 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
-	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir && !skipToolBuilds {
-		setupTerraform(t, cwd, buildDir, &repls)
+	// Download old CLI versions in parallel, overlapping with the builds below.
+	var cli293Path, cli18Path, cli1161Path string
+	var oldCLIs errgroup.Group
+	if !inprocessMode {
+		oldCLIs.Go(func() (err error) {
+			cli293Path, err = downloadCLI(buildDir, "0.293.0")
+			return err
+		})
+		oldCLIs.Go(func() (err error) {
+			cli18Path, err = downloadCLI(buildDir, "1.8.0")
+			return err
+		})
+		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
+		oldCLIs.Go(func() (err error) {
+			cli1161Path, err = downloadCLI(buildDir, "1.16.1")
+			return err
+		})
 	}
 
 	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
@@ -367,6 +371,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)
 			}
+			// Wait for the old CLI downloads so the same version isn't downloaded concurrently.
+			require.NoError(t, oldCLIs.Wait())
 			execPath = DownloadCLI(t, buildDir, version)
 			// For a downloaded release the version string is already known.
 			cliVersion = version
@@ -399,16 +405,14 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	repls.SetPath(selectionPath, "[SELECTION]")
 
 	if !inprocessMode {
-		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		require.NoError(t, oldCLIs.Wait())
+
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
 
-		cli18Path := DownloadCLI(t, buildDir, "1.8.0")
 		t.Setenv("CLI_1_8", cli18Path)
 		repls.SetPath(cli18Path, "[CLI_1_8]")
 
-		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
-		cli1161Path := DownloadCLI(t, buildDir, "1.16.1")
 		t.Setenv("CLI_1_16_1", cli1161Path)
 		repls.SetPath(cli1161Path, "[CLI_1_16_1]")
 	}
@@ -624,10 +628,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
-				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
-				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
-					anyHelperScriptUsesEngine(dir)
-				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
+				expanded = internal.SubsetExpanded(expanded, dir)
 			}
 
 			// If the matrix expands to a single empty envset, run the test directly
@@ -871,10 +872,9 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
-	// Harness-written output files (output.txt, out.requests.txt) live outside the
-	// test dir so the bundle sync doesn't upload them as bundle sources. They are
-	// written here during the run and copied into tmpDir afterwards for comparison.
-	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Harness-owned files (the merged entry-point script, output.txt, out.requests.txt)
+	// live outside the test dir so the bundle sync doesn't upload them as bundle sources.
+	// Otherwise they land in the deploy and skew the synced "Files: N" set.
 	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
 	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
 	outputDir := t.TempDir()
@@ -882,8 +882,11 @@ func runTest(t *testing.T,
 
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
-	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
+	// The merged script lives in outputDir (see above), and is run from there (cmd.Dir
+	// below). It cd's into the bundle dir first so relative paths inside the script
+	// resolve there, while $0 stays "script" (no temp path leaks into error output).
+	scriptContents := "cd \"$TEST_TMP_DIR\"\n" + readMergedScriptContents(t, dir)
+	testutil.WriteFile(t, filepath.Join(outputDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
 	inputs := make(map[string]bool, 2)
@@ -915,9 +918,10 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
+	cfg, user, workspaceID := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+	repls.Set(workspaceID, "[WORKSPACE_ID]")
 
 	cmd.Env = auth.ProcessEnv(cfg)
 
@@ -1041,12 +1045,10 @@ func runTest(t *testing.T,
 		// (kill_after.py, callserver.py, …) would route their requests through
 		// the blocking proxy. NO_PROXY exempts them.
 		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
-		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
-		// check for updates. Disable it so these CONNECT requests don't reach the
-		// blocking proxy and fail every terraform-engine test.
-		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 	}
-	cmd.Dir = tmpDir
+	// Run from outputDir so the entry-point script isn't a bundle source; the script
+	// cd's into tmpDir (the bundle dir) as its first line.
+	cmd.Dir = outputDir
 
 	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
@@ -1527,9 +1529,19 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
+	execPath, err := downloadCLI(buildDir, version)
+	require.NoError(t, err)
+	return execPath
+}
+
+// downloadCLI is the error-returning version of [DownloadCLI], safe to call
+// from goroutines other than the test goroutine.
+func downloadCLI(buildDir, version string) (string, error) {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)
-	require.NoError(t, os.MkdirAll(versionDir, 0o755))
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
+		return "", err
+	}
 
 	execName := "databricks"
 	if runtime.GOOS == "windows" {
@@ -1539,7 +1551,7 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 
 	// If already downloaded, reuse
 	if _, err := os.Stat(execPath); err == nil {
-		return execPath
+		return execPath, nil
 	}
 
 	osName := runtime.GOOS
@@ -1550,55 +1562,70 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
 	zipPath := filepath.Join(versionDir, archiveName)
 
-	downloadToFile(t, url, zipPath)
-	extractFileFromZip(t, zipPath, execName, versionDir)
+	if err := downloadToFile(url, zipPath); err != nil {
+		return "", err
+	}
+	if err := extractFileFromZip(zipPath, execName, versionDir); err != nil {
+		return "", err
+	}
 
-	return execPath
+	return execPath, nil
 }
 
 // downloadToFile downloads contents from url into the given destination path
-func downloadToFile(t *testing.T, url, destPath string) {
-	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
+func downloadToFile(url, destPath string) error {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return err
+	}
 	out, err := os.Create(destPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to download %s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: %s", url, resp.Status)
+	}
 
 	_, err = io.Copy(out, resp.Body)
-	require.NoError(t, err)
+	return err
 }
 
 // extractFileFromZip finds a file by name inside a zip archive and writes it
-// into destDir using the file's base name. Fails the test if not found.
-func extractFileFromZip(t *testing.T, zipPath, fileName, destDir string) {
+// into destDir using the file's base name. Returns an error if not found.
+func extractFileFromZip(zipPath, fileName, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 
 	targetBase := filepath.Base(fileName)
 	destPath := filepath.Join(destDir, targetBase)
-	var found bool
 	for _, f := range r.File {
 		if filepath.Base(f.Name) != targetBase {
 			continue
 		}
 		rc, err := f.Open()
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		defer rc.Close()
 
 		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		_, err = io.Copy(out, rc)
 		_ = out.Close()
-		require.NoError(t, err)
-		found = true
-		break
+		return err
 	}
-	require.True(t, found, "file %s not found in archive %s", targetBase, zipPath)
+	return fmt.Errorf("file %s not found in archive %s", targetBase, zipPath)
 }
 
 func copyFile(src, dst string) error {
@@ -1689,6 +1716,12 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 		}
 
 		if _, ok := Scripts[name]; ok {
+			return nil
+		}
+
+		// test.toml is harness config, not a bundle source; copying it into the test
+		// dir would upload it during "bundle deploy" and skew the synced file set.
+		if name == internal.ConfigFilename {
 			return nil
 		}
 
@@ -1951,22 +1984,6 @@ func BuildYamlfmt(t *testing.T) {
 	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
-// setupTerraform installs terraform and configures environment variables for tests.
-func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.ReplacementsContext) {
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".", []string{})
-
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
-
-	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
-	t.Setenv("TERRAFORM", terraformExecPath)
-
-	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
-	repls.SetPath(terraformExecPath, "[TERRAFORM]")
-}
-
 // loadScriptReplacements adds the replacements appended to replsPath by the scripts.
 // The first offset lines were written by the harness itself and are already in repls.
 func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string, offset int) {
@@ -1998,8 +2015,8 @@ func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, r
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
+	// E.g. if EnvVaryOutput is MODE = ["a", "b"] and current test running MODE="a" then
+	// notSelected contains ".b." meaning if filename contains that (e.g. out.deploy.b.txt) then we ignore it here.
 	notSelected []string
 }
 

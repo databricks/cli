@@ -1,0 +1,40 @@
+
+=== AUTO extracts a .zip into a folder named after the archive, without .zip
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive.zip --file archive.zip --format AUTO
+
+>>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]
+DIRECTORY /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive
+
+>>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive
+FILE /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive/a.txt
+DIRECTORY /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive/sub
+
+>>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive/sub
+FILE /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive/sub/c.txt
+
+=== Importing the archive again is rejected, with or without overwrite
+
+>>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive.zip --file archive.zip --format AUTO --overwrite
+Error: Overwrite cannot be used for AUTO format when importing a folder.
+
+>>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive.zip --file archive.zip --format AUTO
+Error: /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive already exists. Please pass overwrite=true to overwrite it.
+
+=== RAW stores the archive as a file, and overwrites it
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/raw.zip --file archive.zip --format RAW
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/raw.zip --file archive.zip --format RAW --overwrite
+
+=== AUTO rejects names reserved for asset types it cannot import; RAW stores them as files
+
+>>> musterr [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/space.geniespace.json --file space.geniespace.json --format AUTO
+Error: Requested node type [UNKNOWN] is not supported
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/space.geniespace.json --file space.geniespace.json --format RAW
+
+>>> list /Workspace/Users/[USERNAME]/[UNIQUE_NAME]
+DIRECTORY /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/archive
+FILE /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/raw.zip
+FILE /Workspace/Users/[USERNAME]/[UNIQUE_NAME]/space.geniespace.json

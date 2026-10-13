@@ -15,6 +15,7 @@ from databricks.bundles.clusters._models.docker_image import DockerImage
 from databricks.bundles.clusters._models.gcp_attributes import GcpAttributes
 from databricks.bundles.clusters._models.init_script_info import InitScriptInfo
 from databricks.bundles.clusters._models.kind import Kind
+from databricks.bundles.clusters._models.library import Library
 from databricks.bundles.clusters._models.lifecycle_with_started import (
     LifecycleWithStarted,
 )
@@ -44,6 +45,7 @@ def _test_case():
                 "gcp_attributes": {},
                 "init_scripts": [{}],
                 "kind": "CLASSIC_PREVIEW",
+                "libraries": [{}],
                 "lifecycle": {},
                 "permissions": [{"level": "CAN_MANAGE"}],
                 "runtime_engine": "NULL",
@@ -65,6 +67,7 @@ def _test_case():
                 gcp_attributes=GcpAttributes(),
                 init_scripts=[InitScriptInfo()],
                 kind=Kind.CLASSIC_PREVIEW,
+                libraries=[Library()],
                 lifecycle=LifecycleWithStarted(),
                 permissions=[
                     ClusterPermission(level=ClusterPermissionLevel.CAN_MANAGE)

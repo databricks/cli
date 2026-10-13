@@ -29,6 +29,10 @@ from databricks.bundles.jobs._models.job_environment import (
     JobEnvironment,
     JobEnvironmentParam,
 )
+from databricks.bundles.jobs._models.job_environment_variables import (
+    JobEnvironmentVariables,
+    JobEnvironmentVariablesParam,
+)
 from databricks.bundles.jobs._models.job_notification_settings import (
     JobNotificationSettings,
     JobNotificationSettingsParam,
@@ -101,11 +105,24 @@ class Job(Resource):
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
     """
 
+    environment_variables: VariableOrList[JobEnvironmentVariables] = field(
+        default_factory=list
+    )
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Named environment-variable entries that tasks can reference by key from
+    `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+    `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+    can reference at most one entry from this list.
+    """
+
     environments: VariableOrList[JobEnvironment] = field(default_factory=list)
     """
-    A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
+    A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
+    
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
     """
 
     git_source: VariableOrOptional[GitSource] = None
@@ -169,8 +186,9 @@ class Job(Resource):
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
     The performance target does not apply to tasks that run on Serverless GPU compute.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     permissions: VariableOrList[JobPermission] = field(default_factory=list)
@@ -274,11 +292,22 @@ class JobDict(TypedDict, total=False):
     An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.
     """
 
+    environment_variables: VariableOrList[JobEnvironmentVariablesParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Named environment-variable entries that tasks can reference by key from
+    `TaskSettings.environment_variables_key`. Each entry's `spec` holds inline
+    `variables` and optional `.env` `files`. Maximum 10 entries per job. A task
+    can reference at most one entry from this list.
+    """
+
     environments: VariableOrList[JobEnvironmentParam]
     """
-    A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
+    A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
+    
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
     """
 
     git_source: VariableOrOptional[GitSourceParam]
@@ -342,8 +371,9 @@ class JobDict(TypedDict, total=False):
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
     The performance target does not apply to tasks that run on Serverless GPU compute.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     permissions: VariableOrList[JobPermissionParam]

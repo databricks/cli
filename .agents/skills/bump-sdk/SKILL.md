@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 
 The SDK version lives in `go.mod` (`github.com/databricks/databricks-sdk-go`) and the pinned spec SHA lives in `.codegen/_openapi_sha`.
 These two move as a pair; everything else in this skill is regenerated from them or is fallout you fix by hand.
-Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `bundle/terraform_dabs_map/generated.go`, `python/databricks/bundles/**`); regenerate them.
+Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `python/databricks/bundles/**`); regenerate them.
 
 The Python tasks (`pydabs-*`, and the `pydabs-codegen` step inside `generate-check`) all run through `uv`. If one fails because `uv` is missing or because the host's `python3` is too old (e.g. 3.9), install `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`) rather than touching the system Python: `uv run` provisions the interpreter each package pins (`>=3.10`, and `==3.13.*` under `python/codegen/`) and downloads it if needed. Do not chase the system Python version.
 
@@ -27,15 +27,13 @@ Write the new SHA with `echo ${SHA} > .codegen/_openapi_sha`; `generate` reforma
 Run `go mod tidy` and confirm the `go.mod`/`go.sum` diff is the SDK line only.
 
 **3. Regenerate cli.json via genkit.**
-Run `./task generate-clijson`, which needs a clean universe checkout at `$UNIVERSE_DIR` (default `$HOME/universe`) and builds genkit from its HEAD.
-This task authenticates to fetch the spec by SHA, so an SSO/S3 fallback prompt during the run is normal.
-The task also syncs `internal/genkit/tagging.py`, its two `.lock` files, and `.github/workflows/tagging.yml` from the producer HEAD; this is drift unrelated to the SDK bump.
+Run `./task generate-clijson`, which clones `$UNIVERSE_DIR` (default `$HOME/universe`) into a temporary directory and builds genkit and the OpenAPI spec at `.codegen/_openapi_sha`. If that commit is absent locally, the task fetches `master` from the Universe checkout's `origin` remote into the temporary clone.
+The task also syncs `internal/genkit/tagging.py`, its two `.lock` files, and `.github/workflows/tagging.yml` from that Universe commit; this is drift unrelated to the SDK bump.
 Decide with the user whether to keep the tagging-producer drift or restore those files to `origin/main`.
 
 **4. Regenerate everything downstream.**
 Run `./task generate-cligen` to regenerate the command stubs from the refreshed `.codegen/cli.json`.
 Run `./task generate-check` to regenerate the reproducible artifacts (schema, validation, direct-engine YAML, refschema, pydabs); a clean tree afterwards means zero drift.
-Regenerate the DABs<->TF field map with `./task generate-schema-map`, which `generate-check` does not run.
 Run `go build ./...` and fix compile breakages before touching acceptance goldens.
 
 **5. Handle SDK breaking changes.**
@@ -52,8 +50,8 @@ go test ./acceptance -run '^TestAccept$' -timeout=60m       # MUST pass on its o
 ```
 
 The verify pass is not optional.
-Bundle tests run under an `EnvMatrix` of both engines (`terraform`, `direct`).
-When a schema change makes one engine error while the other succeeds, the variants produce different output; `-update` runs both and each overwrites the other's `output.txt`, so it can silently settle on the passing variant and report `ok` while the golden is actually wrong.
+Many bundle tests run under an `EnvMatrix` (e.g. `DMS`, `READPLAN`).
+When a schema change makes one variant error while another succeeds, the variants produce different output; `-update` runs all of them and each overwrites the other's `output.txt`, so it can silently settle on the passing variant and report `ok` while the golden is actually wrong.
 Only the non-update run catches this.
 (Ignore `rejecting_proxy.go: blocking proxy` log lines, which are normal.
 A test that times out under full parallel load but passes when run alone is a flake, not a regression.)
@@ -83,6 +81,5 @@ The bump-specific content for that template is a `## Changes` line ``Bump `githu
 
 ## Stacking and rebasing
 
-If a Terraform-provider bump PR is open and touches the same files (e.g. a value in `bundle/terraform_dabs_map/generated.go`), stack on it or merge it once landed.
 On any merge/rebase conflict in a generated file like `generated.go`, resolve to a compilable state and then regenerate rather than hand-merging.
 A squash-merged upstream PR leaves its original commits as non-ancestors, so the branch log may show duplicate commits even when the net diff vs `origin/main` is correct.

@@ -27,8 +27,8 @@ type snapshotUpload struct {
 	// clean is true for a fresh plan or deploy: the mutator discards zips staged by a
 	// previous run (so content-addressed "<hash>.zip" files don't accumulate) and
 	// stages the current one. It is false when applying a pre-existing plan
-	// (deploy --plan): the plan already records the resource and the zip staged when it
-	// was produced, so the mutator reuses that staged file instead of rebuilding it.
+	// (deploy --plan): the mutator reuses the zip staged when the plan was produced
+	// instead of rebuilding it.
 	clean bool
 }
 
@@ -40,8 +40,9 @@ type PlanUploadOptions struct {
 // resource. When Clean is true it discards zips staged by a previous run, builds the
 // bundle zip, stages it under the bundle's local state directory as "<hash>.zip", and
 // records the path on the resource; the staged file is uploaded when the resource is
-// created on apply. Pass Clean=false when applying a pre-existing plan: the plan
-// already carries the resource and its staged zip, so the mutator reuses them.
+// created on apply. Pass Clean=false when applying a pre-existing plan: the mutator reuses the
+// zip staged when the plan was produced. Either way the resource is registered in the config,
+// so its path is known to the rest of the deploy before the snapshot is uploaded.
 func PlanUpload(opts PlanUploadOptions) bundle.Mutator {
 	return &snapshotUpload{clean: opts.Clean}
 }
@@ -51,13 +52,6 @@ func (m *snapshotUpload) Name() string {
 }
 
 func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Applying a pre-existing plan: the plan already records the snapshot resource and
-	// the path of the zip staged when the plan was produced (InitForApply restores that
-	// state and DoCreate reads the staged file). Reuse it instead of rebuilding.
-	if !m.clean {
-		return nil
-	}
-
 	uploader, err := snapshot.NewSnapshotClient(b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -82,26 +76,18 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(err)
 	}
 
-	zipContent, fileCount, err := BundleZip(ctx, b)
+	var zipPath string
+	var diags diag.Diagnostics
+	if m.clean {
+		zipPath, diags, err = stageZip(ctx, b)
+	} else {
+		zipPath, err = stagedZipPath(ctx, b)
+	}
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
+		return diags.Extend(diag.FromErr(err))
 	}
-
-	// Discard zips staged by a previous run so content-addressed "<hash>.zip" files
-	// don't accumulate.
-	if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
-		return diag.FromErr(fmt.Errorf("failed to clean snapshot dir: %w", err))
-	}
-	dir, err := b.LocalStateDir(ctx, "snapshots")
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
-	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
-		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
-	}
-
-	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
+  
+  b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
 		CanManage:  BuildCanManage(b),
@@ -110,15 +96,51 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		Generation: generation,
 	}
 
-	var diags diag.Diagnostics
-	if fileCount > fileLimitWarning {
-		diags = append(diags, diag.Warningf(
-			"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
-			fileCount, fileLimitWarning,
-		)...)
+	return diags
+}
+
+// stageZip builds the bundle zip and stages it under the bundle's local state directory as
+// "<hash>.zip", discarding zips staged by a previous run so content-addressed files don't
+// accumulate.
+func stageZip(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics, error) {
+	zipContent, fileCount, err := BundleZip(ctx, b)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to build snapshot zip: %w", err)
 	}
 
-	return diags
+	if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
+		return "", nil, fmt.Errorf("failed to clean snapshot dir: %w", err)
+	}
+	dir, err := b.LocalStateDir(ctx, "snapshots")
+	if err != nil {
+		return "", nil, err
+	}
+	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
+	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
+		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
+	}
+
+	var diags diag.Diagnostics
+	if fileCount > fileLimitWarning {
+		diags = diag.Warningf(
+			"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
+			fileCount, fileLimitWarning,
+		)
+	}
+	return zipPath, diags, nil
+}
+
+// stagedZipPath returns the zip staged when the plan being applied was produced. Each fresh
+// plan clears the directory before staging, so it holds exactly that one zip.
+func stagedZipPath(ctx context.Context, b *bundle.Bundle) (string, error) {
+	zips, err := filepath.Glob(filepath.Join(b.GetLocalStateDir(ctx, "snapshots"), "*.zip"))
+	if err != nil {
+		return "", err
+	}
+	if len(zips) != 1 {
+		return "", fmt.Errorf("expected one staged snapshot zip, found %d; run 'bundle plan' again", len(zips))
+	}
+	return zips[0], nil
 }
 
 // BundleID returns a stable hash that identifies the bundle deployment.

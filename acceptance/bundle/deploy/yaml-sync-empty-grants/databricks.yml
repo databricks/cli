@@ -1,9 +1,0 @@
-bundle:
-  name: yaml-sync-empty-grants
-
-resources:
-  schemas:
-    schema1:
-      name: myschema
-      catalog_name: main
-      grants: []
