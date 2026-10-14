@@ -1,9 +1,10 @@
 package dresources
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,58 +12,58 @@ import (
 func TestBuildGrantChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		desired  []catalog.PrivilegeAssignment
-		remote   map[string][]catalog.Privilege
-		expected []catalog.PermissionsChange
+		desired  []grants.PrivilegeAssignment
+		remote   map[string][]string
+		expected []grants.PermissionsChange
 	}{
 		{
 			name: "removes all other privileges for desired principal",
-			desired: []catalog.PrivilegeAssignment{
+			desired: []grants.PrivilegeAssignment{
 				{
-					Principal: "alice",
-					Privileges: []catalog.Privilege{
-						catalog.PrivilegeApplyTag,
-						catalog.PrivilegeCreateTable,
+					Principal: new("alice"),
+					Privileges: []string{
+						"APPLY_TAG",
+						"CREATE_TABLE",
 					},
 				},
 			},
-			expected: []catalog.PermissionsChange{
+			expected: []grants.PermissionsChange{
 				{
-					Principal: "alice",
-					Add: []catalog.Privilege{
-						catalog.PrivilegeApplyTag,
-						catalog.PrivilegeCreateTable,
+					Principal: new("alice"),
+					Add: []string{
+						"APPLY_TAG",
+						"CREATE_TABLE",
 					},
-					Remove: []catalog.Privilege{
-						catalog.PrivilegeAllPrivileges,
+					Remove: []string{
+						"ALL_PRIVILEGES",
 					},
 				},
 			},
 		},
 		{
 			name: "skips ALL_PRIVILEGES removal when granting ALL_PRIVILEGES",
-			desired: []catalog.PrivilegeAssignment{
+			desired: []grants.PrivilegeAssignment{
 				{
-					Principal: "alice",
-					Privileges: []catalog.Privilege{
-						catalog.PrivilegeAllPrivileges,
+					Principal: new("alice"),
+					Privileges: []string{
+						"ALL_PRIVILEGES",
 					},
 				},
 			},
-			remote: map[string][]catalog.Privilege{
-				"bob": {catalog.PrivilegeAllPrivileges},
+			remote: map[string][]string{
+				"bob": {"ALL_PRIVILEGES"},
 			},
-			expected: []catalog.PermissionsChange{
+			expected: []grants.PermissionsChange{
 				{
-					Principal: "alice",
-					Add: []catalog.Privilege{
-						catalog.PrivilegeAllPrivileges,
+					Principal: new("alice"),
+					Add: []string{
+						"ALL_PRIVILEGES",
 					},
 				},
 				{
-					Principal: "bob",
-					Remove: []catalog.Privilege{
-						catalog.PrivilegeAllPrivileges,
+					Principal: new("bob"),
+					Remove: []string{
+						"ALL_PRIVILEGES",
 					},
 				},
 			},
@@ -71,20 +72,20 @@ func TestBuildGrantChanges(t *testing.T) {
 			// ALL_PRIVILEGES stays granted, so MANAGE (which it does not imply and
 			// which its removal would not clear) must be revoked by name.
 			name: "revokes excluded privilege dropped while keeping ALL_PRIVILEGES",
-			desired: []catalog.PrivilegeAssignment{
+			desired: []grants.PrivilegeAssignment{
 				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+					Principal:  new("alice"),
+					Privileges: []string{"ALL_PRIVILEGES"},
 				},
 			},
-			remote: map[string][]catalog.Privilege{
-				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			remote: map[string][]string{
+				"alice": {"ALL_PRIVILEGES", "MANAGE"},
 			},
-			expected: []catalog.PermissionsChange{
+			expected: []grants.PermissionsChange{
 				{
-					Principal: "alice",
-					Add:       []catalog.Privilege{catalog.PrivilegeAllPrivileges},
-					Remove:    []catalog.Privilege{catalog.PrivilegeManage},
+					Principal: new("alice"),
+					Add:       []string{"ALL_PRIVILEGES"},
+					Remove:    []string{"MANAGE"},
 				},
 			},
 		},
@@ -93,13 +94,13 @@ func TestBuildGrantChanges(t *testing.T) {
 			// everything it implies, and MANAGE (which it does not imply) is revoked
 			// by name so the principal is fully removed instead of lingering.
 			name: "revokes excluded privilege of a removed principal",
-			remote: map[string][]catalog.Privilege{
-				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			remote: map[string][]string{
+				"alice": {"ALL_PRIVILEGES", "MANAGE"},
 			},
-			expected: []catalog.PermissionsChange{
+			expected: []grants.PermissionsChange{
 				{
-					Principal: "alice",
-					Remove:    []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+					Principal: new("alice"),
+					Remove:    []string{"ALL_PRIVILEGES", "MANAGE"},
 				},
 			},
 		},
@@ -107,20 +108,20 @@ func TestBuildGrantChanges(t *testing.T) {
 			// Downgrading a principal off ALL_PRIVILEGES: MANAGE must be revoked by
 			// name too, since removing ALL_PRIVILEGES does not clear it.
 			name: "revokes excluded privilege when downgrading off ALL_PRIVILEGES",
-			desired: []catalog.PrivilegeAssignment{
+			desired: []grants.PrivilegeAssignment{
 				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+					Principal:  new("alice"),
+					Privileges: []string{"SELECT"},
 				},
 			},
-			remote: map[string][]catalog.Privilege{
-				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			remote: map[string][]string{
+				"alice": {"ALL_PRIVILEGES", "MANAGE"},
 			},
-			expected: []catalog.PermissionsChange{
+			expected: []grants.PermissionsChange{
 				{
-					Principal: "alice",
-					Add:       []catalog.Privilege{catalog.PrivilegeSelect},
-					Remove:    []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+					Principal: new("alice"),
+					Add:       []string{"SELECT"},
+					Remove:    []string{"ALL_PRIVILEGES", "MANAGE"},
 				},
 			},
 		},
@@ -142,7 +143,7 @@ func TestGrantsIsEmptyState(t *testing.T) {
 	}{
 		{
 			name:     "empty grants list",
-			state:    &GrantsState{SecurableType: "schema", EmbeddedSlice: []catalog.PrivilegeAssignment{}},
+			state:    &GrantsState{SecurableType: "schema", EmbeddedSlice: []grants.PrivilegeAssignment{}},
 			expected: true,
 		},
 		{
@@ -154,8 +155,8 @@ func TestGrantsIsEmptyState(t *testing.T) {
 			name: "one assignment",
 			state: &GrantsState{
 				SecurableType: "schema",
-				EmbeddedSlice: []catalog.PrivilegeAssignment{
-					{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeSelect}},
+				EmbeddedSlice: []grants.PrivilegeAssignment{
+					{Principal: new("alice"), Privileges: []string{"SELECT"}},
 				},
 			},
 			expected: false,
@@ -179,7 +180,7 @@ func TestIsEmptyStateNotImplemented(t *testing.T) {
 	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
 	require.NoError(t, err)
 
-	empty, err := adapter.IsEmptyState(&catalog.CreateSchema{Name: "myschema"})
+	empty, err := adapter.IsEmptyState(&resources.CreateSchema{Name: new("myschema")})
 	require.NoError(t, err)
 	assert.False(t, empty)
 }
@@ -187,16 +188,16 @@ func TestIsEmptyStateNotImplemented(t *testing.T) {
 func TestNormalizeAssignments(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []catalog.PrivilegeAssignment
-		expected []catalog.PrivilegeAssignment
+		input    []grants.PrivilegeAssignment
+		expected []grants.PrivilegeAssignment
 	}{
 		{
 			name: "sorts privileges",
-			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeApplyTag}},
+			input: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{"USE_SCHEMA", "APPLY_TAG"}},
 			},
-			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag, catalog.PrivilegeUseSchema}},
+			expected: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{"APPLY_TAG", "USE_SCHEMA"}},
 			},
 		},
 		{
@@ -205,11 +206,11 @@ func TestNormalizeAssignments(t *testing.T) {
 			// ALL_PRIVILEGES. Applied to both config and remote, this stops the
 			// backend's extra concrete privileges from showing as drift.
 			name: "collapses ALL_PRIVILEGES with concrete privileges",
-			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog, catalog.PrivilegeAllPrivileges, catalog.PrivilegeCreateSchema}},
+			input: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{"USE_CATALOG", "ALL_PRIVILEGES", "CREATE_SCHEMA"}},
 			},
-			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges}},
+			expected: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{"ALL_PRIVILEGES"}},
 			},
 		},
 		{
@@ -217,23 +218,23 @@ func TestNormalizeAssignments(t *testing.T) {
 			// or EXTERNAL_USE_LOCATION, so all four must survive the collapse instead
 			// of being dropped alongside the concrete privileges (e.g. USE_CATALOG).
 			name: "keeps privileges not implied by ALL_PRIVILEGES",
-			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{
-					catalog.PrivilegeUseCatalog,
-					catalog.PrivilegeManage,
-					catalog.PrivilegeReadMetadata,
-					catalog.PrivilegeExternalUseSchema,
-					catalog.PrivilegeExternalUseLocation,
-					catalog.PrivilegeAllPrivileges,
+			input: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{
+					"USE_CATALOG",
+					"MANAGE",
+					"READ_METADATA",
+					"EXTERNAL_USE_SCHEMA",
+					"EXTERNAL_USE_LOCATION",
+					"ALL_PRIVILEGES",
 				}},
 			},
-			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{
-					catalog.PrivilegeAllPrivileges,
-					catalog.PrivilegeExternalUseLocation,
-					catalog.PrivilegeExternalUseSchema,
-					catalog.PrivilegeManage,
-					catalog.PrivilegeReadMetadata,
+			expected: []grants.PrivilegeAssignment{
+				{Principal: new("alice"), Privileges: []string{
+					"ALL_PRIVILEGES",
+					"EXTERNAL_USE_LOCATION",
+					"EXTERNAL_USE_SCHEMA",
+					"MANAGE",
+					"READ_METADATA",
 				}},
 			},
 		},

@@ -20,10 +20,10 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
+	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/google/uuid"
 )
 

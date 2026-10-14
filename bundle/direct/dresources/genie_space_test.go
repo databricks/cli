@@ -1,17 +1,24 @@
 package dresources
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func apiError(status int, errorCode, message string) error {
+	body, _ := json.Marshal(map[string]string{"error_code": errorCode, "message": message})
+	return apierr.FromHTTPError(status, nil, body)
+}
 
 func TestIsMissingGenieParentPathError(t *testing.T) {
 	tests := []struct {
@@ -21,29 +28,17 @@ func TestIsMissingGenieParentPathError(t *testing.T) {
 	}{
 		{
 			name: "standard missing error",
-			err: &apierr.APIError{
-				StatusCode: 404,
-				ErrorCode:  "NOT_FOUND",
-				Message:    "not found",
-			},
+			err:  apiError(404, "NOT_FOUND", "not found"),
 			want: true,
 		},
 		{
 			name: "invalid parameter tree node missing error",
-			err: &apierr.APIError{
-				StatusCode: 400,
-				ErrorCode:  "INVALID_PARAMETER_VALUE",
-				Message:    "NOT_FOUND: Tree node with path /Workspace/foo does not exist",
-			},
+			err:  apiError(400, "INVALID_PARAMETER_VALUE", "NOT_FOUND: Tree node with path /Workspace/foo does not exist"),
 			want: true,
 		},
 		{
 			name: "other invalid parameter error",
-			err: &apierr.APIError{
-				StatusCode: 400,
-				ErrorCode:  "INVALID_PARAMETER_VALUE",
-				Message:    "some other validation failure",
-			},
+			err:  apiError(400, "INVALID_PARAMETER_VALUE", "some other validation failure"),
 			want: false,
 		},
 	}
@@ -55,44 +50,47 @@ func TestIsMissingGenieParentPathError(t *testing.T) {
 	}
 }
 
+// newGenieTestClient returns a client that talks to server.
+func newGenieTestClient(t *testing.T, server *testserver.Server) *sdkclients.Clients {
+	client, err := sdkclients.New(t.Context(), &config.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+	return client
+}
+
 func TestGenieSpaceDoCreateRetriesWhenParentPathLooksMissing(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
+	server := testserver.New(t)
 
-	req := dashboards.GenieCreateSpaceRequest{
-		Title:           "test genie space",
-		Description:     "test description",
-		ParentPath:      "/Workspace/test-parent",
-		WarehouseId:     "test-warehouse-id",
-		SerializedSpace: "{}",
-	}
+	var createBodies []string
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req testserver.Request) any {
+		createBodies = append(createBodies, string(req.Body))
+		if len(createBodies) == 1 {
+			return testserver.Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "NOT_FOUND: Tree node with path /Workspace/test-parent does not exist",
+				},
+			}
+		}
+		return map[string]string{
+			"space_id":         "space-id",
+			"title":            "test genie space",
+			"description":      "test description",
+			"warehouse_id":     "test-warehouse-id",
+			"serialized_space": "{}",
+		}
+	})
+	var mkdirsBodies []string
+	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
+		mkdirsBodies = append(mkdirsBodies, string(req.Body))
+		return map[string]string{}
+	})
 
-	m.GetMockGenieAPI().EXPECT().
-		CreateSpace(ctx, req).
-		Return(nil, &apierr.APIError{
-			StatusCode: 400,
-			ErrorCode:  "INVALID_PARAMETER_VALUE",
-			Message:    "NOT_FOUND: Tree node with path /Workspace/test-parent does not exist",
-		}).
-		Once()
-
-	m.GetMockWorkspaceAPI().EXPECT().
-		MkdirsByPath(ctx, "/Workspace/test-parent").
-		Return(nil).
-		Once()
-
-	m.GetMockGenieAPI().EXPECT().
-		CreateSpace(ctx, req).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id",
-			Title:           "test genie space",
-			Description:     "test description",
-			WarehouseId:     "test-warehouse-id",
-			SerializedSpace: "{}",
-		}, nil).
-		Once()
-
+	r := (&ResourceGenieSpace{}).New(newGenieTestClient(t, server))
 	id, state, err := r.DoCreate(ctx, &resources.GenieSpaceConfig{
 		Title:           "test genie space",
 		Description:     "test description",
@@ -104,34 +102,31 @@ func TestGenieSpaceDoCreateRetriesWhenParentPathLooksMissing(t *testing.T) {
 	assert.Equal(t, "space-id", id)
 	require.NotNil(t, state)
 	assert.Equal(t, "test genie space", state.Title)
+
+	want := `{"warehouse_id":"test-warehouse-id","parent_path":"/Workspace/test-parent","serialized_space":"{}","title":"test genie space","description":"test description"}`
+	require.Len(t, createBodies, 2)
+	assert.JSONEq(t, want, createBodies[0])
+	assert.JSONEq(t, want, createBodies[1])
+	require.Len(t, mkdirsBodies, 1)
+	assert.JSONEq(t, `{"path":"/Workspace/test-parent"}`, mkdirsBodies[0])
 }
 
 func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
+	server := testserver.New(t)
 
+	var updateBodies []string
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{id}", func(req testserver.Request) any {
+		updateBodies = append(updateBodies, string(req.Body))
+		return map[string]string{"space_id": "space-id", "title": "new", "etag": "etag-8"}
+	})
+
+	r := (&ResourceGenieSpace{}).New(newGenieTestClient(t, server))
 	entry := &deployplan.PlanEntry{
 		Changes: deployplan.Changes{
 			"title": {Action: deployplan.Update, Old: "old", New: "new"},
 		},
 	}
-
-	// The stored etag (etag-7) must NOT be sent as an If-Match guard — it would
-	// 409 after a backend serialized_space schema migration. Only the etag from
-	// the response is persisted, for drift detection on the next plan.
-	m.GetMockGenieAPI().EXPECT().
-		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId:         "space-id",
-			Title:           "new",
-			ForceSendFields: []string{"Description"},
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId: "space-id",
-			Title:   "new",
-			Etag:    "etag-8",
-		}, nil).
-		Once()
 
 	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
 		Title: "new",
@@ -140,12 +135,25 @@ func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, "etag-8", state.Etag)
+
+	// The stored etag (etag-7) must NOT be sent as an If-Match guard — it would
+	// 409 after a backend serialized_space schema migration. Only the etag from
+	// the response is persisted, for drift detection on the next plan.
+	require.Len(t, updateBodies, 1)
+	assert.JSONEq(t, `{"space_id":"space-id","title":"new","description":""}`, updateBodies[0])
 }
 
 func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
+	server := testserver.New(t)
+
+	var updateBodies []string
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{id}", func(req testserver.Request) any {
+		updateBodies = append(updateBodies, string(req.Body))
+		return map[string]string{"space_id": "space-id", "title": "new", "serialized_space": `{"converge":"me"}`}
+	})
+
+	r := (&ResourceGenieSpace{}).New(newGenieTestClient(t, server))
 
 	// Even though the plan entry only marks an unrelated field changed, the body
 	// is sent so the deploy converges the space to the bundle config.
@@ -155,20 +163,6 @@ func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 		},
 	}
 
-	m.GetMockGenieAPI().EXPECT().
-		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId:         "space-id",
-			Title:           "new",
-			SerializedSpace: "{\"converge\":\"me\"}",
-			ForceSendFields: []string{"Description"},
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id",
-			Title:           "new",
-			SerializedSpace: "{\"converge\":\"me\"}",
-		}, nil).
-		Once()
-
 	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
 		Title:           "new",
 		SerializedSpace: "{\"converge\":\"me\"}",
@@ -176,6 +170,9 @@ func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, "{\"converge\":\"me\"}", state.SerializedSpace)
+
+	require.Len(t, updateBodies, 1)
+	assert.JSONEq(t, `{"space_id":"space-id","title":"new","description":"","serialized_space":"{\"converge\":\"me\"}"}`, updateBodies[0])
 }
 
 func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {

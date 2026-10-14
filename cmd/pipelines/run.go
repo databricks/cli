@@ -24,7 +24,9 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	libutils "github.com/databricks/cli/libs/utils"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -44,13 +46,26 @@ type ProgressEventsData struct {
 	ProgressEvents []ProgressEventWithDuration
 }
 
+// updateStates lists the pipeline update states in the order they are
+// matched against event messages.
+var updateStates = []pipelines.UpdateState{
+	pipelines.UpdateState_Canceled,
+	pipelines.UpdateState_Completed,
+	pipelines.UpdateState_Created,
+	pipelines.UpdateState_Failed,
+	pipelines.UpdateState_Initializing,
+	pipelines.UpdateState_Queued,
+	pipelines.UpdateState_Resetting,
+	pipelines.UpdateState_Running,
+	pipelines.UpdateState_SettingUpTables,
+	pipelines.UpdateState_Stopping,
+	pipelines.UpdateState_WaitingForResources,
+}
+
 // phaseFromUpdateProgress extracts the phase name from an event message by checking if it contains any of the UpdateInfoState values
 // Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
 func phaseFromUpdateProgress(eventMessage string) (string, error) {
-	var updateInfoState pipelines.UpdateInfoState
-	updateInfoStates := updateInfoState.Values()
-
-	for _, state := range updateInfoStates {
+	for _, state := range updateStates {
 		if strings.Contains(eventMessage, string(state)) {
 			return string(state), nil
 		}
@@ -87,11 +102,11 @@ func readableDuration(diff time.Duration) (string, error) {
 
 // eventTimeDifference returns the time difference between two events.
 func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time.Duration, error) {
-	earlierTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
+	earlierTime, err := time.Parse(time.RFC3339Nano, libutils.Deref(earlierEvent.Timestamp))
 	if err != nil {
 		return 0, err
 	}
-	laterTime, err := time.Parse(time.RFC3339Nano, laterEvent.Timestamp)
+	laterTime, err := time.Parse(time.RFC3339Nano, libutils.Deref(laterEvent.Timestamp))
 	if err != nil {
 		return 0, err
 	}
@@ -112,7 +127,7 @@ func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressE
 		var nextEvent pipelines.PipelineEvent
 		event := events[j]
 		if j == len(events)-1 {
-			nextEvent = pipelines.PipelineEvent{Timestamp: endTime}
+			nextEvent = pipelines.PipelineEvent{Timestamp: new(endTime)}
 		} else {
 			nextEvent = events[j+1]
 		}
@@ -124,7 +139,7 @@ func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressE
 		if err != nil {
 			return nil, err
 		}
-		phase, err := phaseFromUpdateProgress(event.Message)
+		phase, err := phaseFromUpdateProgress(libutils.Deref(event.Message))
 		if err != nil {
 			return nil, err
 		}
@@ -165,10 +180,14 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *sdkclients.Clients, p
 		return errors.New("no update ID provided")
 	}
 
-	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
-		PipelineId: pipelineId,
-		UpdateId:   updateId,
+	sdkResponse, err := w.Pipelines.GetUpdate(ctx, sdkpipelines.GetUpdateRequest{
+		PipelineId: new(pipelineId),
+		UpdateId:   new(updateId),
 	})
+	if err != nil {
+		return err
+	}
+	getUpdateResponse, err := pipelines.GetUpdateResponseFromSDK(sdkResponse)
 	if err != nil {
 		return err
 	}
@@ -209,7 +228,7 @@ func getLastEventTime(events []pipelines.PipelineEvent) string {
 		return ""
 	}
 	lastEvent := events[len(events)-1]
-	parsedTime, err := time.Parse(time.RFC3339Nano, lastEvent.Timestamp)
+	parsedTime, err := time.Parse(time.RFC3339Nano, libutils.Deref(lastEvent.Timestamp))
 	if err != nil {
 		return ""
 	}

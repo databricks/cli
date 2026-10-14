@@ -14,8 +14,10 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/utils"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -74,7 +76,11 @@ like catalogs, schemas, and compute configurations per target.`,
 		}
 
 		w := b.WorkspaceClient(ctx)
-		pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
+		sdkPipeline, err := w.Pipelines.Get(ctx, sdkpipelines.GetPipelineRequest{PipelineId: new(pipelineId)})
+		if err != nil {
+			return err
+		}
+		pipeline, err := pipelines.GetPipelineResponseFromSDK(sdkPipeline)
 		if err != nil {
 			return err
 		}
@@ -88,9 +94,9 @@ like catalogs, schemas, and compute configurations per target.`,
 		}
 
 		// If the root path is set, we need to download the files from the root path
-		remoteRootPath := pipeline.Spec.RootPath
-		if pipeline.Spec.RootPath != "" {
-			err := downloader.MarkDirectoryForDownload(ctx, &pipeline.Spec.RootPath)
+		remoteRootPath := utils.Deref(pipeline.Spec.RootPath)
+		if pipeline.Spec.RootPath != nil && *pipeline.Spec.RootPath != "" {
+			err := downloader.MarkDirectoryForDownload(ctx, pipeline.Spec.RootPath)
 			if err != nil {
 				return err
 			}
@@ -109,7 +115,7 @@ like catalogs, schemas, and compute configurations per target.`,
 
 		pipelineKey := cmd.Flag("key").Value.String()
 		if pipelineKey == "" {
-			pipelineKey = textutil.NormalizeString(pipeline.Name)
+			pipelineKey = textutil.NormalizeString(utils.Deref(pipeline.Name))
 		}
 
 		result := map[string]dyn.Value{

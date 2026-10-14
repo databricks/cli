@@ -12,8 +12,6 @@ import (
 	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/sdk-go/core/apierr"
 )
 
@@ -41,27 +39,8 @@ const (
 )
 
 // max503Attempts caps attempts when the server keeps answering 503; the
-// SDK's default budget would otherwise retry for up to 5 minutes.
+// default budget would otherwise retry for up to 5 minutes.
 const max503Attempts = 3
-
-type attempt503CounterKey struct{}
-
-// arm503Budget attaches the request's 503 attempt counter; retries of one
-// request run sequentially, so a plain *int suffices.
-func arm503Budget(ctx context.Context) context.Context {
-	return context.WithValue(ctx, attempt503CounterKey{}, new(int))
-}
-
-// allow503Retry consumes one unit of the request's 503 budget. Unarmed
-// contexts get no retries.
-func allow503Retry(ctx context.Context) bool {
-	n, ok := ctx.Value(attempt503CounterKey{}).(*int)
-	if !ok {
-		return false
-	}
-	*n++
-	return *n < max503Attempts
-}
 
 // sandboxDocsURL points users at the Sandbox documentation, including its
 // region availability. The cloud-neutral path redirects to the reader's
@@ -217,18 +196,7 @@ type registerKeyRequest struct {
 
 // newSandboxAPI returns a sandboxAPI bound to the workspace client's config.
 func newSandboxAPI(w *sdkclients.Clients) (*sandboxAPI, error) {
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
-	}
-	defaultRetriable := clientCfg.ErrorRetriable
-	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() == http.StatusServiceUnavailable {
-			return allow503Retry(ctx)
-		}
-		return defaultRetriable(ctx, err)
-	}
-	c, err := client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
+	c, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
@@ -250,7 +218,7 @@ func (a *sandboxAPI) headers() map[string]string {
 // do issues one sandbox API request: arms the 503 retry budget, attaches
 // the workspace routing headers, and translates terminal errors.
 func (a *sandboxAPI) do(ctx context.Context, method, path string, request, response any) error {
-	return translateError(a.c.Do(arm503Budget(ctx), method, path, a.headers(), nil, request, response))
+	return translateError(a.c.Do(apiclient.WithMaxAttempts(ctx, max503Attempts), method, path, a.headers(), nil, request, response))
 }
 
 // create calls POST /api/2.0/lakebox/sandboxes. An empty `name` is omitted

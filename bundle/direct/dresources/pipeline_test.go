@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,11 +15,10 @@ import (
 // (except Spec and internal fields) are present in PipelineRemote.
 func TestPipelineRemote(t *testing.T) {
 	assertFieldsCovered(t, reflect.TypeFor[pipelines.GetPipelineResponse](), reflect.TypeFor[PipelineRemote](), map[string]bool{
-		"Spec":            true, // Embedded as pipelines.CreatePipeline (via makePipelineRemote)
-		"ForceSendFields": true, // Internal marshaling field
-		"Name":            true, // Available through embedded CreatePipeline
-		"Parameters":      true, // Available through embedded CreatePipeline
-		"RunAs":           true, // Available through embedded CreatePipeline
+		"Spec":       true, // Embedded as pipelines.CreatePipelineRequest (via makePipelineRemote)
+		"Name":       true, // Available through embedded CreatePipelineRequest
+		"Parameters": true, // Available through embedded CreatePipelineRequest
+		"RunAs":      true, // Available through embedded CreatePipelineRequest
 	})
 }
 

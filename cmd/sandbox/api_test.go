@@ -24,29 +24,16 @@ func TestValidateNameRejectsOversize(t *testing.T) {
 }
 
 func TestTranslateErrorRewrites503(t *testing.T) {
-	orig := &apierr.APIError{StatusCode: http.StatusServiceUnavailable, Message: "Service Unavailable"}
+	orig := apierr.FromHTTPError(http.StatusServiceUnavailable, nil, []byte(`{"message":"Service Unavailable"}`))
 	err := translateError(orig)
 	require.Error(t, err)
 	assert.Equal(t, "the Databricks Sandbox feature is not available in your region. See "+sandboxDocsURL, err.Error())
 }
 
-func TestAllow503RetryConsumesBudget(t *testing.T) {
-	ctx := arm503Budget(t.Context())
-	// max503Attempts-1 retries are allowed, then the budget is exhausted.
-	for range max503Attempts - 1 {
-		assert.True(t, allow503Retry(ctx))
-	}
-	assert.False(t, allow503Retry(ctx))
-}
-
-func TestAllow503RetryUnarmedContext(t *testing.T) {
-	assert.False(t, allow503Retry(t.Context()))
-}
-
 func TestTranslateErrorPassesThroughOthers(t *testing.T) {
 	require.NoError(t, translateError(nil))
 
-	notFound := &apierr.APIError{StatusCode: http.StatusNotFound, Message: "Sandbox not found"}
+	notFound := apierr.FromHTTPError(http.StatusNotFound, nil, []byte(`{"message":"Sandbox not found"}`))
 	assert.Equal(t, error(notFound), translateError(notFound))
 }
 

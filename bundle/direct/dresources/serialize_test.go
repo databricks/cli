@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/stretchr/testify/assert"
@@ -254,6 +255,44 @@ func TestMarshalerValueReceiver(t *testing.T) {
 // (json:"-") and bounds recursion depth to avoid runaway on self-referential
 // SDK types; bounding is safe because the fields at risk (a wrapper's own
 // fields alongside an embedded SDK type) sit at the top level.
+// fillStruct fills the fields of struct v that encoding/json serializes. A field
+// of a flattened embedded struct is skipped when an outer field has the same
+// JSON name (shadowed), since encoding/json never reads or writes it.
+func fillStruct(v reflect.Value, depth int, shadowed map[string]bool) {
+	t := v.Type()
+	names := map[string]bool{}
+	for name := range shadowed {
+		names[name] = true
+	}
+	for i := range t.NumField() {
+		sf := t.Field(i)
+		if sf.IsExported() && !structaccess.IsFlattenedEmbed(sf) {
+			names[jsonFieldName(sf)] = true
+		}
+	}
+	for i := range t.NumField() {
+		sf := t.Field(i)
+		if !sf.IsExported() || structtag.JSONTag(sf.Tag.Get("json")).Name() == "-" {
+			continue
+		}
+		if structaccess.IsFlattenedEmbed(sf) {
+			fillStruct(v.Field(i), depth+1, names)
+			continue
+		}
+		if shadowed[jsonFieldName(sf)] {
+			continue
+		}
+		fillNonZero(v.Field(i), depth+1)
+	}
+}
+
+func jsonFieldName(sf reflect.StructField) string {
+	if name := structtag.JSONTag(sf.Tag.Get("json")).Name(); name != "" {
+		return name
+	}
+	return sf.Name
+}
+
 func fillNonZero(v reflect.Value, depth int) {
 	if depth > 6 {
 		return
@@ -285,17 +324,7 @@ func fillNonZero(v reflect.Value, depth int) {
 		// Free-form any fields decode to map[string]any from JSON.
 		v.Set(reflect.ValueOf(map[string]any{"k": "v"}))
 	case reflect.Struct:
-		t := v.Type()
-		for i := range t.NumField() {
-			sf := t.Field(i)
-			if !sf.IsExported() || sf.Name == "ForceSendFields" {
-				continue
-			}
-			if structtag.JSONTag(sf.Tag.Get("json")).Name() == "-" {
-				continue
-			}
-			fillNonZero(v.Field(i), depth+1)
-		}
+		fillStruct(v, depth, nil)
 	default:
 		// Kinds that don't appear in SDK state/remote types (chan, func,
 		// complex, array, etc.) are left at their zero value.

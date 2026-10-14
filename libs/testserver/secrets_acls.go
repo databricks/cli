@@ -35,7 +35,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	// If the ACL already exists, update it in place
 	scopeAcls := s.Acls[utils.Deref(request.Scope)]
 	for i, acl := range scopeAcls {
-		if acl.Principal == request.Principal {
+		if utils.Deref(acl.Principal) == utils.Deref(request.Principal) {
 			s.Acls[utils.Deref(request.Scope)][i] = secrets.AclItem{
 				Principal:  request.Principal,
 				Permission: request.Permission,
@@ -65,7 +65,7 @@ func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 
 	scopeAcls := s.Acls[utils.Deref(request.Scope)]
 	for i, acl := range scopeAcls {
-		if acl.Principal == request.Principal {
+		if utils.Deref(acl.Principal) == utils.Deref(request.Principal) {
 			s.Acls[utils.Deref(request.Scope)] = append(scopeAcls[:i], scopeAcls[i+1:]...)
 			return Response{}
 		}

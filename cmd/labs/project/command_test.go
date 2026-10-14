@@ -47,7 +47,7 @@ func TestRunningBlueprintEchoProfileWrongOverride(t *testing.T) {
 	ctx := devEnvContext(t)
 	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "echo", "--profile", "workspace-profile")
 	_, _, err := r.Run()
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorContains(t, err, "invalid Databricks Account configuration")
 }
 
 func TestRunningCommand(t *testing.T) {

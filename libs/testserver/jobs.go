@@ -759,7 +759,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	} else if utils.Deref(task.EnvironmentKey) != "" && jobSettings != nil {
 		// Serverless task with environment_key
 		for _, envItem := range jobSettings.Environments {
-			if envItem.EnvironmentKey == task.EnvironmentKey && envItem.Spec != nil {
+			if utils.Deref(envItem.EnvironmentKey) == utils.Deref(task.EnvironmentKey) && envItem.Spec != nil {
 				whlPaths = append(whlPaths, envItem.Spec.Dependencies...)
 				break
 			}

@@ -23,7 +23,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	if utils.Deref(syncedDatabaseTable.DatabaseInstanceName) != "" {
 		found := false
 		for _, instance := range s.DatabaseInstances {
-			if instance.Name == syncedDatabaseTable.DatabaseInstanceName {
+			if utils.Deref(instance.Name) == utils.Deref(syncedDatabaseTable.DatabaseInstanceName) {
 				found = true
 				break
 			}

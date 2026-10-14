@@ -27,9 +27,11 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/lakeview/v1"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -105,7 +107,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 		return ""
 	}
 
-	if obj.ObjectType != workspace.ObjectTypeDashboard {
+	if obj.ObjectType != workspaceapi.ObjectTypeDashboard {
 		found := strings.ToLower(obj.ObjectType.String())
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Error,
@@ -127,7 +129,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient(ctx)
-	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
+	obj, err := getDashboard(ctx, w, d.existingID)
 	if err != nil {
 		if apierrs.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard with ID %s not found", d.existingID))
@@ -137,7 +139,7 @@ func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string 
 		return ""
 	}
 
-	return obj.DashboardId
+	return utils.Deref(obj.DashboardId)
 }
 
 func remarshalJSON(data []byte) ([]byte, error) {
@@ -163,10 +165,10 @@ func remarshalJSON(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
+func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundle, dashboard *lakeview.Dashboard, filename string) error {
 	// Unmarshal and remarshal the serialized dashboard to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
-	data, err := remarshalJSON([]byte(dashboard.SerializedDashboard))
+	data, err := remarshalJSON([]byte(utils.Deref(dashboard.SerializedDashboard)))
 	if err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 	return os.WriteFile(filename, data, 0o644)
 }
 
-func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
+func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *lakeview.Dashboard, key string) error {
 	// Save serialized dashboard definition to the dashboard directory.
 	dashboardBasename := key + ".lvdash.json"
 	dashboardPath := filepath.Join(d.dashboardDir, dashboardBasename)
@@ -251,16 +253,16 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func waitForChanges(ctx context.Context, w *sdkclients.Clients, dashboard *dashboards.Dashboard) {
+func waitForChanges(ctx context.Context, w *sdkclients.Clients, dashboard *lakeview.Dashboard) {
 	// Compute [time.Time] for the most recent update.
-	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	if dashboard.UpdateTime == nil {
+		logdiag.LogError(ctx, errors.New("dashboard has no update time"))
 		return
 	}
+	tref := dashboard.UpdateTime.AsTime()
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		obj, err := w.Workspace.GetStatusByPath(ctx, utils.Deref(dashboard.Path))
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -303,13 +305,13 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	// Start polling the underlying dashboard for changes.
 	var etag string
 	for {
-		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
+		dashboard, err := getDashboard(ctx, w, dashboardID)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 
-		if etag != dashboard.Etag {
+		if etag != utils.Deref(dashboard.Etag) {
 			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -323,7 +325,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 		}
 
 		// Update the etag for the next iteration.
-		etag = dashboard.Etag
+		etag = utils.Deref(dashboard.Etag)
 
 		// Now poll the workspace API for changes.
 		// This is much more efficient than polling the dashboard API because it
@@ -335,7 +337,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 
 func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
 	w := b.WorkspaceClient(ctx)
-	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
+	dashboard, err := getDashboard(ctx, w, dashboardID)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -344,7 +346,7 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	// The "key" flag is a persistent flag on the parent "generate" command.
 	key := d.cmd.Flag("key").Value.String()
 	if key == "" {
-		key = textutil.NormalizeString(dashboard.DisplayName)
+		key = textutil.NormalizeString(utils.Deref(dashboard.DisplayName))
 	}
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
@@ -528,4 +530,13 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.RunE = d.RunE
 	d.cmd = cmd
 	return cmd
+}
+
+// getDashboard fetches a dashboard as its JSON-capable mirror.
+func getDashboard(ctx context.Context, w *sdkclients.Clients, dashboardID string) (*lakeview.Dashboard, error) {
+	dashboard, err := w.Lakeview.GetDashboard(ctx, sdklakeview.GetDashboardRequest{DashboardId: new(dashboardID)})
+	if err != nil {
+		return nil, err
+	}
+	return lakeview.DashboardFromSDK(dashboard)
 }

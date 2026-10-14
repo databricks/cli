@@ -22,7 +22,7 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 	// check that the instance exists:
 	found := false
 	for _, instance := range s.DatabaseInstances {
-		if instance.Name == databaseCatalog.DatabaseInstanceName {
+		if utils.Deref(instance.Name) == utils.Deref(databaseCatalog.DatabaseInstanceName) {
 			found = true
 			break
 		}

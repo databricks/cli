@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -324,7 +324,7 @@ func convertLibraries(relativePath string, specLibraries []sdpPipelineLibrary) (
 			relativeIncludePath := filepath.ToSlash(filepath.Join(relativePath, lib.Glob.Include))
 
 			libraries = append(libraries, pipelines.PipelineLibrary{
-				Glob: &pipelines.PathPattern{Include: relativeIncludePath},
+				Glob: &pipelines.PathPattern{Include: new(relativeIncludePath)},
 			})
 		}
 	}

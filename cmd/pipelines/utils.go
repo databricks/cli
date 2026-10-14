@@ -18,7 +18,9 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -202,11 +204,9 @@ func fetchAllPipelineEvents(ctx context.Context, w *sdkclients.Clients, pipeline
 // getMostRecentUpdateId fetches one page of updates for a given pipeline and returns the first update ID.
 // Expects to receive updates in decreasing timestamp order, so the first update is the most recent.
 func getMostRecentUpdateId(ctx context.Context, w *sdkclients.Clients, pipelineID string) (string, error) {
-	request := pipelines.ListUpdatesRequest{
-		PipelineId: pipelineID,
-	}
-
-	response, err := w.Pipelines.ListUpdates(ctx, request)
+	response, err := listUpdates(ctx, w, sdkpipelines.ListUpdatesRequest{
+		PipelineId: new(pipelineID),
+	})
 	if err != nil {
 		return "", err
 	}
@@ -216,7 +216,7 @@ func getMostRecentUpdateId(ctx context.Context, w *sdkclients.Clients, pipelineI
 		return "", errors.New("no updates")
 	}
 
-	return updates[0].UpdateId, nil
+	return utils.Deref(updates[0].UpdateId), nil
 }
 
 // parseAndFormatTimestamp parses a timestamp string and formats it to the pipeline events API format.
@@ -252,7 +252,7 @@ func parseTimeToUnixMillis(timeStr string) (*int64, error) {
 func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
 	// Binary search for index with CreationTime <= ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
-		if u.CreationTime <= target {
+		if utils.Deref(u.CreationTime) <= target {
 			return 1
 		}
 		return -1
@@ -266,7 +266,7 @@ func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateI
 func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
 	// Binary search for index with CreationTime < ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
-		if u.CreationTime < target {
+		if utils.Deref(u.CreationTime) < target {
 			return 1
 		}
 		return -1
@@ -283,15 +283,15 @@ func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime *int64) ([
 		return updates, nil
 	}
 
-	if (endTime == nil || updates[0].CreationTime <= *endTime) && (startTime == nil || updates[len(updates)-1].CreationTime >= *startTime) {
+	if (endTime == nil || utils.Deref(updates[0].CreationTime) <= *endTime) && (startTime == nil || utils.Deref(updates[len(updates)-1].CreationTime) >= *startTime) {
 		return updates, nil
 	}
 
-	if startTime != nil && updates[0].CreationTime < *startTime {
+	if startTime != nil && utils.Deref(updates[0].CreationTime) < *startTime {
 		return nil, nil
 	}
 
-	if endTime != nil && updates[len(updates)-1].CreationTime > *endTime {
+	if endTime != nil && utils.Deref(updates[len(updates)-1].CreationTime) > *endTime {
 		return nil, nil
 	}
 
@@ -313,15 +313,15 @@ func fetchPipelineUpdates(ctx context.Context, w *sdkclients.Clients, startTime,
 	var pageToken string
 
 	for {
-		request := pipelines.ListUpdatesRequest{
-			PipelineId: pipelineId,
+		request := sdkpipelines.ListUpdatesRequest{
+			PipelineId: new(pipelineId),
 		}
 
 		if pageToken != "" {
-			request.PageToken = pageToken
+			request.PageToken = new(pageToken)
 		}
 
-		response, err := w.Pipelines.ListUpdates(ctx, request)
+		response, err := listUpdates(ctx, w, request)
 		if err != nil {
 			return nil, err
 		}
@@ -332,10 +332,10 @@ func fetchPipelineUpdates(ctx context.Context, w *sdkclients.Clients, startTime,
 		}
 		updates = append(updates, filteredUpdates...)
 
-		if response.NextPageToken == "" {
+		if utils.Deref(response.NextPageToken) == "" {
 			break
 		}
-		pageToken = response.NextPageToken
+		pageToken = *response.NextPageToken
 	}
 
 	return updates, nil
@@ -362,4 +362,13 @@ If you've made local changes, run '%s' first to ensure they are included.`,
 	for _, el := range diags {
 		logdiag.LogDiag(ctx, el)
 	}
+}
+
+// listUpdates lists one page of pipeline updates as JSON-capable mirrors.
+func listUpdates(ctx context.Context, w *sdkclients.Clients, request sdkpipelines.ListUpdatesRequest) (*pipelines.ListUpdatesResponse, error) {
+	response, err := w.Pipelines.ListUpdates(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return pipelines.ListUpdatesResponseFromSDK(response)
 }

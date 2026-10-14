@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -40,8 +41,8 @@ func TestClusterPolicyPrepareState(t *testing.T) {
 
 			got := (*ResourceClusterPolicy)(nil).PrepareState(input)
 
-			assert.Equal(t, tt.want, got.Definition)
-			assert.Equal(t, "my_policy", got.Name)
+			assert.Equal(t, tt.want, utils.Deref(got.Definition))
+			assert.Equal(t, "my_policy", utils.Deref(got.Name))
 		})
 	}
 }

@@ -11,8 +11,10 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -72,14 +74,18 @@ per target environment.`,
 
 		w := b.WorkspaceClient(ctx)
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
-		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+		sdkApp, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
+		if err != nil {
+			return err
+		}
+		app, err := apps.AppFromSDK(sdkApp)
 		if err != nil {
 			return err
 		}
 
 		downloader := generate.NewDownloader(w, sourceDir, configDir)
 
-		sourceCodePath := app.DefaultSourceCodePath
+		sourceCodePath := utils.Deref(app.DefaultSourceCodePath)
 		// If the source code path is not set, we don't need to download anything.
 		// This is the case for apps that are not yet deployed. A git-backed app
 		// keeps its source in Git rather than the workspace, so there is nothing
@@ -104,7 +110,7 @@ per target environment.`,
 
 		appKey := cmd.Flag("key").Value.String()
 		if appKey == "" {
-			appKey = textutil.NormalizeString(app.Name)
+			appKey = textutil.NormalizeString(utils.Deref(app.Name))
 		}
 
 		result := map[string]dyn.Value{
@@ -133,7 +139,7 @@ per target environment.`,
 		warnIfNotIncluded(ctx, b, filename)
 
 		if bind {
-			return deployment.BindResource(cmd, appKey, app.Name, true, false, true)
+			return deployment.BindResource(cmd, appKey, utils.Deref(app.Name), true, false, true)
 		}
 
 		return nil

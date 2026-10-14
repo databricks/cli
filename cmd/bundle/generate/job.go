@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -15,8 +16,11 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -78,7 +82,11 @@ After generation, you can deploy this job to other targets using:
 		}
 
 		w := b.WorkspaceClient(ctx)
-		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
+		sdkJob, err := getJob(ctx, w, jobId)
+		if err != nil {
+			return err
+		}
+		job, err := jobs.GetJobResponseFromSDK(sdkJob)
 		if err != nil {
 			return err
 		}
@@ -112,7 +120,7 @@ After generation, you can deploy this job to other targets using:
 
 		jobKey := cmd.Flag("key").Value.String()
 		if jobKey == "" {
-			jobKey = textutil.NormalizeString(job.Settings.Name)
+			jobKey = textutil.NormalizeString(utils.Deref(job.Settings.Name))
 		}
 
 		result := map[string]dyn.Value{
@@ -164,4 +172,30 @@ After generation, you can deploy this job to other targets using:
 	}
 
 	return cmd
+}
+
+// getJob fetches the job with all its tasks. jobs/get returns at most 100
+// tasks (and job clusters, parameters, environments) per page; later pages
+// are fetched with next_page_token and merged.
+func getJob(ctx context.Context, w *sdkclients.Clients, id int64) (*sdkjobs.GetJobResponse, error) {
+	req := sdkjobs.GetJobRequest{JobId: new(id)}
+	job, err := w.Jobs.GetJob(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	for job.NextPageToken != nil && *job.NextPageToken != "" {
+		req.PageToken = job.NextPageToken
+		next, err := w.Jobs.GetJob(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		if job.Settings != nil && next.Settings != nil {
+			job.Settings.Tasks = append(job.Settings.Tasks, next.Settings.Tasks...)
+			job.Settings.JobClusters = append(job.Settings.JobClusters, next.Settings.JobClusters...)
+			job.Settings.Parameters = append(job.Settings.Parameters, next.Settings.Parameters...)
+			job.Settings.Environments = append(job.Settings.Environments, next.Settings.Environments...)
+		}
+		job.NextPageToken = next.NextPageToken
+	}
+	return job, nil
 }

@@ -278,7 +278,7 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 	}
 	s.Apps[name] = app
 
-	return Response{}
+	return Response{Body: app}
 }
 
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {

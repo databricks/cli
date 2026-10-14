@@ -18,14 +18,14 @@ import (
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	compute "github.com/databricks/sdk-go/clusters/v2"
+	sql "github.com/databricks/sdk-go/warehouses/v1"
 	"github.com/spf13/cobra"
 )
 
 const ownerRWXworldRX = 0o755
 
-type whTypes []sql.EndpointInfoWarehouseType
+type whTypes []sql.WarehouseType
 
 type hook struct {
 	*Entrypoint              `yaml:",inline"`
@@ -245,8 +245,8 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *sdkcli
 	}
 	if i.Installer != nil && i.Installer.RequireDatabricksConnect {
 		sp.Update("Determining Databricks Connect version")
-		cluster, err := w.Clusters.Get(ctx, compute.GetClusterRequest{
-			ClusterId: w.Config.ClusterID,
+		cluster, err := w.Clusters.GetCluster(ctx, compute.GetClusterRequest{
+			ClusterId: new(w.Config.ClusterID),
 		})
 		if err != nil {
 			return fmt.Errorf("cluster: %w", err)

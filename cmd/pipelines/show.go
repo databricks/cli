@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -108,7 +109,7 @@ func resolveWarehouseID(ctx context.Context, w *sdkclients.Clients, flag string)
 	if err != nil {
 		return "", err
 	}
-	return warehouse.Id, nil
+	return utils.Deref(warehouse.Id), nil
 }
 
 // writes the result as JSON (--output json) or a terminal-width-aware table.

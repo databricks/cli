@@ -74,9 +74,10 @@ func (t *transport) retry(ctx context.Context, req *http.Request) (*http.Respons
 		timeout = defaultRetryTimeout
 	}
 	deadline := time.Now().Add(timeout)
+	maxAttempts, _ := ctx.Value(maxAttemptsKey{}).(int)
 	for attempt := 0; ; attempt++ {
 		resp, err := t.send(ctx, req)
-		if err != nil || !isRetriable(resp) {
+		if err != nil || !isRetriable(resp) || maxAttempts > 0 && attempt+1 >= maxAttempts {
 			return resp, err
 		}
 		wait := retryDelay(resp, attempt)
@@ -102,6 +103,15 @@ func (t *transport) retry(ctx context.Context, req *http.Request) (*http.Respons
 }
 
 const defaultRetryTimeout = 5 * time.Minute
+
+type maxAttemptsKey struct{}
+
+// WithMaxAttempts caps how many times requests made with ctx are sent when
+// the server answers 429 or 503, for callers where such an answer is not
+// transient (e.g. a feature unavailable in a region).
+func WithMaxAttempts(ctx context.Context, n int) context.Context {
+	return context.WithValue(ctx, maxAttemptsKey{}, n)
+}
 
 func isRetriable(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable

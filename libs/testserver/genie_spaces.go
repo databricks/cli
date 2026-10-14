@@ -165,7 +165,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 
 	// Optimistic concurrency: if the caller sent an etag, it must match the
 	// current one. Empty etag means apply unconditionally.
-	if utils.Deref(updateReq.Etag) != "" && updateReq.Etag != genieSpace.Etag {
+	if utils.Deref(updateReq.Etag) != "" && utils.Deref(updateReq.Etag) != utils.Deref(genieSpace.Etag) {
 		return Response{
 			StatusCode: 409,
 			Body: map[string]string{
@@ -199,7 +199,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	// other fields (title, description, warehouse_id, parent_path) leave it
 	// unchanged. This mirrors the GET API, which only returns the etag
 	// alongside serialized_space.
-	if prev.SerializedSpace != genieSpace.SerializedSpace {
+	if utils.Deref(prev.SerializedSpace) != utils.Deref(genieSpace.SerializedSpace) {
 		prevEtag, err := strconv.Atoi(utils.Deref(genieSpace.Etag))
 		if err != nil {
 			return Response{

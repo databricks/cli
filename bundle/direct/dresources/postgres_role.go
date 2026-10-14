@@ -162,7 +162,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 }
 
 func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string, _ *PostgresRoleState) error {
-	waiter, err := r.client.Postgres.DeleteRole(ctx, sdkpostgres.DeleteRoleRequest{})
+	waiter, err := r.client.Postgres.DeleteRole(ctx, sdkpostgres.DeleteRoleRequest{Name: new(id)})
 	if err != nil {
 		return err
 	}
