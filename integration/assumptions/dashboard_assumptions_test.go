@@ -6,12 +6,12 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,8 +42,8 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 
 	// Overwrite the dashboard via the workspace API.
 	{
-		err := wt.W.Workspace.Import(ctx, workspace.Import{
-			Format:    workspace.ImportFormatAuto,
+		err := wt.W.Workspace.Import(ctx, workspaceapi.Import{
+			Format:    workspaceapi.ImportFormatAuto,
 			Path:      dashboard.Path,
 			Content:   base64.StdEncoding.EncodeToString(dashboardPayload),
 			Overwrite: true,
@@ -74,7 +74,7 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		// Databricks' RESOURCE_ALREADY_EXISTS, so the SDK unwraps to
 		// ErrAlreadyExists rather than ErrResourceAlreadyExists. Assert the
 		// common 409 parent to stay resilient to either code.
-		require.ErrorIs(t, err, apierr.ErrResourceConflict)
+		require.ErrorIs(t, err, apierrs.ErrResourceConflict)
 	}
 
 	// Retrieve the dashboard object and confirm that only select fields were updated by the import.

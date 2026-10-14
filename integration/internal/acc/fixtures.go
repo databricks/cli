@@ -6,16 +6,16 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/stretchr/testify/require"
 )
 
 func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := t.W.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the name with "integration-test-" to make it easier to identify.
@@ -29,7 +29,7 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	// Remove test directory on test completion.
 	t.Cleanup(func() {
 		t.Logf("Removing workspace directory %s", basePath)
-		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{
+		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspaceapi.Delete{
 			Path:      basePath,
 			Recursive: true,
 		})
@@ -70,7 +70,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 
 func TemporaryRepo(t *WorkspaceT, url string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := t.W.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the path with "integration-test-" to make it easier to identify.

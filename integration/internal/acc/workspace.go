@@ -43,7 +43,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 func (t *WorkspaceT) TestClusterID() string {
 	t.Helper()
 	clusterID := testutil.GetEnvOrSkipTest(t, "TEST_BRICKS_CLUSTER_ID")
-	err := t.W.Clusters.EnsureClusterIsRunning(t.ctx, clusterID)
+	err := t.W.EnsureClusterIsRunning(t.ctx, clusterID)
 	require.NoError(t, err, "Unexpected error from EnsureClusterIsRunning for clusterID=%s", clusterID)
 	return clusterID
 }

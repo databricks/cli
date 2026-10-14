@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,13 +30,13 @@ var errInvalidBatchConcurrency = errors.New("--concurrency must be at least 1")
 // statement did not produce usable rows, regardless of state, so consumers
 // can branch on `error == null` alone.
 type batchResult struct {
-	SQL         string             `json:"sql"`
-	StatementID string             `json:"statement_id,omitempty"`
-	State       sql.StatementState `json:"state,omitempty"`
-	ElapsedMs   int64              `json:"elapsed_ms"`
-	Columns     []string           `json:"columns,omitempty"`
-	Rows        [][]string         `json:"rows,omitempty"`
-	Error       *batchResultError  `json:"error,omitempty"`
+	SQL         string                    `json:"sql"`
+	StatementID string                    `json:"statement_id,omitempty"`
+	State       sql.StatementStatus_State `json:"state,omitempty"`
+	ElapsedMs   int64                     `json:"elapsed_ms"`
+	Columns     []string                  `json:"columns,omitempty"`
+	Rows        [][]string                `json:"rows,omitempty"`
+	Error       *batchResultError         `json:"error,omitempty"`
 }
 
 // batchResultError captures user-visible error info for a failed statement.
@@ -58,7 +58,7 @@ type batchResultError struct {
 // params, if non-nil, are bound on every statement. The same parameter set is
 // reused across the batch, so callers must ensure each SQL uses only markers
 // that are covered.
-func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) []batchResult {
+func executeBatch(ctx context.Context, api sqlexec.API, warehouseID string, sqls []string, params []sql.StatementParameter, concurrency int) []batchResult {
 	client := sqlexec.New(api, warehouseID)
 
 	pollCtx, pollCancel := context.WithCancel(ctx)
@@ -122,17 +122,17 @@ func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, ware
 
 // runOneBatchQuery submits one SQL, polls to completion, and returns its
 // batchResult. All errors are encoded into the result; never returns an error.
-func runOneBatchQuery(ctx context.Context, client *sqlexec.Client, sqlStr string, params []sql.StatementParameterListItem, statementIDs []string, idx int) batchResult {
+func runOneBatchQuery(ctx context.Context, client *sqlexec.Client, sqlStr string, params []sql.StatementParameter, statementIDs []string, idx int) batchResult {
 	start := time.Now()
 	result := batchResult{SQL: sqlStr}
 
 	stmt, err := client.Submit(ctx, sqlStr, sqlexec.WithParameters(params))
 	if err != nil {
 		if ctx.Err() != nil {
-			result.State = sql.StatementStateCanceled
+			result.State = sql.StatementStatus_State_Canceled
 			result.Error = &batchResultError{Message: "submission cancelled"}
 		} else {
-			result.State = sql.StatementStateFailed
+			result.State = sql.StatementStatus_State_Failed
 			result.Error = &batchResultError{Message: err.Error()}
 		}
 		result.ElapsedMs = time.Since(start).Milliseconds()
@@ -145,10 +145,10 @@ func runOneBatchQuery(ctx context.Context, client *sqlexec.Client, sqlStr string
 	stmt, err = client.Poll(ctx, stmt)
 	if err != nil {
 		if ctx.Err() != nil {
-			result.State = sql.StatementStateCanceled
+			result.State = sql.StatementStatus_State_Canceled
 			result.Error = &batchResultError{Message: "cancelled"}
 		} else {
-			result.State = sql.StatementStateFailed
+			result.State = sql.StatementStatus_State_Failed
 			result.Error = &batchResultError{Message: err.Error()}
 		}
 		result.ElapsedMs = time.Since(start).Milliseconds()
@@ -189,9 +189,9 @@ func cancelInFlight(ctx context.Context, client *sqlexec.Client, statementIDs []
 			continue
 		}
 		switch results[i].State {
-		case sql.StatementStateSucceeded, sql.StatementStateFailed, sql.StatementStateClosed:
+		case sql.StatementStatus_State_Succeeded, sql.StatementStatus_State_Failed, sql.StatementStatus_State_Closed:
 			continue
-		case sql.StatementStateCanceled, sql.StatementStatePending, sql.StatementStateRunning:
+		case sql.StatementStatus_State_Canceled, sql.StatementStatus_State_Pending, sql.StatementStatus_State_Running:
 			// Either still running server-side, or our internal "canceled"
 			// marker meaning the goroutine bailed without telling the server.
 			// Either way, send CancelExecution.

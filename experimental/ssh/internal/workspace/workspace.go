@@ -10,7 +10,8 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/utils"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 const metadataFileName = "metadata.json"
@@ -30,11 +31,11 @@ type WorkspaceMetadata struct {
 }
 
 func getWorkspaceRootDir(ctx context.Context, client *sdkclients.Clients) (string, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := client.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", me.UserName), nil
+	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", utils.Deref(me.UserName)), nil
 }
 
 func GetWorkspaceVersionedDir(ctx context.Context, client *sdkclients.Clients, version string) (string, error) {

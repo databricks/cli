@@ -9,8 +9,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
-	databrickscfg "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,9 +55,7 @@ func TestFilerForPathForDbfsScheme(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.fullPath, func(t *testing.T) {
-			m := mocks.NewMockWorkspaceClient(t)
-			m.WorkspaceClient.Config = &databrickscfg.Config{}
-			ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+			ctx := cmdctx.SetWorkspaceClient(t.Context(), testClients(t))
 
 			f, path, err := filerForPath(ctx, tc.fullPath)
 			require.NoError(t, err)
@@ -96,18 +94,26 @@ func mockMustWorkspaceClientFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func setupCommand(t *testing.T) (*cobra.Command, *mocks.MockWorkspaceClient) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+// testClients returns clients for a server that expects no requests.
+func testClients(t *testing.T) *sdkclients.Clients {
+	t.Helper()
+	cfg, _ := httpfixtures.Fixtures{}.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
+	return w
+}
+
+func setupCommand(t *testing.T) (*cobra.Command, *sdkclients.Clients) {
+	w := testClients(t)
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), w)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
-	return cmd, m
+	return cmd, w
 }
 
-func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceClient) {
+func setupTest(t *testing.T) (*validArgs, *cobra.Command, *sdkclients.Clients) {
 	cmd, m := setupCommand(t)
 
 	fakeFilerForPath := func(ctx context.Context, fullPath string) (filer.Filer, string, error) {

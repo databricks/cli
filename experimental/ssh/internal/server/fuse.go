@@ -11,7 +11,8 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/fuse"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/utils"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 func startFuseRegistration(ctx context.Context, client *sdkclients.Clients, serverless bool) {
@@ -44,12 +45,12 @@ func fuseUserInfo(ctx context.Context, client *sdkclients.Clients) (userID, note
 	// User metadata is optional. Limit its lookup before publishing the server port.
 	userCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	me, err := client.CurrentUser.Me(userCtx, iam.MeRequest{})
+	me, err := client.Scim.Me(userCtx, sdkscim.MeRequest{})
 	if err != nil {
 		log.Debugf(ctx, "Registering filesystem credentials without user metadata: %v", err)
 		return "", ""
 	}
-	return me.Id, "/Users/" + me.UserName
+	return utils.Deref(me.Id), "/Users/" + utils.Deref(me.UserName)
 }
 
 func workspaceToken(client *sdkclients.Clients) fuse.TokenFunc {

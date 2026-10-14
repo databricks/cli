@@ -19,9 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
-	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -49,7 +47,7 @@ func newSQLGate(limit int) *sqlGate {
 // when polling completes (or the caller's context is cancelled). On success it
 // returns the assembled result; a terminal non-success state is surfaced as the
 // CLI-facing query error.
-func (g *sqlGate) run(ctx context.Context, w *sdkclients.Clients, warehouseID, statement string) (*sqlexec.Result, error) {
+func (g *sqlGate) run(ctx context.Context, api sqlexec.API, warehouseID, statement string) (*sqlexec.Result, error) {
 	// If the caller cancelled before we even tried, don't enter the select:
 	// when the gate has free slots both cases are ready and Go picks one
 	// pseudo-randomly. Without this early-out we'd occasionally submit a
@@ -64,7 +62,7 @@ func (g *sqlGate) run(ctx context.Context, w *sdkclients.Clients, warehouseID, s
 		return nil, ctx.Err()
 	}
 
-	client := sqlexec.New(w.StatementExecution, warehouseID)
+	client := sqlexec.New(api, warehouseID)
 
 	stmt, err := client.Submit(ctx, statement)
 	if err != nil {
@@ -162,7 +160,7 @@ CancelExecution before the command exits.`,
 
 			gate := newSQLGate(concurrency)
 
-			output, anyFailed := runDiscoverSchemas(pollCtx, gate, w, warehouseID, args)
+			output, anyFailed := runDiscoverSchemas(pollCtx, gate, w.StatementExecution, warehouseID, args)
 
 			if pollCtx.Err() != nil {
 				cancelDiscoverInFlight(ctx, w.StatementExecution, gate.trackedIDs())
@@ -188,13 +186,13 @@ CancelExecution before the command exits.`,
 // runDiscoverSchemas discovers schemas for tables concurrently and returns the
 // rendered output. The bool is true if any table failed; per-table errors are
 // inlined into the output so one bad table doesn't abort the others.
-func runDiscoverSchemas(ctx context.Context, gate *sqlGate, w *sdkclients.Clients, warehouseID string, tables []string) (string, bool) {
+func runDiscoverSchemas(ctx context.Context, gate *sqlGate, api sqlexec.API, warehouseID string, tables []string) (string, bool) {
 	results := make([]string, len(tables))
 	var anyFailed atomic.Bool
 	g := new(errgroup.Group)
 	for i, table := range tables {
 		g.Go(func() error {
-			result, err := discoverTable(ctx, gate, w, warehouseID, table)
+			result, err := discoverTable(ctx, gate, api, warehouseID, table)
 			if err != nil {
 				results[i] = fmt.Sprintf("Error discovering %s: %v", table, err)
 				anyFailed.Store(true)
@@ -230,7 +228,7 @@ func runDiscoverSchemas(ctx context.Context, gate *sqlGate, w *sdkclients.Client
 // Statements that already finished server-side return an error which we just
 // swallow at warn level; the alternative (per-statement state tracking) isn't
 // worth the bookkeeping here.
-func cancelDiscoverInFlight(ctx context.Context, api dbsql.StatementExecutionInterface, ids []string) {
+func cancelDiscoverInFlight(ctx context.Context, api sqlexec.API, ids []string) {
 	if len(ids) == 0 {
 		cmdio.LogString(ctx, "discover-schema cancelled.")
 		return
@@ -247,14 +245,14 @@ func cancelDiscoverInFlight(ctx context.Context, api dbsql.StatementExecutionInt
 	cmdio.LogString(ctx, fmt.Sprintf("discover-schema cancelled; sent CancelExecution for %d statement(s).", len(ids)))
 }
 
-func discoverTable(ctx context.Context, gate *sqlGate, w *sdkclients.Clients, warehouseID, table string) (string, error) {
+func discoverTable(ctx context.Context, gate *sqlGate, api sqlexec.API, warehouseID, table string) (string, error) {
 	quoted, err := quoteTableName(table)
 	if err != nil {
 		return "", err
 	}
 
 	// 1. describe table - get columns and types
-	descResult, err := gate.run(ctx, w, warehouseID, "DESCRIBE TABLE "+quoted)
+	descResult, err := gate.run(ctx, api, warehouseID, "DESCRIBE TABLE "+quoted)
 	if err != nil {
 		return "", fmt.Errorf("describe table: %w", err)
 	}
@@ -288,11 +286,11 @@ func discoverTable(ctx context.Context, gate *sqlGate, w *sdkclients.Clients, wa
 
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		sampleResult, sampleErr = gate.run(ctx, w, warehouseID, sampleSQL)
+		sampleResult, sampleErr = gate.run(ctx, api, warehouseID, sampleSQL)
 		return nil
 	})
 	g.Go(func() error {
-		nullResult, nullErr = gate.run(ctx, w, warehouseID, nullSQL)
+		nullResult, nullErr = gate.run(ctx, api, warehouseID, nullSQL)
 		return nil
 	})
 	_ = g.Wait()

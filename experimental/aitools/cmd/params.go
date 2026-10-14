@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 )
 
 // parseParams converts --param flag values into SDK parameter list items for
@@ -15,12 +16,12 @@ import (
 //
 // The Databricks API only supports named markers (`:name`), not positional
 // `?`, and parameter names must be unique within a statement.
-func parseParams(raw []string) ([]sql.StatementParameterListItem, error) {
+func parseParams(raw []string) ([]sql.StatementParameter, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
 
-	out := make([]sql.StatementParameterListItem, 0, len(raw))
+	out := make([]sql.StatementParameter, 0, len(raw))
 	seen := make(map[string]struct{}, len(raw))
 	for _, s := range raw {
 		lhs, value, ok := strings.Cut(s, "=")
@@ -40,10 +41,10 @@ func parseParams(raw []string) ([]sql.StatementParameterListItem, error) {
 		}
 		seen[name] = struct{}{}
 
-		out = append(out, sql.StatementParameterListItem{
-			Name:  name,
-			Type:  typ,
-			Value: value,
+		out = append(out, sql.StatementParameter{
+			Name:  new(name),
+			Type:  utils.NonZero(typ),
+			Value: utils.NonZero(value),
 		})
 	}
 	return out, nil

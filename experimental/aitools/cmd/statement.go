@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -16,12 +16,12 @@ import (
 // the output tight: `submit` doesn't emit columns/rows, `cancel` doesn't emit a
 // warehouse_id, etc.
 type statementInfo struct {
-	StatementID string             `json:"statement_id"`
-	State       sql.StatementState `json:"state,omitempty"`
-	WarehouseID string             `json:"warehouse_id,omitempty"`
-	Columns     []string           `json:"columns,omitempty"`
-	Rows        [][]string         `json:"rows,omitempty"`
-	Error       *batchResultError  `json:"error,omitempty"`
+	StatementID string                    `json:"statement_id"`
+	State       sql.StatementStatus_State `json:"state,omitempty"`
+	WarehouseID string                    `json:"warehouse_id,omitempty"`
+	Columns     []string                  `json:"columns,omitempty"`
+	Rows        [][]string                `json:"rows,omitempty"`
+	Error       *batchResultError         `json:"error,omitempty"`
 }
 
 func renderStatementInfo(w io.Writer, info statementInfo) error {

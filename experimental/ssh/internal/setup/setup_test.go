@@ -11,9 +11,8 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/httpfixtures"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -181,13 +180,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := clustersClients(t, "cluster-123", `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`)
 
 	opts := SetupOptions{
 		HostName:      "test-host",
@@ -200,7 +193,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 		Profile:       "test-profile",
 	}
 
-	err := Setup(ctx, m.WorkspaceClient, opts)
+	err := Setup(ctx, m, opts)
 	assert.NoError(t, err)
 
 	// Check that main config has Include directive
@@ -238,12 +231,7 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := clustersClients(t, "cluster-123", `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`)
 
 	opts := SetupOptions{
 		HostName:      "test-host",
@@ -256,7 +244,7 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 		AutoApprove:   true,
 	}
 
-	err := Setup(ctx, m.WorkspaceClient, opts)
+	err := Setup(ctx, m, opts)
 	assert.NoError(t, err)
 
 	// Host config should be recreated (no longer contains the stale User).
@@ -273,11 +261,7 @@ func TestSetup_SerializesServerLifecycleFlags(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := clustersClients(t, "cluster-123", `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`)
 
 	opts := SetupOptions{
 		HostName:              "test-host",
@@ -290,7 +274,7 @@ func TestSetup_SerializesServerLifecycleFlags(t *testing.T) {
 		KeepDetachedProcesses: true,
 	}
 
-	require.NoError(t, Setup(ctx, m.WorkspaceClient, opts))
+	require.NoError(t, Setup(ctx, m, opts))
 
 	// The ProxyCommand is the invocation that submits the server job, so every value fixed at
 	// submission has to reach the persisted host config or the user's choice is silently dropped.
@@ -332,7 +316,7 @@ func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
 			t.Setenv("USERPROFILE", tmpDir)
 
 			// Validation fires before any cluster API calls, so no mock expectations needed.
-			m := mocks.NewMockWorkspaceClient(t)
+			m := clustersClients(t, "", "")
 
 			opts := tt.opts
 			opts.HostName = "test-host"
@@ -340,7 +324,7 @@ func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
 			opts.SSHConfigPath = filepath.Join(tmpDir, "ssh_config")
 			opts.SSHKeysDir = tmpDir
 
-			assert.EqualError(t, Setup(ctx, m.WorkspaceClient, opts), tt.wantErr)
+			assert.EqualError(t, Setup(ctx, m, opts), tt.wantErr)
 
 			// Nothing is written when the values are rejected.
 			_, err := os.Stat(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
@@ -367,12 +351,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 		return "picked-cluster", nil
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "picked-cluster"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := clustersClients(t, "picked-cluster", `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`)
 
 	opts := SetupOptions{
 		HostName:      "test-host",
@@ -383,7 +362,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 		ServerTimeout: 24 * time.Hour,
 	}
 
-	err := Setup(ctx, m.WorkspaceClient, opts)
+	err := Setup(ctx, m, opts)
 	require.NoError(t, err)
 	assert.True(t, promptCalled, "cluster picker should run when ClusterID is empty")
 
@@ -409,13 +388,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 	err := os.WriteFile(configPath, []byte(existingContent), 0o600)
 	require.NoError(t, err)
 
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-456"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := clustersClients(t, "cluster-456", `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`)
 
 	opts := SetupOptions{
 		HostName:      "new-host",
@@ -427,7 +400,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 		ServerTimeout: 24 * time.Hour,
 	}
 
-	err = Setup(ctx, m.WorkspaceClient, opts)
+	err = Setup(ctx, m, opts)
 	assert.NoError(t, err)
 
 	// Check that main config has Include directive and preserves existing content
@@ -447,4 +420,22 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 	hostConfigStr := string(hostContent)
 	assert.Contains(t, hostConfigStr, "Host new-host")
 	assert.Contains(t, hostConfigStr, "--cluster=cluster-456")
+}
+
+// clustersClients returns clients whose clusters/get for clusterID answers
+// with body. An empty clusterID expects no requests.
+func clustersClients(t *testing.T, clusterID, body string) *sdkclients.Clients {
+	t.Helper()
+	var fixtures httpfixtures.Fixtures
+	if clusterID != "" {
+		fixtures = append(fixtures, httpfixtures.Fixture{
+			Method:   "GET",
+			Resource: "/api/2.1/clusters/get?cluster_id=" + clusterID,
+			Response: body,
+		})
+	}
+	cfg, _ := fixtures.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
+	return w
 }

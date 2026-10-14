@@ -27,18 +27,21 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/listing"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/retries"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/environments"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	compute "github.com/databricks/sdk-go/clusters/v2"
+	"github.com/databricks/sdk-go/environments/v1"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/gorilla/websocket"
 )
 
@@ -550,7 +553,7 @@ func runIDE(ctx context.Context, client *sdkclients.Clients, userName, keyPath, 
 	}
 
 	// Get Databricks user name for the workspace path
-	currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+	currentUser, err := client.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
@@ -566,7 +569,7 @@ func runIDE(ctx context.Context, client *sdkclients.Clients, userName, keyPath, 
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
 
-	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, currentUser.UserName)
+	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, utils.Deref(currentUser.UserName))
 }
 
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -716,7 +719,7 @@ func fetchServerErrorLogs(ctx context.Context, client *sdkclients.Clients, clust
 
 // Assemble the SubmitRun request that bootstraps the SSH server.
 // Extracted from submitSSHTunnelJob so this logic can be unit tested.
-func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment string, opts ClientOptions) jobs.SubmitRun {
+func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment string, opts ClientOptions) jobs.SubmitRunRequest {
 	sessionID := opts.SessionIdentifier()
 
 	baseParams := map[string]string{
@@ -735,45 +738,45 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		"keepDetachedProcesses": strconv.FormatBool(opts.KeepDetachedProcesses),
 	}
 
-	task := jobs.SubmitTask{
-		TaskKey: sshServerTaskKey,
+	task := jobs.RunTaskSettings{
+		TaskKey: new(sshServerTaskKey),
 		NotebookTask: &jobs.NotebookTask{
-			NotebookPath:   jobNotebookPath,
+			NotebookPath:   new(jobNotebookPath),
 			BaseParameters: baseParams,
 		},
-		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
+		TimeoutSeconds: utils.NonZero(int(opts.ServerTimeout.Seconds())),
 	}
 
 	if opts.IsServerlessMode() {
-		task.EnvironmentKey = serverlessEnvironmentKey
+		task.EnvironmentKey = new(serverlessEnvironmentKey)
 		if opts.Accelerator != "" {
 			task.Compute = &jobs.Compute{
-				HardwareAccelerator: compute.HardwareAcceleratorType(opts.Accelerator),
+				HardwareAccelerator: jobs.HardwareAcceleratorType(opts.Accelerator),
 			}
 		}
 	} else {
-		task.ExistingClusterId = opts.ClusterID
+		task.ExistingClusterId = utils.NonZero(opts.ClusterID)
 	}
 
-	submitRequest := jobs.SubmitRun{
-		RunName:        "ssh-server-bootstrap-" + sessionID,
-		TimeoutSeconds: int(opts.ServerTimeout.Seconds()),
-		Tasks:          []jobs.SubmitTask{task},
-		BudgetPolicyId: opts.UsagePolicyID,
+	submitRequest := jobs.SubmitRunRequest{
+		RunName:        new("ssh-server-bootstrap-" + sessionID),
+		TimeoutSeconds: utils.NonZero(int(opts.ServerTimeout.Seconds())),
+		Tasks:          []jobs.RunTaskSettings{task},
+		BudgetPolicyId: utils.NonZero(opts.UsagePolicyID),
 	}
 
 	if opts.IsServerlessMode() {
 		// base_environment and environment_version are mutually exclusive: a custom
 		// base environment carries its own version, so we don't also set one.
-		var spec compute.Environment
+		var spec jobs.Environment
 		if baseEnvironment != "" {
-			spec.BaseEnvironment = baseEnvironment
+			spec.BaseEnvironment = new(baseEnvironment)
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+			spec.EnvironmentVersion = new(strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion)))
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
-				EnvironmentKey: serverlessEnvironmentKey,
+				EnvironmentKey: new(serverlessEnvironmentKey),
 				Spec:           &spec,
 			},
 		}
@@ -801,11 +804,11 @@ func submitSSHTunnelJob(ctx context.Context, client *sdkclients.Clients, version
 	notebookContent := "# Databricks notebook source\n" + sshServerBootstrapScript
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(notebookContent))
 
-	err = client.Workspace.Import(ctx, workspace.Import{
+	err = client.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      jobNotebookPath,
-		Format:    workspace.ImportFormatSource,
+		Format:    workspaceapi.ImportFormatSource,
 		Content:   encodedContent,
-		Language:  workspace.LanguagePython,
+		Language:  workspaceapi.LanguagePython,
 		Overwrite: true,
 	})
 	if err != nil {
@@ -827,15 +830,20 @@ func submitSSHTunnelJob(ctx context.Context, client *sdkclients.Clients, version
 
 	submitRequest := buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvironment, opts)
 
-	waiter, err := client.Jobs.Submit(ctx, submitRequest)
+	sdkRequest, err := jobs.SubmitRunRequestToSDK(&submitRequest)
 	if err != nil {
 		return 0, fmt.Errorf("failed to submit job: %w", err)
 	}
+	waiter, err := client.Jobs.SubmitRun(ctx, *sdkRequest)
+	if err != nil {
+		return 0, fmt.Errorf("failed to submit job: %w", err)
+	}
+	runID := waiter.GetRunId()
 
-	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
+	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", runID))
 
 	// Return the run ID even on error so callers can fetch the run's failure details.
-	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts)
+	return runID, waitForJobToStart(ctx, client, runID, opts)
 }
 
 // resolveBaseEnvironment maps the user-provided --base-environment value to a
@@ -848,15 +856,15 @@ func resolveBaseEnvironment(ctx context.Context, client *sdkclients.Clients, inp
 		return input, nil
 	}
 
-	envs, err := client.Environments.ListWorkspaceBaseEnvironmentsAll(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{})
+	envs, err := listing.Collect(client.Environments.ListWorkspaceBaseEnvironmentsIter(ctx, environments.ListWorkspaceBaseEnvironmentsRequest{}))
 	if err != nil {
 		return "", fmt.Errorf("failed to list workspace base environments: %w", err)
 	}
 
 	var matches []string
 	for _, e := range envs {
-		if e.DisplayName == input {
-			matches = append(matches, e.Name)
+		if utils.Deref(e.DisplayName) == input {
+			matches = append(matches, utils.Deref(e.Name))
 		}
 	}
 	switch len(matches) {
@@ -1003,10 +1011,10 @@ func spawnSSHClient(ctx context.Context, client *sdkclients.Clients, userName, p
 	// OS home. Only needed for an interactive session; skip the lookup otherwise.
 	var wsHome string
 	if len(opts.AdditionalArgs) == 0 {
-		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+		if currentUser, err := client.Scim.Me(ctx, sdkscim.MeRequest{}); err != nil {
 			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
 		} else {
-			wsHome = "/Workspace/Users/" + currentUser.UserName
+			wsHome = "/Workspace/Users/" + utils.Deref(currentUser.UserName)
 		}
 	}
 
@@ -1102,14 +1110,14 @@ func serverSupportsResume(ctx context.Context, client *sdkclients.Clients, clust
 // set. Legacy/auto/unknown modes fall back to their raw value.
 func accessModeUILabel(mode compute.DataSecurityMode, singleUserName string) string {
 	switch mode {
-	case compute.DataSecurityModeSingleUser, compute.DataSecurityModeDataSecurityModeDedicated:
+	case compute.DataSecurityMode_SingleUser, compute.DataSecurityMode_DataSecurityModeDedicated:
 		if singleUserName == "" {
 			return "Dedicated (group)"
 		}
 		return "Dedicated (single user)"
-	case compute.DataSecurityModeUserIsolation, compute.DataSecurityModeDataSecurityModeStandard:
+	case compute.DataSecurityMode_UserIsolation, compute.DataSecurityMode_DataSecurityModeStandard:
 		return "Standard"
-	case compute.DataSecurityModeNone:
+	case compute.DataSecurityMode_None:
 		return "No isolation"
 	default:
 		return string(mode)
@@ -1121,16 +1129,17 @@ func accessModeUILabel(mode compute.DataSecurityMode, singleUserName string) str
 // Dedicated access mode and assigned to one user (single_user_name set), not a group. We fail
 // early with an actionable message rather than letting the connection fail later.
 func ValidateClusterAccess(ctx context.Context, client *sdkclients.Clients, clusterID string) error {
-	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
+	clusterInfo, err := client.Clusters.GetCluster(ctx, compute.GetClusterRequest{ClusterId: new(clusterID)})
 	if err != nil {
 		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
 	}
 	// SINGLE_USER is the legacy alias for the newer DATA_SECURITY_MODE_DEDICATED enum; the API
 	// may return either for a dedicated cluster, so accept both.
-	isDedicated := clusterInfo.DataSecurityMode == compute.DataSecurityModeSingleUser ||
-		clusterInfo.DataSecurityMode == compute.DataSecurityModeDataSecurityModeDedicated
-	if !isDedicated || clusterInfo.SingleUserName == "" {
-		return fmt.Errorf("cluster '%s' must be a dedicated single-user cluster. Current access mode: %s. Please reconfigure it to Dedicated (single user) access mode", clusterID, accessModeUILabel(clusterInfo.DataSecurityMode, clusterInfo.SingleUserName))
+	isDedicated := clusterInfo.DataSecurityMode == compute.DataSecurityMode_SingleUser ||
+		clusterInfo.DataSecurityMode == compute.DataSecurityMode_DataSecurityModeDedicated
+	singleUserName := utils.Deref(clusterInfo.SingleUserName)
+	if !isDedicated || singleUserName == "" {
+		return fmt.Errorf("cluster '%s' must be a dedicated single-user cluster. Current access mode: %s. Please reconfigure it to Dedicated (single user) access mode", clusterID, accessModeUILabel(clusterInfo.DataSecurityMode, singleUserName))
 	}
 	return nil
 }
@@ -1140,17 +1149,17 @@ func checkClusterState(ctx context.Context, client *sdkclients.Clients, clusterI
 	defer sp.Close()
 	if autoStart {
 		sp.Update("Waiting for compute to start...")
-		err := client.Clusters.EnsureClusterIsRunning(ctx, clusterID)
+		err := client.EnsureClusterIsRunning(ctx, clusterID)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that the cluster is running: %w", err)
 		}
 	} else {
 		sp.Update("Checking cluster state...")
-		cluster, err := client.Clusters.GetByClusterId(ctx, clusterID)
+		cluster, err := client.Clusters.GetCluster(ctx, compute.GetClusterRequest{ClusterId: new(clusterID)})
 		if err != nil {
 			return fmt.Errorf("failed to get cluster info: %w", err)
 		}
-		if cluster.State != compute.StateRunning {
+		if cluster.State != compute.ClusterState_ClusterState_Running {
 			return fmt.Errorf("cluster %s is not running, current state: %s. Use --auto-start-cluster to start it automatically", clusterID, cluster.State)
 		}
 	}
@@ -1177,31 +1186,28 @@ func waitForJobToStart(ctx context.Context, client *sdkclients.Clients, runID in
 	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
 	sp.Update(waitingMessage)
-	var prevState jobs.RunLifecycleStateV2State
+	var prevState jobs.RunLifecycleStateV2_State
 
-	_, err := retries.Poll(ctx, opts.TaskStartupTimeout, func() (*jobs.RunTask, *retries.Err) {
-		run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{
-			RunId: runID,
-		})
+	ctx, cancel := context.WithTimeout(ctx, opts.TaskStartupTimeout)
+	defer cancel()
+	lastStatus := ""
+	for attempt := 1; ; attempt++ {
+		run, err := getRun(ctx, client, runID)
 		if err != nil {
-			return nil, retries.Halt(fmt.Errorf("failed to get job run status: %w", err))
+			if ctx.Err() != nil && lastStatus != "" {
+				return fmt.Errorf("timed out after %s: %s", opts.TaskStartupTimeout, lastStatus)
+			}
+			return fmt.Errorf("failed to get job run status: %w", err)
 		}
 
 		// Find the SSH server task
-		var sshTask *jobs.RunTask
-		for i := range run.Tasks {
-			if run.Tasks[i].TaskKey == sshServerTaskKey {
-				sshTask = &run.Tasks[i]
-				break
-			}
-		}
-
+		sshTask := findSSHServerTask(run)
 		if sshTask == nil {
-			return nil, retries.Halt(fmt.Errorf("SSH server task '%s' not found in job run", sshServerTaskKey))
+			return fmt.Errorf("SSH server task '%s' not found in job run", sshServerTaskKey)
 		}
 
 		if sshTask.Status == nil {
-			return nil, retries.Halt(errors.New("task status is nil"))
+			return errors.New("task status is nil")
 		}
 
 		currentState := sshTask.Status.State
@@ -1213,21 +1219,43 @@ func waitForJobToStart(ctx context.Context, client *sdkclients.Clients, runID in
 		}
 
 		// Check if task is running
-		if currentState == jobs.RunLifecycleStateV2StateRunning {
-			return sshTask, nil
+		if currentState == jobs.RunLifecycleStateV2_State_Running {
+			return nil
 		}
 
 		// Check for terminal failure states. Surface the run's actual error (e.g. a notebook
 		// traceback or "Could not reach driver") instead of a generic message.
-		if currentState == jobs.RunLifecycleStateV2StateTerminated {
-			return nil, retries.Halt(fmt.Errorf("ssh server bootstrap job failed:\n%s", describeRunFailure(ctx, client, runID)))
+		if currentState == jobs.RunLifecycleStateV2_State_Terminated {
+			return fmt.Errorf("ssh server bootstrap job failed:\n%s", describeRunFailure(ctx, client, runID))
 		}
 
 		// Continue polling for other states
-		return nil, retries.Continues(fmt.Sprintf("waiting for task to start (current state: %s)", currentState))
-	})
+		lastStatus = fmt.Sprintf("waiting for task to start (current state: %s)", currentState)
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out after %s: %s", opts.TaskStartupTimeout, lastStatus)
+		case <-time.After(min(time.Duration(attempt)*time.Second, 10*time.Second)):
+		}
+	}
+}
 
-	return err
+// findSSHServerTask returns the SSH server task of the run, or nil.
+func findSSHServerTask(run *jobs.GetRunResponse) *jobs.RunTask {
+	for i := range run.Tasks {
+		if utils.Deref(run.Tasks[i].TaskKey) == sshServerTaskKey {
+			return &run.Tasks[i]
+		}
+	}
+	return nil
+}
+
+// getRun fetches a job run as its JSON-capable mirror.
+func getRun(ctx context.Context, client *sdkclients.Clients, runID int64) (*jobs.GetRunResponse, error) {
+	run, err := client.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(runID)})
+	if err != nil {
+		return nil, err
+	}
+	return jobs.GetRunResponseFromSDK(run)
 }
 
 // maxRunFailureTraceBytes bounds how much of a failed run's error trace we print to the
@@ -1242,36 +1270,30 @@ func describeRunFailure(ctx context.Context, client *sdkclients.Clients, runID i
 		return "  (no job run ID available)"
 	}
 
-	run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	run, err := getRun(ctx, client, runID)
 	if err != nil {
-		return fmt.Sprintf("  could not fetch job run %d: %v", runID, err)
+		return fmt.Sprintf("  could not fetch job run %d: %s", runID, apierrs.ErrorString(err))
 	}
 
 	var b strings.Builder
 
 	// Locate the SSH server task to read its termination reason and per-task run output.
-	var sshTask *jobs.RunTask
-	for i := range run.Tasks {
-		if run.Tasks[i].TaskKey == sshServerTaskKey {
-			sshTask = &run.Tasks[i]
-			break
-		}
-	}
+	sshTask := findSSHServerTask(run)
 
 	if sshTask != nil && sshTask.Status != nil && sshTask.Status.TerminationDetails != nil {
-		if msg := strings.TrimSpace(sshTask.Status.TerminationDetails.Message); msg != "" {
+		if msg := strings.TrimSpace(utils.Deref(sshTask.Status.TerminationDetails.Message)); msg != "" {
 			fmt.Fprintf(&b, "  %s\n", msg)
 		}
 	}
 
 	// The notebook error/traceback carries the real cause (e.g. a Python exception).
 	outputRunID := runID
-	if sshTask != nil && sshTask.RunId != 0 {
-		outputRunID = sshTask.RunId
+	if sshTask != nil && utils.Deref(sshTask.RunId) != 0 {
+		outputRunID = *sshTask.RunId
 	}
-	if output, err := client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: outputRunID}); err == nil && output != nil {
-		e := strings.TrimSpace(output.Error)
-		trace := strings.TrimSpace(output.ErrorTrace)
+	if output, err := client.Jobs.GetRunOutput(ctx, sdkjobs.GetRunOutputRequest{RunId: new(outputRunID)}); err == nil && output != nil {
+		e := strings.TrimSpace(utils.Deref(output.Error))
+		trace := strings.TrimSpace(utils.Deref(output.ErrorTrace))
 		// Notebook tracebacks end with the same message as Error; skip Error then so the
 		// server-log tail the bootstrap embeds in the message isn't printed twice.
 		if e != "" && !strings.Contains(trace, e) {
@@ -1282,8 +1304,8 @@ func describeRunFailure(ctx context.Context, client *sdkclients.Clients, runID i
 		}
 	}
 
-	if run.RunPageUrl != "" {
-		fmt.Fprintf(&b, "  See the full job logs: %s", run.RunPageUrl)
+	if utils.Deref(run.RunPageUrl) != "" {
+		fmt.Fprintf(&b, "  See the full job logs: %s", *run.RunPageUrl)
 	}
 
 	if b.Len() == 0 {
@@ -1298,15 +1320,15 @@ func runFailureIfTerminated(ctx context.Context, client *sdkclients.Clients, run
 	if runID == 0 {
 		return "", false
 	}
-	run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	run, err := getRun(ctx, client, runID)
 	if err != nil {
 		return "", false
 	}
 	for i := range run.Tasks {
-		if run.Tasks[i].TaskKey != sshServerTaskKey {
+		if utils.Deref(run.Tasks[i].TaskKey) != sshServerTaskKey {
 			continue
 		}
-		if run.Tasks[i].Status != nil && run.Tasks[i].Status.State == jobs.RunLifecycleStateV2StateTerminated {
+		if run.Tasks[i].Status != nil && run.Tasks[i].Status.State == jobs.RunLifecycleStateV2_State_Terminated {
 			return describeRunFailure(ctx, client, runID), true
 		}
 		return "", false

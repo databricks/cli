@@ -644,7 +644,7 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 
 	a, err := accountClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, a)
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorIs(t, err, errNotAccountClient)
 }
 
 func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
@@ -919,7 +919,7 @@ func TestAccountClientOrPromptReturnsErrorForMissingAccountID(t *testing.T) {
 
 	a, err := accountClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, a)
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorIs(t, err, errNotAccountClient)
 }
 
 func TestMustWorkspaceClientWithoutConfiguredDefaultFallsBackToDefaultSection(t *testing.T) {

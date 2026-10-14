@@ -23,8 +23,8 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ var (
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *sdkclients.Clients, ctx context.Context) (localRoot, remoteRoot string) {
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
 
@@ -126,13 +126,13 @@ func (a *syncTest) waitForCompletionMarker() {
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
-		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		objects, err := a.w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{
 			Path: remoteDir,
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
 	}, 30*time.Second, 5*time.Second)
-	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := a.w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{
 		Path: remoteDir,
 	})
 	require.NoError(a.t, err)
@@ -488,7 +488,7 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
@@ -520,14 +520,14 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	// Verify that the directory has been created.
 	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath)
 	require.NoError(t, err)
-	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+	require.Equal(t, workspaceapi.ObjectTypeDirectory, info.ObjectType)
 }
 
 func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
@@ -536,7 +536,7 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 
 	// Clean up directory after test.
 	defer func() {
-		err := wsc.Workspace.Delete(ctx, workspace.Delete{
+		err := wsc.Workspace.Delete(ctx, workspaceapi.Delete{
 			Path: remotePath,
 		})
 		assert.NoError(t, err)
@@ -545,5 +545,5 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	// Verify that the directory has been created.
 	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
 	require.NoError(t, err)
-	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+	require.Equal(t, workspaceapi.ObjectTypeDirectory, info.ObjectType)
 }

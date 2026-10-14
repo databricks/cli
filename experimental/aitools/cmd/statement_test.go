@@ -10,8 +10,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sqlexec"
-	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -19,37 +19,37 @@ import (
 
 func TestSubmitStatementReturnsHandle(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.WarehouseId == "wh-1" && req.Statement == "SELECT 1" &&
-			req.WaitTimeout == "0s" &&
-			req.OnWaitTimeout == sql.ExecuteStatementRequestOnWaitTimeoutContinue
+		return utils.Deref(req.WarehouseId) == "wh-1" && utils.Deref(req.Statement) == "SELECT 1" &&
+			utils.Deref(req.WaitTimeout) == "0s" &&
+			req.OnWaitTimeout == sql.TimeoutAction_Continue
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 	}, nil).Once()
 
 	info, err := submitStatement(ctx, mockAPI, "SELECT 1", "wh-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
-	assert.Equal(t, sql.StatementStatePending, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Pending, info.State)
 	assert.Equal(t, "wh-1", info.WarehouseID)
 }
 
 func TestSubmitStatementPassesParameters(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	params := []sql.StatementParameterListItem{
-		{Name: "since", Type: "DATE", Value: "2026-01-01"},
+	params := []sql.StatementParameter{
+		{Name: new("since"), Type: new("DATE"), Value: new("2026-01-01")},
 	}
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
 		return assert.ObjectsAreEqual(params, req.Parameters)
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 	}, nil).Once()
 
 	info, err := submitStatement(ctx, mockAPI, "SELECT * FROM events WHERE ts > :since", "wh-1", params)
@@ -59,7 +59,7 @@ func TestSubmitStatementPassesParameters(t *testing.T) {
 
 func TestSubmitStatementWrapsTransportError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).
 		Return(nil, errors.New("network unreachable")).Once()
@@ -72,24 +72,24 @@ func TestSubmitStatementWrapsTransportError(t *testing.T) {
 
 func TestGetStatementResultPolls(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Running},
 	}, nil).Once()
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Manifest:    &sql.ResultManifest{Schema: &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "n"}}}, TotalChunkCount: 1},
-		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
+		Manifest:    &sql.ResultManifest{Schema: &sql.Schema{Columns: []sql.ColumnInfo{{Name: new("n")}}}, TotalChunkCount: new(1)},
+		Result:      &sql.ResultData{DataArray: rows([][]string{{"42"}})},
 	}, nil).Once()
 
 	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
-	assert.Equal(t, sql.StatementStateSucceeded, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Succeeded, info.State)
 	assert.Equal(t, []string{"n"}, info.Columns)
 	assert.Equal(t, [][]string{{"42"}}, info.Rows)
 	assert.Nil(t, info.Error)
@@ -97,22 +97,22 @@ func TestGetStatementResultPolls(t *testing.T) {
 
 func TestGetStatementResultFailedStateReportsError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
 		Status: &sql.StatementStatus{
-			State: sql.StatementStateFailed,
+			State: sql.StatementStatus_State_Failed,
 			Error: &sql.ServiceError{
 				ErrorCode: "SYNTAX_ERROR",
-				Message:   "near 'bad': syntax error",
+				Message:   new("near 'bad': syntax error"),
 			},
 		},
 	}, nil).Once()
 
 	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateFailed, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Failed, info.State)
 	assert.Nil(t, info.Rows)
 	require.NotNil(t, info.Error)
 	assert.Equal(t, "SYNTAX_ERROR", info.Error.ErrorCode)
@@ -124,11 +124,11 @@ func TestGetStatementResultDoesNotCancelServerSideOnContextCancel(t *testing.T) 
 	// trigger CancelExecution. The mock asserts (via t.Cleanup) that no
 	// unexpected calls happen.
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 	}, nil).Once()
 
 	cancel()
@@ -144,24 +144,24 @@ func TestGetStatementResultChunkFetchFailureRendersPartialInfo(t *testing.T) {
 	// statement_id, instead of returning a raw Go error that RunE would
 	// discard along with the populated info.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 		Manifest: &sql.ResultManifest{
-			Schema:          &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "n"}}},
-			TotalChunkCount: 2,
+			Schema:          &sql.Schema{Columns: []sql.ColumnInfo{{Name: new("n")}}},
+			TotalChunkCount: new(2),
 		},
-		Result: &sql.ResultData{DataArray: [][]string{{"1"}}},
+		Result: &sql.ResultData{DataArray: rows([][]string{{"1"}})},
 	}, nil).Once()
 
-	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 1).
+	mockAPI.EXPECT().GetResultData(mock.Anything, "stmt-1", 1).
 		Return(nil, errors.New("network blip")).Once()
 
 	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateSucceeded, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Succeeded, info.State)
 	require.NotNil(t, info.Error)
 	assert.Contains(t, info.Error.Message, "fetch result rows")
 	assert.Contains(t, info.Error.Message, "network blip")
@@ -172,61 +172,59 @@ func TestGetStatementResultChunkFetchFailureRendersPartialInfo(t *testing.T) {
 
 func TestGetStatementStatusSinglePoll(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Running},
 	}, nil).Once()
 
 	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
-	assert.Equal(t, sql.StatementStateRunning, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Running, info.State)
 	assert.Nil(t, info.Error)
 }
 
 func TestGetStatementStatusReportsError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: new("stmt-1"),
 		Status: &sql.StatementStatus{
-			State: sql.StatementStateFailed,
+			State: sql.StatementStatus_State_Failed,
 			Error: &sql.ServiceError{
 				ErrorCode: "TIMEOUT",
-				Message:   "warehouse timed out",
+				Message:   new("warehouse timed out"),
 			},
 		},
 	}, nil).Once()
 
 	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateFailed, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Failed, info.State)
 	require.NotNil(t, info.Error)
 	assert.Equal(t, "TIMEOUT", info.Error.ErrorCode)
 }
 
 func TestCancelStatementExecutionCallsAPI(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().CancelExecution(mock.Anything, sql.CancelExecutionRequest{
-		StatementId: "stmt-1",
-	}).Return(nil).Once()
+	mockAPI.EXPECT().CancelStatement(mock.Anything, "stmt-1").Return(nil).Once()
 
 	info, err := cancelStatementExecution(ctx, mockAPI, "stmt-1")
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
-	assert.Equal(t, sql.StatementStateCanceled, info.State)
+	assert.Equal(t, sql.StatementStatus_State_Canceled, info.State)
 }
 
 func TestCancelStatementExecutionWrapsAPIError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	mockAPI.EXPECT().CancelExecution(mock.Anything, mock.Anything).
+	mockAPI.EXPECT().CancelStatement(mock.Anything, mock.Anything).
 		Return(errors.New("not found")).Once()
 
 	_, err := cancelStatementExecution(ctx, mockAPI, "stmt-1")
@@ -246,7 +244,7 @@ func TestRenderStatementInfo(t *testing.T) {
 			name: "full payload renders every populated field",
 			info: statementInfo{
 				StatementID: "stmt-1",
-				State:       sql.StatementStateSucceeded,
+				State:       sql.StatementStatus_State_Succeeded,
 				WarehouseID: "wh-1",
 				Columns:     []string{"n"},
 				Rows:        [][]string{{"42"}},
@@ -263,7 +261,7 @@ func TestRenderStatementInfo(t *testing.T) {
 			name: "cancel-style payload omits unset fields",
 			info: statementInfo{
 				StatementID: "stmt-1",
-				State:       sql.StatementStateCanceled,
+				State:       sql.StatementStatus_State_Canceled,
 			},
 			mustHave: []string{
 				`"statement_id": "stmt-1"`,
@@ -321,23 +319,23 @@ func TestStatementError(t *testing.T) {
 		},
 		{
 			name:     "failed with backend error preserves both fields",
-			err:      &sqlexec.StatementError{State: sql.StatementStateFailed, Code: "SYNTAX_ERROR", Message: "near 'bad'"},
+			err:      &sqlexec.StatementError{State: sql.StatementStatus_State_Failed, Code: "SYNTAX_ERROR", Message: "near 'bad'"},
 			wantMsg:  "near 'bad'",
 			wantCode: "SYNTAX_ERROR",
 		},
 		{
 			name:    "failed without backend error surfaces synthesized message",
-			err:     &sqlexec.StatementError{State: sql.StatementStateFailed, Message: "statement reached terminal state FAILED"},
+			err:     &sqlexec.StatementError{State: sql.StatementStatus_State_Failed, Message: "statement reached terminal state FAILED"},
 			wantMsg: "statement reached terminal state FAILED",
 		},
 		{
 			name:    "canceled without backend error surfaces synthesized message",
-			err:     &sqlexec.StatementError{State: sql.StatementStateCanceled, Message: "statement reached terminal state CANCELED"},
+			err:     &sqlexec.StatementError{State: sql.StatementStatus_State_Canceled, Message: "statement reached terminal state CANCELED"},
 			wantMsg: "statement reached terminal state CANCELED",
 		},
 		{
 			name:    "closed without backend error surfaces synthesized message",
-			err:     &sqlexec.StatementError{State: sql.StatementStateClosed, Message: "statement reached terminal state CLOSED"},
+			err:     &sqlexec.StatementError{State: sql.StatementStatus_State_Closed, Message: "statement reached terminal state CLOSED"},
 			wantMsg: "statement reached terminal state CLOSED",
 		},
 	}

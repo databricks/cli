@@ -26,7 +26,7 @@ func TestIsProxyUploadError(t *testing.T) {
 	}{
 		{
 			name: "413 request entity too large",
-			err:  &apierr.APIError{StatusCode: http.StatusRequestEntityTooLarge, Message: "request too large"},
+			err:  apierr.FromHTTPError(http.StatusRequestEntityTooLarge, nil, []byte(`{"message":"request too large"}`)),
 			want: true,
 		},
 		{
@@ -46,7 +46,7 @@ func TestIsProxyUploadError(t *testing.T) {
 		},
 		{
 			name: "non-413 API error",
-			err:  &apierr.APIError{StatusCode: http.StatusForbidden, Message: "permission denied"},
+			err:  apierr.FromHTTPError(http.StatusForbidden, nil, []byte(`{"message":"permission denied"}`)),
 			want: false,
 		},
 		{

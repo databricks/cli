@@ -16,9 +16,9 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
 
@@ -179,20 +179,20 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 	baseDir := acc.TemporaryWorkspaceDir(wt, "python-tasks-")
 
 	pyNotebookPath := path.Join(baseDir, "test.py")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      pyNotebookPath,
 		Overwrite: true,
-		Language:  workspace.LanguagePython,
-		Format:    workspace.ImportFormatSource,
+		Language:  workspaceapi.LanguagePython,
+		Format:    workspaceapi.ImportFormatSource,
 		Content:   base64.StdEncoding.EncodeToString([]byte(PY_CONTENT)),
 	})
 	require.NoError(t, err)
 
 	sparkPythonPath := path.Join(baseDir, "spark.py")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      sparkPythonPath,
 		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
+		Format:    workspaceapi.ImportFormatAuto,
 		Content:   base64.StdEncoding.EncodeToString([]byte(SPARK_PY_CONTENT)),
 	})
 	require.NoError(t, err)
@@ -201,10 +201,10 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 	require.NoError(t, err)
 
 	wheelPath := path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl"),
 		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
+		Format:    workspaceapi.ImportFormatAuto,
 		Content:   base64.StdEncoding.EncodeToString(raw),
 	})
 	require.NoError(t, err)

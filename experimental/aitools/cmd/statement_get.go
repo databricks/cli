@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ invoked the synchronous path.)`,
 			// Non-zero exit when the statement reached a non-success terminal
 			// state OR a chunk-fetch failure prevented assembling the rows.
 			// In both cases the failure detail is already in the JSON output.
-			if info.State != sql.StatementStateSucceeded || info.Error != nil {
+			if info.State != sql.StatementStatus_State_Succeeded || info.Error != nil {
 				return root.ErrAlreadyPrinted
 			}
 			return nil
@@ -58,7 +58,7 @@ invoked the synchronous path.)`,
 // Context cancellation propagates from the poll WITHOUT cancelling the
 // server-side statement (intentional: 'get' is a poll-only operation; use
 // 'cancel' to terminate explicitly).
-func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
+func getStatementResult(ctx context.Context, api sqlexec.API, statementID string) (statementInfo, error) {
 	// Get/Poll don't use the warehouse ID.
 	client := sqlexec.New(api, "")
 
@@ -80,7 +80,7 @@ func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface
 		Error:       statementError(stmt.Err()),
 	}
 
-	if info.State == sql.StatementStateSucceeded {
+	if info.State == sql.StatementStatus_State_Succeeded {
 		result, err := client.Results(ctx, stmt)
 		if err != nil {
 			// The query succeeded server-side but a later chunk fetch failed

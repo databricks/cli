@@ -6,14 +6,15 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	sql "github.com/databricks/sdk-go/warehouses/v1"
 	"github.com/spf13/cobra"
 )
 
 type warehouseInfo struct {
-	Id    string    `json:"id"`
-	Name  string    `json:"name"`
-	State sql.State `json:"state"`
+	Id    string            `json:"id"`
+	Name  string            `json:"name"`
+	State sql.EndpointState `json:"state"`
 }
 
 func newGetDefaultWarehouseCmd() *cobra.Command {
@@ -49,8 +50,8 @@ Returns warehouse ID of the default warehouse. Use --output json to get the full
 			}
 
 			info := warehouseInfo{
-				Id:    warehouse.Id,
-				Name:  warehouse.Name,
+				Id:    utils.Deref(warehouse.Id),
+				Name:  utils.Deref(warehouse.Name),
 				State: warehouse.State,
 			}
 

@@ -11,8 +11,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sqlexec"
-	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
-	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	dbsql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -67,19 +67,19 @@ func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
 
 func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT 1" &&
-			req.WaitTimeout == "0s" &&
-			req.OnWaitTimeout == dbsql.ExecuteStatementRequestOnWaitTimeoutContinue
+		return utils.Deref(req.Statement) == "SELECT 1" &&
+			utils.Deref(req.WaitTimeout) == "0s" &&
+			req.OnWaitTimeout == dbsql.TimeoutAction_Continue
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"1"}}},
+		StatementId: new("stmt-1"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"1"}})},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(2)
 
 	result, err := gate.run(ctx, w, "wh-1", "SELECT 1")
@@ -90,17 +90,17 @@ func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
 
 func TestSQLGateRunPropagatesFailedState(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-1",
+		StatementId: new("stmt-1"),
 		Status: &dbsql.StatementStatus{
-			State: dbsql.StatementStateFailed,
-			Error: &dbsql.ServiceError{ErrorCode: "SYNTAX_ERROR", Message: "near 'oops'"},
+			State: dbsql.StatementStatus_State_Failed,
+			Error: &dbsql.ServiceError{ErrorCode: "SYNTAX_ERROR", Message: new("near 'oops'")},
 		},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(2)
 
 	_, err := gate.run(ctx, w, "wh-1", "SELECT oops")
@@ -112,12 +112,12 @@ func TestSQLGateRunPropagatesFailedState(t *testing.T) {
 
 func TestSQLGateRunWrapsTransportError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).
 		Return(nil, errors.New("network unreachable")).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(2)
 
 	_, err := gate.run(ctx, w, "wh-1", "SELECT 1")
@@ -133,8 +133,8 @@ func TestSQLGateRunRespectsCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 	cancel()
 
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	mockAPI := newMockStatementAPI(t)
+	w := mockAPI
 	gate := newSQLGate(2)
 
 	_, err := gate.run(ctx, w, "wh-1", "SELECT 1")
@@ -147,17 +147,17 @@ func TestDiscoverTableRunsSampleAndNullsConcurrently(t *testing.T) {
 	// would time out and return an error, which would surface as
 	// "SAMPLE DATA: Error - " or "NULL COUNTS: Error - " in the output.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+		return strings.HasPrefix(utils.Deref(req.Statement), "DESCRIBE TABLE")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-desc",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Result: &dbsql.ResultData{DataArray: [][]string{
+		StatementId: new("stmt-desc"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Result: &dbsql.ResultData{DataArray: rows([][]string{
 			{"id", "BIGINT", ""},
 			{"name", "STRING", ""},
-		}},
+		})},
 	}, nil).Once()
 
 	const numProbes = 2
@@ -175,22 +175,22 @@ func TestDiscoverTableRunsSampleAndNullsConcurrently(t *testing.T) {
 			return nil, errors.New("probe timeout: not running concurrently")
 		}
 		return &dbsql.StatementResponse{
-			StatementId: "stmt-probe-" + req.Statement[:7],
-			Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-			Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "x"}}}},
-			Result:      &dbsql.ResultData{DataArray: [][]string{{"0"}}},
+			StatementId: new("stmt-probe-" + (*req.Statement)[:7]),
+			Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+			Manifest:    &dbsql.ResultManifest{Schema: &dbsql.Schema{Columns: []dbsql.ColumnInfo{{Name: new("x")}}}},
+			Result:      &dbsql.ResultData{DataArray: rows([][]string{{"0"}})},
 		}, nil
 	}
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "SELECT *")
+		return strings.HasPrefix(utils.Deref(req.Statement), "SELECT *")
 	})).RunAndReturn(probe).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.Contains(req.Statement, "SUM(CASE WHEN")
+		return strings.Contains(utils.Deref(req.Statement), "SUM(CASE WHEN")
 	})).RunAndReturn(probe).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(8)
 
 	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
@@ -204,36 +204,36 @@ func TestDiscoverTableRunsSampleAndNullsConcurrently(t *testing.T) {
 
 func TestDiscoverTableSampleErrorDoesNotAbortNullCounts(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+		return strings.HasPrefix(utils.Deref(req.Statement), "DESCRIBE TABLE")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-desc",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"id", "BIGINT", ""}}},
+		StatementId: new("stmt-desc"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"id", "BIGINT", ""}})},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "SELECT *")
+		return strings.HasPrefix(utils.Deref(req.Statement), "SELECT *")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-sample",
+		StatementId: new("stmt-sample"),
 		Status: &dbsql.StatementStatus{
-			State: dbsql.StatementStateFailed,
-			Error: &dbsql.ServiceError{ErrorCode: "PERM", Message: "permission denied"},
+			State: dbsql.StatementStatus_State_Failed,
+			Error: &dbsql.ServiceError{ErrorCode: "PERM", Message: new("permission denied")},
 		},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.Contains(req.Statement, "SUM(CASE WHEN")
+		return strings.Contains(utils.Deref(req.Statement), "SUM(CASE WHEN")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-null",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "total_rows"}, {Name: "id_nulls"}}}},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"100", "0"}}},
+		StatementId: new("stmt-null"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.Schema{Columns: []dbsql.ColumnInfo{{Name: new("total_rows")}, {Name: new("id_nulls")}}}},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"100", "0"}})},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(8)
 
 	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
@@ -250,39 +250,39 @@ func TestDiscoverTableEscapesBackticksInColumnNames(t *testing.T) {
 	// escaping in the null-counts SQL the embedded backtick would terminate
 	// the quoted identifier mid-string and produce a PARSE_SYNTAX_ERROR.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+		return strings.HasPrefix(utils.Deref(req.Statement), "DESCRIBE TABLE")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-desc",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Result: &dbsql.ResultData{DataArray: [][]string{
+		StatementId: new("stmt-desc"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Result: &dbsql.ResultData{DataArray: rows([][]string{
 			{"weird`col", "STRING", ""},
-		}},
+		})},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "SELECT *")
+		return strings.HasPrefix(utils.Deref(req.Statement), "SELECT *")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-sample",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		StatementId: new("stmt-sample"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
 	}, nil).Once()
 
 	// Null-counts SQL must escape the embedded backtick. Both the identifier
 	// and the alias positions must use the doubled form.
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.Contains(req.Statement, "`weird``col`") &&
-			strings.Contains(req.Statement, "`weird``col_nulls`") &&
-			!strings.Contains(req.Statement, "`weird`col`")
+		return strings.Contains(utils.Deref(req.Statement), "`weird``col`") &&
+			strings.Contains(utils.Deref(req.Statement), "`weird``col_nulls`") &&
+			!strings.Contains(utils.Deref(req.Statement), "`weird`col`")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-null",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "total_rows"}, {Name: "weird`col_nulls"}}}},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"5", "0"}}},
+		StatementId: new("stmt-null"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.Schema{Columns: []dbsql.ColumnInfo{{Name: new("total_rows")}, {Name: new("weird`col_nulls")}}}},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"5", "0"}})},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	gate := newSQLGate(8)
 
 	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
@@ -293,12 +293,10 @@ func TestDiscoverTableEscapesBackticksInColumnNames(t *testing.T) {
 
 func TestCancelDiscoverInFlightCallsAPIPerID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	for _, id := range []string{"stmt-a", "stmt-b", "stmt-c"} {
-		mockAPI.EXPECT().CancelExecution(mock.Anything, dbsql.CancelExecutionRequest{
-			StatementId: id,
-		}).Return(nil).Once()
+		mockAPI.EXPECT().CancelStatement(mock.Anything, id).Return(nil).Once()
 	}
 
 	cancelDiscoverInFlight(ctx, mockAPI, []string{"stmt-a", "stmt-b", "stmt-c"})
@@ -330,17 +328,17 @@ func TestRunDiscoverSchemasFlagsTableFailureForExitCode(t *testing.T) {
 	// return so the caller can produce a non-zero exit. Without this signal
 	// scripts and CI parse stdout to detect failure, which is brittle.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-bad",
+		StatementId: new("stmt-bad"),
 		Status: &dbsql.StatementStatus{
-			State: dbsql.StatementStateFailed,
-			Error: &dbsql.ServiceError{ErrorCode: "TABLE_OR_VIEW_NOT_FOUND", Message: "no such table"},
+			State: dbsql.StatementStatus_State_Failed,
+			Error: &dbsql.ServiceError{ErrorCode: "TABLE_OR_VIEW_NOT_FOUND", Message: new("no such table")},
 		},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	output, anyFailed := runDiscoverSchemas(ctx, newSQLGate(8), w, "wh-1", []string{"main.public.missing"})
 
 	assert.True(t, anyFailed)
@@ -350,33 +348,33 @@ func TestRunDiscoverSchemasFlagsTableFailureForExitCode(t *testing.T) {
 
 func TestRunDiscoverSchemasAllSucceedReturnsFalse(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+		return strings.HasPrefix(utils.Deref(req.Statement), "DESCRIBE TABLE")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-desc",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"id", "BIGINT", ""}}},
+		StatementId: new("stmt-desc"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"id", "BIGINT", ""}})},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.HasPrefix(req.Statement, "SELECT *")
+		return strings.HasPrefix(utils.Deref(req.Statement), "SELECT *")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-sample",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		StatementId: new("stmt-sample"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
-		return strings.Contains(req.Statement, "SUM(CASE WHEN")
+		return strings.Contains(utils.Deref(req.Statement), "SUM(CASE WHEN")
 	})).Return(&dbsql.StatementResponse{
-		StatementId: "stmt-null",
-		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
-		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "total_rows"}, {Name: "id_nulls"}}}},
-		Result:      &dbsql.ResultData{DataArray: [][]string{{"7", "0"}}},
+		StatementId: new("stmt-null"),
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStatus_State_Succeeded},
+		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.Schema{Columns: []dbsql.ColumnInfo{{Name: new("total_rows")}, {Name: new("id_nulls")}}}},
+		Result:      &dbsql.ResultData{DataArray: rows([][]string{{"7", "0"}})},
 	}, nil).Once()
 
-	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	w := mockAPI
 	output, anyFailed := runDiscoverSchemas(ctx, newSQLGate(8), w, "wh-1", []string{"main.public.orders"})
 
 	assert.False(t, anyFailed)

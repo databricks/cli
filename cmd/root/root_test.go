@@ -24,11 +24,7 @@ func TestExecuteEnrichesAuthErrors(t *testing.T) {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return &apierr.APIError{
-				StatusCode: 403,
-				ErrorCode:  "PERMISSION_DENIED",
-				Message:    "no access",
-			}
+			return apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED","message":"no access"}`))
 		},
 	}
 	cmd.SetErr(stderr)
@@ -62,11 +58,7 @@ func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return &apierr.APIError{
-				StatusCode: 403,
-				ErrorCode:  "PERMISSION_DENIED",
-				Message:    "no access",
-			}
+			return apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED","message":"no access"}`))
 		},
 	}
 	cmd.SetErr(stderr)

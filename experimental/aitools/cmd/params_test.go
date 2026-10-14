@@ -3,7 +3,7 @@ package aitools
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +12,7 @@ func TestParseParams(t *testing.T) {
 	tests := []struct {
 		name string
 		in   []string
-		want []sql.StatementParameterListItem
+		want []sql.StatementParameter
 	}{
 		{
 			name: "nil input returns nil",
@@ -27,52 +27,52 @@ func TestParseParams(t *testing.T) {
 		{
 			name: "single string param defaults type to empty (server-side STRING)",
 			in:   []string{"name=alice"},
-			want: []sql.StatementParameterListItem{
-				{Name: "name", Value: "alice"},
+			want: []sql.StatementParameter{
+				{Name: new("name"), Value: new("alice")},
 			},
 		},
 		{
 			name: "typed param splits name and type on first colon",
 			in:   []string{"since:DATE=2026-01-01"},
-			want: []sql.StatementParameterListItem{
-				{Name: "since", Type: "DATE", Value: "2026-01-01"},
+			want: []sql.StatementParameter{
+				{Name: new("since"), Type: new("DATE"), Value: new("2026-01-01")},
 			},
 		},
 		{
 			name: "value can contain = and :",
 			in:   []string{"clause=ts >= '2026-01-01T00:00:00'"},
-			want: []sql.StatementParameterListItem{
-				{Name: "clause", Value: "ts >= '2026-01-01T00:00:00'"},
+			want: []sql.StatementParameter{
+				{Name: new("clause"), Value: new("ts >= '2026-01-01T00:00:00'")},
 			},
 		},
 		{
 			name: "decimal type with parens preserved",
 			in:   []string{"amount:DECIMAL(10,2)=42.50"},
-			want: []sql.StatementParameterListItem{
-				{Name: "amount", Type: "DECIMAL(10,2)", Value: "42.50"},
+			want: []sql.StatementParameter{
+				{Name: new("amount"), Type: new("DECIMAL(10,2)"), Value: new("42.50")},
 			},
 		},
 		{
 			name: "empty value becomes NULL on the wire via omitempty",
 			in:   []string{"opt="},
-			want: []sql.StatementParameterListItem{
-				{Name: "opt", Value: ""},
+			want: []sql.StatementParameter{
+				{Name: new("opt"), Value: new("")},
 			},
 		},
 		{
 			name: "whitespace around name and type is trimmed",
 			in:   []string{"  name  :  INT  =42"},
-			want: []sql.StatementParameterListItem{
-				{Name: "name", Type: "INT", Value: "42"},
+			want: []sql.StatementParameter{
+				{Name: new("name"), Type: new("INT"), Value: new("42")},
 			},
 		},
 		{
 			name: "multiple params preserve input order",
 			in:   []string{"a=1", "b:INT=2", "c=three"},
-			want: []sql.StatementParameterListItem{
-				{Name: "a", Value: "1"},
-				{Name: "b", Type: "INT", Value: "2"},
-				{Name: "c", Value: "three"},
+			want: []sql.StatementParameter{
+				{Name: new("a"), Value: new("1")},
+				{Name: new("b"), Type: new("INT"), Value: new("2")},
+				{Name: new("c"), Value: new("three")},
 			},
 		},
 	}

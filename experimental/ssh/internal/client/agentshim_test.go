@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -556,9 +557,7 @@ func TestProbeModelServicesPageError(t *testing.T) {
 	}, nil)
 	defer srv.Close()
 
-	apiClient, err := newProbeAPIClient(newProbeClient(t, srv.URL).Config)
-	require.NoError(t, err)
-	probe := probeModelServices(t.Context(), apiClient)
+	probe := probeModelServices(apiclient.WithMaxAttempts(t.Context(), 1), newProbeClient(t, srv.URL))
 	assert.False(t, probe.reachable)
 	assert.False(t, probe.resourceAvailable)
 	assert.Error(t, probe.err)
