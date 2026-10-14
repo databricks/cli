@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -48,6 +49,20 @@ func IsTransient(ctx context.Context, err error) bool {
 		return false
 	}
 	return apiErr.StatusCode >= 500 || apiErr.StatusCode == http.StatusRequestTimeout
+}
+
+// IsTransientRead returns true for errors worth retrying on an idempotent read.
+// Besides the transient server errors IsTransient covers, a read can also be retried after
+// a transport-level failure that produced no HTTP response, such as the REFUSED_STREAM in
+// https://github.com/databricks/cli/issues/6472: replaying a read has no side effects, so
+// completing the round trip (on a fresh connection) is safe. These failures surface as a
+// *url.Error, whereas an error carrying an HTTP status is an *apierr.APIError.
+func IsTransientRead(ctx context.Context, err error) bool {
+	if IsTransient(ctx, err) {
+		return true
+	}
+	_, ok := errors.AsType[*url.Error](err)
+	return ok
 }
 
 // With retries fn while check returns true for the error, up to MaxRetries times.
