@@ -80,6 +80,15 @@ const (
 	// its metadata never appeared before the timeout.
 	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
 
+	// An administrator turned off port forwarding to serverless compute
+	// (port_fwd_serverless_enabled), read from the setting before any compute was started.
+	SshTunnelErrorCategoryPortForwardingDisabled SshTunnelErrorCategory = "PORT_FORWARDING_DISABLED"
+
+	// The driver proxy refused the SSH server with a 403 after its run was submitted. Usually
+	// port forwarding to serverless compute is off where the CLI cannot read that setting, but
+	// the 403 is not specific to it, so this names what happened rather than the likely cause.
+	SshTunnelErrorCategoryDriverProxyForbidden SshTunnelErrorCategory = "DRIVER_PROXY_FORBIDDEN"
+
 	// The user interrupted the connection (Ctrl-C or a termination signal). Takes precedence
 	// over the category of whichever step observed the interruption, including steps that shell
 	// out to the IDE and see only a killed child process.
