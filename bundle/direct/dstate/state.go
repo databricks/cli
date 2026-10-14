@@ -111,8 +111,8 @@ type DeploymentState struct {
 	// the deployment, which Open cannot know about.
 	DeploymentID string
 
-	// VersionID is the DMS counterpart of Data.Serial - same meaning, but owned by the service
-	// rather than the file, so it lives outside Data and is never written to resources.json.
+	// VersionID is the service-owned counter for recorded deployments. It is cached in
+	// resources.json as Serial, but Open always takes the authoritative value from the service.
 	VersionID int
 }
 
@@ -139,8 +139,8 @@ type Header struct {
 
 	Lineage string `json:"lineage"`
 
-	// Serial counts state writes. Omitted for recorded deployments, where the service's version is
-	// the source of truth and Open sets this from it.
+	// Serial counts state writes. For recorded deployments it caches the current DMS version;
+	// the service remains the source of truth.
 	Serial int `json:"serial,omitempty"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
@@ -401,9 +401,9 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 	return maps.Clone(db.Data.Features)
 }
 
-// GetSerial reports the counter a saved plan is validated against: the recorded version for a
-// deployment that records history, since its state file persists no serial of its own, and the
-// state serial otherwise. The two mean the same thing and advance together.
+// GetSerial reports the counter a saved plan is validated against: the service's version for a
+// deployment that records history, and the state serial otherwise. A recorded state's cached
+// serial is not used for plan validation.
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -465,9 +465,8 @@ type (
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
 // When withDeploymentHistory is set it builds a DMS client from wsClient and reads resources from
 // the service instead, with dmsDeploymentID the id the service holds (empty before the first
-// recorded deploy); lineage and serial still come from the file, since that is what the write path
-// increments. Open only reads through the client - InitializeOperationBuffer installs the write path once a
-// version exists.
+// recorded deploy). Lineage comes from the file; the version comes from dmsDeployment. Open only
+// reads through the client - InitializeOperationBuffer installs the write path once a version exists.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -603,8 +602,8 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 			}
 		}
 
-		// The service owns the version number, so it is read from the deployment rather than from
-		// the state file, which persists none. No deployment yet means no versions, hence zero.
+		// The service owns the version number; the state file only caches it.
+		// No deployment yet means no versions, hence zero.
 		db.VersionID = dmsDeployment.LastVersionID
 	}
 
@@ -992,9 +991,8 @@ func (db *DeploymentState) dataForFile() Database {
 			header.Features = make(map[string]struct{})
 		}
 		header.Features[FeatureDeploymentHistory] = struct{}{}
-		// Under DMS the serial is managed by the deployment's last_version_id, so it is not
-		// persisted here; Open sets it from the service.
-		header.Serial = 0
+		// Cache the current version without making the file authoritative on the next Open.
+		header.Serial = db.VersionID
 
 		return Database{
 			Header: header,
