@@ -6,7 +6,7 @@ Warning: compute_id is deprecated, please use cluster_id instead
   in databricks.yml:3:15
 
 Warning: compute_id is deprecated, please use cluster_id instead
-  at compute_id
+  at targets.dev.compute_id
   in databricks.yml:7:17
 
 Name: test-bundle
@@ -24,7 +24,7 @@ Warning: compute_id is deprecated, please use cluster_id instead
   in databricks.yml:3:15
 
 Warning: compute_id is deprecated, please use cluster_id instead
-  at compute_id
+  at targets.dev.compute_id
   in databricks.yml:7:17
 
 Name: test-bundle
