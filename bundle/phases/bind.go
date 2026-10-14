@@ -62,42 +62,9 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	// If there are changes and auto-approve is not set, show plan and ask for confirmation
-	if result.HasChanges && !opts.AutoApprove {
-		// Display the planned changes for the bound resource
-		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
-
-		// Show details of what will change
-		if result.Plan != nil {
-			if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-				cmdio.LogString(ctx, "\nChanges detected:")
-				for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-					change := entry.Changes[field]
-					if change.Action != deployplan.Skip {
-						cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-					}
-				}
-				cmdio.LogString(ctx, "")
-			}
-		}
-
-		if !cmdio.IsPromptSupported(ctx) {
-			result.Cancel()
-			logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
-			return
-		}
-
-		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
-		if err != nil {
-			result.Cancel()
-			logdiag.LogError(ctx, err)
-			return
-		}
-		if !ans {
-			result.Cancel()
-			logdiag.LogError(ctx, errors.New("import aborted"))
-			return
-		}
+	if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove) {
+		result.Cancel()
+		return
 	}
 
 	// Finalize: rename temp state to final location
@@ -117,6 +84,43 @@ func jsonDump(ctx context.Context, v any, field string) string {
 		return "??"
 	}
 	return string(b)
+}
+
+// confirmBindPlan shows the planned changes to the bound resource and, unless autoApprove, asks
+// the user to approve them. It reports whether the bind should proceed.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove bool) bool {
+	entry := plan.Plan[resourceKey]
+	if autoApprove || entry == nil || entry.Action == deployplan.Skip || entry.Action == deployplan.Undefined {
+		return true
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, resourceKey))
+	if len(entry.Changes) > 0 {
+		cmdio.LogString(ctx, "\nChanges detected:")
+		for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+			change := entry.Changes[field]
+			if change.Action != deployplan.Skip {
+				cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
+			}
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+		return false
+	}
+
+	ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return false
+	}
+	if !ans {
+		logdiag.LogError(ctx, errors.New("import aborted"))
+		return false
+	}
+	return true
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, engine engine.EngineType) {
