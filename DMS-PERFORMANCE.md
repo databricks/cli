@@ -226,6 +226,14 @@ There is variance: the slowest real-DMS sample was 1.49s. The 3× result is the
 median and mean, not a guarantee that every individual run is below 3×.
 Each ten-run real-DMS log contains 400 forwarded requests, 230 of them to DMS.
 
+After the lint/API validation and documentation commits, one additional smoke run
+passed at 1.73s (parent setup: 4.36s). No specific cause was established for that
+isolated slowdown. A subsequent ten-run batch, using the same real-DMS command,
+passed at 1.10, 1.05, 1.04, 1.02, 1.00, 1.00, 1.00, 0.96, 1.01, 0.98s
+(median 1.005s, mean 1.016s). Its log was
+`/tmp/dms-speed-post-validation-real.log`. This reinforces the warm result while
+retaining the slower smoke sample rather than treating it as a timing guarantee.
+
 From the CLI root, warm up with the reproduction command using `-count=20`.
 Then run the `-count=10` command twice, bracketing the baseline command below.
 The measured logs were `/tmp/dms-speed-final-real-a.log`,
