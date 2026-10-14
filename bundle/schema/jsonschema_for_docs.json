@@ -35,6 +35,13 @@
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.279.0"
                   },
+                  "custom_template_format": {
+                    "description": "[Private Preview] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CustomTemplateFormat",
+                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                    "doNotSuggest": true,
+                    "x-since-version": "v1.21.0"
+                  },
                   "display_name": {
                     "description": "The display name of the alert.",
                     "$ref": "#/$defs/string",
@@ -1998,7 +2005,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "clusters": {
-                    "description": "Cluster settings for this pipeline deployment.",
+                    "description": "Cluster settings for this pipeline deployment. Applies to classic\n(non-serverless) pipelines. Omit this field when `serverless` is `true`.",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.229.0"
@@ -2097,6 +2104,13 @@
                     "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.2.0"
                   },
+                  "parent_path": {
+                    "description": "[Private Preview] Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+                    "$ref": "#/$defs/string",
+                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                    "doNotSuggest": true,
+                    "x-since-version": "v1.21.0"
+                  },
                   "permissions": {
                     "description": "The permissions to apply to this resource.",
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
@@ -2135,7 +2149,7 @@
                     "x-since-version": "v0.230.0"
                   },
                   "serverless": {
-                    "description": "Whether serverless compute is enabled for this pipeline.",
+                    "description": "Whether serverless compute is enabled for this pipeline. Serverless is the\nrecommended compute for new pipelines; set this to `true` to run the pipeline\non serverless. For notebook/file pipelines, omitting this field uses classic\ncompute configured through the `clusters` field. When `true`, omit `clusters`;\nPhoton is always enabled.",
                     "$ref": "#/$defs/bool",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.229.0"
@@ -3206,6 +3220,12 @@
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
+                  },
+                  "statement_timeout": {
+                    "description": "[Beta] Warehouse statement timeout in seconds.",
+                    "$ref": "#/$defs/int",
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
+                    "x-since-version": "v1.21.0"
                   },
                   "tags": {
                     "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
@@ -4406,6 +4426,13 @@
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.283.0"
                 },
+                "health_check": {
+                  "description": "[Private Preview] Deploy-time health check for the app. Verifies the app is responding to HTTP requests before considering the deployment successful.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppHealthCheck",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
+                },
                 "mode": {
                   "description": "The mode of which the deployment will manage the source code.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode",
@@ -4451,6 +4478,27 @@
             },
             "apps.AppDeploymentStatus": {
               "type": "object",
+              "additionalProperties": false
+            },
+            "apps.AppHealthCheck": {
+              "type": "object",
+              "description": "Deploy-time HTTP health check configuration for an app deployment.",
+              "properties": {
+                "path": {
+                  "description": "[Private Preview] HTTP path to probe, e.g. \"/health\" or \"/api/status\".",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
+                },
+                "timeout": {
+                  "description": "[Private Preview] Timeout to wait for the health check to pass before failing the deployment. If not set, a default timeout is used.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
+                }
+              },
               "additionalProperties": false
             },
             "apps.AppPermissionLevel": {
@@ -4848,7 +4896,8 @@
                 "VOLUME",
                 "TABLE",
                 "FUNCTION",
-                "CONNECTION"
+                "CONNECTION",
+                "MODEL_SERVICE"
               ]
             },
             "apps.ApplicationState": {
@@ -5258,6 +5307,13 @@
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.17.0"
                 },
+                "bedrock_mantle": {
+                  "description": "[Private Preview] Amazon Bedrock provider configuration.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
+                },
                 "custom": {
                   "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderConfig",
@@ -5305,6 +5361,13 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigOpenAiProviderConfig",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.17.0"
+                },
+                "pricing": {
+                  "description": "[Private Preview] Pricing configuration for this provider service. An explicitly empty\nconfiguration is retained on Create and Update and applies no adjustment.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderPricingConfig",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
                 },
                 "provider_type": {
                   "description": "External model provider. Required on Create and immutable thereafter. Set\nthe matching provider-specific configuration, such as `openai`,\n`azure_openai`, or `amazon_bedrock`.",
@@ -5557,7 +5620,18 @@
                 "EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK",
                 "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
                 "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY",
-                "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE"
+                "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE",
+                "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE"
+              ],
+              "enumDescriptions": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "[Private Preview]"
               ]
             },
             "catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig": {
@@ -5650,8 +5724,15 @@
             },
             "catalog.ModelProviderServiceConfigModelTargetConfig": {
               "type": "object",
-              "description": "Model target configuration for an external model destination.",
+              "description": "Model target configuration shared by model provider service targets and\nexternal model destinations on model services.",
               "properties": {
+                "endpoint_route": {
+                  "description": "[Private Preview] Relative path appended to a custom provider's `base_url` for this model,\nsuch as `serve/openai/chat`. Only custom model provider service targets\nuse this field; other provider types ignore it, and model service\ndestinations reject it. Do not include URI templates, queries, or\nfragments. When empty, `base_url` is used unchanged.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
+                },
                 "model": {
                   "description": "Provider-side model identifier, such as `gpt-5` or `claude-opus-4-7`.\nThis identifies a model at the upstream provider; it is not a Unity\nCatalog model resource.",
                   "$ref": "#/$defs/string",
@@ -5659,7 +5740,7 @@
                   "x-since-version": "v1.17.0"
                 },
                 "native_api_types": {
-                  "description": "Provider-native API types supported by this model, such as\n`openai/v1/chat/completions`. At least one value is required. AI Gateway\nuses these values to translate requests and responses. At most 64 entries\nof 256 characters each are allowed.",
+                  "description": "Provider-native API types supported by this model, such as\n`openai/v1/chat/completions`. A model provider service target requires at\nleast one value. A model service destination may omit the list to use the\nmatching provider service target's types when available. AI Gateway uses\nthe selected types for translation. At most 64 entries of 256 characters\neach are allowed.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.17.0"
@@ -5704,6 +5785,20 @@
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.17.0"
+                }
+              },
+              "additionalProperties": false
+            },
+            "catalog.ModelProviderServiceConfigProviderPricingConfig": {
+              "type": "object",
+              "description": "Pricing adjustments applied to this provider service's external-model spend\nestimates.",
+              "properties": {
+                "default_discount_basis_points": {
+                  "description": "[Private Preview] Provider-wide adjustment to external-model spend estimates in basis points:\n2000 = 20% off; -2000 = a 20% markup. Negative values have no lower bound\nbeyond the int32 range. Values cannot exceed 10000 (100% off). An omitted\nvalue or zero leaves the estimate unchanged.",
+                  "$ref": "#/$defs/int",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.21.0"
                 }
               },
               "additionalProperties": false
@@ -9349,27 +9444,27 @@
                   "x-since-version": "v0.229.0"
                 },
                 "full_refresh_selection": {
-                  "description": "[Beta] A list of tables to update with fullRefresh.",
+                  "description": "A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_flow_selection": {
-                  "description": "[Beta] Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
+                  "description": "Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
-                  "description": "[Beta] A list of tables to update without fullRefresh.",
+                  "description": "A list of tables to update without fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
-                  "description": "[Beta] A list of streaming flows to reset checkpoints without clearing data.",
+                  "description": "A list of streaming flows to reset checkpoints without clearing data.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 }
               },
@@ -9385,9 +9480,9 @@
                   "x-since-version": "v0.229.0"
                 },
                 "full_refresh_selection": {
-                  "description": "[Beta] A list of tables to update with fullRefresh.",
+                  "description": "A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "parameters": {
@@ -9403,21 +9498,21 @@
                   "x-since-version": "v0.229.0"
                 },
                 "refresh_flow_selection": {
-                  "description": "[Beta] Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
+                  "description": "Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
-                  "description": "[Beta] A list of tables to update without fullRefresh.",
+                  "description": "A list of tables to update without fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
-                  "description": "[Beta] A list of streaming flows to reset checkpoints without clearing data.",
+                  "description": "A list of streaming flows to reset checkpoints without clearing data.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.1.0"
                 }
               },
@@ -10961,9 +11056,9 @@
                   "x-since-version": "v0.298.0"
                 },
                 "smartsheet_options": {
-                  "description": "[Beta] Smartsheet specific options for ingestion",
+                  "description": "[Public Preview] Smartsheet specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.299.2"
                 },
                 "tiktok_ads_options": {
@@ -11691,7 +11786,7 @@
                 "[Beta]",
                 "[Beta]",
                 "[Public Preview]",
-                "[Beta]",
+                "[Public Preview]",
                 "[Beta]",
                 "[Private Preview]"
               ]
@@ -12860,9 +12955,9 @@
               "description": "Smartsheet specific options for ingestion",
               "properties": {
                 "enforce_schema": {
-                  "description": "[Beta] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
+                  "description": "[Public Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -15218,6 +15313,18 @@
               "required": [
                 "quartz_cron_schedule",
                 "timezone_id"
+              ]
+            },
+            "sql.CustomTemplateFormat": {
+              "type": "string",
+              "description": "Rendering format for the `custom_summary` and `custom_description` templates.",
+              "enum": [
+                "HTML",
+                "MARKDOWN"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "sql.EndpointTagPair": {
