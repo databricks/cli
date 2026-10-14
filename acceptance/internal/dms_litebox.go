@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
@@ -58,6 +59,10 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		},
 	}
 	handler := func(r testserver.Request) any {
+		if env.Get(t.Context(), "DMS_CLI_TRACE") != "" {
+			start := time.Now()
+			defer func() { t.Logf("DMS_CLI_TRACE %s %s %s", r.Method, r.URL.RequestURI(), time.Since(start)) }()
+		}
 		target := *dmsURL
 		target.Path, target.RawPath, target.RawQuery = r.URL.Path, r.URL.RawPath, r.URL.RawQuery
 		req, err := http.NewRequestWithContext(r.Context, r.Method, target.String(), bytes.NewReader(r.Body))
