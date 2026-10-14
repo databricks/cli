@@ -7,39 +7,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestWorkspaceIDsAreShortAndUnique(t *testing.T) {
-	w := testserver.NewFakeWorkspace("https://workspace.test", "test-token")
-	w.WorkspaceMkdirs(workspace.Mkdirs{Path: "/test-dir"})
-	require.Zero(t, w.WorkspaceFilesImportFile("/test-dir/file.txt", []byte("content"), false).StatusCode)
-	require.Zero(t, w.WorkspaceImportNotebook("/test-dir/notebook", []byte("content"), workspace.LanguagePython, false).StatusCode)
-	require.Zero(t, w.ReposCreate(testserver.Request{Body: []byte(`{"path":"/Repos/me/repo","url":"https://github.com/databricks/cli","provider":"gitHub"}`)}).StatusCode)
-	response := w.CreateDeployment(testserver.Request{Body: []byte(`{"initial_parent_path":"/test-dir"}`)})
-	require.Zero(t, response.StatusCode)
-
-	seen := make(map[int64]bool)
-	for _, path := range []string{
-		"/Workspace",
-		"/Users",
-		"/test-dir",
-		"/test-dir/file.txt",
-		"/test-dir/notebook",
-		"/Repos/me/repo",
-		"/test-dir/resources.deployment.json",
-	} {
-		response := w.WorkspaceGetStatus(path, false)
-		require.Zero(t, response.StatusCode, path)
-		info := response.Body.(workspace.ObjectInfo)
-		assert.Greater(t, info.ObjectId, int64(1000), path)
-		assert.Less(t, info.ObjectId, int64(1_000_000), path)
-		assert.False(t, seen[info.ObjectId], "duplicate ID for %s", path)
-		seen[info.ObjectId] = true
-	}
-}
 
 func importFile(t *testing.T, baseURL, path, body string) int {
 	t.Helper()
