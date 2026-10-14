@@ -100,15 +100,21 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 	tests := []struct {
 		name          string
 		omitSerial    bool
-		cachedSerial  int
+		fileSerial    int
+		unmarked      bool
 		deploymentID  string
 		lastVersionID int
+		wantErr       string
 	}{
 		{name: "legacy missing serial", omitSerial: true, deploymentID: "123", lastVersionID: 7},
 		{name: "legacy zero serial", deploymentID: "123", lastVersionID: 7},
-		{name: "cached serial behind service", cachedSerial: 2, deploymentID: "123", lastVersionID: 7},
-		{name: "cached serial ahead of service", cachedSerial: 99, deploymentID: "123", lastVersionID: 7},
-		{name: "no deployment has version zero", cachedSerial: 99},
+		{name: "serial copy behind service", fileSerial: 2, deploymentID: "123", lastVersionID: 7},
+		{name: "serial copy equal to service", fileSerial: 7, deploymentID: "123", lastVersionID: 7},
+		{name: "serial copy ahead of service", fileSerial: 99, deploymentID: "123", lastVersionID: 7, wantErr: "resource state serial (99) is ahead of deployment history version (7)"},
+		{name: "no deployment has version zero"},
+		{name: "positive serial copy without deployment", fileSerial: 99, wantErr: "resource state serial (99) is ahead of deployment history version (0)"},
+		{name: "positive serial copy without recorded version", fileSerial: 1, deploymentID: "123", wantErr: "resource state serial (1) is ahead of deployment history version (0)"},
+		{name: "unmarked serial can be ahead of service", fileSerial: 99, unmarked: true, deploymentID: "123", lastVersionID: 7},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -120,7 +126,10 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 				"state":         map[string]ResourceEntry{},
 			}
 			if !tt.omitSerial {
-				seed["serial"] = tt.cachedSerial
+				seed["serial"] = tt.fileSerial
+			}
+			if tt.unmarked {
+				delete(seed, "features")
 			}
 			data, err := json.Marshal(seed)
 			require.NoError(t, err)
@@ -128,9 +137,15 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 
 			ctx := cmdctx.SetWorkspaceClient(t.Context(), client)
 			var db DeploymentState
-			require.NoError(t, db.Open(ctx, path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(true), OpenDmsArgs{
+			err = db.Open(ctx, path, WithRecovery(false), WithWrite(false), WithDeploymentHistory(true), OpenDmsArgs{
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
-			}))
+			})
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.False(t, db.IsOpen())
+				return
+			}
+			require.NoError(t, err)
 			assert.Equal(t, tt.lastVersionID, db.GetSerial())
 			mustFinalize(t, &db)
 		})

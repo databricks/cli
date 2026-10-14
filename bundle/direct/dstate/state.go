@@ -559,6 +559,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	// the config can neither start recording one that was not (its resources would be created a
 	// second time) nor stop recording one that is (the service still holds it).
 	_, recorded := db.Data.Features[FeatureDeploymentHistory]
+	if recording && recorded && db.Data.Serial > dmsDeployment.LastVersionID {
+		return fmt.Errorf("resource state serial (%d) is ahead of deployment history version (%d); the state may refer to a different deployment", db.Data.Serial, dmsDeployment.LastVersionID)
+	}
 	switch {
 	case recording && !recorded && len(db.Data.State) == 0:
 		if db.Data.Features == nil {
