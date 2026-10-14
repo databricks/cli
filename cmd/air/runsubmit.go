@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -19,7 +20,6 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
@@ -49,9 +49,9 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 func buildRunEnvironment(dlImage string, deps []string) *jobs.Environment {
 	environment := &jobs.Environment{}
 	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		environment.BaseEnvironment = new("workspace-base-environments/" + dlImage)
+		environment.BaseEnvironment = utils.NonZero("workspace-base-environments/" + dlImage)
 	} else {
-		environment.EnvironmentVersion = new(dlImage)
+		environment.EnvironmentVersion = utils.NonZero(dlImage)
 	}
 	if len(deps) > 0 {
 		environment.Dependencies = deps
@@ -72,41 +72,40 @@ func buildRunEnvironment(dlImage string, deps []string) *jobs.Environment {
 // workload.
 func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRunRequest {
 	deployment := jobs.DeploymentSpec{
-		Compute: jobs.ComputeSpec{
+		Compute: &jobs.ComputeSpec{
 			AcceleratorType:  jobs.ComputeSpec_AcceleratorType(cfg.Compute.AcceleratorType),
-			AcceleratorCount: new(cfg.Compute.NumAccelerators),
+			AcceleratorCount: utils.NonZero(cfg.Compute.NumAccelerators),
 		},
 	}
 	if len(cfg.Containers) == 0 {
-		deployment.CommandPath = new(commandPath)
+		deployment.CommandPath = utils.NonZero(commandPath)
 	}
 	task := jobs.AiRuntimeTask{
-		Experiment:     new(cfg.ExperimentName),
+		Experiment:     utils.NonZero(cfg.ExperimentName),
 		Deployments:    []jobs.DeploymentSpec{deployment},
-		CodeSourcePath: new(snap.CodeSourcePath),
+		CodeSourcePath: utils.NonZero(snap.CodeSourcePath),
 	}
 	if cfg.MLflowRunName != nil {
-		task.MlflowRun = new(*cfg.MLflowRunName)
+		task.MlflowRun = utils.NonZero(*cfg.MLflowRunName)
 	}
 	if cfg.MLflowExperimentDirectory != nil {
-		task.MlflowExperimentDirectory = new(*cfg.MLflowExperimentDirectory)
+		task.MlflowExperimentDirectory = utils.NonZero(*cfg.MLflowExperimentDirectory)
 	}
 	if cfg.MLflowArtifactLocation != nil {
-		task.MlflowArtifactLocation = new(*cfg.MLflowArtifactLocation)
+		task.MlflowArtifactLocation = utils.NonZero(*cfg.MLflowArtifactLocation)
 	}
 
 	maxRetries := cfg.maxRetries()
 	st := jobs.RunTaskSettings{
-		TaskKey:        new(cfg.ExperimentName),
+		TaskKey:        utils.NonZero(cfg.ExperimentName),
 		RunIf:          jobs.TaskDependencyType_AllSuccess,
 		AiRuntimeTask:  &task,
-		EnvironmentKey: new(aiRuntimeEnvironmentKey),
+		EnvironmentKey: utils.NonZero(aiRuntimeEnvironmentKey),
 		MaxRetries:     new(maxRetries),
 		// retry_on_timeout only makes sense when retries are allowed; otherwise
 		// omit it (matches Python's native path, which sets retry_on_timeout only
 		// under the same > 0 gate).
-		RetryOnTimeout:  maxRetries > 0,
-		ForceSendFields: []string{"MaxRetries"},
+		RetryOnTimeout: utils.NonZero(maxRetries > 0),
 	}
 
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
@@ -115,14 +114,14 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	envSpec := buildRunEnvironment(dlImage, deps)
 
 	return jobs.SubmitRunRequest{
-		RunName: new(cfg.ExperimentName),
+		RunName: utils.NonZero(cfg.ExperimentName),
 		// budget_policy_id matches what the Python CLI and `ssh connect` send;
 		// usage_policy_id is the newer alias for the same thing on SubmitRun.
-		BudgetPolicyId: new(usagePolicyID),
-		TimeoutSeconds: new(cfg.timeoutSeconds()),
+		BudgetPolicyId: utils.NonZero(usagePolicyID),
+		TimeoutSeconds: utils.NonZero(cfg.timeoutSeconds()),
 		Tasks:          []jobs.RunTaskSettings{st},
 		Environments: []jobs.JobEnvironment{{
-			EnvironmentKey: new(aiRuntimeEnvironmentKey),
+			EnvironmentKey: utils.NonZero(aiRuntimeEnvironmentKey),
 			Spec:           envSpec,
 		}},
 	}
@@ -141,11 +140,15 @@ func submitRun(ctx context.Context, w *sdkclients.Clients, payload jobs.SubmitRu
 	// ever appears alongside a pool (validation enforces it), but route on
 	// all of them so none can be silently dropped.
 	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" && len(containers) == 0 {
-		wait, err := w.Jobs.Submit(ctx, payload)
+		req, err := jobs.SubmitRunRequestToSDK(&payload)
 		if err != nil {
 			return 0, err
 		}
-		return wait.RunId, nil
+		wait, err := w.Jobs.SubmitRun(ctx, *req)
+		if err != nil {
+			return 0, err
+		}
+		return wait.GetRunId(), nil
 	}
 
 	raw, err := json.Marshal(payload)
@@ -174,7 +177,7 @@ func submitRun(ctx context.Context, w *sdkclients.Clients, payload jobs.SubmitRu
 		}
 	}
 
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -414,7 +417,7 @@ func submitWorkload(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, 
 
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
-	payload.IdempotencyToken = new(token)
+	payload.IdempotencyToken = utils.NonZero(token)
 
 	// The pool id is sent on the wire as provisioned_capacity_id (the backend's
 	// name for a GPU pool); only the user-facing YAML field is pool_id.

@@ -16,10 +16,10 @@ import (
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -208,7 +208,7 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 	require.Error(t, err)
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	require.True(t, ok)
-	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.HTTPStatusCode())
 }
 
 func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
@@ -385,15 +385,15 @@ func TestClassifyValidationFailure(t *testing.T) {
 		{"deadline", context.DeadlineExceeded, true, true},
 		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
 		{"unknown", errors.New("authentication visitor failed"), false, false},
-		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
-		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
-		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false, false},
-		{"forbidden", &apierr.APIError{StatusCode: http.StatusForbidden}, false, false},
-		{"not found", &apierr.APIError{StatusCode: http.StatusNotFound}, true, false},
-		{"not implemented", &apierr.APIError{StatusCode: http.StatusNotImplemented}, true, false},
-		{"request timeout", &apierr.APIError{StatusCode: http.StatusRequestTimeout}, true, true},
-		{"rate limited", &apierr.APIError{StatusCode: http.StatusTooManyRequests}, true, true},
-		{"server error", &apierr.APIError{StatusCode: http.StatusInternalServerError}, true, true},
+		{"bad request", newAPIError(http.StatusBadRequest, "", ""), false, false},
+		{"disabled", newAPIError(http.StatusBadRequest, "FEATURE_DISABLED", ""), true, false},
+		{"unauthenticated", newAPIError(http.StatusUnauthorized, "", ""), false, false},
+		{"forbidden", newAPIError(http.StatusForbidden, "", ""), false, false},
+		{"not found", newAPIError(http.StatusNotFound, "", ""), true, false},
+		{"not implemented", newAPIError(http.StatusNotImplemented, "", ""), true, false},
+		{"request timeout", newAPIError(http.StatusRequestTimeout, "", ""), true, true},
+		{"rate limited", newAPIError(http.StatusTooManyRequests, "", ""), true, true},
+		{"server error", newAPIError(http.StatusInternalServerError, "", ""), true, true},
 	}
 
 	for _, tt := range tests {

@@ -7,8 +7,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
 )
 
 // AI Gateway model provider service.
@@ -48,41 +49,36 @@ func modelProviderServiceIdentityFromName(name string) (parent, modelProviderSer
 	return "schemas/" + parts[0] + "." + parts[1], parts[2], nil
 }
 
-func responseToModelProviderServiceConfig(ms *catalog.ModelProviderService) (*resources.ModelProviderServiceConfig, error) {
-	parent, id, err := modelProviderServiceIdentityFromName(ms.Name)
+func responseToModelProviderServiceConfig(resp *sdkaigateway.ModelProviderService) (*resources.ModelProviderServiceConfig, error) {
+	ms, err := aigateway.ModelProviderServiceFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	parent, id, err := modelProviderServiceIdentityFromName(utils.Deref(ms.Name))
 	if err != nil {
 		return nil, err
 	}
 	return &resources.ModelProviderServiceConfig{
 		Parent:                 parent,
 		ModelProviderServiceId: id,
-		Comment:                ms.Comment,
+		Comment:                utils.Deref(ms.Comment),
 		Config:                 ms.Config,
-		ForceSendFields:        nil,
 	}, nil
 }
 
 // modelProviderServiceBody builds the ModelProviderService write payload from the
 // bundle config. Only comment and config are client-settable; every other field
-// is OUTPUT_ONLY (server-derived) and sent as its zero value.
-func modelProviderServiceBody(config *resources.ModelProviderServiceConfig) catalog.ModelProviderService {
-	return catalog.ModelProviderService{
-		Comment:         config.Comment,
-		Config:          config.Config,
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		Etag:            "",
-		MetastoreId:     "",
-		Name:            "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: nil,
+// is OUTPUT_ONLY (server-derived) and not sent. name addresses the resource on update.
+func modelProviderServiceBody(config *resources.ModelProviderServiceConfig, name *string) *aigateway.ModelProviderService {
+	return &aigateway.ModelProviderService{
+		Name:    name,
+		Comment: nonEmpty(config.Comment),
+		Config:  config.Config,
 	}
 }
 
 func (r *ResourceModelProviderService) DoRead(ctx context.Context, id string) (*resources.ModelProviderServiceConfig, error) {
-	ms, err := r.client.AiGateway.GetModelProviderService(ctx, catalog.GetModelProviderServiceRequest{Name: modelProviderServiceNamePrefix + id})
+	ms, err := r.client.AiGateway.GetModelProviderService(ctx, sdkaigateway.GetModelProviderServiceRequest{Name: new(modelProviderServiceNamePrefix + id)})
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +86,15 @@ func (r *ResourceModelProviderService) DoRead(ctx context.Context, id string) (*
 }
 
 func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *resources.ModelProviderServiceConfig) (string, *resources.ModelProviderServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateModelProviderService(ctx, catalog.CreateModelProviderServiceRequest{
-		Parent:                 config.Parent,
-		ModelProviderServiceId: config.ModelProviderServiceId,
-		ModelProviderService:   modelProviderServiceBody(config),
+	request, err := aigateway.CreateModelProviderServiceRequestToSDK(&aigateway.CreateModelProviderServiceRequest{
+		Parent:                 new(config.Parent),
+		ModelProviderServiceId: new(config.ModelProviderServiceId),
+		ModelProviderService:   modelProviderServiceBody(config, nil),
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := r.client.AiGateway.CreateModelProviderService(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -102,7 +102,7 @@ func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *res
 	if err != nil {
 		return "", nil, err
 	}
-	return strings.TrimPrefix(resp.Name, modelProviderServiceNamePrefix), state, nil
+	return strings.TrimPrefix(utils.Deref(resp.Name), modelProviderServiceNamePrefix), state, nil
 }
 
 // DoUpdate sends update_mask "*" on every update. name, parent and
@@ -116,13 +116,14 @@ func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *res
 // which also does not send etag. We deliberately do not do optimistic
 // concurrency on these resources.
 func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, config *resources.ModelProviderServiceConfig, _ *PlanEntry) (*resources.ModelProviderServiceConfig, error) {
-	resp, err := r.client.AiGateway.UpdateModelProviderService(ctx, catalog.UpdateModelProviderServiceRequest{
-		Etag:                 "",
-		Name:                 modelProviderServiceNamePrefix + id,
-		ModelProviderService: modelProviderServiceBody(config),
-		UpdateMask:           fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields:      nil,
+	request, err := aigateway.UpdateModelProviderServiceRequestToSDK(&aigateway.UpdateModelProviderServiceRequest{
+		ModelProviderService: modelProviderServiceBody(config, new(modelProviderServiceNamePrefix+id)),
+		UpdateMask:           new("*"),
 	})
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.AiGateway.UpdateModelProviderService(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +131,7 @@ func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, 
 }
 
 func (r *ResourceModelProviderService) DoDelete(ctx context.Context, id string, _ *resources.ModelProviderServiceConfig) error {
-	return r.client.AiGateway.DeleteModelProviderService(ctx, catalog.DeleteModelProviderServiceRequest{
-		Etag:            "",
-		Name:            modelProviderServiceNamePrefix + id,
-		ForceSendFields: nil,
+	return r.client.AiGateway.DeleteModelProviderService(ctx, sdkaigateway.DeleteModelProviderServiceRequest{
+		Name: new(modelProviderServiceNamePrefix + id),
 	})
 }

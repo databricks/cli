@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/google/uuid"
 )
 
@@ -24,7 +24,7 @@ func currentUserEmail(ctx context.Context, w *sdkclients.Clients) (string, error
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve current user: %w", err)
 	}
-	return me.UserName, nil
+	return me, nil
 }
 
 // userWorkspaceDir returns the user's workspace home, honoring the env override.
@@ -81,13 +81,13 @@ func ensureExperimentDirectory(ctx context.Context, w *sdkclients.Clients, exper
 	}
 
 	info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
-	if errors.Is(err, apierrs.ErrNotFound) {
+	if apierrs.Is(err, apierrs.ErrNotFound) {
 		return w.Workspace.MkdirsByPath(ctx, experimentDir)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, err)
 	}
-	if info.ObjectType != workspace.ObjectTypeDirectory {
+	if info.ObjectType != workspaceapi.ObjectTypeDirectory {
 		return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, info.ObjectType)
 	}
 	return nil

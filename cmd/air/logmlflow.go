@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -25,8 +26,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/listing"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 var mlflowArtifactRoots sync.Map
@@ -36,7 +36,7 @@ func mlflowArtifactRoot(ctx context.Context, w *sdkclients.Clients, mlflowRunID 
 	if cached, ok := mlflowArtifactRoots.Load(key); ok {
 		return cached.(string), nil
 	}
-	response, err := w.Experiments.GetRun(ctx, experiments.GetRunRequest{RunId: new(mlflowRunID)})
+	response, err := w.Experiments.GetRun(ctx, sdkexperiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air logs: could not resolve MLflow artifact URI for %s: %v", mlflowRunID, err)
 		return "", nil
@@ -222,7 +222,7 @@ func streamMLflowLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer,
 		}
 		refreshed, err := resolveRunStatus(ctx, w, req.runID)
 		if err != nil {
-			if errors.Is(err, apierrs.ErrResourceDoesNotExist) || ctx.Err() != nil {
+			if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) || ctx.Err() != nil {
 				return false, err
 			}
 			log.Debugf(ctx, "air logs: failed to refresh run status on MLflow fallback: %v", err)
@@ -407,8 +407,18 @@ func listArtifacts(ctx context.Context, w *sdkclients.Clients, mlflowRunID, arti
 		}
 		return files, nil
 	}
-	it := w.Experiments.ListArtifacts(ctx, experiments.ListArtifactsRequest{RunId: new(mlflowRunID), Path: new(artifactPath)})
-	return listing.ToSlice(ctx, it)
+	var files []experiments.FileInfo
+	for f, err := range w.Experiments.ListArtifactsIter(ctx, sdkexperiments.ListArtifactsRequest{RunId: new(mlflowRunID), Path: new(artifactPath)}) {
+		if err != nil {
+			return nil, err
+		}
+		info, err := experiments.FileInfoFromSDK(f)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, *info)
+	}
+	return files, nil
 }
 
 // credentialInfo is one credentials-for-read entry: a pre-signed URL plus any
@@ -458,7 +468,7 @@ func downloadArtifact(ctx context.Context, w *sdkclients.Clients, mlflowRunID, a
 		}
 		return tmp.Name(), nil
 	}
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create API client: %w", err)
 	}

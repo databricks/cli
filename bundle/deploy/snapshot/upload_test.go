@@ -1,6 +1,7 @@
 package snapshot_test
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -8,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	libsnapshot "github.com/databricks/cli/libs/snapshot"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ func bundleWithPermissions(currentUser string, perms []resources.Permission) *bu
 			Permissions: perms,
 		},
 	}
-	b.Config.Workspace.CurrentUser.User = &iam.User{UserName: currentUser}
+	b.Config.Workspace.CurrentUser.User = &scim.User{UserName: new(currentUser)}
 	return b
 }
 

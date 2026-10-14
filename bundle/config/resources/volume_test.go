@@ -3,26 +3,23 @@ package resources
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestComputeVolumePath(t *testing.T) {
 	v := &Volume{
-		CatalogName: "main",
-		SchemaName:  "myschema",
-		Name:        "myvol",
+		CatalogName: new("main"),
+		SchemaName:  new("myschema"),
+		Name:        new("myvol"),
 	}
 	require.Equal(t, "/Volumes/main/myschema/myvol", v.ComputeVolumePath())
 }
 
 func TestComputeVolumePath_PureReferenceEmbedded(t *testing.T) {
 	v := &Volume{
-		CatalogName: "main",
-		SchemaName:  "${resources.schemas.my.name}",
-		Name:        "myvol",
+		CatalogName: new("main"),
+		SchemaName:  new("${resources.schemas.my.name}"),
+		Name:        new("myvol"),
 	}
 	// A pure reference is embedded verbatim so it can be resolved later (plan/deploy).
 	require.Equal(t, "/Volumes/main/${resources.schemas.my.name}/myvol", v.ComputeVolumePath())
@@ -31,13 +28,12 @@ func TestComputeVolumePath_PureReferenceEmbedded(t *testing.T) {
 func TestVolumeNotFound(t *testing.T) {
 	ctx := t.Context()
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockVolumesAPI().On("Read", mock.Anything, mock.Anything).Return(nil, &apierr.APIError{
-		StatusCode: 404,
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/volumes/non-existent-volume": notFound(),
 	})
 
 	s := &Volume{}
-	exists, err := s.Exists(ctx, m.WorkspaceClient, "non-existent-volume")
+	exists, err := s.Exists(ctx, w, "non-existent-volume")
 
 	require.Falsef(t, exists, "Exists should return false when getting a 404 response from Workspace")
 	require.NoErrorf(t, err, "Exists should not return an error when getting a 404 response from Workspace")

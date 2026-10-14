@@ -8,8 +8,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
 	"github.com/databricks/cli/internal/clijson"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,9 +27,25 @@ type testProject struct {
 	testProjectConfig
 }
 
+// newTestParser returns a parser over schemas that maps API types the way the
+// generator does.
+func newTestParser(t *testing.T, schemas map[string]*clijson.SchemaJSON) *annotationParser {
+	meta := testMeta(t)
+	return newParser(schemas, meta.Name, meta.AltSchemas)
+}
+
+func testMeta(t *testing.T) *sdkmeta.Meta {
+	doc, err := clijson.Parse("../../../.codegen/cli.json")
+	require.NoError(t, err)
+	meta, err := sdkmeta.Build(reflect.TypeFor[config.Root](), doc.Schemas)
+	require.NoError(t, err)
+	setLegacyTypePaths(meta)
+	return meta
+}
+
 func TestFindRefNestedEmbeddedSDKType(t *testing.T) {
 	spec := &clijson.SchemaJSON{Description: "A Lakebase project."}
-	p := newParser(map[string]*clijson.SchemaJSON{"postgres.ProjectSpec": spec})
+	p := newTestParser(t, map[string]*clijson.SchemaJSON{"postgres.ProjectSpec": spec})
 
 	t.Run("resolves a spec embedded below the first level", func(t *testing.T) {
 		got, ok := p.findRef(reflect.TypeFor[testProject]())
@@ -43,7 +60,7 @@ func TestFindRefNestedEmbeddedSDKType(t *testing.T) {
 	})
 
 	t.Run("reports no match when the spec omits the type", func(t *testing.T) {
-		_, ok := newParser(nil).findRef(reflect.TypeFor[testProject]())
+		_, ok := newTestParser(t, nil).findRef(reflect.TypeFor[testProject]())
 		assert.False(t, ok)
 	})
 }
@@ -52,7 +69,7 @@ func TestFindRefNestedEmbeddedSDKType(t *testing.T) {
 // land on the wrapping resource type, since that is where the schema generator
 // flattens the spec's fields to.
 func TestExtractAnnotationsNestedEmbeddedSDKType(t *testing.T) {
-	p := newParser(map[string]*clijson.SchemaJSON{
+	p := newTestParser(t, map[string]*clijson.SchemaJSON{
 		"postgres.ProjectSpec": {
 			Fields: map[string]*clijson.SchemaFieldJSON{
 				"display_name": {
@@ -129,7 +146,7 @@ func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
 // auth_method is a field of postgres.RoleRoleSpec, embedded by
 // resources.PostgresRole.
 func TestExtractAnnotationsOverridesLaunchStage(t *testing.T) {
-	p := newParser(map[string]*clijson.SchemaJSON{
+	p := newTestParser(t, map[string]*clijson.SchemaJSON{
 		"postgres.RoleRoleSpec": {
 			Fields: map[string]*clijson.SchemaFieldJSON{
 				"auth_method": {
@@ -152,7 +169,7 @@ func TestExtractAnnotationsOverridesLaunchStage(t *testing.T) {
 // type-level x-databricks-launch-stage is emitted, not just its fields'. The
 // contract carries no type-level stage, so the override map is the only source.
 func TestExtractAnnotationsStampsTypeLaunchStage(t *testing.T) {
-	p := newParser(map[string]*clijson.SchemaJSON{
+	p := newTestParser(t, map[string]*clijson.SchemaJSON{
 		"postgres.RoleRoleSpec": {Fields: map[string]*clijson.SchemaFieldJSON{}},
 	})
 

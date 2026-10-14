@@ -20,14 +20,14 @@ import (
 // airRunWithCompute builds a run reporting the given accelerator type and count.
 func airRunWithCompute(accelType string, count int) *jobs.GetRunResponse {
 	return &jobs.GetRunResponse{
-		RunId: 123,
+		RunId: new(int64(123)),
 		Tasks: []jobs.RunTask{{
-			RunId: 456,
+			RunId: new(int64(456)),
 			AiRuntimeTask: &jobs.AiRuntimeTask{
 				Deployments: []jobs.DeploymentSpec{{
 					Compute: jobs.ComputeSpec{
 						AcceleratorType:  jobs.ComputeSpec_AcceleratorType(accelType),
-						AcceleratorCount: count,
+						AcceleratorCount: new(count),
 					},
 				}},
 			},
@@ -53,7 +53,7 @@ func TestResolveNodeCount(t *testing.T) {
 	}
 
 	// A run with no AI runtime compute errors.
-	_, err := resolveNodeCount(&jobs.GetRunResponse{RunId: 1})
+	_, err := resolveNodeCount(&jobs.GetRunResponse{RunId: new(int64(1))})
 	require.Error(t, err)
 
 	// A count that isn't a whole number of nodes can't be mapped to node indices,

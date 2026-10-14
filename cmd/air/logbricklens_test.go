@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +24,7 @@ func TestGetBricklensLogsQuerySerialization(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	_, err = getBricklensLogs(t.Context(), apiClient, nil, 42, bricklensLogsQuery{
 		fromSeconds:   100,
@@ -58,7 +58,7 @@ func TestGetBricklensLogsOmitsOptionals(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	// attempt -1 (latest) and node 0 are the default request; from/to/page unset.
 	_, err = getBricklensLogs(t.Context(), apiClient, nil, 7, bricklensLogsQuery{attemptNumber: -1, nodeIndex: 0})

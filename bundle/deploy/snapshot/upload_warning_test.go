@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"math"
 	"os"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +55,7 @@ func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
 			Sync: config.Sync{Paths: []string{"."}},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{UserName: "test@example.test"},
+					User: &scim.User{UserName: new("test@example.test")},
 				},
 			},
 		},

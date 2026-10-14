@@ -7,63 +7,62 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestVisitJobPaths(t *testing.T) {
-	task0 := jobs.Task{
+	task0 := jobs.TaskSettings{
 		NotebookTask: &jobs.NotebookTask{
-			NotebookPath: "abc",
+			NotebookPath: new("abc"),
 		},
 	}
-	task1 := jobs.Task{
+	task1 := jobs.TaskSettings{
 		SparkPythonTask: &jobs.SparkPythonTask{
-			PythonFile: "abc",
+			PythonFile: new("abc"),
 		},
 	}
-	task2 := jobs.Task{
+	task2 := jobs.TaskSettings{
 		DbtTask: &jobs.DbtTask{
-			ProjectDirectory: "abc",
+			ProjectDirectory: new("abc"),
 		},
 	}
-	task3 := jobs.Task{
+	task3 := jobs.TaskSettings{
 		SqlTask: &jobs.SqlTask{
 			File: &jobs.SqlTaskFile{
-				Path: "abc",
+				Path: new("abc"),
 			},
 		},
 	}
-	task4 := jobs.Task{
-		Libraries: []compute.Library{
-			{Whl: "dist/foo.whl"},
+	task4 := jobs.TaskSettings{
+		Libraries: []jobs.Library{
+			{Whl: new("dist/foo.whl")},
 		},
 	}
-	task5 := jobs.Task{
-		Libraries: []compute.Library{
-			{Jar: "dist/foo.jar"},
+	task5 := jobs.TaskSettings{
+		Libraries: []jobs.Library{
+			{Jar: new("dist/foo.jar")},
 		},
 	}
-	task6 := jobs.Task{
-		Libraries: []compute.Library{
-			{Requirements: "requirements.txt"},
+	task6 := jobs.TaskSettings{
+		Libraries: []jobs.Library{
+			{Requirements: new("requirements.txt")},
 		},
 	}
-	task7 := jobs.Task{
+	task7 := jobs.TaskSettings{
 		AlertTask: &jobs.AlertTask{
-			WorkspacePath: "abc",
+			WorkspacePath: new("abc"),
 		},
 	}
-	task8 := jobs.Task{
+	task8 := jobs.TaskSettings{
 		AiRuntimeTask: &jobs.AiRuntimeTask{
 			Deployments: []jobs.DeploymentSpec{
-				{CommandPath: "abc"},
+				{CommandPath: new("abc")},
 			},
 		},
 	}
 
 	job0 := &resources.Job{
-		Tasks: []jobs.Task{
+		Tasks: []jobs.TaskSettings{
 			task0,
 			task1,
 			task2,
@@ -100,7 +99,7 @@ func TestVisitJobPaths(t *testing.T) {
 
 func TestVisitJobPaths_environments(t *testing.T) {
 	environment0 := jobs.JobEnvironment{
-		Spec: &compute.Environment{
+		Spec: &jobs.Environment{
 			Dependencies: []string{
 				"dist_0/*.whl",
 				"dist_1/*.whl",
@@ -110,8 +109,8 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	job0 := &resources.Job{
 		Environments: []jobs.JobEnvironment{
 			environment0,
-			{Spec: &compute.Environment{ProjectEnvironment: "../pyproject.toml"}},
-			{Spec: &compute.Environment{ProjectEnvironment: "/Workspace/shared/pyproject.toml"}},
+			{Spec: &jobs.Environment{ProjectEnvironment: new("../pyproject.toml")}},
+			{Spec: &jobs.Environment{ProjectEnvironment: new("/Workspace/shared/pyproject.toml")}},
 		},
 	}
 
@@ -136,7 +135,7 @@ func TestVisitJobPaths_environmentVariables(t *testing.T) {
 	job0 := &resources.Job{
 		EnvironmentVariables: []jobs.JobEnvironmentVariables{
 			{
-				EnvironmentVariablesKey: "default",
+				EnvironmentVariablesKey: new("default"),
 				Spec: &jobs.JobEnvironmentVariablesSpec{
 					Files: []string{
 						"./a.env",
@@ -165,26 +164,26 @@ func TestVisitJobPaths_environmentVariables(t *testing.T) {
 }
 
 func TestVisitJobPaths_foreach(t *testing.T) {
-	task0 := jobs.Task{
+	task0 := jobs.TaskSettings{
 		ForEachTask: &jobs.ForEachTask{
-			Task: jobs.Task{
+			Task: &jobs.TaskSettings{
 				NotebookTask: &jobs.NotebookTask{
-					NotebookPath: "abc",
+					NotebookPath: new("abc"),
 				},
 			},
 		},
 	}
-	task1 := jobs.Task{
+	task1 := jobs.TaskSettings{
 		ForEachTask: &jobs.ForEachTask{
-			Task: jobs.Task{
+			Task: &jobs.TaskSettings{
 				AlertTask: &jobs.AlertTask{
-					WorkspacePath: "abc",
+					WorkspacePath: new("abc"),
 				},
 			},
 		},
 	}
 	job0 := &resources.Job{
-		Tasks: []jobs.Task{
+		Tasks: []jobs.TaskSettings{
 			task0,
 			task1,
 		},

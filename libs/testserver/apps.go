@@ -5,6 +5,7 @@ import (
 	"fmt"
 	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ const (
 func setUcSecurableKinds(app *apps.App) {
 	for _, res := range app.Resources {
 		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurable_UcSecurableType_Table {
-			res.UcSecurable.SecurableKind = nonZero("TABLE_DELTA")
+			res.UcSecurable.SecurableKind = utils.NonZero("TABLE_DELTA")
 		}
 	}
 }
@@ -84,7 +85,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
-		for field := range strings.SplitSeq(val(updateReq.UpdateMask), ",") {
+		for field := range strings.SplitSeq(utils.Deref(updateReq.UpdateMask), ",") {
 			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
 				existingMap[strings.TrimSpace(field)] = v
 			}
@@ -140,10 +141,10 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
 	}
 
-	deployment.DeploymentId = nonZero(fmt.Sprintf("deploy-%d", nextID()))
+	deployment.DeploymentId = utils.NonZero(fmt.Sprintf("deploy-%d", nextID()))
 	deployment.Status = &apps.AppDeploymentStatus{
 		State:   apps.AppDeployment_State_Succeeded,
-		Message: nonZero("Deployment succeeded"),
+		Message: utils.NonZero("Deployment succeeded"),
 	}
 
 	app.ActiveDeployment = &deployment
@@ -161,7 +162,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 		return Response{StatusCode: 404}
 	}
 
-	if app.ActiveDeployment == nil || val(app.ActiveDeployment.DeploymentId) != deploymentID {
+	if app.ActiveDeployment == nil || utils.Deref(app.ActiveDeployment.DeploymentId) != deploymentID {
 		return Response{StatusCode: 404}
 	}
 
@@ -190,12 +191,12 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStatus_ComputeState_Active,
-		Message: nonZero("App compute is active."),
+		Message: utils.NonZero("App compute is active."),
 	}
 	// Starting the compute brings the application up.
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "RUNNING",
-		Message: nonZero(appStatusRunningMessage),
+		Message: utils.NonZero(appStatusRunningMessage),
 	}
 	s.Apps[name] = app
 
@@ -212,12 +213,12 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStatus_ComputeState_Stopped,
-		Message: nonZero("Start the app compute to deploy the app."),
+		Message: utils.NonZero("Start the app compute to deploy the app."),
 	}
 	// Stopping the compute takes the application down.
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "UNAVAILABLE",
-		Message: nonZero(appStatusUnavailableMessage),
+		Message: utils.NonZero(appStatusUnavailableMessage),
 	}
 	// The backend clears both deployments on stop for the apps these fixtures use,
 	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
@@ -269,11 +270,11 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStatus_ComputeState_Deleting,
-		Message: nonZero("App is being deleted."),
+		Message: utils.NonZero("App is being deleted."),
 	}
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "UNAVAILABLE",
-		Message: nonZero(appStatusUnavailableMessage),
+		Message: utils.NonZero(appStatusUnavailableMessage),
 	}
 	s.Apps[name] = app
 
@@ -300,7 +301,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			}
 		}
 	} else {
-		name = val(app.Name)
+		name = utils.Deref(app.Name)
 		if name == "" {
 			return Response{
 				StatusCode: 400,
@@ -324,39 +325,39 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	if req.URL.Query().Get("no_compute") == "true" {
 		app.AppStatus = &apps.ApplicationStatus{
 			State:   "UNAVAILABLE",
-			Message: nonZero(appStatusUnavailableMessage),
+			Message: utils.NonZero(appStatusUnavailableMessage),
 		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   apps.ComputeStatus_ComputeState_Stopped,
-			Message: nonZero("App compute is stopped."),
+			Message: utils.NonZero("App compute is stopped."),
 		}
 	} else {
 		app.AppStatus = &apps.ApplicationStatus{
 			State:   "RUNNING",
-			Message: nonZero("Application is running."),
+			Message: utils.NonZero("Application is running."),
 		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
-			Message: nonZero("App compute is active."),
+			Message: utils.NonZero("App compute is active."),
 		}
 
 		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
 		deployment := apps.AppDeployment{
-			SourceCodePath: nonZero("/Workspace/Users/tester@databricks.com/" + name),
+			SourceCodePath: utils.NonZero("/Workspace/Users/tester@databricks.com/" + name),
 		}
 
-		deployment.DeploymentId = nonZero(fmt.Sprintf("deploy-%d", nextID()))
+		deployment.DeploymentId = utils.NonZero(fmt.Sprintf("deploy-%d", nextID()))
 		deployment.Status = &apps.AppDeploymentStatus{
 			State:   apps.AppDeployment_State_Succeeded,
-			Message: nonZero("Deployment succeeded"),
+			Message: utils.NonZero("Deployment succeeded"),
 		}
 
 		app.ActiveDeployment = &deployment
 		app.DefaultSourceCodePath = deployment.SourceCodePath
 	}
 
-	app.Url = nonZero(name + "-123.cloud.databricksapps.com")
-	app.Id = nonZero(strconv.Itoa(len(s.Apps) + 1000))
+	app.Url = utils.NonZero(name + "-123.cloud.databricksapps.com")
+	app.Id = utils.NonZero(strconv.Itoa(len(s.Apps) + 1000))
 
 	if app.ComputeSize == "" {
 		app.ComputeSize = "MEDIUM"
@@ -364,13 +365,13 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	// The platform enables user access token forwarding regardless of what the
 	// request asked for, so the remote always reports true.
-	app.ForwardUserAccessToken = nonZero(true)
+	app.ForwardUserAccessToken = utils.NonZero(true)
 
 	// Assign a service principal to the app, mimicking the real platform.
-	if val(app.ServicePrincipalClientId) == "" {
-		app.ServicePrincipalClientId = nonZero(nextUUID())
-		app.ServicePrincipalId = nonZero(nextID())
-		app.ServicePrincipalName = nonZero("app-" + name)
+	if utils.Deref(app.ServicePrincipalClientId) == "" {
+		app.ServicePrincipalClientId = utils.NonZero(nextUUID())
+		app.ServicePrincipalId = utils.NonZero(nextID())
+		app.ServicePrincipalName = utils.NonZero("app-" + name)
 	}
 
 	// Simulate the apps platform side effect: when an app references a job
@@ -380,7 +381,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		if res.Job == nil {
 			continue
 		}
-		s.upsertPermission("/jobs/"+val(res.Job.Id), accessmanagement.AccessControlResponse{
+		s.upsertPermission("/jobs/"+utils.Deref(res.Job.Id), accessmanagement.AccessControlResponse{
 			ServicePrincipalName: app.ServicePrincipalName,
 			AllPermissions: []accessmanagement.Permission{{
 				PermissionLevel: accessmanagement.PermissionLevel(res.Job.Permission),

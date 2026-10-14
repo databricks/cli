@@ -12,7 +12,9 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	sdkclusters "github.com/databricks/sdk-go/clusters/v2"
 	"golang.org/x/mod/semver"
 )
 
@@ -49,24 +51,29 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
+		taskKey := utils.Deref(task.TaskKey)
 		if task.NewCluster != nil {
-			if lowerThanExpectedVersion(task.NewCluster.SparkVersion) {
+			if sparkVersion := utils.Deref(task.NewCluster.SparkVersion); lowerThanExpectedVersion(sparkVersion) {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, task.NewCluster.SparkVersion),
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", taskKey, sparkVersion),
 				})
 				continue
 			}
 		}
 
-		if task.JobClusterKey != "" {
+		if jobClusterKey := utils.Deref(task.JobClusterKey); jobClusterKey != "" {
 			for _, job := range b.Config.Resources.Jobs {
 				for _, cluster := range job.JobClusters {
-					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster.SparkVersion != "" {
-						if lowerThanExpectedVersion(cluster.NewCluster.SparkVersion) {
+					if cluster.NewCluster == nil {
+						continue
+					}
+					sparkVersion := utils.Deref(cluster.NewCluster.SparkVersion)
+					if jobClusterKey == utils.Deref(cluster.JobClusterKey) && sparkVersion != "" {
+						if lowerThanExpectedVersion(sparkVersion) {
 							diags = append(diags, diag.Diagnostic{
 								Severity: diag.Error,
-								Summary:  fmt.Sprintf("job cluster %s uses incompatible DBR version %s", cluster.JobClusterKey, cluster.NewCluster.SparkVersion),
+								Summary:  fmt.Sprintf("job cluster %s uses incompatible DBR version %s", jobClusterKey, sparkVersion),
 							})
 							continue
 						}
@@ -75,21 +82,21 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			}
 		}
 
-		if task.ExistingClusterId != "" {
+		if existingClusterId := utils.Deref(task.ExistingClusterId); existingClusterId != "" {
 			var version string
 			var err error
 			// If the cluster id is a variable and it's not resolved, it means it references a cluster defined in the same bundle.
 			// So we can get the version from the cluster definition.
 			// It's defined in a form of resources.clusters.<cluster_key>.id
-			if strings.HasPrefix(task.ExistingClusterId, "${") {
-				p, ok := dynvar.PureReferenceToPath(task.ExistingClusterId)
+			if strings.HasPrefix(existingClusterId, "${") {
+				p, ok := dynvar.PureReferenceToPath(existingClusterId)
 				if !ok || len(p) < 3 {
-					log.Warnf(ctx, "unable to parse cluster key from %s", task.ExistingClusterId)
+					log.Warnf(ctx, "unable to parse cluster key from %s", existingClusterId)
 					continue
 				}
 
 				if p[0].Key() != "resources" || p[1].Key() != "clusters" {
-					log.Warnf(ctx, "incorrect variable reference for cluster id %s", task.ExistingClusterId)
+					log.Warnf(ctx, "incorrect variable reference for cluster id %s", existingClusterId)
 					continue
 				}
 
@@ -99,12 +106,12 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 					log.Warnf(ctx, "unable to find cluster with key %s", clusterKey)
 					continue
 				}
-				version = cluster.SparkVersion
+				version = utils.Deref(cluster.SparkVersion)
 			} else {
-				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(ctx), task.ExistingClusterId)
+				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(ctx), existingClusterId)
 				// If there's error getting spark version for cluster, do not mark it as incompatible
 				if err != nil {
-					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
+					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", existingClusterId, err.Error())
 					continue
 				}
 			}
@@ -112,7 +119,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			if lowerThanExpectedVersion(version) {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", task.TaskKey, version),
+					Summary:  fmt.Sprintf("task %s uses cluster with incompatible DBR version %s", taskKey, version),
 				})
 				continue
 			}
@@ -151,11 +158,11 @@ func (m *wrapperWarning) Name() string {
 	return "PythonWrapperWarning"
 }
 
-func getSparkVersionForCluster(ctx context.Context, w *databricks.WorkspaceClient, clusterId string) (string, error) {
-	details, err := w.Clusters.GetByClusterId(ctx, clusterId)
+func getSparkVersionForCluster(ctx context.Context, w *sdkclients.Clients, clusterId string) (string, error) {
+	details, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(clusterId)})
 	if err != nil {
 		return "", err
 	}
 
-	return details.SparkVersion, nil
+	return utils.Deref(details.SparkVersion), nil
 }

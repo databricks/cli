@@ -15,7 +15,7 @@ import (
 func runDetailText(ctx context.Context, w *sdkclients.Clients, runID int64) (string, error) {
 	run, err := getRun(ctx, w, runID)
 	if err != nil {
-		if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return "", fmt.Errorf("run %d not found", runID)
 		}
 		return "", fmt.Errorf("failed to fetch run: %w", err)
@@ -42,7 +42,7 @@ func runDetailText(ctx context.Context, w *sdkclients.Clients, runID int64) (str
 func runLogsSnapshot(ctx context.Context, w *sdkclients.Clients, runID int64) (string, error) {
 	status, err := resolveRunStatus(ctx, w, runID)
 	if err != nil {
-		if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return "", fmt.Errorf("run %d not found", runID)
 		}
 		return "", fmt.Errorf("failed to fetch run status: %w", err)

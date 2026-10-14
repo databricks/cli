@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"regexp"
 	"strings"
@@ -44,7 +45,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if !isValidIndexName(val(createReq.Name)) {
+	if !isValidIndexName(utils.Deref(createReq.Name)) {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -54,29 +55,29 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchIndexes[val(createReq.Name)]; exists {
+	if _, exists := s.VectorSearchIndexes[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
-	if s.VectorSearchIndexesPendingDeletion[val(createReq.Name)] > 0 {
-		s.VectorSearchIndexesPendingDeletion[val(createReq.Name)]--
+	if s.VectorSearchIndexesPendingDeletion[utils.Deref(createReq.Name)] > 0 {
+		s.VectorSearchIndexesPendingDeletion[utils.Deref(createReq.Name)]--
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", createReq.Name),
+				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", utils.Deref(createReq.Name)),
 			},
 		}
 	}
-	endpoint, exists := s.VectorSearchEndpoints[val(createReq.EndpointName)]
+	endpoint, exists := s.VectorSearchEndpoints[utils.Deref(createReq.EndpointName)]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
 			Body: map[string]string{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Vector search endpoint %s not found", createReq.EndpointName),
+				"message":    fmt.Sprintf("Vector search endpoint %s not found", utils.Deref(createReq.EndpointName)),
 			},
 		}
 	}
@@ -92,7 +93,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	// returned in sorted key order rather than the user's original order.
 	// Mirror that here so the create -> get round-trip matches the real API.
 	if createReq.DirectAccessIndexSpec != nil {
-		createReq.DirectAccessIndexSpec.SchemaJson = nonZero(normalizeSchemaJSON(val(createReq.DirectAccessIndexSpec.SchemaJson)))
+		createReq.DirectAccessIndexSpec.SchemaJson = utils.NonZero(normalizeSchemaJSON(utils.Deref(createReq.DirectAccessIndexSpec.SchemaJson)))
 	}
 
 	index := fakeVectorSearchIndex{
@@ -105,12 +106,12 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
 		DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
 		Status: &vectorsearch.VectorIndexStatus{
-			Ready: nonZero(true),
+			Ready: utils.NonZero(true),
 		},
-		EndpointUuid: val(endpoint.Id),
+		EndpointUuid: utils.Deref(endpoint.Id),
 	}
 
-	s.VectorSearchIndexes[val(createReq.Name)] = index
+	s.VectorSearchIndexes[utils.Deref(createReq.Name)] = index
 
 	return Response{
 		Body: index,

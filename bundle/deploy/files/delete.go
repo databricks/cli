@@ -12,7 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 )
 
 type delete struct{}
@@ -22,7 +22,7 @@ func (m *delete) Name() string {
 }
 
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{
+	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspaceapi.Delete{
 		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,
 	})
@@ -49,7 +49,7 @@ func removeBundleNameDir(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	dir := path.Dir(b.Config.Workspace.RootPath)
-	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{Path: dir})
+	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspaceapi.Delete{Path: dir})
 	if err != nil {
 		log.Infof(ctx, "Leaving %s in place: %s", dir, err)
 	}

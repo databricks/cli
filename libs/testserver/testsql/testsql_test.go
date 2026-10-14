@@ -26,7 +26,7 @@ func TestExactDispatch(t *testing.T) {
 	assert.Equal(t, "SELECT 1", seen.Statement)
 	assert.Equal(t, []string{"SELECT 1"}, seen.Match)
 	assert.Equal(t, []string{"a"}, columnNames(resp))
-	assert.Equal(t, [][]string{{"1"}}, rows(resp.Result.DataArray))
+	assert.Equal(t, [][]string{{"1"}}, rowsOf(resp.Result.DataArray))
 }
 
 func TestPatternDispatchSubmatches(t *testing.T) {
@@ -104,7 +104,7 @@ func TestPollCountdown(t *testing.T) {
 
 	got = e.Get(*resp.StatementId)
 	require.Equal(t, sql.StatementStatus_State_Succeeded, got.Status.State)
-	assert.Equal(t, [][]string{{"done"}}, rows(got.Result.DataArray))
+	assert.Equal(t, [][]string{{"done"}}, rowsOf(got.Result.DataArray))
 }
 
 func TestChunkSplitting(t *testing.T) {
@@ -120,16 +120,16 @@ func TestChunkSplitting(t *testing.T) {
 	assert.Equal(t, 3, *resp.Manifest.TotalChunkCount)
 
 	var all [][]string
-	all = append(all, rows(resp.Result.DataArray)...)
+	all = append(all, rowsOf(resp.Result.DataArray)...)
 	for i := 1; i < *resp.Manifest.TotalChunkCount; i++ {
 		chunk := e.Chunk(*resp.StatementId, i)
 		require.NotNil(t, chunk)
-		all = append(all, rows(chunk.DataArray)...)
+		all = append(all, rowsOf(chunk.DataArray)...)
 	}
 	assert.Equal(t, rows, all)
-	assert.Equal(t, [][]string{{"0"}}, rows(resp.Result.DataArray))
-	assert.Equal(t, [][]string{{"1"}}, rows(e.Chunk(*resp.StatementId, 1).DataArray))
-	assert.Equal(t, [][]string{{"2"}}, rows(e.Chunk(*resp.StatementId, 2).DataArray))
+	assert.Equal(t, [][]string{{"0"}}, rowsOf(resp.Result.DataArray))
+	assert.Equal(t, [][]string{{"1"}}, rowsOf(e.Chunk(*resp.StatementId, 1).DataArray))
+	assert.Equal(t, [][]string{{"2"}}, rowsOf(e.Chunk(*resp.StatementId, 2).DataArray))
 }
 
 func TestNoRowsZeroChunks(t *testing.T) {
@@ -224,7 +224,7 @@ func TestStatefulMatcher(t *testing.T) {
 
 	read := e.Submit("READ v", "10s", nil)
 	require.Equal(t, sql.StatementStatus_State_Succeeded, read.Status.State)
-	assert.Equal(t, [][]string{{"body"}}, rows(read.Result.DataArray))
+	assert.Equal(t, [][]string{{"body"}}, rowsOf(read.Result.DataArray))
 	assert.Equal(t, 1, calls, "create matcher must not run again")
 }
 
@@ -240,7 +240,7 @@ func columnNames(resp *sql.StatementResponse) []string {
 	return out
 }
 
-func rows(data [][]json.RawMessage) [][]string {
+func rowsOf(data [][]json.RawMessage) [][]string {
 	out := make([][]string, len(data))
 	for i, row := range data {
 		out[i] = make([]string, len(row))

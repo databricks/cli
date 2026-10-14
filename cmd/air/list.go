@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -11,7 +12,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/listing"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -138,7 +139,7 @@ Filters:
 			if err != nil {
 				return fmt.Errorf("failed to resolve current user: %w", err)
 			}
-			currentUser = me.UserName
+			currentUser = me
 			userFilter = currentUser
 		}
 
@@ -262,9 +263,17 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 // and filters. It buffers a page's leftover runs so successive next() calls
 // resume where the last stopped.
 type jobsScanStrategy struct {
-	ctx         context.Context
-	w           *sdkclients.Clients
-	iter        listing.Iterator[jobs.BaseRun]
+	ctx  context.Context
+	w    *sdkclients.Clients
+	pull func() (*jobs.BaseRun, error, bool)
+	stop func()
+
+	// One run of lookahead, so done() knows whether the listing is exhausted
+	// without consuming a run.
+	peeked      *jobs.BaseRun
+	peekedErr   error
+	hasPeeked   bool
+	exhausted   bool
 	userFilter  string
 	filters     listFilters
 	host        string
@@ -274,16 +283,20 @@ type jobsScanStrategy struct {
 }
 
 func newJobsScanStrategy(ctx context.Context, w *sdkclients.Clients, q listQuery) *jobsScanStrategy {
-	req := jobs.ListRunsRequest{
-		RunType:     jobs.RunType_SubmitRun,
+	req := sdkjobs.ListRunsRequest{
+		RunType:     sdkjobs.RunType_SubmitRun,
 		ExpandTasks: new(true),
 		Limit:       new(int(jobsPageLimit)),
-		ActiveOnly:  new(q.activeOnly),
 	}
+	if q.activeOnly {
+		req.StateConstraint = &sdkjobs.ListRunsRequest_StateConstraint_ActiveOnly{ActiveOnly: true}
+	}
+	pull, stop := iter.Pull2(listRuns(ctx, w, req))
 	return &jobsScanStrategy{
 		ctx:         ctx,
 		w:           w,
-		iter:        w.Jobs.ListRuns(ctx, req),
+		pull:        pull,
+		stop:        stop,
 		userFilter:  q.userFilter,
 		filters:     q.filters,
 		host:        w.Config.Host,
@@ -293,14 +306,15 @@ func newJobsScanStrategy(ctx context.Context, w *sdkclients.Clients, q listQuery
 
 func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 	var entries []listedRun
-	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
-		base, err := s.iter.Next(s.ctx)
+	for len(entries) < want && s.scanned < maxListScan && s.hasNext() {
+		base, err := s.peeked, s.peekedErr
+		s.hasPeeked = false
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
 		}
 		s.scanned++
 
-		run := baseRunToRun(base)
+		run := baseRunToRun(*base)
 		if !isAirRun(run) {
 			continue
 		}
@@ -316,7 +330,18 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 }
 
 func (s *jobsScanStrategy) done() bool {
-	return s.scanned >= maxListScan || !s.iter.HasNext(s.ctx)
+	return s.scanned >= maxListScan || !s.hasNext()
+}
+
+func (s *jobsScanStrategy) hasNext() bool {
+	if !s.hasPeeked && !s.exhausted {
+		s.peeked, s.peekedErr, s.hasPeeked = s.pull()
+		if !s.hasPeeked {
+			s.exhausted = true
+			s.stop()
+		}
+	}
+	return s.hasPeeked
 }
 
 func (s *jobsScanStrategy) truncated() bool {

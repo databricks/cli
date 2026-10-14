@@ -1,9 +1,9 @@
 package output
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,13 +93,13 @@ baz
 }
 
 func TestNotebookOutputToRunOutput(t *testing.T) {
-	jobOutput := &jobs.RunOutput{
-		NotebookOutput: &jobs.NotebookOutput{
-			Result:    "foo",
-			Truncated: true,
+	jobOutput := &jobs.GetRunOutputResponse{
+		NotebookOutput: &jobs.NotebookTask_NotebookOutput{
+			Result:    new("foo"),
+			Truncated: new(true),
 		},
-		Logs:          "hello :)",
-		LogsTruncated: true,
+		Logs:          new("hello :)"),
+		LogsTruncated: new(true),
 	}
 	actual := toRunOutput(jobOutput)
 
@@ -111,12 +111,12 @@ func TestNotebookOutputToRunOutput(t *testing.T) {
 }
 
 func TestNotebookOutputWithEmptyResultFallsBackToLogs(t *testing.T) {
-	jobOutput := &jobs.RunOutput{
-		NotebookOutput: &jobs.NotebookOutput{
-			Result: "",
+	jobOutput := &jobs.GetRunOutputResponse{
+		NotebookOutput: &jobs.NotebookTask_NotebookOutput{
+			Result: new(""),
 		},
-		Logs:          "hello :)",
-		LogsTruncated: true,
+		Logs:          new("hello :)"),
+		LogsTruncated: new(true),
 	}
 	actual := toRunOutput(jobOutput)
 
@@ -128,11 +128,11 @@ func TestNotebookOutputWithEmptyResultFallsBackToLogs(t *testing.T) {
 }
 
 func TestDbtOutputToRunOutput(t *testing.T) {
-	jobOutput := &jobs.RunOutput{
-		DbtOutput: &jobs.DbtOutput{
-			ArtifactsLink: "foo",
+	jobOutput := &jobs.GetRunOutputResponse{
+		DbtOutput: &jobs.DbtTask_DbtTaskOutput{
+			ArtifactsLink: new("foo"),
 		},
-		Logs: "hello :)",
+		Logs: new("hello :)"),
 	}
 	actual := toRunOutput(jobOutput)
 
@@ -143,28 +143,28 @@ func TestDbtOutputToRunOutput(t *testing.T) {
 }
 
 func TestSqlOutputToRunOutput(t *testing.T) {
-	jobOutput := &jobs.RunOutput{
-		SqlOutput: &jobs.SqlOutput{
-			QueryOutput: &jobs.SqlQueryOutput{
-				OutputLink: "foo",
+	jobOutput := &jobs.GetRunOutputResponse{
+		SqlOutput: &jobs.SqlTask_SqlOutput{
+			QueryOutput: &jobs.SqlTask_SqlQueryOutput{
+				OutputLink: new("foo"),
 			},
 		},
-		Logs: "hello :)",
+		Logs: new("hello :)"),
 	}
 	actual := toRunOutput(jobOutput)
 
 	expected := &SqlOutput{
-		QueryOutput: &jobs.SqlQueryOutput{
-			OutputLink: "foo",
+		QueryOutput: &jobs.SqlTask_SqlQueryOutput{
+			OutputLink: new("foo"),
 		},
 	}
 	assert.Equal(t, expected, actual)
 }
 
 func TestLogOutputToRunOutput(t *testing.T) {
-	jobOutput := &jobs.RunOutput{
-		Logs:          "hello :)",
-		LogsTruncated: true,
+	jobOutput := &jobs.GetRunOutputResponse{
+		Logs:          new("hello :)"),
+		LogsTruncated: new(true),
 	}
 	actual := toRunOutput(jobOutput)
 

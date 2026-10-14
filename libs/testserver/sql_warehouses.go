@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/sqllegacy"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 )
 
 func sqlWarehouseFixUps(warehouse *warehouses.GetWarehouseResponse, userName string) {
-	if val(warehouse.CreatorName) == "" {
-		warehouse.CreatorName = nonZero(userName)
+	if utils.Deref(warehouse.CreatorName) == "" {
+		warehouse.CreatorName = utils.NonZero(userName)
 	}
 
-	if val(warehouse.MinNumClusters) == 0 {
+	if utils.Deref(warehouse.MinNumClusters) == 0 {
 		warehouse.MinNumClusters = new(1)
 	}
 
@@ -43,12 +45,12 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	} else {
 		warehouseId = nextUUID()
 	}
-	warehouse.Id = nonZero(warehouseId)
-	if val(warehouse.Name) == "" {
-		warehouse.Name = nonZero(warehouseId)
+	warehouse.Id = utils.NonZero(warehouseId)
+	if utils.Deref(warehouse.Name) == "" {
+		warehouse.Name = utils.NonZero(warehouseId)
 	}
 	warehouse.State = warehouses.EndpointState_Running
-	sqlWarehouseFixUps(&warehouse, val(s.CurrentUser().UserName))
+	sqlWarehouseFixUps(&warehouse, utils.Deref(s.CurrentUser().UserName))
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{
@@ -102,24 +104,16 @@ func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 }
 
 func (s *FakeWorkspace) SqlDataSourcesList(req Request) Response {
-	var dataSources []sqlDataSource
+	var dataSources []sqllegacy.DataSource
 	for key, warehouse := range s.SqlWarehouses {
-		dataSources = append(dataSources, sqlDataSource{
+		dataSources = append(dataSources, sqllegacy.DataSource{
 			Id:          key,
 			Name:        "test_data_source",
-			WarehouseId: val(warehouse.Id),
+			WarehouseId: utils.Deref(warehouse.Id),
 		})
 	}
 	return Response{
 		StatusCode: 200,
 		Body:       dataSources,
 	}
-}
-
-// sqlDataSource is an entry of the legacy /api/2.0/preview/sql/data_sources
-// response, which has no sdk-go type.
-type sqlDataSource struct {
-	Id          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	WarehouseId string `json:"warehouse_id,omitempty"`
 }

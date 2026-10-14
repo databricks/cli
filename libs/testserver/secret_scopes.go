@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
@@ -18,10 +19,10 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	}
 
 	// Check if scope already exists
-	if _, exists := s.SecretScopes[val(request.Scope)]; exists {
+	if _, exists := s.SecretScopes[utils.Deref(request.Scope)]; exists {
 		return Response{
 			StatusCode: 400,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s already exists", request.Scope)},
+			Body:       map[string]string{"message": fmt.Sprintf("Scope %s already exists", utils.Deref(request.Scope))},
 		}
 	}
 
@@ -37,14 +38,14 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 		KeyvaultMetadata: request.BackendAzureKeyvault,
 	}
 
-	s.SecretScopes[val(request.Scope)] = scope
+	s.SecretScopes[utils.Deref(request.Scope)] = scope
 
 	// Automatically grant MANAGE permission to the creator (current user)
 	// This matches real Databricks behavior
 	if s.Acls == nil {
 		s.Acls = make(map[string][]secrets.AclItem)
 	}
-	s.Acls[val(request.Scope)] = []secrets.AclItem{
+	s.Acls[utils.Deref(request.Scope)] = []secrets.AclItem{
 		{
 			Principal:  s.CurrentUser().UserName,
 			Permission: secrets.AclPermission_Manage,
@@ -80,17 +81,17 @@ func (s *FakeWorkspace) SecretsDeleteScope(req Request) Response {
 		}
 	}
 
-	if _, exists := s.SecretScopes[val(request.Scope)]; !exists {
+	if _, exists := s.SecretScopes[utils.Deref(request.Scope)]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
+			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", utils.Deref(request.Scope))},
 		}
 	}
 
-	delete(s.SecretScopes, val(request.Scope))
+	delete(s.SecretScopes, utils.Deref(request.Scope))
 	// Also delete ACLs and secrets for this scope
-	delete(s.Acls, val(request.Scope))
-	delete(s.Secrets, val(request.Scope))
+	delete(s.Acls, utils.Deref(request.Scope))
+	delete(s.Secrets, utils.Deref(request.Scope))
 
 	return Response{}
 }

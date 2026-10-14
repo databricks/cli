@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/dbfs"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/sdk-go/core/apierr"
@@ -113,7 +114,11 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		}
 	}
 
-	handle, err := openDbfsWriter(ctx, w.workspaceClient.Files, absPath, overwrite)
+	fileMode := dbfs.FileModeWrite
+	if overwrite {
+		fileMode |= dbfs.FileModeOverwrite
+	}
+	handle, err := dbfs.Open(ctx, w.workspaceClient.Files, absPath, fileMode)
 	if err != nil {
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
@@ -145,10 +150,10 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		return nil, err
 	}
 
-	handle, err := openDbfsReader(ctx, w.workspaceClient.Files, absPath)
+	handle, err := dbfs.Open(ctx, w.workspaceClient.Files, absPath, dbfs.FileModeRead)
 	if err != nil {
 		// Return error if file is a directory
-		if errors.Is(err, errDbfsOpenDirectory) {
+		if strings.Contains(err.Error(), "cannot open directory for reading") {
 			return nil, notAFile{absPath}
 		}
 
@@ -167,7 +172,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		return nil, err
 	}
 
-	// A DBFS reader does not hold a server-side handle, so there is nothing to close.
+	// A DBFS handle open for reading does not need to be closed.
 	return io.NopCloser(handle), nil
 }
 

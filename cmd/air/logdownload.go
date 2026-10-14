@@ -11,6 +11,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
@@ -158,7 +159,7 @@ func downloadAllNodeLogs(ctx context.Context, w *sdkclients.Clients, mlflowRunID
 			case err != nil:
 				// One bad node shouldn't abort the rest. A truncated node
 				// returns a path as well as an error, so keep both.
-				reasons[i] = err.Error()
+				reasons[i] = apierrs.ErrorString(err)
 				paths[i] = path
 			default:
 				paths[i] = path

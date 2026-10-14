@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -23,19 +24,19 @@ func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	for _, job := range b.Config.Resources.Jobs {
 		for _, task := range job.Tasks {
 			// If the environment_key is set - then serverless compute is used
-			if task.EnvironmentKey != "" {
+			if utils.Deref(task.EnvironmentKey) != "" {
 				hasServerlessCompute = true
 				continue
 			}
 
 			// If the new_cluster or job_cluster_key is set - then classic job compute is used
-			if task.NewCluster != nil || task.JobClusterKey != "" {
+			if task.NewCluster != nil || utils.Deref(task.JobClusterKey) != "" {
 				hasClassicJobCompute = true
 				continue
 			}
 
 			// If existing_cluster_id is set - then classic interactive compute is used
-			if task.ExistingClusterId != "" {
+			if utils.Deref(task.ExistingClusterId) != "" {
 				hasClassicInteractiveCompute = true
 				continue
 			}

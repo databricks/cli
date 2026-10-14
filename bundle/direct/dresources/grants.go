@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/sdkclients"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/utils"
+	sdkgrants "github.com/databricks/sdk-go/uc/grants/v1"
 )
 
 var grantResourceToSecurableType = map[string]string{
@@ -26,9 +28,9 @@ var grantResourceToSecurableType = map[string]string{
 }
 
 type GrantsState struct {
-	SecurableType string                        `json:"securable_type"`
-	FullName      string                        `json:"full_name"`
-	EmbeddedSlice []catalog.PrivilegeAssignment `json:"__embed__,omitempty"`
+	SecurableType string                       `json:"securable_type"`
+	FullName      string                       `json:"full_name"`
+	EmbeddedSlice []grants.PrivilegeAssignment `json:"__embed__,omitempty"`
 }
 
 type ResourceGrants struct {
@@ -56,7 +58,7 @@ func (r *ResourceGrants) Configure(resourceType string) error {
 	return nil
 }
 
-func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error) {
+func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]grants.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(resourceKey, ".grants")
 	if !ok {
 		return nil, fmt.Errorf("internal error: node %q does not end with .grants", resourceKey)
@@ -89,8 +91,8 @@ func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
 	return len(state.EmbeddedSlice) == 0
 }
 
-func grantKey(x catalog.PrivilegeAssignment) (string, string) {
-	return "principal", x.Principal
+func grantKey(x grants.PrivilegeAssignment) (string, string) {
+	return "principal", utils.Deref(x.Principal)
 }
 
 func (*ResourceGrants) KeyedSlices() map[string]any {
@@ -133,13 +135,15 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	if state.FullName == "" {
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
-	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
-		SecurableType:             state.SecurableType,
-		FullName:                  state.FullName,
-		Changes:                   buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
-		OmitPermissionsInResponse: false,
-		ForceSendFields:           nil,
+	request, err := grants.UpdatePermissionsRequestToSDK(&grants.UpdatePermissionsRequest{
+		SecurableType:     new(state.SecurableType),
+		SecurableFullName: new(state.FullName),
+		Changes:           buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
 	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.client.Grants.UpdatePermissions(ctx, *request)
 	return nil, err
 }
 
@@ -148,16 +152,16 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 // be confusing to explain wrt permissions. Deleting the resource is a state-only
 // cleanup (see PlanEntry.StateOnly).
 
-func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote map[string][]catalog.Privilege) []catalog.PermissionsChange {
-	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(remote))
+func buildGrantChanges(desiredAssignments []grants.PrivilegeAssignment, remote map[string][]string) []grants.PermissionsChange {
+	changes := make([]grants.PermissionsChange, 0, len(desiredAssignments)+len(remote))
 	desiredPrincipals := make(map[string]struct{}, len(desiredAssignments))
 	for _, ga := range desiredAssignments {
-		desiredPrincipals[ga.Principal] = struct{}{}
-		changes = append(changes, catalog.PermissionsChange{
-			Principal:       ga.Principal,
-			Add:             ga.Privileges,
-			Remove:          grantRemovals(ga.Privileges, remote[ga.Principal]),
-			ForceSendFields: nil,
+		principal := utils.Deref(ga.Principal)
+		desiredPrincipals[principal] = struct{}{}
+		changes = append(changes, grants.PermissionsChange{
+			Principal: new(principal),
+			Add:       ga.Privileges,
+			Remove:    grantRemovals(ga.Privileges, remote[principal]),
 		})
 	}
 
@@ -170,11 +174,10 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 	}
 	slices.Sort(removedPrincipals)
 	for _, principal := range removedPrincipals {
-		changes = append(changes, catalog.PermissionsChange{
-			Principal:       principal,
-			Add:             nil,
-			Remove:          grantRemovals(nil, remote[principal]),
-			ForceSendFields: nil,
+		changes = append(changes, grants.PermissionsChange{
+			Principal: new(principal),
+			Add:       nil,
+			Remove:    grantRemovals(nil, remote[principal]),
 		})
 	}
 	return changes
@@ -186,19 +189,19 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 // no-longer-wanted excluded privileges are revoked. Otherwise ALL_PRIVILEGES is
 // removed to clear everything it implies, plus the excluded privileges by name
 // because ALL_PRIVILEGES does not imply them and its removal would leave them behind.
-func grantRemovals(desired, remotePrivileges []catalog.Privilege) []catalog.Privilege {
+func grantRemovals(desired, remotePrivileges []string) []string {
 	remove := revokedExcludedPrivileges(desired, remotePrivileges)
-	if slices.Contains(desired, catalog.PrivilegeAllPrivileges) {
+	if slices.Contains(desired, privilegeAllPrivileges) {
 		return remove
 	}
-	return append([]catalog.Privilege{catalog.PrivilegeAllPrivileges}, remove...)
+	return append([]string{privilegeAllPrivileges}, remove...)
 }
 
 // revokedExcludedPrivileges returns the privileges not implied by ALL_PRIVILEGES
 // (see allPrivilegesExcludes) that the principal holds remotely but no longer
 // desires, so they can be revoked by name.
-func revokedExcludedPrivileges(desired, remotePrivileges []catalog.Privilege) []catalog.Privilege {
-	var remove []catalog.Privilege
+func revokedExcludedPrivileges(desired, remotePrivileges []string) []string {
+	var remove []string
 	for _, p := range allPrivilegesExcludes {
 		if slices.Contains(remotePrivileges, p) && !slices.Contains(desired, p) {
 			remove = append(remove, p)
@@ -210,7 +213,7 @@ func revokedExcludedPrivileges(desired, remotePrivileges []catalog.Privilege) []
 // remoteGrantPrivileges maps each principal in the plan's remote state to the
 // privileges it currently holds, or nil when there is no remote state (e.g. on
 // create). The privileges are normalized the same way as the desired assignments.
-func remoteGrantPrivileges(entry *PlanEntry) map[string][]catalog.Privilege {
+func remoteGrantPrivileges(entry *PlanEntry) map[string][]string {
 	if entry == nil {
 		return nil
 	}
@@ -218,47 +221,45 @@ func remoteGrantPrivileges(entry *PlanEntry) map[string][]catalog.Privilege {
 	if !ok || remote == nil {
 		return nil
 	}
-	result := make(map[string][]catalog.Privilege, len(remote.EmbeddedSlice))
+	result := make(map[string][]string, len(remote.EmbeddedSlice))
 	for _, a := range remote.EmbeddedSlice {
-		if a.Principal != "" {
-			result[a.Principal] = a.Privileges
+		if principal := utils.Deref(a.Principal); principal != "" {
+			result[principal] = a.Privileges
 		}
 	}
 	return result
 }
 
-func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]catalog.PrivilegeAssignment, error) {
-	var assignments []catalog.PrivilegeAssignment
-	pageToken := ""
+func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]grants.PrivilegeAssignment, error) {
+	var assignments []grants.PrivilegeAssignment
+	var pageToken *string
 	for {
-		resp, err := r.client.Grants.Get(ctx, catalog.GetGrantRequest{
-			FullName:        fullName,
-			MaxResults:      0,
-			PageToken:       pageToken,
-			Principal:       "",
-			SecurableType:   securableType,
-			ForceSendFields: nil,
+		sdkResp, err := r.client.Grants.GetPermissions(ctx, sdkgrants.GetPermissionsRequest{
+			SecurableType:     new(securableType),
+			SecurableFullName: new(fullName),
+			PageToken:         pageToken,
 		})
 		if err != nil {
 			return nil, err
 		}
+		resp, err := grants.GetPermissionsResponseFromSDK(sdkResp)
+		if err != nil {
+			return nil, err
+		}
 		for _, assignment := range resp.PrivilegeAssignments {
-			if assignment.Principal == "" {
+			if utils.Deref(assignment.Principal) == "" {
 				continue
 			}
-			assignments = append(assignments, catalog.PrivilegeAssignment{
-				Principal:       assignment.Principal,
-				Privileges:      assignment.Privileges,
-				ForceSendFields: nil,
+			assignments = append(assignments, grants.PrivilegeAssignment{
+				Principal:  assignment.Principal,
+				Privileges: assignment.Privileges,
 			})
 		}
-		if resp.NextPageToken == "" {
+		if utils.Deref(resp.NextPageToken) == "" {
 			break
 		}
 		pageToken = resp.NextPageToken
 	}
-	// Normalize the same way as the config side (sort, collapse ALL_PRIVILEGES)
-	// so the two compare equal and we don't report false drift.
 	normalizeAssignments(assignments)
 	return assignments, nil
 }
@@ -268,11 +269,14 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 // normalizeAssignments. UC excludes exactly these four from ALL_PRIVILEGES to
 // avoid accidental data exfiltration or privilege escalation; see
 // https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
-var allPrivilegesExcludes = []catalog.Privilege{
-	catalog.PrivilegeExternalUseLocation,
-	catalog.PrivilegeExternalUseSchema,
-	catalog.PrivilegeManage,
-	catalog.PrivilegeReadMetadata,
+// UC privilege names; sdk-go models privileges as plain strings.
+const privilegeAllPrivileges = "ALL_PRIVILEGES"
+
+var allPrivilegesExcludes = []string{
+	"EXTERNAL_USE_LOCATION",
+	"EXTERNAL_USE_SCHEMA",
+	"MANAGE",
+	"READ_METADATA",
 }
 
 // normalizeAssignments sorts each assignment's privileges (the backend sorts
@@ -282,11 +286,11 @@ var allPrivilegesExcludes = []catalog.Privilege{
 // matches a backend that reports ALL_PRIVILEGES plus the concrete privileges it
 // implies, instead of reporting a perpetual update. The excluded privileges are
 // kept so they are not silently dropped from both the request and the drift check.
-func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
+func normalizeAssignments(assignments []grants.PrivilegeAssignment) {
 	for i := range assignments {
 		privileges := assignments[i].Privileges
-		if slices.Contains(privileges, catalog.PrivilegeAllPrivileges) {
-			collapsed := []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+		if slices.Contains(privileges, privilegeAllPrivileges) {
+			collapsed := []string{privilegeAllPrivileges}
 			for _, p := range allPrivilegesExcludes {
 				if slices.Contains(privileges, p) {
 					collapsed = append(collapsed, p)

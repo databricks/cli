@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const NOTEBOOK_TEMPLATE = `# Databricks notebook source
@@ -93,12 +93,12 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 type pythonTrampoline struct{}
 
-func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
+func (t *pythonTrampoline) CleanUp(task *jobs.TaskSettings) error {
 	task.PythonWheelTask = nil
 
-	var nonWheelLibraries []compute.Library
+	var nonWheelLibraries []jobs.Library
 	for _, l := range task.Libraries {
-		if l.Whl == "" {
+		if utils.Deref(l.Whl) == "" {
 			nonWheelLibraries = append(nonWheelLibraries, l)
 		}
 	}
@@ -132,15 +132,15 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	return result
 }
 
-func needsTrampoline(task jobs.Task) bool {
+func needsTrampoline(task jobs.TaskSettings) bool {
 	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 
-func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+func (t *pythonTrampoline) GetTemplateData(task *jobs.TaskSettings) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
-	var whlLibraries []compute.Library
+	var whlLibraries []jobs.Library
 	for _, l := range task.Libraries {
-		if l.Whl != "" {
+		if utils.Deref(l.Whl) != "" {
 			whlLibraries = append(whlLibraries, l)
 		}
 	}
@@ -162,7 +162,7 @@ func (t *pythonTrampoline) generateParameters(task *jobs.PythonWheelTask) (strin
 	if task.Parameters != nil && task.NamedParameters != nil {
 		return "", errors.New("not allowed to pass both parameters and named_parameters")
 	}
-	params := append([]string{task.PackageName}, task.Parameters...)
+	params := append([]string{utils.Deref(task.PackageName)}, task.Parameters...)
 	for k, v := range task.NamedParameters {
 		params = append(params, fmt.Sprintf("%s=%s", k, v))
 	}

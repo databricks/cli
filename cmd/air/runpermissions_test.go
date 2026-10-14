@@ -77,7 +77,7 @@ func TestGrantExperimentPermissions(t *testing.T) {
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
-	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 456, AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "submit-smoke"}}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(456)), AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("submit-smoke")}}}}
 	err = grantExperimentPermissions(t.Context(), w, run, []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
 		{GroupName: new("data-team"), Level: "CAN_VIEW"},
@@ -110,7 +110,7 @@ func TestResolveSubmittedExperimentIDTimesOut(t *testing.T) {
 	// An already-expired context gives up on the first miss without polling.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Nanosecond)
 	defer cancel()
-	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 456}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(456))}}}
 	assert.Empty(t, resolveSubmittedExperimentID(ctx, w, run))
 }
 

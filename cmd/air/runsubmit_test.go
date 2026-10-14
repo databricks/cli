@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,7 +83,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.TaskDependencyType_AllSuccess, task.RunIf)
 	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
 	assert.Equal(t, 2, task.MaxRetries)
-	assert.True(t, task.RetryOnTimeout)
+	assert.True(t, utils.Deref(task.RetryOnTimeout))
 
 	at := task.AiRuntimeTask
 	require.NotNil(t, at)
@@ -92,7 +93,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorTypeGpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
 }
 
 func TestBuildSubmitPayloadB300(t *testing.T) {
@@ -110,7 +111,7 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	require.Len(t, p.Tasks, 1)
 	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
 	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType("GPU_8xB300"), AcceleratorCount: new(8)}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
 func TestSubmitRun(t *testing.T) {
@@ -163,7 +164,7 @@ func TestSubmitRun(t *testing.T) {
 				} else {
 					assert.Equal(t, tc.poolID, compute["provisioned_capacity_id"])
 				}
-				return jobs.SubmitRunResponse{RunId: 42}
+				return jobs.SubmitRunResponse{RunId: new(int64(42))}
 			})
 
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
@@ -174,7 +175,7 @@ func TestSubmitRun(t *testing.T) {
 				Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 				MaxRetries:     new(0),
 			}, "/command.sh", "4", "", snapshotResult{}, nil)
-			payload.IdempotencyToken = "idem-key"
+			payload.IdempotencyToken = new("idem-key")
 
 			runID, err := submitRun(t.Context(), w, payload, tc.poolID, tc.priorityClass, tc.unityCatalogImagePath, nil)
 			require.NoError(t, err)
@@ -193,7 +194,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 	}
 	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
-	assert.True(t, task.RetryOnTimeout)
+	assert.True(t, utils.Deref(task.RetryOnTimeout))
 }
 
 func TestBuildSubmitPayloadNoRetries(t *testing.T) {
@@ -208,7 +209,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 	}
 	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
 	assert.Equal(t, 0, task.MaxRetries)
-	assert.False(t, task.RetryOnTimeout)
+	assert.False(t, utils.Deref(task.RetryOnTimeout))
 
 	b, err := json.Marshal(task)
 	require.NoError(t, err)
@@ -342,7 +343,7 @@ func TestSubmitWorkload(t *testing.T) {
 	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 777}
+		return jobs.SubmitRunResponse{RunId: new(int64(777))}
 	})
 	var validatedToken string
 	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
@@ -377,7 +378,7 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	d := at.Deployments[0]
-	assert.True(t, strings.HasSuffix(d.CommandPath, "/"+commandScriptName), d.CommandPath)
+	assert.True(t, strings.HasSuffix(utils.Deref(d.CommandPath), "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
 	assert.Equal(t, jobs.ComputeSpec_AcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
@@ -419,7 +420,7 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			})
 			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 				submissions.Add(1)
-				return jobs.SubmitRunResponse{RunId: 777}
+				return jobs.SubmitRunResponse{RunId: new(int64(777))}
 			})
 			testserver.AddDefaultHandlers(server)
 
@@ -453,7 +454,7 @@ func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	var submitCalls atomic.Int32
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		submitCalls.Add(1)
-		return jobs.SubmitRunResponse{RunId: 777}
+		return jobs.SubmitRunResponse{RunId: new(int64(777))}
 	})
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
 		return testserver.Response{StatusCode: 500, Body: map[string]string{"message": "mkdir failed"}}
@@ -486,7 +487,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 777}
+		return jobs.SubmitRunResponse{RunId: new(int64(777))}
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -514,7 +515,7 @@ func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
 	var got map[string]any
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 777}
+		return jobs.SubmitRunResponse{RunId: new(int64(777))}
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -578,7 +579,7 @@ func TestSubmitWorkloadSendsContainerCommandsWithoutDeploymentCommand(t *testing
 	var got map[string]any
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 777}
+		return jobs.SubmitRunResponse{RunId: new(int64(777))}
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -629,7 +630,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	var meCalls atomic.Int32
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
@@ -664,7 +665,7 @@ code_source:
 	// The tarball is uploaded to the artifact .internal dir and code_source_path
 	// rewritten to it.
 	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
-	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 	assert.Equal(t, int32(1), meCalls.Load(), "code-source submission should resolve the workspace base once")
 }
 
@@ -677,7 +678,7 @@ func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -707,7 +708,7 @@ code_source:
 
 	at := got.Tasks[0].AiRuntimeTask
 	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
-	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 }
 
 // testSidecarStore builds a workspace filer + base path standing in for the run's
@@ -730,7 +731,7 @@ func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	// Count snapshot import calls, preserving fake-workspace persistence so the
 	// second submit's existence Stat sees the first upload. A count (not a set keyed by
@@ -804,7 +805,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	// Track which snapshot tarballs get uploaded, preserving fake-workspace
 	// persistence so the second submit's cache-existence Stat sees the first upload.
@@ -871,7 +872,7 @@ func TestSubmitWorkloadSkipsProvenanceSidecars(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -919,7 +920,7 @@ func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
-		return jobs.SubmitRunResponse{RunId: 555}
+		return jobs.SubmitRunResponse{RunId: new(int64(555))}
 	})
 	// Stub the UC Volume file write: the fake server's default handler 404s when the
 	// parent dir is absent (no auto-mkdir), so accept the PUT to exercise the Volume
@@ -952,7 +953,7 @@ code_source:
 
 	at := got.Tasks[0].AiRuntimeTask
 	assert.Contains(t, at.CodeSourcePath, "/Volumes/main/default/code/.internal/")
-	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 }
 
 func TestSubmitWorkloadGuards(t *testing.T) {
@@ -1001,7 +1002,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		got := &jobs.SubmitRunRequest{}
 		server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 			require.NoError(t, json.Unmarshal(req.Body, got))
-			return jobs.SubmitRunResponse{RunId: 1}
+			return jobs.SubmitRunResponse{RunId: new(int64(1))}
 		})
 		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
 			return usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: policyID, PolicyName: "team-a"}}}

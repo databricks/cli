@@ -92,7 +92,7 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &scim.User{
-						UserName: "jane@doe.com",
+						UserName: new("jane@doe.com"),
 					},
 				},
 			},

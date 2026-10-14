@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"encoding/json"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"os"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -35,8 +35,8 @@ func setupBundleForStateUpdate(t *testing.T) *bundle.Bundle {
 				StatePath: "/state",
 				FilePath:  "/files",
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "test-user",
+					User: &scim.User{
+						UserName: new("test-user"),
 					},
 				},
 			},

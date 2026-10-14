@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -158,7 +158,7 @@ func hydrateJobRuns(ctx context.Context, w *sdkclients.Clients, ids []int64) ([]
 			run, err := fetchJobRun(gctx, w, id)
 			if err != nil {
 				if apiErr, ok := errors.AsType[*apierr.APIError](err); ok &&
-					(apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusNotFound) {
+					(apiErr.HTTPStatusCode() == http.StatusForbidden || apiErr.HTTPStatusCode() == http.StatusNotFound) {
 					return nil // not viewable or purged: drop this id
 				}
 				return fmt.Errorf("failed to get run %d: %w", id, err)

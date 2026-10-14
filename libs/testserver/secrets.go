@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 	"slices"
 )
 
@@ -34,28 +35,28 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	}
 
 	// Check if scope exists
-	if _, exists := s.SecretScopes[val(request.Scope)]; !exists {
+	if _, exists := s.SecretScopes[utils.Deref(request.Scope)]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", val(request.Scope))},
+			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", utils.Deref(request.Scope))},
 		}
 	}
 
 	if s.Secrets == nil {
 		s.Secrets = make(map[string]map[string]string)
 	}
-	if s.Secrets[val(request.Scope)] == nil {
-		s.Secrets[val(request.Scope)] = make(map[string]string)
+	if s.Secrets[utils.Deref(request.Scope)] == nil {
+		s.Secrets[utils.Deref(request.Scope)] = make(map[string]string)
 	}
 
 	// Exactly one of string_value / bytes_value is set. bytes_value was decoded
 	// from base64 with the request and GET re-encodes whatever was stored, so the
 	// stored form is the raw secret in both cases.
-	value := val(request.StringValue)
+	value := utils.Deref(request.StringValue)
 	if len(request.BytesValue) > 0 {
 		value = string(request.BytesValue)
 	}
-	s.Secrets[val(request.Scope)][val(request.Key)] = value
+	s.Secrets[utils.Deref(request.Scope)][utils.Deref(request.Key)] = value
 
 	return Response{}
 }
@@ -82,7 +83,7 @@ func (s *FakeWorkspace) SecretsList(req Request) Response {
 
 	list := make([]secrets.SecretMetadata, 0, len(keys))
 	for _, key := range keys {
-		list = append(list, secrets.SecretMetadata{Key: nonZero(key)})
+		list = append(list, secrets.SecretMetadata{Key: utils.NonZero(key)})
 	}
 
 	return Response{
@@ -125,7 +126,7 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	// encoding/json base64-encodes []byte, matching the server side behavior.
 	return Response{
 		Body: secrets.GetSecretResponse{
-			Key:   nonZero(key),
+			Key:   utils.NonZero(key),
 			Value: []byte(secretValue),
 		},
 	}

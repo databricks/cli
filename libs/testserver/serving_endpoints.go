@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"slices"
 )
@@ -27,8 +28,6 @@ func servedEntitiesInputToOutput(input []serving.ServedModel) []serving.ServedMo
 			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
-			WorkloadType:              entity.WorkloadType,
-			ForceSendFields:           entity.ForceSendFields,
 		}
 	}
 	return entities
@@ -39,20 +38,20 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	if config == nil {
 		return nil
 	}
-	if config.TableNames == nil && val(config.TelemetryProfileId) == "" {
+	if config.TableNames == nil && utils.Deref(config.TelemetryProfileId) == "" {
 		return previous
 	}
 
 	applied := serving.TelemetryConfig{TelemetryProfileId: config.TelemetryProfileId}
-	if val(applied.TelemetryProfileId) == "" {
+	if utils.Deref(applied.TelemetryProfileId) == "" {
 		// Do not reuse previous: table_names provisions a new profile.
-		applied.TelemetryProfileId = nonZero(nextUUID())
+		applied.TelemetryProfileId = utils.NonZero(nextUUID())
 	}
 	if config.InferenceTableConfig != nil {
 		inferenceTable := *config.InferenceTableConfig
 		// The backend names the payload table after the logs table it was given.
 		if config.TableNames != nil {
-			inferenceTable.Name = nonZero(val(config.TableNames.LogsTable) + "_payload")
+			inferenceTable.Name = utils.NonZero(utils.Deref(config.TableNames.LogsTable) + "_payload")
 		}
 		applied.InferenceTableConfig = &inferenceTable
 	}
@@ -66,7 +65,7 @@ func telemetrySupported(endpoint serving.InferenceEndpointDetailed) (string, boo
 		return "NO_CONFIG", false
 	}
 	for _, entity := range endpoint.Config.ServedEntities {
-		if entity.ExternalModel == nil && val(entity.EntityName) != "" {
+		if entity.ExternalModel == nil && utils.Deref(entity.EntityName) != "" {
 			return "", true
 		}
 	}
@@ -82,58 +81,58 @@ func clearExternalModelSecrets(em *serving.ExternalModel) *serving.ExternalModel
 	out := *em
 	if c := out.Ai21labsConfig; c != nil {
 		cc := *c
-		cc.Ai21labsApiKeyPlaintext = nonZero("")
+		cc.Ai21labsApiKeyPlaintext = nil
 		out.Ai21labsConfig = &cc
 	}
 	if c := out.AmazonBedrockConfig; c != nil {
 		cc := *c
-		cc.AwsAccessKeyIdPlaintext = nonZero("")
-		cc.AwsSecretAccessKeyPlaintext = nonZero("")
+		cc.AwsAccessKeyIdPlaintext = nil
+		cc.AwsSecretAccessKeyPlaintext = nil
 		out.AmazonBedrockConfig = &cc
 	}
 	if c := out.AnthropicConfig; c != nil {
 		cc := *c
-		cc.AnthropicApiKeyPlaintext = nonZero("")
+		cc.AnthropicApiKeyPlaintext = nil
 		out.AnthropicConfig = &cc
 	}
 	if c := out.CohereConfig; c != nil {
 		cc := *c
-		cc.CohereApiKeyPlaintext = nonZero("")
+		cc.CohereApiKeyPlaintext = nil
 		out.CohereConfig = &cc
 	}
 	if c := out.CustomProviderConfig; c != nil {
 		cc := *c
 		if a := cc.ApiKeyAuth; a != nil {
 			aa := *a
-			aa.ValuePlaintext = nonZero("")
+			aa.ValuePlaintext = nil
 			cc.ApiKeyAuth = &aa
 		}
 		if b := cc.BearerTokenAuth; b != nil {
 			bb := *b
-			bb.TokenPlaintext = nonZero("")
+			bb.TokenPlaintext = nil
 			cc.BearerTokenAuth = &bb
 		}
 		out.CustomProviderConfig = &cc
 	}
 	if c := out.DatabricksModelServingConfig; c != nil {
 		cc := *c
-		cc.DatabricksApiTokenPlaintext = nonZero("")
+		cc.DatabricksApiTokenPlaintext = nil
 		out.DatabricksModelServingConfig = &cc
 	}
 	if c := out.GoogleCloudVertexAiConfig; c != nil {
 		cc := *c
-		cc.PrivateKeyPlaintext = nonZero("")
+		cc.PrivateKeyPlaintext = nil
 		out.GoogleCloudVertexAiConfig = &cc
 	}
 	if c := out.OpenaiConfig; c != nil {
 		cc := *c
-		cc.OpenaiApiKeyPlaintext = nonZero("")
-		cc.MicrosoftEntraClientSecretPlaintext = nonZero("")
+		cc.OpenaiApiKeyPlaintext = nil
+		cc.MicrosoftEntraClientSecretPlaintext = nil
 		out.OpenaiConfig = &cc
 	}
 	if c := out.PalmConfig; c != nil {
 		cc := *c
-		cc.PalmApiKeyPlaintext = nonZero("")
+		cc.PalmApiKeyPlaintext = nil
 		out.PalmConfig = &cc
 	}
 	return &out
@@ -152,8 +151,6 @@ func servedModelsInputToOutput(input []serving.ServedModel) []serving.ServedMode
 			ProvisionedModelUnits:     model.ProvisionedModelUnits,
 			ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
 			WorkloadSize:              model.WorkloadSize,
-			WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
-			ForceSendFields:           model.ForceSendFields,
 		}
 	}
 	return models
@@ -170,10 +167,10 @@ func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
 	}
 	var names []string
 	for _, e := range config.ServedEntities {
-		names = append(names, val(e.Name))
+		names = append(names, utils.Deref(e.Name))
 	}
 	for _, m := range config.ServedModels {
-		names = append(names, val(m.Name))
+		names = append(names, utils.Deref(m.Name))
 	}
 	// The backend requires an explicit traffic_config when there is more than one
 	// served entity, so only the single-entity default is well-defined here.
@@ -182,9 +179,9 @@ func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
 	}
 	config.TrafficConfig = &serving.TrafficConfig{
 		Routes: []serving.Route{{
-			ServedEntityName:  nonZero(names[0]),
-			ServedModelName:   nonZero(names[0]),
-			TrafficPercentage: nonZero(100),
+			ServedEntityName:  utils.NonZero(names[0]),
+			ServedModelName:   utils.NonZero(names[0]),
+			TrafficPercentage: utils.NonZero(100),
 		}},
 	}
 }
@@ -199,7 +196,6 @@ func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfig) *serving.A
 		SchemaName:      input.SchemaName,
 		TableNamePrefix: input.TableNamePrefix,
 		Enabled:         input.Enabled,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -216,10 +212,10 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 
 	// Check if endpoint with this name already exists
-	if _, exists := s.ServingEndpoints[val(createReq.Name)]; exists {
+	if _, exists := s.ServingEndpoints[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: 409,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
 
@@ -250,27 +246,26 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 
 	now := nowMilli()
 	endpoint := serving.InferenceEndpointDetailed{
-		AiGateway:            createReq.AiGateway,
-		BudgetPolicyId:       createReq.BudgetPolicyId,
-		Config:               config,
-		CreationTimestamp:    nonZero(now),
-		Creator:              s.CurrentUser().UserName,
-		Description:          createReq.Description,
+		AiGateway:         createReq.AiGateway,
+		BudgetPolicyId:    createReq.BudgetPolicyId,
+		Config:            config,
+		CreationTimestamp: utils.NonZero(now),
+		Creator:           s.CurrentUser().UserName,
+		// The real backend always echoes description (as "" when unset) and
+		// route_optimized back on GET.
+		Description:          new(utils.Deref(createReq.Description)),
 		EmailNotifications:   createReq.EmailNotifications,
-		Id:                   nonZero(nextUUID()),
-		LastUpdatedTimestamp: nonZero(now),
+		Id:                   utils.NonZero(nextUUID()),
+		LastUpdatedTimestamp: utils.NonZero(now),
 		Name:                 createReq.Name,
 		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevel_CanManage,
-		RouteOptimized:       createReq.RouteOptimized,
+		RouteOptimized:       new(utils.Deref(createReq.RouteOptimized)),
 		Tags:                 createReq.Tags,
 		TelemetryConfig:      applyTelemetryConfig(nil, createReq.TelemetryConfig),
 		State: &serving.InferenceEndpointState{
 			ConfigUpdate: serving.InferenceEndpointState_ConfigUpdateState_NotUpdating,
 			Ready:        serving.InferenceEndpointState_ReadyState_NotReady,
 		},
-		// Force-send Description so an empty value serializes as "", matching the
-		// real backend which always echoes the field back on GET.
-		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
 	// Create drops unsupported telemetry, while the telemetry API rejects it.
@@ -278,7 +273,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		endpoint.TelemetryConfig = nil
 	}
 
-	s.ServingEndpoints[val(createReq.Name)] = endpoint
+	s.ServingEndpoints[utils.Deref(createReq.Name)] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -361,7 +356,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 	}
 
 	endpoint.Config = config
-	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	// Keep the update in progress until GET observes it.
 	endpoint.State = &serving.InferenceEndpointState{
 		ConfigUpdate: serving.InferenceEndpointState_ConfigUpdateState_InProgress,
@@ -488,7 +483,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 
 	// An omitted telemetry_config removes the configuration from the endpoint.
 	endpoint.TelemetryConfig = applyTelemetryConfig(endpoint.TelemetryConfig, patchReq.TelemetryConfig)
-	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	s.ServingEndpoints[name] = endpoint
 
 	return Response{
@@ -519,12 +514,12 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 	// Build map of current tags
 	tagMap := make(map[string]string)
 	for _, tag := range endpoint.Tags {
-		tagMap[val(tag.Key)] = val(tag.Value)
+		tagMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 
 	// Add or update tags
 	for _, tag := range patchReq.AddTags {
-		tagMap[val(tag.Key)] = val(tag.Value)
+		tagMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 
 	// Delete tags
@@ -536,7 +531,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 	tags := make([]serving.EndpointTag, 0, len(tagMap))
 	keys := slices.Sorted(maps.Keys(tagMap))
 	for _, key := range keys {
-		tags = append(tags, serving.EndpointTag{Key: nonZero(key), Value: nonZero(tagMap[key])})
+		tags = append(tags, serving.EndpointTag{Key: utils.NonZero(key), Value: utils.NonZero(tagMap[key])})
 	}
 
 	endpoint.Tags = tags

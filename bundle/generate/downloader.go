@@ -10,27 +10,27 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/databricks/databricks-sdk-go/client"
 )
 
 type exportFile struct {
 	path   string
-	format workspace.ExportFormat
+	format workspaceapi.ExportFormat
 }
 
 type Downloader struct {
 	files     map[string]exportFile
-	w         *databricks.WorkspaceClient
+	w         *sdkclients.Clients
 	sourceDir string
 	configDir string
 	basePath  string
@@ -53,13 +53,13 @@ func WithSparkPythonFiles() DownloaderOption {
 	}
 }
 
-func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
-	if task.NotebookTask != nil {
-		return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
+func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.TaskSettings) error {
+	if task.NotebookTask != nil && task.NotebookTask.NotebookPath != nil {
+		return n.markNotebookForDownload(ctx, task.NotebookTask.NotebookPath)
 	}
 
-	if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-		return n.markFileForDownload(ctx, &task.SparkPythonTask.PythonFile)
+	if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, utils.Deref(task.SparkPythonTask.PythonFile)) {
+		return n.markFileForDownload(ctx, task.SparkPythonTask.PythonFile)
 	}
 
 	return nil
@@ -71,16 +71,16 @@ func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) e
 // (dbfs:/, s3:/, adls:/, gcs:/) which are not workspace paths; per the Jobs API,
 // workspace files are absolute and begin with "/".
 func isWorkspaceFileTask(source jobs.Source, filePath string) bool {
-	return source != jobs.SourceGit && strings.HasPrefix(filePath, "/")
+	return source != jobs.Source_Git && strings.HasPrefix(filePath, "/")
 }
 
 func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
-	if lib.Notebook != nil {
-		return n.markNotebookForDownload(ctx, &lib.Notebook.Path)
+	if lib.Notebook != nil && lib.Notebook.Path != nil {
+		return n.markNotebookForDownload(ctx, lib.Notebook.Path)
 	}
 
-	if lib.File != nil {
-		return n.markFileForDownload(ctx, &lib.File.Path)
+	if lib.File != nil && lib.File.Path != nil {
+		return n.markFileForDownload(ctx, lib.File.Path)
 	}
 
 	return nil
@@ -97,7 +97,7 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 
 	n.files[targetPath] = exportFile{
 		path:   *filePath,
-		format: workspace.ExportFormatSource,
+		format: workspaceapi.ExportFormatSource,
 	}
 
 	rel, err := filepath.Rel(n.configDir, targetPath)
@@ -127,9 +127,9 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 
 	for _, obj := range objects {
 		switch obj.ObjectType {
-		case workspace.ObjectTypeDirectory:
+		case workspaceapi.ObjectTypeDirectory:
 			continue
-		case workspace.ObjectTypeNotebook:
+		case workspaceapi.ObjectTypeNotebook:
 			if err := n.markNotebookForDownload(ctx, &obj.Path); err != nil {
 				return err
 			}
@@ -151,10 +151,10 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 
 // recursiveListWithExclusions recursively lists all files in a directory,
 // but skips recursing into directories that should be excluded (like node_modules).
-func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspace.ObjectInfo, error) {
-	var result []workspace.ObjectInfo
+func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspaceapi.ObjectInfo, error) {
+	var result []workspaceapi.ObjectInfo
 
-	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := n.w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{
 		Path: dirPath,
 	})
 	if err != nil {
@@ -162,7 +162,7 @@ func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath st
 	}
 
 	for _, obj := range objects {
-		if obj.ObjectType == workspace.ObjectTypeDirectory {
+		if obj.ObjectType == workspaceapi.ObjectTypeDirectory {
 			if path.Base(obj.Path) == "node_modules" {
 				continue
 			}
@@ -181,13 +181,13 @@ func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath st
 }
 
 type workspaceStatus struct {
-	Language     workspace.Language     `json:"language,omitempty"`
-	ObjectType   workspace.ObjectType   `json:"object_type,omitempty"`
-	ExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
+	Language     workspaceapi.Language     `json:"language,omitempty"`
+	ObjectType   workspaceapi.ObjectType   `json:"object_type,omitempty"`
+	ExportFormat workspaceapi.ExportFormat `json:"repos_export_format,omitempty"`
 }
 
 func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
-	apiClient, err := client.New(n.w.Config)
+	apiClient, err := apiclient.New(n.w.Config)
 	if err != nil {
 		return err
 	}
@@ -219,11 +219,11 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		// (preserved above) and report no export format, so we use a fixed one.
 		format = fixed
 	} else {
-		ext := notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
+		ext := notebook.GetExtensionByLanguage(&workspaceapi.ObjectInfo{
 			Language:   stat.Language,
 			ObjectType: stat.ObjectType,
 		})
-		if format == workspace.ExportFormatJupyter {
+		if format == workspaceapi.ExportFormatJupyter {
 			ext = notebook.ExtensionJupyter
 		}
 		relPath += ext
@@ -246,14 +246,14 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	return nil
 }
 
-func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task) error {
+func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.TaskSettings) error {
 	var paths []string
 	for _, task := range tasks {
-		if task.NotebookTask != nil {
-			paths = append(paths, task.NotebookTask.NotebookPath)
+		if task.NotebookTask != nil && task.NotebookTask.NotebookPath != nil {
+			paths = append(paths, *task.NotebookTask.NotebookPath)
 		}
-		if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-			paths = append(paths, task.SparkPythonTask.PythonFile)
+		if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, utils.Deref(task.SparkPythonTask.PythonFile)) {
+			paths = append(paths, *task.SparkPythonTask.PythonFile)
 		}
 	}
 	if len(paths) > 0 {
@@ -352,7 +352,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			return err
 		}
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(errCtx, exportFile.path, workspace.DownloadFormat(exportFile.format))
+			reader, err := n.w.Workspace.Download(errCtx, exportFile.path, workspaceapi.DownloadFormat(exportFile.format))
 			if err != nil {
 				return err
 			}
@@ -387,7 +387,7 @@ func writeAndClose(dst io.WriteCloser, src io.Reader) error {
 	return err
 }
 
-func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string, opts ...DownloaderOption) *Downloader {
+func NewDownloader(w *sdkclients.Clients, sourceDir, configDir string, opts ...DownloaderOption) *Downloader {
 	n := &Downloader{
 		files:     make(map[string]exportFile),
 		w:         w,

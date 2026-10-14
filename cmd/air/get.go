@@ -91,7 +91,7 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 	if errors.Is(err, config.ErrCannotConfigureDefault) {
 		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, errNoProfile)
 	}
-	if errors.Is(err, apierrs.ErrUnauthenticated) || errors.Is(err, apierrs.ErrPermissionDenied) {
+	if apierrs.Is(err, apierrs.ErrUnauthenticated) || apierrs.Is(err, apierrs.ErrPermissionDenied) {
 		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
 			fmt.Errorf("authentication was not successful: %w", err))
 	}
@@ -148,7 +148,7 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		run, err := getRun(ctx, w, runID)
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
-			if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+			if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 					fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", runID))
 			}
@@ -182,7 +182,7 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 			}
 		}
 		if task := findForEachTask(run); task != nil {
-			data.Sweep = buildSweepInfo(ctx, w, task)
+			data.Sweep = buildSweepInfo(ctx, w, runID, task)
 		} else if genAIComputeTask(run) == nil {
 			enrichFromAiRuntimeTask(run, &data)
 		}

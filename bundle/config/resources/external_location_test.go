@@ -3,41 +3,31 @@ package resources
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestExternalLocationExists(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockExternalLocationsAPI()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/external-locations/test_location": map[string]any{"name": "test_location"},
+		"GET /api/2.1/unity-catalog/external-locations/nonexistent": testserver.Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "not found"},
+		},
+	})
 
 	t.Run("exists", func(t *testing.T) {
-		api.EXPECT().
-			GetByName(mock.Anything, "test_location").
-			Return(&catalog.ExternalLocationInfo{Name: "test_location"}, nil)
-
 		el := &ExternalLocation{}
-		exists, err := el.Exists(ctx, m.WorkspaceClient, "test_location")
+		exists, err := el.Exists(ctx, w, "test_location")
 		require.NoError(t, err)
 		assert.True(t, exists)
 	})
 
 	t.Run("does not exist", func(t *testing.T) {
-		notFoundErr := &apierr.APIError{
-			StatusCode: 404,
-			ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-		}
-		api.EXPECT().
-			GetByName(mock.Anything, "nonexistent").
-			Return(nil, notFoundErr)
-
 		el := &ExternalLocation{}
-		exists, err := el.Exists(ctx, m.WorkspaceClient, "nonexistent")
+		exists, err := el.Exists(ctx, w, "nonexistent")
 		require.NoError(t, err)
 		assert.False(t, exists)
 	})
@@ -55,7 +45,7 @@ func TestExternalLocationResourceDescription(t *testing.T) {
 
 func TestExternalLocationGetName(t *testing.T) {
 	el := &ExternalLocation{
-		Name: "my_location",
+		Name: new("my_location"),
 	}
 
 	assert.Equal(t, "my_location", el.GetName())

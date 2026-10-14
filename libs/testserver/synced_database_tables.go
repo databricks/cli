@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
@@ -19,7 +20,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	}
 
 	// check that the database instance exists if specified:
-	if val(syncedDatabaseTable.DatabaseInstanceName) != "" {
+	if utils.Deref(syncedDatabaseTable.DatabaseInstanceName) != "" {
 		found := false
 		for _, instance := range s.DatabaseInstances {
 			if instance.Name == syncedDatabaseTable.DatabaseInstanceName {
@@ -29,13 +30,13 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 		}
 		if !found {
 			return Response{
-				Body:       fmt.Sprintf("database instance with name '%s' not found", syncedDatabaseTable.DatabaseInstanceName),
+				Body:       fmt.Sprintf("database instance with name '%s' not found", utils.Deref(syncedDatabaseTable.DatabaseInstanceName)),
 				StatusCode: 404,
 			}
 		}
 	}
 
-	s.SyncedDatabaseTables[val(syncedDatabaseTable.Name)] = syncedDatabaseTable
+	s.SyncedDatabaseTables[utils.Deref(syncedDatabaseTable.Name)] = syncedDatabaseTable
 
 	return Response{
 		Body: syncedDatabaseTable,

@@ -8,13 +8,12 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,18 +60,21 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &sdkconfig.Config{
-		Host: "https://foo.test",
-	}
-
 	// The initialization logic in [sync.New] performs a check on the destination path.
 	// Removing this check at initialization time is tbd...
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(mock.Anything, "/this/doesnt/matter").Return(&workspace.ObjectInfo{
-		ObjectType: workspace.ObjectTypeDirectory,
-	}, nil)
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		assert.Equal(t, "/this/doesnt/matter", req.URL.Query().Get("path"))
+		return map[string]any{"object_type": "DIRECTORY"}
+	})
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
+	})
+	require.NoError(t, err)
 
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(w)
 	return b
 }
 

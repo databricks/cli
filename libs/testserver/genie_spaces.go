@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
+	"github.com/databricks/cli/libs/utils"
 	"strconv"
 	"strings"
 )
@@ -64,8 +65,8 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 	}
 
 	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
-	if val(createReq.ParentPath) == "" {
-		createReq.ParentPath = nonZero("/Users/" + val(s.CurrentUser().UserName))
+	if utils.Deref(createReq.ParentPath) == "" {
+		createReq.ParentPath = utils.NonZero("/Users/" + utils.Deref(s.CurrentUser().UserName))
 	}
 
 	spaceId, err := generateGenieSpaceId()
@@ -81,20 +82,20 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 	// Strip the /Workspace prefix from parent_path before storing. This matches
 	// the remote behavior: the GET API returns parent_path without the prefix,
 	// mirroring DashboardCreate.
-	if strings.HasPrefix(val(createReq.ParentPath), "/Workspace/") {
-		createReq.ParentPath = nonZero(strings.TrimPrefix(val(createReq.ParentPath), "/Workspace"))
+	if strings.HasPrefix(utils.Deref(createReq.ParentPath), "/Workspace/") {
+		createReq.ParentPath = utils.NonZero(strings.TrimPrefix(utils.Deref(createReq.ParentPath), "/Workspace"))
 	}
 
 	genieSpace := genie.GenieSpace{
-		SpaceId:         nonZero(spaceId),
+		SpaceId:         utils.NonZero(spaceId),
 		Title:           createReq.Title,
 		Description:     createReq.Description,
 		ParentPath:      createReq.ParentPath,
 		WarehouseId:     createReq.WarehouseId,
-		SerializedSpace: nonZero(canonicalizeGenieSerializedSpace(val(createReq.SerializedSpace))),
+		SerializedSpace: utils.NonZero(canonicalizeGenieSerializedSpace(utils.Deref(createReq.SerializedSpace))),
 		// Mirror libs/testserver/dashboards.go: initialize etag to a numeric
 		// string so each subsequent update can bump it monotonically.
-		Etag: nonZero("1"),
+		Etag: utils.NonZero("1"),
 	}
 
 	s.GenieSpaces[spaceId] = genieSpace
@@ -126,7 +127,7 @@ func (s *FakeWorkspace) GenieSpaceGet(req Request) Response {
 	// (include_serialized_space=true). genieSpace is a copy, so clearing the
 	// field here only affects the response.
 	if req.URL.Query().Get("include_serialized_space") != "true" {
-		genieSpace.Etag = nonZero("")
+		genieSpace.Etag = nil
 	}
 
 	return Response{
@@ -164,34 +165,34 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 
 	// Optimistic concurrency: if the caller sent an etag, it must match the
 	// current one. Empty etag means apply unconditionally.
-	if val(updateReq.Etag) != "" && updateReq.Etag != genieSpace.Etag {
+	if utils.Deref(updateReq.Etag) != "" && updateReq.Etag != genieSpace.Etag {
 		return Response{
 			StatusCode: 409,
 			Body: map[string]string{
-				"message": "Etag mismatch: expected " + val(genieSpace.Etag) + ", got " + val(updateReq.Etag),
+				"message": "Etag mismatch: expected " + utils.Deref(genieSpace.Etag) + ", got " + utils.Deref(updateReq.Etag),
 			},
 		}
 	}
 
 	prev := genieSpace
-	if val(updateReq.Title) != "" {
+	if utils.Deref(updateReq.Title) != "" {
 		genieSpace.Title = updateReq.Title
 	}
 	if _, ok := fields["description"]; ok {
 		genieSpace.Description = updateReq.Description
 	}
-	if val(updateReq.WarehouseId) != "" {
+	if utils.Deref(updateReq.WarehouseId) != "" {
 		genieSpace.WarehouseId = updateReq.WarehouseId
 	}
-	if val(updateReq.ParentPath) != "" {
+	if utils.Deref(updateReq.ParentPath) != "" {
 		parentPath := updateReq.ParentPath
-		if strings.HasPrefix(val(parentPath), "/Workspace/") {
-			parentPath = nonZero(strings.TrimPrefix(val(parentPath), "/Workspace"))
+		if strings.HasPrefix(utils.Deref(parentPath), "/Workspace/") {
+			parentPath = utils.NonZero(strings.TrimPrefix(utils.Deref(parentPath), "/Workspace"))
 		}
 		genieSpace.ParentPath = parentPath
 	}
-	if val(updateReq.SerializedSpace) != "" {
-		genieSpace.SerializedSpace = nonZero(canonicalizeGenieSerializedSpace(val(updateReq.SerializedSpace)))
+	if utils.Deref(updateReq.SerializedSpace) != "" {
+		genieSpace.SerializedSpace = utils.NonZero(canonicalizeGenieSerializedSpace(utils.Deref(updateReq.SerializedSpace)))
 	}
 
 	// The backend bumps the etag only when serialized_space changes; updates to
@@ -199,16 +200,16 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	// unchanged. This mirrors the GET API, which only returns the etag
 	// alongside serialized_space.
 	if prev.SerializedSpace != genieSpace.SerializedSpace {
-		prevEtag, err := strconv.Atoi(val(genieSpace.Etag))
+		prevEtag, err := strconv.Atoi(utils.Deref(genieSpace.Etag))
 		if err != nil {
 			return Response{
 				StatusCode: 500,
 				Body: map[string]string{
-					"message": "Invalid stored etag: " + val(genieSpace.Etag),
+					"message": "Invalid stored etag: " + utils.Deref(genieSpace.Etag),
 				},
 			}
 		}
-		genieSpace.Etag = nonZero(strconv.Itoa(prevEtag + 1))
+		genieSpace.Etag = utils.NonZero(strconv.Itoa(prevEtag + 1))
 	}
 
 	s.GenieSpaces[spaceId] = genieSpace

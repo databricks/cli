@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -8,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,12 +23,12 @@ func TestAnnotateJobsMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job One",
+							Name: new("My Job One"),
 						},
 					},
 					"my-job-2": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job Two",
+							Name: new("My Job Two"),
 						},
 					},
 				},
@@ -44,21 +44,21 @@ func TestAnnotateJobsMutator(t *testing.T) {
 
 	assert.Equal(t,
 		&jobs.JobDeployment{
-			Kind:             jobs.JobDeploymentKindBundle,
-			MetadataFilePath: "/a/b/c/metadata.json",
+			Kind:             jobs.JobDeployment_DeploymentKind_Bundle,
+			MetadataFilePath: new("/a/b/c/metadata.json"),
 		},
 		b.Config.Resources.Jobs["my-job-1"].Deployment)
-	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-1"].Format)
+	assert.Equal(t, jobs.JobEditMode_UiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job-1"].Format)
 
 	assert.Equal(t,
 		&jobs.JobDeployment{
-			Kind:             jobs.JobDeploymentKindBundle,
-			MetadataFilePath: "/a/b/c/metadata.json",
+			Kind:             jobs.JobDeployment_DeploymentKind_Bundle,
+			MetadataFilePath: new("/a/b/c/metadata.json"),
 		},
 		b.Config.Resources.Jobs["my-job-2"].Deployment)
-	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
+	assert.Equal(t, jobs.JobEditMode_UiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
 }
 
 func TestAnnotateJobsMutatorJobWithoutSettings(t *testing.T) {
@@ -93,7 +93,7 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job",
+							Name: new("My Job"),
 						},
 					},
 				},
@@ -108,8 +108,8 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 	diags := AnnotateJobs().Apply(ctx, b)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, jobs.JobEditModeEditable, b.Config.Resources.Jobs["my-job"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
+	assert.Equal(t, jobs.JobEditMode_Editable, b.Config.Resources.Jobs["my-job"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job"].Format)
 }
 
 func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
@@ -126,7 +126,7 @@ func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job",
+							Name: new("My Job"),
 						},
 					},
 				},
@@ -141,8 +141,8 @@ func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
 	diags := AnnotateJobs().Apply(ctx, b)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
+	assert.Equal(t, jobs.JobEditMode_UiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job"].Format)
 }
 
 func TestAnnotateJobsWorkspaceWithoutFlag(t *testing.T) {
@@ -156,7 +156,7 @@ func TestAnnotateJobsWorkspaceWithoutFlag(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job",
+							Name: new("My Job"),
 						},
 					},
 				},
@@ -170,8 +170,8 @@ func TestAnnotateJobsWorkspaceWithoutFlag(t *testing.T) {
 	diags := AnnotateJobs().Apply(ctx, b)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
+	assert.Equal(t, jobs.JobEditMode_UiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job"].Format)
 }
 
 func TestAnnotateJobsNonWorkspaceWithFlag(t *testing.T) {
@@ -185,7 +185,7 @@ func TestAnnotateJobsNonWorkspaceWithFlag(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job": {
 						JobSettings: jobs.JobSettings{
-							Name: "My Job",
+							Name: new("My Job"),
 						},
 					},
 				},
@@ -200,6 +200,6 @@ func TestAnnotateJobsNonWorkspaceWithFlag(t *testing.T) {
 	diags := AnnotateJobs().Apply(ctx, b)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
-	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
+	assert.Equal(t, jobs.JobEditMode_UiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
+	assert.Equal(t, jobs.Format_MultiTask, b.Config.Resources.Jobs["my-job"].Format)
 }

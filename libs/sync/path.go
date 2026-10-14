@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/apierrs"
-	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/sdkclients"
@@ -48,7 +47,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *sdkclients.Clients, remo
 		if err != nil {
 			return err
 		}
-		me, err = iamutil.UserFromSDK(user)
+		me, err = scim.UserFromSDK(user)
 		if err != nil {
 			return err
 		}

@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/utils"
 	"os"
-
-	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
@@ -21,20 +20,20 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	defer s.LockUnlock()()
 
 	clusterId := nextUUID()
-	request.ClusterId = nonZero(clusterId)
+	request.ClusterId = utils.NonZero(clusterId)
 	// Clusters start in PENDING state when created; ClustersGet transitions them to RUNNING.
-	request.State = compute.StatePending
+	request.State = clusters.ClusterState_ClusterState_Pending
 
 	// Match cloud behavior: SINGLE_USER clusters automatically get single_user_name set
 	// to the current user. This enables terraform drift detection when the bundle config
 	// doesn't specify single_user_name.
-	if request.DataSecurityMode == clusters.DataSecurityMode_SingleUser && val(request.SingleUserName) == "" {
+	if request.DataSecurityMode == clusters.DataSecurityMode_SingleUser && utils.Deref(request.SingleUserName) == "" {
 		request.SingleUserName = s.CurrentUser().UserName
 	}
 
 	// Apply the attached cluster policy before computing defaults, matching the backend:
 	// policy values feed the defaults below (e.g. driver_node_type_id from node_type_id).
-	if msg := s.applyClusterPolicy(&request, val(request.PolicyId), applyPolicyDefaultValues(req.Body)); msg != "" {
+	if msg := s.applyClusterPolicy(&request, utils.Deref(request.PolicyId), applyPolicyDefaultValues(req.Body)); msg != "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -54,7 +53,7 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	return Response{
 		Body: clusters.ClusterInfo{
-			ClusterId: nonZero(clusterId),
+			ClusterId: utils.NonZero(clusterId),
 		},
 	}
 }
@@ -63,16 +62,12 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 // (it is absent from clusters.ClusterInfo and thus invisible at the top level of a re-read).
 // Returns nil when the field is unset so re-reads of clusters that don't use it are unchanged;
 // a nil .spec reads back as false, which is what the field's absence means anyway.
-func specSnapshot(body []byte) *clusters.ClusterSpec {
-	var spec clusters.ClusterSpec
-	if err := json.Unmarshal(body, &spec); err != nil {
+func specSnapshot(body []byte) *clusters.ClusterInfo_ComputeSpec {
+	if !applyPolicyDefaultValues(body) {
 		return nil
 	}
-	if !spec.ApplyPolicyDefaultValues {
-		return nil
-	}
-	return &clusters.ClusterSpec{
-		ApplyPolicyDefaultValues: true,
+	return &clusters.ClusterInfo_ComputeSpec{
+		ApplyPolicyDefaultValues: new(true),
 	}
 }
 
@@ -86,13 +81,13 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	cluster, ok := s.Clusters[val(request.ClusterId)]
+	cluster, ok := s.Clusters[utils.Deref(request.ClusterId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	// Only running clusters can be resized; match the real API behavior.
-	if cluster.State != compute.StateRunning {
+	if cluster.State != clusters.ClusterState_ClusterState_Running {
 		return Response{
 			StatusCode: 400,
 			Body:       map[string]string{"error_code": "INVALID_STATE", "message": "Cluster is not running"},
@@ -101,7 +96,7 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 
 	cluster.NumWorkers = request.NumWorkers
 	cluster.Autoscale = request.Autoscale
-	s.Clusters[val(request.ClusterId)] = cluster
+	s.Clusters[utils.Deref(request.ClusterId)] = cluster
 
 	return Response{}
 }
@@ -116,7 +111,7 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	existing, ok := s.Clusters[val(request.ClusterId)]
+	existing, ok := s.Clusters[utils.Deref(request.ClusterId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -126,7 +121,7 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	request.ClusterId = existing.ClusterId
 	// Apply the attached cluster policy before computing defaults, matching the backend:
 	// policy values feed the defaults below (e.g. driver_node_type_id from node_type_id).
-	if msg := s.applyClusterPolicy(&request, val(request.PolicyId), applyPolicyDefaultValues(req.Body)); msg != "" {
+	if msg := s.applyClusterPolicy(&request, utils.Deref(request.PolicyId), applyPolicyDefaultValues(req.Body)); msg != "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -138,45 +133,39 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	clusterFixUps(&request)
 	// Refresh the .spec snapshot from the new settings, matching cloud behavior on edit.
 	request.Spec = specSnapshot(req.Body)
-	s.Clusters[val(request.ClusterId)] = request
+	s.Clusters[utils.Deref(request.ClusterId)] = request
 
 	// Clear venv cache when cluster is edited to match cloud behavior where
 	// cluster edits trigger restarts that clear library caches.
-	if env, ok := s.clusterVenvs[val(request.ClusterId)]; ok {
+	if env, ok := s.clusterVenvs[utils.Deref(request.ClusterId)]; ok {
 		os.RemoveAll(env.dir)
-		delete(s.clusterVenvs, val(request.ClusterId))
+		delete(s.clusterVenvs, utils.Deref(request.ClusterId))
 	}
 
 	return Response{}
-}
-
-func setDefault(obj any, path string, value any) {
-	if val, _ := structaccess.GetByString(obj, path); val == nil {
-		_ = structaccess.SetByString(obj, path, value)
-	}
 }
 
 // clusterFixUps applies server-side defaults that the real API sets.
 func clusterFixUps(cluster *clusters.ClusterInfo) {
 	gcp := cluster.GcpAttributes
 	if gcp != nil {
-		setDefault(gcp, "first_on_demand", 1)
-		setDefault(gcp, "use_preemptible_executors", false)
+		if gcp.FirstOnDemand == nil {
+			gcp.FirstOnDemand = new(1)
+		}
+		if gcp.UsePreemptibleExecutors == nil {
+			gcp.UsePreemptibleExecutors = new(false)
+		}
 	} else if cluster.AwsAttributes == nil {
 		cluster.AwsAttributes = &clusters.AwsAttributes{
 			Availability: clusters.AwsAvailability_SpotWithFallback,
-			ZoneId:       nonZero("us-east-1c"),
+			ZoneId:       new("us-east-1c"),
 		}
-		cluster.AwsAttributes.ForceSendFields = append(
-			cluster.AwsAttributes.ForceSendFields,
-			"Availability",
-			"ZoneId",
-		)
 	}
 
-	cluster.ForceSendFields = append(cluster.ForceSendFields, "EnableElasticDisk")
+	// enable_elastic_disk is always reported, false by default.
+	cluster.EnableElasticDisk = new(utils.Deref(cluster.EnableElasticDisk))
 
-	if val(cluster.DriverNodeTypeId) == "" && val(cluster.NodeTypeId) != "" {
+	if utils.Deref(cluster.DriverNodeTypeId) == "" && utils.Deref(cluster.NodeTypeId) != "" {
 		cluster.DriverNodeTypeId = cluster.NodeTypeId
 	}
 }
@@ -191,8 +180,8 @@ func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 
 	// Simulate cluster startup: transition PENDING → RUNNING so that WaitGetClusterRunning
 	// resolves without hanging. Real clusters move through these states asynchronously.
-	if cluster.State == compute.StatePending {
-		cluster.State = compute.StateRunning
+	if cluster.State == clusters.ClusterState_ClusterState_Pending {
+		cluster.State = clusters.ClusterState_ClusterState_Running
 		s.Clusters[clusterId] = cluster
 	}
 
@@ -212,13 +201,13 @@ func (s *FakeWorkspace) ClustersDelete(req Request) any {
 	}
 	defer s.LockUnlock()()
 
-	cluster, ok := s.Clusters[val(request.ClusterId)]
+	cluster, ok := s.Clusters[utils.Deref(request.ClusterId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
-	cluster.State = compute.StateTerminated
-	s.Clusters[val(request.ClusterId)] = cluster
+	cluster.State = clusters.ClusterState_ClusterState_Terminated
+	s.Clusters[utils.Deref(request.ClusterId)] = cluster
 
 	return Response{}
 }
@@ -233,13 +222,13 @@ func (s *FakeWorkspace) ClustersStart(req Request) any {
 	}
 	defer s.LockUnlock()()
 
-	cluster, ok := s.Clusters[val(request.ClusterId)]
+	cluster, ok := s.Clusters[utils.Deref(request.ClusterId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
-	cluster.State = compute.StateRunning
-	s.Clusters[val(request.ClusterId)] = cluster
+	cluster.State = clusters.ClusterState_ClusterState_Running
+	s.Clusters[utils.Deref(request.ClusterId)] = cluster
 
 	return Response{}
 }
@@ -254,6 +243,6 @@ func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	delete(s.Clusters, val(request.ClusterId))
+	delete(s.Clusters, utils.Deref(request.ClusterId))
 	return Response{}
 }

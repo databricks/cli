@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/listing"
 	"io"
 	"iter"
 	"maps"
@@ -282,6 +283,16 @@ func Render(ctx context.Context, v any) error {
 func RenderIterator[T any](ctx context.Context, seq iter.Seq2[T, error]) error {
 	i := newPullIterator(seq)
 	defer i.Close()
+	return renderPullIterator(ctx, i)
+}
+
+// RenderListing is RenderIterator for the pull-style iterators returned by
+// the CLI's hand-written API clients (libs/listing).
+func RenderListing[T any](ctx context.Context, i listing.Iterator[T]) error {
+	return renderPullIterator[T](ctx, i)
+}
+
+func renderPullIterator[T any](ctx context.Context, i pullIter[T]) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)

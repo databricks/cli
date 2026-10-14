@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/http"
 	"path"
@@ -70,8 +71,8 @@ func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 	out := &materializedOperand{Column: t.Column}
 	if v := t.Value; v != nil {
 		out.Value = &materializedOperandValue{
-			BoolValue:   val(v.BoolValue),
-			StringValue: val(v.StringValue),
+			BoolValue:   utils.Deref(v.BoolValue),
+			StringValue: utils.Deref(v.StringValue),
 		}
 		if v.DoubleValue != nil {
 			d := jsonFloat(*v.DoubleValue)
@@ -84,7 +85,7 @@ func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 // alertFilePath returns the workspace path of the .dbalert.json file the backend
 // materializes for an alert: <parent_path>/<display_name>.dbalert.json.
 func alertFilePath(alert alerts.Alert) string {
-	return path.Join(val(alert.ParentPath), val(alert.DisplayName)+".dbalert.json")
+	return path.Join(utils.Deref(alert.ParentPath), utils.Deref(alert.DisplayName)+".dbalert.json")
 }
 
 // splitLines reverses the line-joining done in load_dbalert_files.go: each line
@@ -100,7 +101,7 @@ func splitLines(s string) []string {
 // the backend writes this file as a side effect of alert creation/update, which
 // the `workspace export` round-trip and `bundle generate alert` rely on.
 func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
-	if val(alert.ParentPath) == "" || val(alert.DisplayName) == "" {
+	if utils.Deref(alert.ParentPath) == "" || utils.Deref(alert.DisplayName) == "" {
 		return nil
 	}
 
@@ -112,7 +113,7 @@ func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
 	if notification != nil {
 		// The backend always serializes notify_on_ok in the file, even when false.
 		n := *notification
-		n.NotifyOnOk = new(val(n.NotifyOnOk))
+		n.NotifyOnOk = new(utils.Deref(n.NotifyOnOk))
 		notification = &n
 	} else {
 		// The backend always writes a notification object, materializing an
@@ -121,16 +122,16 @@ func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
 	}
 
 	af := alertFile{
-		CustomSummary: val(alert.CustomSummary),
+		CustomSummary: utils.Deref(alert.CustomSummary),
 		Evaluation: &materializedEvaluation{
-			Source:             val(evaluation.Source),
+			Source:             utils.Deref(evaluation.Source),
 			ComparisonOperator: evaluation.ComparisonOperator,
 			Threshold:          materializeThreshold(evaluation.Threshold),
 			Notification:       notification,
 		},
 		Schedule:               alert.Schedule,
-		QueryLines:             splitLines(val(alert.QueryText)),
-		CustomDescriptionLines: splitLines(val(alert.CustomDescription)),
+		QueryLines:             splitLines(utils.Deref(alert.QueryText)),
+		CustomDescriptionLines: splitLines(utils.Deref(alert.CustomDescription)),
 	}
 
 	data, err := json.MarshalIndent(af, "", "  ")
@@ -174,7 +175,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		alertId = nextUUID()
 	}
 
-	alert.Id = nonZero(alertId)
+	alert.Id = utils.NonZero(alertId)
 	alert.LifecycleState = alerts.AlertLifecycleState_Active
 	s.Alerts[alertId] = alert
 

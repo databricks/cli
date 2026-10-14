@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -17,8 +18,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 const (
@@ -273,15 +273,15 @@ func projectRunStatus(run *jobs.GetRunResponse) logRunStatus {
 //   - nil: a transient failure the caller should retry.
 func classifyLogError(err error) error {
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		switch apiErr.ErrorCode {
+		switch apierrs.ErrorCode(apiErr) {
 		case "FEATURE_DISABLED", "ENDPOINT_NOT_FOUND":
 			return errBricklensFeatureDisabled
 		}
-		if apiErr.StatusCode == http.StatusNotFound {
+		if apiErr.HTTPStatusCode() == http.StatusNotFound {
 			return errBricklensFeatureDisabled
 		}
 	}
-	if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+	if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 		return err
 	}
 	return nil
@@ -316,7 +316,7 @@ func (req logRequest) toSeconds(status logRunStatus) int64 {
 // errBricklensFeatureDisabled means the caller should fall back to MLflow.
 func streamBricklensLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	// Build the API client once and reuse it for every page fetch in the loop.
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return false, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -338,7 +338,7 @@ func streamBricklensLogs(ctx context.Context, w *sdkclients.Clients, out io.Writ
 type bricklensStreamer struct {
 	ctx       context.Context
 	w         *sdkclients.Clients
-	apiClient *client.DatabricksClient
+	apiClient *apiclient.Client
 	headers   map[string]string
 	out       io.Writer
 	req       logRequest
@@ -382,7 +382,7 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 		return ""
 	}
 	taskRunID := run.Tasks[len(run.Tasks)-1].RunId
-	out, err := getRunOutput(st.ctx, st.w, taskRunID)
+	out, err := getRunOutput(st.ctx, st.w, utils.Deref(taskRunID))
 	if err != nil {
 		log.Debugf(st.ctx, "air logs: status_message fetch failed for run %d: %v", st.req.runID, err)
 		return ""
@@ -390,7 +390,7 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 	if out.AiRuntimeTaskOutput == nil {
 		return ""
 	}
-	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
+	return normalizeStatusMessage(utils.Deref(out.AiRuntimeTaskOutput.StatusMessage))
 }
 
 // reportStatusChange fires onStatusChange when the run's display state differs
@@ -442,7 +442,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		if !firstIteration {
 			status, err := resolveRunStatus(st.ctx, st.w, st.req.runID)
 			if err != nil {
-				if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+				if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 					return false, err
 				}
 				// A cancelled context (Ctrl-C) is not a transient blip: stop

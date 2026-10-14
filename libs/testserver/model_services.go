@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
 )
@@ -32,11 +33,11 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_service_id")
 
-	ms.Name = nonZero("model-services/" + key)
+	ms.Name = utils.NonZero("model-services/" + key)
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
-	ms.MetastoreId = nonZero(nextUUID())
+	ms.MetastoreId = utils.NonZero(nextUUID())
 
 	s.ModelServices[key] = ms
 	return Response{

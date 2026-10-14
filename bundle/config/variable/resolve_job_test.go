@@ -3,43 +3,28 @@ package variable
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolveJob_ResolveSuccess(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockJobsAPI()
-	api.EXPECT().
-		GetBySettingsName(mock.Anything, "job").
-		Return(&jobs.BaseJob{
-			JobId: 5678,
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.2/jobs/list": map[string]any{"jobs": []map[string]any{{"job_id": 5678, "settings": map[string]any{"name": "job"}}}},
+	})
 	l := resolveJob{name: "job"}
-	result, err := l.Resolve(ctx, m.WorkspaceClient)
+	result, err := l.Resolve(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, "5678", result)
 }
 
 func TestResolveJob_ResolveNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockJobsAPI()
-	api.EXPECT().
-		GetBySettingsName(mock.Anything, "job").
-		Return(nil, &apierr.APIError{StatusCode: 404})
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.2/jobs/list": notFound(),
+	})
 	l := resolveJob{name: "job"}
-	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorIs(t, err, apierr.ErrNotFound)
+	_, err := l.Resolve(t.Context(), w)
+	require.True(t, apierrs.Is(err, apierrs.ErrNotFound), "%v", err)
 }
 
 func TestResolveJob_String(t *testing.T) {

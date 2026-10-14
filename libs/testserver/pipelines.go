@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 	"strings"
 )
 
@@ -38,12 +39,12 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	// dotted catalog.schema value is rejected; the catalog belongs in the separate
 	// catalog field. Only the dot trips this check, but the backend's canned error
 	// also lists dashes and other characters as invalid.
-	if strings.Contains(val(spec.Target), ".") {
+	if strings.Contains(utils.Deref(spec.Target), ".") {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", spec.Target),
+				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", utils.Deref(spec.Target)),
 			},
 		}
 	}
@@ -64,16 +65,16 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Parameters = create.Parameters
 
 	pipelineId := nextUUID()
-	r.PipelineId = nonZero(pipelineId)
-	r.CreatorUserName = nonZero("tester@databricks.com")
-	r.LastModified = nonZero(nowMilli())
+	r.PipelineId = utils.NonZero(pipelineId)
+	r.CreatorUserName = utils.NonZero("tester@databricks.com")
+	r.LastModified = utils.NonZero(nowMilli())
 	r.Name = r.Spec.Name
 	// run_as is on CreatePipeline, not PipelineSpec, so the spec decode drops it. The backend
 	// echoes it top-level on GetPipelineResponse.RunAs; mirror that so a re-read is faithful.
 	if create.RunAs != nil {
 		r.RunAs = create.RunAs
 	}
-	r.RunAsUserName = nonZero("tester@databricks.com")
+	r.RunAsUserName = utils.NonZero("tester@databricks.com")
 	r.State = "IDLE"
 	r.EffectivePublishingMode = pipelines.PublishingMode_DefaultPublishingMode
 
@@ -82,18 +83,18 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
-			PipelineId: nonZero(pipelineId),
+			PipelineId: utils.NonZero(pipelineId),
 		},
 	}
 }
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
-	spec.Id = nonZero(pipelineId)
+	spec.Id = utils.NonZero(pipelineId)
 	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
 	// and if the storage location is not specified, API automatically generates a storage location
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if val(spec.Storage) == "" && val(spec.Catalog) == "" {
-		spec.Storage = nonZero("dbfs:/pipelines/" + pipelineId)
+	if utils.Deref(spec.Storage) == "" && utils.Deref(spec.Catalog) == "" {
+		spec.Storage = utils.NonZero("dbfs:/pipelines/" + pipelineId)
 	}
 }
 
@@ -158,7 +159,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
-			UpdateId: nonZero(updateId),
+			UpdateId: utils.NonZero(updateId),
 		},
 	}
 }
@@ -204,7 +205,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 	return Response{
 		Body: pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{
-				UpdateId: nonZero(updateId),
+				UpdateId: utils.NonZero(updateId),
 				State:    pipelines.UpdateState_Completed,
 			},
 		},
@@ -224,7 +225,7 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.GetPipelineResponse{
-			PipelineId: nonZero(pipelineId),
+			PipelineId: utils.NonZero(pipelineId),
 			State:      pipelines.PipelineState_PipelineState_Idle,
 		},
 	}

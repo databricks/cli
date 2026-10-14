@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 	sdksecretsuc "github.com/databricks/sdk-go/uc/secrets/v1"
 	"net/url"
 
@@ -61,5 +62,5 @@ func (s *Secret) GetName() string {
 	if s.ID != "" {
 		return s.ID
 	}
-	return fmt.Sprintf("%s.%s.%s", s.CatalogName, s.SchemaName, s.Name)
+	return fmt.Sprintf("%s.%s.%s", utils.Deref(s.CatalogName), utils.Deref(s.SchemaName), utils.Deref(s.Name))
 }

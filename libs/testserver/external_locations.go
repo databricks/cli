@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 )
 
@@ -18,7 +19,7 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		}
 	}
 
-	if val(createRequest.Url) == "" {
+	if utils.Deref(createRequest.Url) == "" {
 		return Response{
 			Body:       "CreateExternalLocation Missing required field: url",
 			StatusCode: http.StatusBadRequest,
@@ -35,15 +36,15 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		Fallback:          createRequest.Fallback,
 		EncryptionDetails: createRequest.EncryptionDetails,
 		FileEventQueue:    createRequest.FileEventQueue,
-		CreatedAt:         nonZero(nowMilli()),
+		CreatedAt:         utils.NonZero(nowMilli()),
 		CreatedBy:         s.CurrentUser().UserName,
 		UpdatedBy:         s.CurrentUser().UserName,
-		MetastoreId:       nonZero(nextUUID()),
+		MetastoreId:       utils.NonZero(nextUUID()),
 		Owner:             s.CurrentUser().UserName,
 	}
 	locationInfo.UpdatedAt = locationInfo.CreatedAt
 
-	s.ExternalLocations[val(createRequest.Name)] = locationInfo
+	s.ExternalLocations[utils.Deref(createRequest.Name)] = locationInfo
 	return Response{
 		Body: locationInfo,
 	}
@@ -81,15 +82,15 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 	existing.EnableFileEvents = updateRequest.EnableFileEvents
 	existing.Fallback = updateRequest.Fallback
 
-	if val(updateRequest.NewName) != "" {
+	if utils.Deref(updateRequest.NewName) != "" {
 		existing.Name = updateRequest.NewName
 
 		// Delete the old entry and create with new name
 		delete(s.ExternalLocations, name)
-		name = val(updateRequest.NewName)
+		name = utils.Deref(updateRequest.NewName)
 	}
 
-	existing.UpdatedAt = nonZero(nowMilli())
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.ExternalLocations[name] = existing

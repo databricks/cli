@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandWorkspaceClient(t *testing.T) {
 	ctx := t.Context()
-	client := &databricks.WorkspaceClient{
+	client := &sdkclients.Clients{
 		Config: &config.Config{
 			Host: "https://test.test",
 		},
@@ -41,7 +41,7 @@ func TestHasWorkspaceClient(t *testing.T) {
 	ctx := t.Context()
 	assert.False(t, cmdctx.HasWorkspaceClient(ctx))
 
-	client := &databricks.WorkspaceClient{
+	client := &sdkclients.Clients{
 		Config: &config.Config{
 			Host: "https://test.test",
 		},

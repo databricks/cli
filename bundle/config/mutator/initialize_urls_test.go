@@ -1,20 +1,23 @@
 package mutator
 
 import (
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,70 +31,70 @@ func TestInitializeURLs(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: new("job1")},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						ID:             "3",
-						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1"},
+						ID:                    "3",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("pipeline1")},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						ID:               "4",
-						CreateExperiment: ml.CreateExperiment{Name: "experiment1"},
+						ID:                      "4",
+						CreateExperimentRequest: experiments.CreateExperimentRequest{Name: new("experiment1")},
 					},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
-						ID:                 "a model uses its name for identifier",
-						CreateModelRequest: ml.CreateModelRequest{Name: "a model uses its name for identifier"},
+						ID:                           "a model uses its name for identifier",
+						CreateRegisteredModelRequest: modelregistry.CreateRegisteredModelRequest{Name: new("a model uses its name for identifier")},
 					},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {
 						ID: "my_serving_endpoint",
-						CreateServingEndpoint: modelserving.CreateServingEndpoint{
-							Name: "my_serving_endpoint",
+						CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+							Name: new("my_serving_endpoint"),
 						},
 					},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {
 						ID: "8",
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							Name: "my_registered_model",
+						CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{
+							Name: new("my_registered_model"),
 						},
 					},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
 						TableName:     "catalog.schema.qualityMonitor1",
-						CreateMonitor: catalog.CreateMonitor{},
+						CreateMonitor: qualitymonitors.CreateMonitor{},
 					},
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"vectorsearchindex1": {
 						ID: "catalog.schema.vectorsearchindex1",
 						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-							Name: "catalog.schema.vectorsearchindex1",
+							Name: new("catalog.schema.vectorsearchindex1"),
 						},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						ID: "catalog.schema",
-						CreateSchema: catalog.CreateSchema{
-							Name: "schema",
+						CreateSchema: resources.CreateSchema{
+							Name: new("schema"),
 						},
 					},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {
 						ID: "1017-103929-vlr7jzcf",
-						ClusterSpec: compute.ClusterSpec{
-							ClusterName: "cluster1",
+						CreateClusterRequest: clusters.CreateClusterRequest{
+							ClusterName: new("cluster1"),
 						},
 					},
 				},
@@ -139,7 +142,7 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: new("job1")},
 					},
 				},
 			},
@@ -160,7 +163,7 @@ func TestInitializeURLsApplyNonNumericConfigPassedThrough(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: "some-uuid-style-id",
@@ -173,7 +176,7 @@ func TestInitializeURLsApplyNonNumericConfigPassedThrough(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: new("job1")},
 					},
 				},
 			},
@@ -201,7 +204,7 @@ func TestInitializeURLsApplyNoneSentinelResolvesViaAPI(t *testing.T) {
 	testserver.AddDefaultHandlers(server)
 	// /Me returns X-Databricks-Org-Id: 900800700600.
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: "none",
@@ -214,7 +217,7 @@ func TestInitializeURLsApplyNoneSentinelResolvesViaAPI(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: new("job1")},
 					},
 				},
 			},
@@ -240,7 +243,7 @@ func TestInitializeURLsApplyErrorsOnNumericWorkspaceIDMismatch(t *testing.T) {
 	testserver.AddDefaultHandlers(server)
 	// /Me returns X-Databricks-Org-Id: 900800700600.
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: "12345", // numeric but does not match 900800700600
@@ -253,7 +256,7 @@ func TestInitializeURLsApplyErrorsOnNumericWorkspaceIDMismatch(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						ID:          "1",
-						JobSettings: jobs.JobSettings{Name: "job1"},
+						JobSettings: jobs.JobSettings{Name: new("job1")},
 					},
 				},
 			},

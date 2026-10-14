@@ -12,11 +12,13 @@ import (
 
 	"github.com/databricks/cli/internal/testarchive"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/databricks-sdk-go/config"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
+	"github.com/databricks/sdk-go/options/lro"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,16 +27,16 @@ import (
 // workspaceTmpDir creates a temporary directory in the workspace for running tests.
 // This is used by acceptance tests when running with the -workspace-tmp-dir flag.
 func workspaceTmpDir(ctx context.Context, t *testing.T) string {
-	w, err := databricks.NewWorkspaceClient()
+	w, err := sdkclients.New(ctx, &config.Config{})
 	require.NoError(t, err)
 
-	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	currentUser, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
 	path := fmt.Sprintf(
 		"/Workspace/Users/%s/acceptance/%s/%s",
-		currentUser.UserName,
+		utils.Deref(currentUser.UserName),
 		timestamp,
 		uuid.New().String(),
 	)
@@ -76,15 +78,15 @@ type dbrTestConfig struct {
 
 // setupDbrTestDir creates the test directory and returns the workspace client and filer.
 // It returns the API path (without /Workspace prefix) for use with workspace APIs.
-func setupDbrTestDir(ctx context.Context, t *testing.T, uniqueID string) (*databricks.WorkspaceClient, filer.Filer, string) {
-	w, err := databricks.NewWorkspaceClient()
+func setupDbrTestDir(ctx context.Context, t *testing.T, uniqueID string) (*sdkclients.Clients, filer.Filer, string) {
+	w, err := sdkclients.New(ctx, &config.Config{})
 	require.NoError(t, err)
 
-	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	currentUser, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	// API path (without /Workspace prefix) for workspace API calls.
-	apiPath := path.Join("/Users", currentUser.UserName, "dbr-acceptance-test", uniqueID)
+	apiPath := path.Join("/Users", utils.Deref(currentUser.UserName), "dbr-acceptance-test", uniqueID)
 
 	err = w.Workspace.MkdirsByPath(ctx, apiPath)
 	require.NoError(t, err)
@@ -134,7 +136,7 @@ func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer, ver
 }
 
 // uploadRunner uploads the DBR runner notebook to the workspace using workspace.Import.
-func uploadRunner(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, testDir string, verbose bool) string {
+func uploadRunner(ctx context.Context, t *testing.T, w *sdkclients.Clients, testDir string, verbose bool) string {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -147,11 +149,11 @@ func uploadRunner(ctx context.Context, t *testing.T, w *databricks.WorkspaceClie
 	if verbose {
 		t.Log("Uploading DBR runner notebook...")
 	}
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      notebookPath,
 		Overwrite: true,
-		Language:  workspace.LanguagePython,
-		Format:    workspace.ImportFormatSource,
+		Language:  workspaceapi.LanguagePython,
+		Format:    workspaceapi.ImportFormatSource,
 		Content:   base64.StdEncoding.EncodeToString(runnerContent),
 	})
 	require.NoError(t, err)
@@ -175,17 +177,17 @@ func buildBaseParams(testDir, archiveName, debugLogPath string) map[string]strin
 }
 
 // runDbrTests creates a job and runs it to execute cloud and local acceptance tests on DBR.
-func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, testDir, archiveName, runnerName string, config dbrTestConfig) {
+func runDbrTests(ctx context.Context, t *testing.T, w *sdkclients.Clients, testDir, archiveName, runnerName string, config dbrTestConfig) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	if cloudEnv == "" {
 		t.Fatal("CLOUD_ENV is not set. Please run DBR tests from a CI environment with deco env run.")
 	}
 
-	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	currentUser, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	require.NoError(t, err)
 
 	// Create debug logs directory
-	debugLogsDir := path.Join("/Users", currentUser.UserName, "dbr_acceptance_tests")
+	debugLogsDir := path.Join("/Users", utils.Deref(currentUser.UserName), "dbr_acceptance_tests")
 	err = w.Workspace.MkdirsByPath(ctx, debugLogsDir)
 	require.NoError(t, err)
 
@@ -196,10 +198,10 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	debugLogPath := path.Join(debugLogsDir, debugLogFileName)
 
 	// Create empty file via workspace API
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      debugLogPath,
 		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
+		Format:    workspaceapi.ImportFormatAuto,
 		Content:   base64.StdEncoding.EncodeToString([]byte("")),
 	})
 	require.NoError(t, err)
@@ -232,32 +234,31 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	// Create a job (not a one-time run) so we can use MaxRetries on tasks.
 	// Always use serverless compute.
 	t.Log("  Cluster: serverless")
-	createJob := jobs.CreateJob{
-		Name: jobName,
-		Environments: []jobs.JobEnvironment{
+	createJob := sdkjobs.CreateJobRequest{
+		Name: new(jobName),
+		Environments: []sdkjobs.JobEnvironment{
 			{
-				EnvironmentKey: "default",
-				Spec: &compute.Environment{
-					EnvironmentVersion: "4",
+				EnvironmentKey: new("default"),
+				Spec: &sdkjobs.Environment{
+					EnvironmentVersion: new("4"),
 				},
 			},
 		},
-		Tasks: []jobs.Task{
+		Tasks: []sdkjobs.TaskSettings{
 			{
-				TaskKey:        "cloud_tests",
-				EnvironmentKey: "default",
-				MaxRetries:     0,
-				NotebookTask: &jobs.NotebookTask{
-					NotebookPath:   notebookPath,
+				TaskKey:        new("cloud_tests"),
+				EnvironmentRef: &sdkjobs.TaskSettings_EnvironmentRef_EnvironmentKey{EnvironmentKey: "default"},
+				Task: &sdkjobs.TaskSettings_Task_NotebookTask{NotebookTask: sdkjobs.NotebookTask{
+					NotebookPath:   new(notebookPath),
 					BaseParameters: cloudParams,
-					Source:         jobs.SourceWorkspace,
-				},
+					Source:         sdkjobs.Source_Workspace,
+				}},
 			},
 		},
 	}
 
 	// Create the job
-	job, err := w.Jobs.Create(ctx, createJob)
+	job, err := w.Jobs.CreateJob(ctx, createJob)
 	require.NoError(t, err)
 
 	// The job is not deleted after the test completes.
@@ -265,36 +266,36 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	// It will automatically be cleaned by the nightly cleanup scripts.
 
 	// Trigger a run of the job
-	wait, err := w.Jobs.RunNow(ctx, jobs.RunNow{JobId: job.JobId})
+	wait, err := w.Jobs.RunNow(ctx, sdkjobs.RunNowRequest{JobId: job.JobId})
 	require.NoError(t, err)
 
 	// Fetch run details immediately to get the URL so users can follow along
-	runDetails, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: wait.RunId})
+	runDetails, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
 	require.NoError(t, err)
 
 	t.Log("")
 	t.Log("=== Job Started ===")
-	t.Logf("  Run URL: %s", runDetails.RunPageUrl)
+	t.Logf("  Run URL: %s", utils.Deref(runDetails.RunPageUrl))
 	t.Logf("  Debug logs: %s/editor/files/%d", w.Config.Host, debugLogStatus.ObjectId)
 	t.Log("")
 	t.Logf("Waiting for completion (timeout: %v)...", config.timeout)
 
-	run, err := wait.GetWithTimeout(config.timeout)
+	run, err := wait.Wait(ctx, lro.WithTimeout(config.timeout))
 	if err != nil {
 		// Try to fetch the run details for the URL and task output
-		runDetails, fetchErr := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: wait.RunId})
+		runDetails, fetchErr := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
 		if fetchErr == nil {
 			// Try to get the task output for debugging
 			for _, task := range runDetails.Tasks {
-				output, outputErr := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
+				output, outputErr := w.Jobs.GetRunOutput(ctx, sdkjobs.GetRunOutputRequest{
 					RunId: task.RunId,
 				})
 				if outputErr == nil {
-					if output.Error != "" {
-						t.Logf("Task %s error: %s", task.TaskKey, output.Error)
+					if utils.Deref(output.Error) != "" {
+						t.Logf("Task %s error: %s", utils.Deref(task.TaskKey), utils.Deref(output.Error))
 					}
-					if output.ErrorTrace != "" {
-						t.Logf("Task %s error trace:\n%s", task.TaskKey, output.ErrorTrace)
+					if utils.Deref(output.ErrorTrace) != "" {
+						t.Logf("Task %s error trace:\n%s", utils.Deref(task.TaskKey), utils.Deref(output.ErrorTrace))
 					}
 				}
 			}
@@ -305,20 +306,20 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	t.Logf("Job completed. Status: %s", run.State.ResultState)
 
 	// Check if the job succeeded
-	if run.State.ResultState != jobs.RunResultStateSuccess {
+	if run.State.ResultState != sdkjobs.RunResultState_RunResultState_Success {
 		// Try to get the task output for debugging
 		for _, task := range run.Tasks {
-			output, outputErr := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
+			output, outputErr := w.Jobs.GetRunOutput(ctx, sdkjobs.GetRunOutputRequest{
 				RunId: task.RunId,
 			})
-			if outputErr == nil && output.Error != "" {
-				t.Logf("Task %s error: %s", task.TaskKey, output.Error)
+			if outputErr == nil && utils.Deref(output.Error) != "" {
+				t.Logf("Task %s error: %s", utils.Deref(task.TaskKey), utils.Deref(output.Error))
 			}
-			if outputErr == nil && output.ErrorTrace != "" {
-				t.Logf("Task %s error trace:\n%s", task.TaskKey, output.ErrorTrace)
+			if outputErr == nil && utils.Deref(output.ErrorTrace) != "" {
+				t.Logf("Task %s error trace:\n%s", utils.Deref(task.TaskKey), utils.Deref(output.ErrorTrace))
 			}
 		}
-		t.Fatalf("Job failed with state: %s. Check the run URL for details: %s", run.State.ResultState, run.RunPageUrl)
+		t.Fatalf("Job failed with state: %s. Check the run URL for details: %s", run.State.ResultState, utils.Deref(run.RunPageUrl))
 	}
 
 	t.Log("All tests passed!")

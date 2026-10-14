@@ -16,6 +16,7 @@ package testsql
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"regexp"
 	"strings"
 	"sync"
@@ -240,17 +241,17 @@ func (s *statement) terminalResponse() *sql.StatementResponse {
 			StatementId: &s.id,
 			Status: &sql.StatementStatus{
 				State:    sql.StatementStatus_State_Failed,
-				SqlState: nonZero(s.err.SQLState),
-				Error:    &sql.ServiceError{ErrorCode: s.err.Code, Message: nonZero(s.err.Message)},
+				SqlState: utils.NonZero(s.err.SQLState),
+				Error:    &sql.ServiceError{ErrorCode: s.err.Code, Message: utils.NonZero(s.err.Message)},
 			},
 		}
 	}
 
-	manifest := &sql.ResultManifest{TotalChunkCount: nonZero(len(s.chunks))}
+	manifest := &sql.ResultManifest{TotalChunkCount: utils.NonZero(len(s.chunks))}
 	if len(s.columns) > 0 {
 		cols := make([]sql.ColumnInfo, len(s.columns))
 		for i, name := range s.columns {
-			cols[i] = sql.ColumnInfo{Name: nonZero(name)}
+			cols[i] = sql.ColumnInfo{Name: utils.NonZero(name)}
 		}
 		manifest.Schema = &sql.Schema{Columns: cols}
 	}
@@ -297,12 +298,4 @@ func dataArray(rows [][]string) [][]json.RawMessage {
 		}
 	}
 	return out
-}
-
-func nonZero[T comparable](v T) *T {
-	var zero T
-	if v == zero {
-		return nil
-	}
-	return &v
 }

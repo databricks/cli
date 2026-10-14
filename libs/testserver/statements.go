@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -31,7 +32,7 @@ func (s *Server) sqlExecuteStatement(req Request) any {
 	if err := json.Unmarshal(req.Body, &r); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: fmt.Sprintf("invalid execute statement request: %s", err)}
 	}
-	return s.sqlHandler.Submit(val(r.Statement), val(r.WaitTimeout), r.Parameters)
+	return s.sqlHandler.Submit(utils.Deref(r.Statement), utils.Deref(r.WaitTimeout), r.Parameters)
 }
 
 // sqlGetStatement handles GET /api/2.0/sql/statements/{statement_id}.

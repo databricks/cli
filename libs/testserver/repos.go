@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strconv"
 )
@@ -29,16 +30,16 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	id := strconv.FormatInt(repoId, 10)
 
 	repoInfo := repos.RepoInfo{
-		Id:           nonZero(repoId),
+		Id:           utils.NonZero(repoId),
 		Path:         repoReq.Path,
 		Provider:     repoReq.Provider,
 		Url:          repoReq.Url,
-		Branch:       nonZero("main"),
-		HeadCommitId: nonZero(fakeHeadCommitID),
+		Branch:       utils.NonZero("main"),
+		HeadCommitId: utils.NonZero(fakeHeadCommitID),
 	}
 
 	s.Repos[id] = repoInfo
-	s.repoIdByPath[val(repoReq.Path)] = repoId
+	s.repoIdByPath[utils.Deref(repoReq.Path)] = repoId
 
 	return Response{
 		Body: repoInfo,
@@ -66,7 +67,7 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 
 	newRepoInfo := repoInfo
 
-	if val(repoReq.Branch) != "" {
+	if utils.Deref(repoReq.Branch) != "" {
 		newRepoInfo.Branch = repoReq.Branch
 	}
 
@@ -88,6 +89,6 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	}
 
 	delete(s.Repos, req.Vars["repo_id"])
-	delete(s.repoIdByPath, val(repoInfo.Path))
+	delete(s.repoIdByPath, utils.Deref(repoInfo.Path))
 	return Response{}
 }

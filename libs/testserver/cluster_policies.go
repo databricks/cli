@@ -5,6 +5,7 @@ import (
 	"fmt"
 	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
 	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"reflect"
 	"slices"
@@ -29,7 +30,7 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	}
 
 	// The backend rejects definition and policy_family_id together.
-	if val(policy.Definition) != "" && val(policy.PolicyFamilyId) != "" {
+	if utils.Deref(policy.Definition) != "" && utils.Deref(policy.PolicyFamilyId) != "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -39,17 +40,17 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 		}
 	}
 
-	if val(policy.Definition) == "" && val(policy.PolicyFamilyId) != "" {
-		policy.Definition = nonZero(policyFamilyDefinition(val(policy.PolicyFamilyId)))
+	if utils.Deref(policy.Definition) == "" && utils.Deref(policy.PolicyFamilyId) != "" {
+		policy.Definition = utils.NonZero(policyFamilyDefinition(utils.Deref(policy.PolicyFamilyId)))
 	}
 
 	defer s.LockUnlock()()
 
 	id := nextUUID()
-	policy.PolicyId = nonZero(id)
+	policy.PolicyId = utils.NonZero(id)
 	s.ClusterPolicies[id] = policy
 
-	return Response{Body: clusterpolicies.CreatePolicyResponse{PolicyId: nonZero(id)}}
+	return Response{Body: clusterpolicies.CreatePolicyResponse{PolicyId: utils.NonZero(id)}}
 }
 
 func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
@@ -88,7 +89,7 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 
 	defer s.LockUnlock()()
 
-	policy, ok := s.ClusterPolicies[val(request.PolicyId)]
+	policy, ok := s.ClusterPolicies[utils.Deref(request.PolicyId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -102,10 +103,10 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 	policy.MaxClustersPerUser = request.MaxClustersPerUser
 	policy.PolicyFamilyDefinitionOverrides = request.PolicyFamilyDefinitionOverrides
 	policy.PolicyFamilyId = request.PolicyFamilyId
-	if val(policy.Definition) == "" && val(policy.PolicyFamilyId) != "" {
-		policy.Definition = nonZero(policyFamilyDefinition(val(policy.PolicyFamilyId)))
+	if utils.Deref(policy.Definition) == "" && utils.Deref(policy.PolicyFamilyId) != "" {
+		policy.Definition = utils.NonZero(policyFamilyDefinition(utils.Deref(policy.PolicyFamilyId)))
 	}
-	s.ClusterPolicies[val(request.PolicyId)] = policy
+	s.ClusterPolicies[utils.Deref(request.PolicyId)] = policy
 
 	return Response{}
 }
@@ -118,11 +119,11 @@ func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.ClusterPolicies[val(request.PolicyId)]; !ok {
+	if _, ok := s.ClusterPolicies[utils.Deref(request.PolicyId)]; !ok {
 		return Response{StatusCode: 404}
 	}
 
-	delete(s.ClusterPolicies, val(request.PolicyId))
+	delete(s.ClusterPolicies, utils.Deref(request.PolicyId))
 
 	return Response{}
 }
@@ -160,7 +161,7 @@ func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool)
 		return nil
 	}
 	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(val(policy.Definition)), &elements); err != nil {
+	if err := json.Unmarshal([]byte(utils.Deref(policy.Definition)), &elements); err != nil {
 		return nil
 	}
 	values := make(map[string]any, len(elements))
@@ -234,7 +235,7 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 // isFixed reports whether the policy's element at path is a "fixed" element.
 func (s *FakeWorkspace) isFixed(policyID, path string) bool {
 	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(val(s.ClusterPolicies[policyID].Definition)), &elements); err != nil {
+	if err := json.Unmarshal([]byte(utils.Deref(s.ClusterPolicies[policyID].Definition)), &elements); err != nil {
 		return false
 	}
 	return elements[path].Type == "fixed"
@@ -296,7 +297,7 @@ func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) stri
 		if msg := s.applyClusterSpecPolicy(task.NewCluster); msg != "" {
 			return msg
 		}
-		if task.ForEachTask != nil {
+		if task.ForEachTask != nil && task.ForEachTask.Task != nil {
 			if msg := s.applyClusterSpecPolicy(task.ForEachTask.Task.NewCluster); msg != "" {
 				return msg
 			}
@@ -309,5 +310,5 @@ func (s *FakeWorkspace) applyClusterSpecPolicy(spec *jobs.ClusterSpec_NewCluster
 	if spec == nil {
 		return ""
 	}
-	return s.applyClusterPolicy(spec, val(spec.PolicyId), val(spec.ApplyPolicyDefaultValues))
+	return s.applyClusterPolicy(spec, utils.Deref(spec.PolicyId), utils.Deref(spec.ApplyPolicyDefaultValues))
 }

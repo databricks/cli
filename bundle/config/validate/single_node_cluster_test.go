@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,7 +99,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: compute.ClusterSpec{
+								CreateClusterRequest: clusters.CreateClusterRequest{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
 								},
@@ -143,8 +143,8 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
-											NewCluster: &compute.ClusterSpec{
-												ClusterName: "my_cluster",
+											NewCluster: &jobs.ClusterSpec_NewCluster{
+												ClusterName: new("my_cluster"),
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
 											},
@@ -190,10 +190,10 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 						Jobs: map[string]*resources.Job{
 							"foo": {
 								JobSettings: jobs.JobSettings{
-									Tasks: []jobs.Task{
+									Tasks: []jobs.TaskSettings{
 										{
-											NewCluster: &compute.ClusterSpec{
-												ClusterName: "my_cluster",
+											NewCluster: &jobs.ClusterSpec_NewCluster{
+												ClusterName: new("my_cluster"),
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
 											},
@@ -238,7 +238,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: pipelines.CreatePipeline{
+								CreatePipelineRequest: pipelines.CreatePipelineRequest{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
@@ -285,12 +285,12 @@ func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
 						Jobs: map[string]*resources.Job{
 							"foo": {
 								JobSettings: jobs.JobSettings{
-									Tasks: []jobs.Task{
+									Tasks: []jobs.TaskSettings{
 										{
 											ForEachTask: &jobs.ForEachTask{
-												Task: jobs.Task{
-													NewCluster: &compute.ClusterSpec{
-														ClusterName: "my_cluster",
+												Task: &jobs.TaskSettings{
+													NewCluster: &jobs.ClusterSpec_NewCluster{
+														ClusterName: new("my_cluster"),
 														SparkConf:   tc.sparkConf,
 														CustomTags:  tc.customTags,
 													},
@@ -380,10 +380,10 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 					Resources: config.Resources{
 						Clusters: map[string]*resources.Cluster{
 							"foo": {
-								ClusterSpec: compute.ClusterSpec{
+								CreateClusterRequest: clusters.CreateClusterRequest{
 									SparkConf:  tc.sparkConf,
 									CustomTags: tc.customTags,
-									PolicyId:   tc.policyId,
+									PolicyId:   new(tc.policyId),
 								},
 							},
 						},
@@ -416,11 +416,11 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
-											NewCluster: &compute.ClusterSpec{
-												ClusterName: "my_cluster",
+											NewCluster: &jobs.ClusterSpec_NewCluster{
+												ClusterName: new("my_cluster"),
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
-												PolicyId:    tc.policyId,
+												PolicyId:    new(tc.policyId),
 											},
 										},
 									},
@@ -454,13 +454,13 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 						Jobs: map[string]*resources.Job{
 							"foo": {
 								JobSettings: jobs.JobSettings{
-									Tasks: []jobs.Task{
+									Tasks: []jobs.TaskSettings{
 										{
-											NewCluster: &compute.ClusterSpec{
-												ClusterName: "my_cluster",
+											NewCluster: &jobs.ClusterSpec_NewCluster{
+												ClusterName: new("my_cluster"),
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
-												PolicyId:    tc.policyId,
+												PolicyId:    new(tc.policyId),
 											},
 										},
 									},
@@ -493,12 +493,12 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"foo": {
-								CreatePipeline: pipelines.CreatePipeline{
+								CreatePipelineRequest: pipelines.CreatePipelineRequest{
 									Clusters: []pipelines.PipelineCluster{
 										{
 											SparkConf:  tc.sparkConf,
 											CustomTags: tc.customTags,
-											PolicyId:   tc.policyId,
+											PolicyId:   new(tc.policyId),
 										},
 									},
 								},
@@ -531,15 +531,15 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 						Jobs: map[string]*resources.Job{
 							"foo": {
 								JobSettings: jobs.JobSettings{
-									Tasks: []jobs.Task{
+									Tasks: []jobs.TaskSettings{
 										{
 											ForEachTask: &jobs.ForEachTask{
-												Task: jobs.Task{
-													NewCluster: &compute.ClusterSpec{
-														ClusterName: "my_cluster",
+												Task: &jobs.TaskSettings{
+													NewCluster: &jobs.ClusterSpec_NewCluster{
+														ClusterName: new("my_cluster"),
 														SparkConf:   tc.sparkConf,
 														CustomTags:  tc.customTags,
-														PolicyId:    tc.policyId,
+														PolicyId:    new(tc.policyId),
 													},
 												},
 											},
@@ -577,8 +577,8 @@ func TestValidateSingleNodeClusterWithIsSingleNode(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									NewCluster: &compute.ClusterSpec{
-										ClusterName: "my_cluster",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										ClusterName: new("my_cluster"),
 									},
 								},
 							},

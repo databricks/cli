@@ -1,17 +1,5 @@
 {
   "names": {
-    "github.com/databricks/cli/bundle/config/resources.AppPermissionLevel": "apps.AppPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel": "compute.ClusterPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermissionLevel": "compute.ClusterPolicyPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.ExperimentPermissionLevel": "ml.ExperimentPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.InstancePoolPermissionLevel": "compute.InstancePoolPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.JobPermissionLevel": "jobs.JobPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.PermissionLevel": "iam.PermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel": "pipelines.PipelinePermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.RegisteredModelPermissionLevel": "ml.RegisteredModelPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.ServingEndpointPermissionLevel": "serving.ServingEndpointPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermissionLevel": "vectorsearch.VectorSearchEndpointPermissionLevel",
-    "github.com/databricks/cli/bundle/config/resources.WarehousePermissionLevel": "sql.WarehousePermissionLevel",
     "github.com/databricks/cli/libs/qualitymonitors.MonitorCronSchedule": "catalog.MonitorCronSchedule",
     "github.com/databricks/cli/libs/qualitymonitors.MonitorCronSchedulePauseStatus": "catalog.MonitorCronSchedulePauseStatus",
     "github.com/databricks/cli/libs/qualitymonitors.MonitorDataClassificationConfig": "catalog.MonitorDataClassificationConfig",
@@ -24,9 +12,7 @@
     "github.com/databricks/cli/libs/qualitymonitors.MonitorSnapshot": "catalog.MonitorSnapshot",
     "github.com/databricks/cli/libs/qualitymonitors.MonitorTimeSeries": "catalog.MonitorTimeSeries",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.InferenceTableConfig": "catalog.InferenceTableConfig",
-    "github.com/databricks/cli/libs/sdktypes/aigateway/v1.McpServiceConfig": "catalog.McpServiceConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.McpServiceConfig_SourceConnection": "catalog.McpServiceConfigSourceConnection",
-    "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig": "catalog.ModelProviderServiceConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_AmazonBedrockProviderConfig": "catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig": "catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_AnthropicProviderConfig": "catalog.ModelProviderServiceConfigAnthropicProviderConfig",
@@ -50,7 +36,6 @@
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_ProviderSecret": "catalog.ModelProviderServiceConfigProviderSecret",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_SecretReference": "catalog.ModelProviderServiceConfigSecretReference",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelProviderServiceConfig_ServiceCredential": "catalog.ModelProviderServiceConfigServiceCredential",
-    "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelServiceConfig": "catalog.ModelServiceConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelServiceConfig_DestinationConfig": "catalog.ModelServiceConfigDestinationConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelServiceConfig_ExternalModelConfig": "catalog.ModelServiceConfigExternalModelConfig",
     "github.com/databricks/cli/libs/sdktypes/aigateway/v1.ModelServiceConfig_FallbackConfig": "catalog.ModelServiceConfigFallbackConfig",
@@ -82,7 +67,6 @@
     "github.com/databricks/cli/libs/sdktypes/apps/v1.GitSource": "apps.GitSource",
     "github.com/databricks/cli/libs/sdktypes/apps/v1.TelemetryExportDestination": "apps.TelemetryExportDestination",
     "github.com/databricks/cli/libs/sdktypes/apps/v1.UnityCatalog": "apps.UnityCatalog",
-    "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2.Library": "compute.Library",
     "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2.MavenLibrary": "compute.MavenLibrary",
     "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2.PythonPyPiLibrary": "compute.PythonPyPiLibrary",
     "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2.RCranLibrary": "compute.RCranLibrary",
@@ -328,11 +312,9 @@
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.ProjectCustomTag": "postgres.ProjectCustomTag",
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.ProjectDefaultEndpointSettings": "postgres.ProjectDefaultEndpointSettings",
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.Role_Attributes": "postgres.RoleAttributes",
-    "github.com/databricks/cli/libs/sdktypes/postgres/v1.ScheduleCadence": "postgres.ScheduleCadence",
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.SyncedTable_SyncedTableSpec_ExtraColumn": "postgres.SyncedTableSyncedTableSpecExtraColumn",
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.SyncedTable_SyncedTableSpec_TypeOverride": "postgres.SyncedTableSyncedTableSpecTypeOverride",
     "github.com/databricks/cli/libs/sdktypes/postgres/v1.WeeklySchedule": "postgres.WeeklySchedule",
-    "github.com/databricks/cli/libs/sdktypes/secrets/v1.AzureKeyVaultSecretScopeMetadata": "workspace.AzureKeyVaultSecretScopeMetadata",
     "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1.AzureEncryptionSettings": "catalog.AzureEncryptionSettings",
     "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1.EncryptionSettings": "catalog.EncryptionSettings",
     "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1.AwsSqsQueue": "catalog.AwsSqsQueue",
@@ -341,7 +323,6 @@
     "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1.FileEventQueue": "catalog.FileEventQueue",
     "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1.GcpPubsub": "catalog.GcpPubsub",
     "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1.SseEncryptionDetails": "catalog.SseEncryptionDetails",
-    "github.com/databricks/cli/libs/sdktypes/uc/grants/v1.PrivilegeAssignment": "catalog.PrivilegeAssignment",
     "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1.RegisteredModelAliasInfo": "catalog.RegisteredModelAlias",
     "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1.DeltaSyncVectorIndexSpecRequest": "vectorsearch.DeltaSyncVectorIndexSpecRequest",
     "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1.DirectAccessVectorIndexSpec": "vectorsearch.DirectAccessVectorIndexSpec",
@@ -414,7 +395,6 @@
     "github.com/databricks/sdk-go/jobs/v2.TableTriggerConfiguration_Condition": "jobs.Condition",
     "github.com/databricks/sdk-go/jobs/v2.TaskDependencyType": "jobs.RunIf",
     "github.com/databricks/sdk-go/jobs/v2.TaskRetryMode": "jobs.TaskRetryMode",
-    "github.com/databricks/sdk-go/lakeview/v1.LifecycleState": "dashboards.LifecycleState",
     "github.com/databricks/sdk-go/modelserving/v1.Behavior": "serving.AiGatewayGuardrailPiiBehaviorBehavior",
     "github.com/databricks/sdk-go/modelserving/v1.TelemetryFeature": "serving.TelemetryFeature",
     "github.com/databricks/sdk-go/pipelines/v2.ConnectorType": "pipelines.ConnectorType",
@@ -446,7 +426,6 @@
     "github.com/databricks/sdk-go/postgres/v1.SyncedTable_SyncedTableSpec_ExtraColumn_Maintenance": "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance",
     "github.com/databricks/sdk-go/postgres/v1.SyncedTable_SyncedTableSpec_PgSpecificType": "postgres.SyncedTableSyncedTableSpecPgSpecificType",
     "github.com/databricks/sdk-go/postgres/v1.SyncedTable_SyncedTableSpec_SyncedTableSchedulingPolicy": "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy",
-    "github.com/databricks/sdk-go/secrets/v1.ScopeBackendType": "workspace.ScopeBackendType",
     "github.com/databricks/sdk-go/uc/externallocations/v1.SseEncryptionAlgorithm": "catalog.SseEncryptionDetailsAlgorithm",
     "github.com/databricks/sdk-go/uc/volumes/v1.VolumeType": "catalog.VolumeType",
     "github.com/databricks/sdk-go/vectorsearch/v1.EndpointType": "vectorsearch.EndpointType",
@@ -531,7 +510,8 @@
     "catalog.CreateVolumeRequestContent": [
       "catalog_name",
       "name",
-      "schema_name"
+      "schema_name",
+      "volume_type"
     ],
     "catalog.InferenceTableConfig": [
       "parent"
@@ -595,7 +575,6 @@
       "value"
     ],
     "compute.Adlsgen2Info": [
-      "destination",
       "destination"
     ],
     "compute.CreateInstancePool": [
@@ -603,49 +582,33 @@
       "node_type_id"
     ],
     "compute.DbfsStorageInfo": [
-      "destination",
-      "destination",
       "destination"
     ],
     "compute.GcsStorageInfo": [
-      "destination",
       "destination"
     ],
     "compute.LocalFileInfo": [
-      "destination",
       "destination"
     ],
     "compute.MavenLibrary": [
-      "coordinates",
-      "coordinates",
-      "coordinates",
       "coordinates"
     ],
     "compute.PythonPyPiLibrary": [
-      "package",
-      "package",
       "package"
     ],
     "compute.RCranLibrary": [
-      "package",
-      "package",
       "package"
     ],
     "compute.S3StorageInfo": [
-      "destination",
-      "destination",
       "destination"
     ],
     "compute.VolumesStorageInfo": [
-      "destination",
       "destination"
     ],
     "compute.WorkloadType": [
-      "clients",
       "clients"
     ],
     "compute.WorkspaceStorageInfo": [
-      "destination",
       "destination"
     ],
     "database.DatabaseCatalog": [
@@ -714,6 +677,9 @@
     "jobs.JobCluster": [
       "job_cluster_key"
     ],
+    "jobs.JobDeployment": [
+      "kind"
+    ],
     "jobs.JobEnvironment": [
       "environment_key"
     ],
@@ -723,6 +689,10 @@
     "jobs.JobParameterDefinition": [
       "default",
       "name"
+    ],
+    "jobs.JobSource": [
+      "import_from_git_branch",
+      "job_config_path"
     ],
     "jobs.JobsHealthRule": [
       "metric",
@@ -832,6 +802,9 @@
       "max_workers",
       "min_workers"
     ],
+    "pipelines.PipelineDeployment": [
+      "kind"
+    ],
     "pipelines.RabbitmqOptions": [
       "queue"
     ],
@@ -922,6 +895,11 @@
     "serving.Route": [
       "traffic_percentage"
     ],
+    "serving.ServedModelInput": [
+      "model_name",
+      "model_version",
+      "scale_to_zero_enabled"
+    ],
     "sql.AlertStatementParameter": [
       "name"
     ],
@@ -957,5 +935,20 @@
       "dns_name",
       "resource_id"
     ]
+  },
+  "field_refs": {
+    "catalog.PrivilegeAssignment.privileges": "catalog.Privilege",
+    "jobs.GitSource.git_provider": "jobs.GitProvider",
+    "jobs.Task.email_notifications": "jobs.TaskEmailNotifications",
+    "jobs.Task.notification_settings": "jobs.TaskNotificationSettings",
+    "pipelines.PipelineClusterAutoscale.mode": "pipelines.PipelineClusterAutoscaleMode",
+    "pipelines.PipelineLibrary.file": "pipelines.FileLibrary",
+    "serving.AiGatewayRateLimit.key": "serving.AiGatewayRateLimitKey",
+    "serving.AiGatewayRateLimit.renewal_period": "serving.AiGatewayRateLimitRenewalPeriod",
+    "serving.AmazonBedrockConfig.bedrock_provider": "serving.AmazonBedrockConfigBedrockProvider",
+    "serving.EndpointCoreConfigInput.served_models": "serving.ServedModelInput",
+    "serving.ExternalModel.provider": "serving.ExternalModelProvider",
+    "serving.RateLimit.key": "serving.RateLimitKey",
+    "serving.RateLimit.renewal_period": "serving.RateLimitRenewalPeriod"
   }
 }

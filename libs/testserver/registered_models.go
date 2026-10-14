@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 )
 
@@ -23,7 +24,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	}
 
 	// Build full name from catalog.schema.name
-	fullName := val(createRequest.CatalogName) + "." + val(createRequest.SchemaName) + "." + val(createRequest.Name)
+	fullName := utils.Deref(createRequest.CatalogName) + "." + utils.Deref(createRequest.SchemaName) + "." + utils.Deref(createRequest.Name)
 
 	registeredModel := registeredmodels.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
@@ -31,17 +32,17 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		Name:            createRequest.Name,
 		SchemaName:      createRequest.SchemaName,
 		StorageLocation: createRequest.StorageLocation,
-		FullName:        nonZero(fullName),
-		CreatedAt:       nonZero(nowMilli()),
+		FullName:        utils.NonZero(fullName),
+		CreatedAt:       utils.NonZero(nowMilli()),
 		CreatedBy:       s.CurrentUser().UserName,
 		UpdatedBy:       s.CurrentUser().UserName,
-		MetastoreId:     nonZero(nextUUID()),
+		MetastoreId:     utils.NonZero(nextUUID()),
 		Owner:           s.CurrentUser().UserName,
 	}
 	registeredModel.UpdatedAt = registeredModel.CreatedAt
-	if val(createRequest.Name) == modelNameBrowseOnly {
+	if utils.Deref(createRequest.Name) == modelNameBrowseOnly {
 		// Mirror UC, which computes browse_only and echoes it on GET.
-		registeredModel.BrowseOnly = nonZero(true)
+		registeredModel.BrowseOnly = utils.NonZero(true)
 	}
 
 	s.RegisteredModels[fullName] = registeredModel
@@ -76,15 +77,15 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 
 	applyUpdatedFields(&existing, updateRequest, fields)
 
-	if val(updateRequest.NewName) != "" {
+	if utils.Deref(updateRequest.NewName) != "" {
 		existing.Name = updateRequest.NewName
 
 		// Delete the old entry and set full name to the new name
 		delete(s.RegisteredModels, fullName)
-		fullName = val(existing.CatalogName) + "." + val(existing.SchemaName) + "." + val(updateRequest.NewName)
+		fullName = utils.Deref(existing.CatalogName) + "." + utils.Deref(existing.SchemaName) + "." + utils.Deref(updateRequest.NewName)
 	}
 
-	existing.UpdatedAt = nonZero(nowMilli())
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	s.RegisteredModels[fullName] = existing
 	return Response{
 		Body: existing,

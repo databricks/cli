@@ -1,54 +1,54 @@
 package progress
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFlowProgressEventToString(t *testing.T) {
 	event := ProgressEvent{
-		EventType: "flow_progress",
-		Message:   "my_message",
-		Level:     pipelines.EventLevelInfo,
+		EventType: new("flow_progress"),
+		Message:   new("my_message"),
+		Level:     pipelines.EventLevel_Info,
 		Origin: &pipelines.Origin{
-			FlowName:     "my_flow",
-			PipelineName: "my_pipeline",
+			FlowName:     new("my_flow"),
+			PipelineName: new("my_pipeline"),
 		},
-		Timestamp: "2023-03-27T23:30:36.122Z",
+		Timestamp: new("2023-03-27T23:30:36.122Z"),
 	}
 	assert.Equal(t, `2023-03-27T23:30:36.122Z flow_progress   INFO "my_message"`, event.String())
 }
 
 func TestUpdateProgressEventToString(t *testing.T) {
 	event := ProgressEvent{
-		EventType: "update_progress",
-		Message:   "my_message",
-		Level:     pipelines.EventLevelError,
+		EventType: new("update_progress"),
+		Message:   new("my_message"),
+		Level:     pipelines.EventLevel_Error,
 		Origin: &pipelines.Origin{
-			FlowName:     "my_flow",
-			PipelineName: "my_pipeline",
+			FlowName:     new("my_flow"),
+			PipelineName: new("my_pipeline"),
 		},
-		Timestamp: "2023-03-27T23:30:36.122Z",
+		Timestamp: new("2023-03-27T23:30:36.122Z"),
 	}
 	assert.Equal(t, `2023-03-27T23:30:36.122Z update_progress ERROR "my_message"`, event.String())
 }
 
 func TestUpdateErrorEventToString(t *testing.T) {
 	event := ProgressEvent{
-		EventType: "update_progress",
-		Message:   "failed to update pipeline",
-		Level:     pipelines.EventLevelError,
+		EventType: new("update_progress"),
+		Message:   new("failed to update pipeline"),
+		Level:     pipelines.EventLevel_Error,
 		Origin: &pipelines.Origin{
-			FlowName:     "my_flow",
-			PipelineName: "my_pipeline",
+			FlowName:     new("my_flow"),
+			PipelineName: new("my_pipeline"),
 		},
-		Timestamp: "2023-03-27T23:30:36.122Z",
+		Timestamp: new("2023-03-27T23:30:36.122Z"),
 		Error: &pipelines.ErrorDetail{
 			Exceptions: []pipelines.SerializedException{
 				{
-					Message: "parsing error",
+					Message: new("parsing error"),
 				},
 			},
 		},
@@ -58,18 +58,18 @@ func TestUpdateErrorEventToString(t *testing.T) {
 
 func TestUpdateErrorIgnoredForWarnEvents(t *testing.T) {
 	event := ProgressEvent{
-		EventType: "update_progress",
-		Message:   "failed to update pipeline",
-		Level:     pipelines.EventLevelWarn,
+		EventType: new("update_progress"),
+		Message:   new("failed to update pipeline"),
+		Level:     pipelines.EventLevel_Warn,
 		Origin: &pipelines.Origin{
-			FlowName:     "my_flow",
-			PipelineName: "my_pipeline",
+			FlowName:     new("my_flow"),
+			PipelineName: new("my_pipeline"),
 		},
-		Timestamp: "2023-03-27T23:30:36.122Z",
+		Timestamp: new("2023-03-27T23:30:36.122Z"),
 		Error: &pipelines.ErrorDetail{
 			Exceptions: []pipelines.SerializedException{
 				{
-					Message: "THIS IS IGNORED",
+					Message: new("THIS IS IGNORED"),
 				},
 			},
 		},

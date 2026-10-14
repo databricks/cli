@@ -2,61 +2,41 @@ package dresources
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sdkwarehouses "github.com/databricks/sdk-go/warehouses/v1"
 )
 
 // SqlWarehouseState is the state type for SqlWarehouse resources. It extends sql.CreateWarehouseRequest
 // with lifecycle settings.
 type SqlWarehouseState struct {
-	sql.CreateWarehouseRequest
+	warehouses.CreateWarehouseRequest
 
 	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
-// Custom marshalers needed because embedded sql.CreateWarehouseRequest has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *SqlWarehouseState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s SqlWarehouseState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-// SqlWarehouseRemote extends sql.GetWarehouseResponse with a synthetic Lifecycle field so that
-// RemoteType satisfies TestRemoteSuperset (every field in SqlWarehouseState exists in SqlWarehouseRemote).
-// Lifecycle.Started is populated by DoRead from the warehouse's running state.
 type SqlWarehouseRemote struct {
-	sql.GetWarehouseResponse
+	warehouses.GetWarehouseResponse
 
 	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
-}
-
-func (r *SqlWarehouseRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r SqlWarehouseRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
 }
 
 type ResourceSqlWarehouse struct {
 	client *sdkclients.Clients
 }
 
-// New initializes a ResourceSqlWarehouse with the given client.
 func (*ResourceSqlWarehouse) New(client *sdkclients.Clients) *ResourceSqlWarehouse {
 	return &ResourceSqlWarehouse{client: client}
 }
 
-// PrepareState converts bundle config to the SDK type.
 func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWarehouseState {
 	s := &SqlWarehouseState{
 		CreateWarehouseRequest: input.CreateWarehouseRequest,
@@ -68,32 +48,34 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 	return s
 }
 
-// RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
-// Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
 	return &SqlWarehouseState{
-		AutoStopMins:            warehouse.AutoStopMins,
-		Channel:                 warehouse.Channel,
-		ClusterSize:             warehouse.ClusterSize,
-		CreatorName:             warehouse.CreatorName,
-		EnablePhoton:            warehouse.EnablePhoton,
-		EnableServerlessCompute: warehouse.EnableServerlessCompute,
-		InstanceProfileArn:      warehouse.InstanceProfileArn,
-		MaxNumClusters:          warehouse.MaxNumClusters,
-		MinNumClusters:          warehouse.MinNumClusters,
-		Name:                    warehouse.Name,
-		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-		StatementTimeout:        warehouse.StatementTimeout,
-		Tags:                    warehouse.Tags,
-		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-		ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-		Lifecycle:               warehouse.Lifecycle,
+		CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
+			AutoStopMins:            warehouse.AutoStopMins,
+			Channel:                 warehouse.Channel,
+			ClusterSize:             warehouse.ClusterSize,
+			CreatorName:             warehouse.CreatorName,
+			EnablePhoton:            warehouse.EnablePhoton,
+			EnableServerlessCompute: warehouse.EnableServerlessCompute,
+			InstanceProfileArn:      warehouse.InstanceProfileArn,
+			MaxNumClusters:          warehouse.MaxNumClusters,
+			MinNumClusters:          warehouse.MinNumClusters,
+			Name:                    warehouse.Name,
+			SpotInstancePolicy:      warehouse.SpotInstancePolicy,
+			StatementTimeout:        warehouse.StatementTimeout,
+			Tags:                    warehouse.Tags,
+			WarehouseType:           warehouse.WarehouseType,
+		},
+		Lifecycle: warehouse.Lifecycle,
 	}
 }
 
-// DoRead reads the warehouse by id.
 func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWarehouseRemote, error) {
-	warehouse, err := r.client.Warehouses.GetById(ctx, id)
+	resp, err := r.client.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	warehouse, err := warehouses.GetWarehouseResponseFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -103,63 +85,64 @@ func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWareh
 	}
 
 	switch warehouse.State {
-	case sql.StateRunning:
-		started := true
-		remote.Lifecycle = &StateLifecycle{Started: &started}
-	case sql.StateStopped:
-		started := false
-		remote.Lifecycle = &StateLifecycle{Started: &started}
+	case warehouses.EndpointState_Running:
+		remote.Lifecycle = &StateLifecycle{Started: new(true)}
+	case warehouses.EndpointState_Stopped:
+		remote.Lifecycle = &StateLifecycle{Started: new(false)}
 	default:
 		remote.Lifecycle = nil
 	}
 	return remote, nil
 }
 
-// DoCreate creates the warehouse and returns its id.
 func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *SqlWarehouseState) (string, *SqlWarehouseRemote, error) {
-	waiter, err := r.client.Warehouses.Create(ctx, config.CreateWarehouseRequest)
+	request, err := warehouses.CreateWarehouseRequestToSDK(&config.CreateWarehouseRequest)
 	if err != nil {
 		return "", nil, err
 	}
-	return waiter.Id, nil, nil
+	waiter, err := r.client.Warehouses.CreateWarehouse(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	return waiter.GetId(), nil, nil
 }
 
-// hasWarehouseChanges reports whether the plan entry contains any Update changes
-// to fields that belong to the Warehouse Edit API (i.e., not lifecycle-only fields).
 func hasWarehouseChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("lifecycle", "lifecycle.started")
 }
 
-// DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
 	edited := hasWarehouseChanges(entry)
 	if edited {
-		request := sql.EditWarehouseRequest{
-			AutoStopMins:            config.AutoStopMins,
-			Channel:                 config.Channel,
-			ClusterSize:             config.ClusterSize,
-			CreatorName:             config.CreatorName,
-			EnablePhoton:            config.EnablePhoton,
-			EnableServerlessCompute: config.EnableServerlessCompute,
-			Id:                      id,
-			InstanceProfileArn:      config.InstanceProfileArn,
-			MaxNumClusters:          config.MaxNumClusters,
-			MinNumClusters:          config.MinNumClusters,
-			Name:                    config.Name,
-			SpotInstancePolicy:      config.SpotInstancePolicy,
-			StatementTimeout:        config.StatementTimeout,
-			Tags:                    config.Tags,
-			WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-			ForceSendFields:         utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
-		}
-
-		waiter, err := r.client.Warehouses.Edit(ctx, request)
+		c := config.CreateWarehouseRequest
+		request, err := warehouses.EditWarehouseRequestToSDK(&warehouses.EditWarehouseRequest{
+			AutoStopMins:            c.AutoStopMins,
+			Channel:                 c.Channel,
+			ClusterSize:             c.ClusterSize,
+			CreatorName:             c.CreatorName,
+			EnablePhoton:            c.EnablePhoton,
+			EnableServerlessCompute: c.EnableServerlessCompute,
+			Id:                      new(id),
+			InstanceProfileArn:      c.InstanceProfileArn,
+			MaxNumClusters:          c.MaxNumClusters,
+			MinNumClusters:          c.MinNumClusters,
+			Name:                    c.Name,
+			SpotInstancePolicy:      c.SpotInstancePolicy,
+			StatementTimeout:        c.StatementTimeout,
+			Tags:                    c.Tags,
+			WarehouseType:           c.WarehouseType,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		if waiter.Id != id {
-			log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
+		waiter, err := r.client.Warehouses.EditWarehouse(ctx, *request)
+		if err != nil {
+			return nil, err
+		}
+
+		if waiter.GetId() != id {
+			log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.GetId(), id)
 		}
 	}
 
@@ -170,59 +153,77 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteWarehouseIsRunning(entry)
 	if edited {
-		// Edit restarts the warehouse: its long-running op waits for RUNNING
-		// (SDK WaitGetWarehouseRunning), so reconcile from RUNNING, not the
-		// stale pre-plan state.
 		alreadyRunning = true
 	}
 	if desiredStarted && !alreadyRunning {
-		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
-		_, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
+		_, err := r.client.Warehouses.StartWarehouse(ctx, sdkwarehouses.StartRequest{Id: new(id)})
 		return nil, err
 	} else if !desiredStarted && alreadyRunning {
-		// lifecycle.started=false: fire Stop; WaitAfterUpdate polls for STOPPED.
-		_, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+		_, err := r.client.Warehouses.StopWarehouse(ctx, sdkwarehouses.StopRequest{Id: new(id)})
 		return nil, err
 	}
 
 	return nil, nil
 }
 
-// WaitAfterUpdate waits for the warehouse to reach the desired lifecycle state after DoUpdate.
+// waitWarehouseState polls until the warehouse reaches target. Reaching one of
+// the failure states first is an error.
+func (r *ResourceSqlWarehouse) waitWarehouseState(ctx context.Context, id string, target sdkwarehouses.EndpointState, failure ...sdkwarehouses.EndpointState) error {
+	_, err := retries.Poll(ctx, 20*time.Minute, func() (*sdkwarehouses.GetWarehouseResponse, *retries.Err) {
+		warehouse, err := r.client.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(id)})
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		status := warehouse.State
+		statusMessage := fmt.Sprintf("current status: %s", status)
+		if warehouse.Health != nil {
+			statusMessage = utils.Deref(warehouse.Health.Summary)
+		}
+		if status == target {
+			return warehouse, nil
+		}
+		if slices.Contains(failure, status) {
+			return nil, retries.Halt(fmt.Errorf("failed to reach %s, got %s: %s", target, status, statusMessage))
+		}
+		return nil, retries.Continues(statusMessage)
+	})
+	return err
+}
+
+func (r *ResourceSqlWarehouse) waitRunning(ctx context.Context, id string) error {
+	return r.waitWarehouseState(ctx, id, sdkwarehouses.EndpointState_Running, sdkwarehouses.EndpointState_Stopped, sdkwarehouses.EndpointState_Deleted)
+}
+
+func (r *ResourceSqlWarehouse) waitStopped(ctx context.Context, id string) error {
+	return r.waitWarehouseState(ctx, id, sdkwarehouses.EndpointState_Stopped)
+}
+
 func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context, id string, config *SqlWarehouseState) (*SqlWarehouseRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return nil, nil
 	}
 
 	if *config.Lifecycle.Started {
-		_, err := r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
-		return nil, err
+		return nil, r.waitRunning(ctx, id)
 	}
-
-	_, err := r.client.Warehouses.WaitGetWarehouseStopped(ctx, id, 20*time.Minute, nil)
-	return nil, err
+	return nil, r.waitStopped(ctx, id)
 }
 
-// WaitAfterCreate waits for the warehouse to be ready, then stops it if lifecycle.started=false.
-// Warehouses are created in a starting state; WaitGetWarehouseRunning waits for them to be RUNNING.
 func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context, id string, config *SqlWarehouseState) (*SqlWarehouseRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return nil, nil
 	}
 
-	// Always wait for RUNNING first: warehouses start asynchronously.
-	_, err := r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
-	if err != nil {
+	if err := r.waitRunning(ctx, id); err != nil {
 		return nil, err
 	}
 
 	if !*config.Lifecycle.Started {
-		// started=false: stop the warehouse after it reaches RUNNING.
-		stopWaiter, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+		stopWaiter, err := r.client.Warehouses.StopWarehouse(ctx, sdkwarehouses.StopRequest{Id: new(id)})
 		if err != nil {
 			return nil, err
 		}
-		_, err = stopWaiter.Get()
+		_, err = stopWaiter.Wait(ctx)
 		return nil, err
 	}
 
@@ -230,10 +231,10 @@ func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context, id string, c
 }
 
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string, _ *SqlWarehouseState) error {
-	return r.client.Warehouses.DeleteById(ctx, oldID)
+	_, err := r.client.Warehouses.DeleteWarehouse(ctx, sdkwarehouses.DeleteWarehouseRequest{Id: new(oldID)})
+	return err
 }
 
-// remoteWarehouseIsRunning reads the warehouse running state from the plan entry's remote state.
 func remoteWarehouseIsRunning(entry *PlanEntry) bool {
 	if entry.RemoteState == nil {
 		return false
@@ -242,5 +243,5 @@ func remoteWarehouseIsRunning(entry *PlanEntry) bool {
 	if !ok {
 		return false
 	}
-	return remote.State == sql.StateRunning
+	return remote.State == warehouses.EndpointState_Running
 }

@@ -7,9 +7,9 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 // mlflowIdentifiers are the experiment and run IDs MLflow assigns to a run.
@@ -28,7 +28,7 @@ func aiRuntimeTaskOutput(ctx context.Context, w *sdkclients.Clients, run *jobs.G
 	if len(run.Tasks) == 0 {
 		return nil
 	}
-	return aiRuntimeTaskOutputForTask(ctx, w, run.Tasks[len(run.Tasks)-1].RunId)
+	return aiRuntimeTaskOutputForTask(ctx, w, utils.Deref(run.Tasks[len(run.Tasks)-1].RunId))
 }
 
 // mlflowIDsForTask fetches a task run's MLflow experiment and run IDs from
@@ -84,7 +84,7 @@ func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
 // enrichment.
 func fetchMLflowRunName(ctx context.Context, w *sdkclients.Clients, mlflowRunID string) string {
-	resp, err := w.Experiments.GetRun(ctx, experiments.GetRunRequest{RunId: new(mlflowRunID)})
+	resp, err := w.Experiments.GetRun(ctx, sdkexperiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air get: could not fetch MLflow run name: %v", err)
 		return ""

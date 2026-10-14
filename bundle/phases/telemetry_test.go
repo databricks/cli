@@ -1,10 +1,10 @@
 package phases
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,15 +81,15 @@ func TestUploadFileSizeHistogramEmpty(t *testing.T) {
 func TestCollectTaskTypes(t *testing.T) {
 	jobs := map[string]*resources.Job{
 		"nil": nil,
-		"a": {JobSettings: jobs.JobSettings{Tasks: []jobs.Task{
-			{TaskKey: "nb", NotebookTask: &jobs.NotebookTask{NotebookPath: "/nb"}},
-			{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"}},
+		"a": {JobSettings: jobs.JobSettings{Tasks: []jobs.TaskSettings{
+			{TaskKey: new("nb"), NotebookTask: &jobs.NotebookTask{NotebookPath: new("/nb")}},
+			{TaskKey: new("train"), AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("exp")}},
 		}}},
-		"b": {JobSettings: jobs.JobSettings{Tasks: []jobs.Task{
+		"b": {JobSettings: jobs.JobSettings{Tasks: []jobs.TaskSettings{
 			// for_each wrapping a spark_python_task: both the wrapper and the
 			// nested task type should be recorded.
-			{TaskKey: "fan", ForEachTask: &jobs.ForEachTask{Task: jobs.Task{
-				SparkPythonTask: &jobs.SparkPythonTask{PythonFile: "main.py"},
+			{TaskKey: new("fan"), ForEachTask: &jobs.ForEachTask{Task: &jobs.TaskSettings{
+				SparkPythonTask: &jobs.SparkPythonTask{PythonFile: new("main.py")},
 			}}},
 		}}},
 	}
@@ -106,23 +106,23 @@ func TestCollectTaskTypes(t *testing.T) {
 // aiRuntimeJob builds a job with a single ai_runtime_task, plus optionally an extra
 // no-op task to make it multi-task.
 func aiRuntimeJob(extraTask bool) *resources.Job {
-	tasks := []jobs.Task{{
-		TaskKey:       "train",
-		AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"},
+	tasks := []jobs.TaskSettings{{
+		TaskKey:       new("train"),
+		AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("exp")},
 	}}
 	if extraTask {
-		tasks = append(tasks, jobs.Task{TaskKey: "prep"})
+		tasks = append(tasks, jobs.TaskSettings{TaskKey: new("prep")})
 	}
 	return &resources.Job{Tasks: tasks}
 }
 
 func TestAiRuntimeTaskMetrics(t *testing.T) {
 	scheduledJob := aiRuntimeJob(false)
-	scheduledJob.Schedule = &jobs.CronSchedule{QuartzCronExpression: "0 0 * * * ?"}
+	scheduledJob.Schedule = &jobs.CronSchedule{QuartzCronExpression: new("0 0 * * * ?")}
 
-	forEachJob := &resources.Job{Tasks: []jobs.Task{{
-		TaskKey:     "fanout",
-		ForEachTask: &jobs.ForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"}}},
+	forEachJob := &resources.Job{Tasks: []jobs.TaskSettings{{
+		TaskKey:     new("fanout"),
+		ForEachTask: &jobs.ForEachTask{Task: &jobs.TaskSettings{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("exp")}}},
 	}}}
 
 	tests := []struct {
@@ -136,7 +136,7 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 		},
 		{
 			name: "job without ai_runtime_task",
-			jobs: map[string]*resources.Job{"j": {JobSettings: jobs.JobSettings{Tasks: []jobs.Task{{TaskKey: "notebook"}}}}},
+			jobs: map[string]*resources.Job{"j": {JobSettings: jobs.JobSettings{Tasks: []jobs.TaskSettings{{TaskKey: new("notebook")}}}}},
 		},
 		{
 			name:    "single task",

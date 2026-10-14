@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -94,12 +94,12 @@ all active runs submitted by the current user.
 			host := strings.TrimRight(w.Config.Host, "/")
 
 			if !jsonOut {
-				cmdio.LogString(ctx, fmt.Sprintf("Searching active runs for %s in %s...", me.UserName, host))
+				cmdio.LogString(ctx, fmt.Sprintf("Searching active runs for %s in %s...", me, host))
 			}
 
 			// Fetch every active run (up to the scan bound) so --all cancels all
 			// of them, not just the first page.
-			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
+			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me})
 			rows, err := fetcher.next(maxListScan)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
@@ -138,12 +138,12 @@ all active runs submitted by the current user.
 		for _, rid := range runIDs {
 			err := cancelRun(ctx, w, rid)
 			if err != nil {
-				data.Failed = append(data.Failed, cancelFailure{RunID: rid, Error: err.Error()})
+				data.Failed = append(data.Failed, cancelFailure{RunID: rid, Error: apierrs.ErrorString(err)})
 				if !jsonOut {
 					if runNotFound(err) {
 						cmdio.LogString(ctx, fmt.Sprintf("Run %s not found. Please check the run ID and ensure you're using a Job Run ID.", rid))
 					} else {
-						cmdio.LogString(ctx, fmt.Sprintf("Failed to cancel run %s: %s", rid, err))
+						cmdio.LogString(ctx, fmt.Sprintf("Failed to cancel run %s: %s", rid, apierrs.ErrorString(err)))
 					}
 				}
 				continue
@@ -183,11 +183,11 @@ all active runs submitted by the current user.
 // an unknown run, and the SDK only remaps that to ErrResourceDoesNotExist for
 // the runs/get path, not cancel — so we also detect the raw code here.
 func runNotFound(err error) bool {
-	if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+	if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 		return true
 	}
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		return apiErr.StatusCode == http.StatusBadRequest && apiErr.ErrorCode == "INVALID_PARAMETER_VALUE"
+		return apiErr.HTTPStatusCode() == http.StatusBadRequest && apierrs.ErrorCode(apiErr) == "INVALID_PARAMETER_VALUE"
 	}
 	return false
 }
@@ -199,7 +199,7 @@ func cancelRun(ctx context.Context, w *sdkclients.Clients, rid string) error {
 	if err != nil || runID <= 0 {
 		return fmt.Errorf("invalid run ID %q: must be a positive integer", rid)
 	}
-	_, err = w.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
+	_, err = w.Jobs.CancelRun(ctx, sdkjobs.CancelRunRequest{RunId: new(runID)})
 	return err
 }
 

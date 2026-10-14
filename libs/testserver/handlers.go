@@ -12,6 +12,7 @@ import (
 	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
 	metastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
 	tables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
+	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"io"
 	"mime"
@@ -28,9 +29,9 @@ import (
 const TestWorkspaceID = 900800700600
 
 var TestMetastore = metastores.MetastoreAssignment{
-	DefaultCatalogName: nonZero("hive_metastore"),
-	MetastoreId:        nonZero("120efa64-9b68-46ba-be38-f319458430d2"),
-	WorkspaceId:        nonZero[int64](TestWorkspaceID),
+	DefaultCatalogName: utils.NonZero("hive_metastore"),
+	MetastoreId:        utils.NonZero("120efa64-9b68-46ba-be38-f319458430d2"),
+	WorkspaceId:        utils.NonZero[int64](TestWorkspaceID),
 }
 
 // Extensions that format=AUTO maps to workspace asset types /workspace/import
@@ -178,12 +179,12 @@ func AddDefaultHandlers(server *Server) {
 		return instancepools.ListInstancePoolsResponse{
 			InstancePools: []instancepools.InstancePoolAndStats{
 				{
-					InstancePoolName: nonZero("DEFAULT Test Instance Pool"),
-					InstancePoolId:   nonZero(TestDefaultInstancePoolId),
+					InstancePoolName: utils.NonZero("DEFAULT Test Instance Pool"),
+					InstancePoolId:   utils.NonZero(TestDefaultInstancePoolId),
 				},
 				{
-					InstancePoolName: nonZero("some-test-instance-pool"),
-					InstancePoolId:   nonZero("1234"),
+					InstancePoolName: utils.NonZero("some-test-instance-pool"),
+					InstancePoolId:   utils.NonZero("1234"),
 				},
 			},
 		}
@@ -206,12 +207,12 @@ func AddDefaultHandlers(server *Server) {
 		return clusters.ListClustersResponse{
 			Clusters: []clusters.ClusterInfo{
 				{
-					ClusterName: nonZero("some-test-cluster"),
-					ClusterId:   nonZero("4321"),
+					ClusterName: utils.NonZero("some-test-cluster"),
+					ClusterId:   utils.NonZero("4321"),
 				},
 				{
-					ClusterName: nonZero("some-other-cluster"),
-					ClusterId:   nonZero("9876"),
+					ClusterName: utils.NonZero("some-other-cluster"),
+					ClusterId:   utils.NonZero("9876"),
 				},
 			},
 		}
@@ -294,7 +295,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.0/workspace/import", func(req Request) any {
 		// /workspace/import accepts both a JSON body (matching workspaceapi.Import) and a
-		// multipart form body. The multipart variant is what databricks-sdk-go's
+		// multipart form body. The multipart variant is what libs/workspaceapi's
 		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
 		// that still hits Workspace.Import directly.
 		mediaType, _, _ := mime.ParseMediaType(req.Headers.Get("Content-Type"))
@@ -446,7 +447,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
 		return metastores.GetMetastoreSummaryResponse{
 			MetastoreId: TestMetastore.MetastoreId,
-			Region:      nonZero("us-west-2"),
+			Region:      utils.NonZero("us-west-2"),
 		}
 	})
 
@@ -494,7 +495,7 @@ func AddDefaultHandlers(server *Server) {
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return req.Workspace.JobsDelete(req, val(request.JobId))
+		return req.Workspace.JobsDelete(req, utils.Deref(request.JobId))
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
@@ -643,10 +644,10 @@ func AddDefaultHandlers(server *Server) {
 		}
 		return Response{
 			Body: tables.TableInfo{
-				CatalogName: nonZero(parts[0]),
-				SchemaName:  nonZero(parts[1]),
-				Name:        nonZero(parts[2]),
-				FullName:    nonZero(req.Vars["full_name"]),
+				CatalogName: utils.NonZero(parts[0]),
+				SchemaName:  utils.NonZero(parts[1]),
+				Name:        utils.NonZero(parts[2]),
+				FullName:    utils.NonZero(req.Vars["full_name"]),
 			},
 		}
 	})
@@ -779,9 +780,9 @@ func AddDefaultHandlers(server *Server) {
 		return uccredentials.ListStorageCredentialsResponse{
 			StorageCredentials: []uccredentials.StorageCredentialInfo{
 				{
-					Name:        nonZero("some-test-credential"),
-					Id:          nonZero("1234"),
-					MetastoreId: nonZero("abcd"),
+					Name:        utils.NonZero("some-test-credential"),
+					Id:          utils.NonZero("1234"),
+					MetastoreId: utils.NonZero("abcd"),
 				},
 			},
 		}
@@ -895,7 +896,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + val(TestUserSP.UserName) + "/.snapshots/",
+			"path": "/Workspace/Users/" + utils.Deref(TestUserSP.UserName) + "/.snapshots/",
 		}
 	})
 
@@ -930,7 +931,7 @@ func AddDefaultHandlers(server *Server) {
 
 		// The real API uses the workspace user UUID (not email) in the snapshot path,
 		// matching service-principal identities used in cloud acceptance tests.
-		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", utils.Deref(TestUserSP.UserName), bundleID, snapshotID)
 		req.Workspace.WorkspaceMkdirs(workspaceapi.Mkdirs{Path: snapshotPath})
 		return map[string]any{
 			"snapshot": map[string]any{

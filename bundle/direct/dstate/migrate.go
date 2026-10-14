@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // migrateState runs all necessary migrations on the database.
@@ -112,7 +112,7 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	}
 	for _, p := range old.Permissions {
 		newState.EmbeddedSlice = append(newState.EmbeddedSlice, dresources.StatePermission{
-			Level:                iam.PermissionLevel(p.PermissionLevel),
+			Level:                resources.PermissionLevel(p.PermissionLevel),
 			UserName:             p.UserName,
 			ServicePrincipalName: p.ServicePrincipalName,
 			GroupName:            p.GroupName,
@@ -124,9 +124,9 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 
 // oldGrantsStateV1 is the grants state format before v2.
 type oldGrantsStateV1 struct {
-	SecurableType string                        `json:"securable_type"`
-	FullName      string                        `json:"full_name"`
-	Grants        []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	SecurableType string                       `json:"securable_type"`
+	FullName      string                       `json:"full_name"`
+	Grants        []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	sdkmodelregistry "github.com/databricks/sdk-go/modelregistry/v1"
 )
 
 type ResourceMlflowModel struct {
@@ -20,52 +20,52 @@ type ResourceMlflowModel struct {
 // the permissions API requires the numeric ID. This wrapper exposes the numeric
 // ID as model_id, analogous to ModelServingEndpointRemote.EndpointId for serving endpoints.
 type MlflowModelRemote struct {
-	ml.ModelDatabricks
+	modelregistry.RegisteredModelDatabricks
 	ModelId string `json:"model_id"`
-}
-
-// Custom marshalers needed because embedded ml.ModelDatabricks has its own
-// MarshalJSON which would otherwise take over and ignore model_id.
-func (s *MlflowModelRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s MlflowModelRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
 }
 
 func (*ResourceMlflowModel) New(client *sdkclients.Clients) *ResourceMlflowModel {
 	return &ResourceMlflowModel{client: client}
 }
 
-func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.CreateModelRequest {
-	return &input.CreateModelRequest
+func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *modelregistry.CreateRegisteredModelRequest {
+	return &input.CreateRegisteredModelRequest
 }
 
-func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
-	return &ml.CreateModelRequest{
-		Name:            output.Name,
-		Tags:            output.Tags,
-		Description:     output.Description,
-		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](output.ForceSendFields),
+func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *modelregistry.CreateRegisteredModelRequest {
+	return &modelregistry.CreateRegisteredModelRequest{
+		Name:        output.Name,
+		Tags:        output.Tags,
+		Description: output.Description,
 	}
 }
 
 func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
-	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
-		Name: id,
+	resp, err := r.client.ModelRegistry.GetRegisteredModelDatabricks(ctx, sdkmodelregistry.GetRegisteredModelDatabricksRequest{
+		Name: new(id),
 	})
 	if err != nil {
 		return nil, err
 	}
+	response, err := modelregistry.GetRegisteredModelDatabricksResponseFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	if response.RegisteredModelDatabricks == nil {
+		return nil, errors.New("GetModel returned no registered_model_databricks")
+	}
 	return &MlflowModelRemote{
-		ModelDatabricks: *response.RegisteredModelDatabricks,
-		ModelId:         response.RegisteredModelDatabricks.Id,
+		RegisteredModelDatabricks: *response.RegisteredModelDatabricks,
+		ModelId:                   utils.Deref(response.RegisteredModelDatabricks.Id),
 	}, nil
 }
 
-func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *MlflowModelRemote, error) {
-	response, err := r.client.ModelRegistry.CreateModel(ctx, *config)
+func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *modelregistry.CreateRegisteredModelRequest) (string, *MlflowModelRemote, error) {
+	request, err := modelregistry.CreateRegisteredModelRequestToSDK(config)
+	if err != nil {
+		return "", nil, err
+	}
+	response, err := r.client.ModelRegistry.CreateRegisteredModel(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -74,17 +74,18 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	}
 	// Return nil for refresh output; the engine will call DoRead to populate the full state
 	// including the numeric model ID needed for permissions.
-	return response.RegisteredModel.Name, nil, nil
+	return utils.Deref(response.RegisteredModel.Name), nil, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
-	updateRequest := ml.UpdateModelRequest{
-		Name:            id,
-		Description:     config.Description,
-		ForceSendFields: utils.FilterFields[ml.UpdateModelRequest](config.ForceSendFields),
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *modelregistry.CreateRegisteredModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
+	resp, err := r.client.ModelRegistry.UpdateRegisteredModel(ctx, sdkmodelregistry.UpdateRegisteredModelRequest{
+		Name:        new(id),
+		Description: config.Description,
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	response, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
+	response, err := modelregistry.UpdateRegisteredModelResponseFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -98,27 +99,28 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		modelId = old.ModelId
 	}
 
-	// Id and PermissionLevel are left empty because ml.Model (the UpdateModel
+	// Id and PermissionLevel are left empty because RegisteredModel (the update
 	// response) does not carry them; every other field is taken from the
 	// response so references against the post-update remote state resolve to
 	// real values until the next plan's DoRead.
+	model := response.RegisteredModel
 	return &MlflowModelRemote{
-		CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
-		Description:          response.RegisteredModel.Description,
-		Id:                   "",
-		LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
-		LatestVersions:       response.RegisteredModel.LatestVersions,
-		Name:                 response.RegisteredModel.Name,
-		PermissionLevel:      "",
-		Tags:                 response.RegisteredModel.Tags,
-		UserId:               response.RegisteredModel.UserId,
-		ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "Id", "PermissionLevel"),
-		ModelId:              modelId,
+		RegisteredModelDatabricks: modelregistry.RegisteredModelDatabricks{
+			CreationTimestamp:    model.CreationTimestamp,
+			Description:          model.Description,
+			LastUpdatedTimestamp: model.LastUpdatedTimestamp,
+			LatestVersions:       model.LatestVersions,
+			Name:                 model.Name,
+			Tags:                 model.Tags,
+			UserId:               model.UserId,
+		},
+		ModelId: modelId,
 	}, nil
 }
 
-func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string, _ *ml.CreateModelRequest) error {
-	return r.client.ModelRegistry.DeleteModel(ctx, ml.DeleteModelRequest{
-		Name: id,
+func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string, _ *modelregistry.CreateRegisteredModelRequest) error {
+	_, err := r.client.ModelRegistry.DeleteRegisteredModel(ctx, sdkmodelregistry.DeleteRegisteredModelRequest{
+		Name: new(id),
 	})
+	return err
 }

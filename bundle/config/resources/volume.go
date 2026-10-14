@@ -69,5 +69,5 @@ func (v *Volume) GetName() string {
 // or deploy. Missing required fields and malformed references are reported by validation and the
 // plan/deploy backends, so this function does not guard against them.
 func (v *Volume) ComputeVolumePath() string {
-	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
+	return fmt.Sprintf("/Volumes/%s/%s/%s", utils.Deref(v.CatalogName), utils.Deref(v.SchemaName), utils.Deref(v.Name))
 }

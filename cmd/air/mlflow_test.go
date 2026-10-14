@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ import (
 // so the SDK calls these tests exercise are served locally.
 func newTestWorkspaceClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: host, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: host, Token: "token"})
 	require.NoError(t, err)
 	return w
 }
@@ -38,7 +39,7 @@ func runOutputServer(t *testing.T, body string, hit *bool) *httptest.Server {
 
 func TestMLflowIDs(t *testing.T) {
 	ctx := t.Context()
-	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(99))}}}
 
 	t.Run("returns the identifiers on success", func(t *testing.T) {
 		var hit bool
@@ -72,7 +73,7 @@ func TestMLflowIDs(t *testing.T) {
 		}))
 		t.Cleanup(srv.Close)
 
-		retried := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}, {RunId: 100}}}
+		retried := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(99))}, {RunId: new(int64(100))}}}
 		mlflowIDs(ctx, newTestWorkspaceClient(t, srv.URL), retried)
 		assert.Equal(t, "100", gotRunID)
 	})
@@ -81,7 +82,7 @@ func TestMLflowIDs(t *testing.T) {
 func TestAiRuntimeTaskOutput(t *testing.T) {
 	var hit bool
 	srv := runOutputServer(t, `{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`, &hit)
-	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(99))}}}
 
 	got := aiRuntimeTaskOutput(t.Context(), newTestWorkspaceClient(t, srv.URL), run)
 	require.NotNil(t, got)

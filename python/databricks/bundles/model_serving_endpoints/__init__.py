@@ -108,12 +108,8 @@ __all__ = [
     "ServedModelInput",
     "ServedModelInputDict",
     "ServedModelInputParam",
-    "ServedModelInputWorkloadType",
-    "ServedModelInputWorkloadTypeParam",
     "ServingEndpointPermissionLevel",
     "ServingEndpointPermissionLevelParam",
-    "ServingModelWorkloadType",
-    "ServingModelWorkloadTypeParam",
     "TelemetryConfig",
     "TelemetryConfigDict",
     "TelemetryConfigParam",
@@ -314,17 +310,9 @@ from databricks.bundles.model_serving_endpoints._models.served_model_input impor
     ServedModelInputDict,
     ServedModelInputParam,
 )
-from databricks.bundles.model_serving_endpoints._models.served_model_input_workload_type import (
-    ServedModelInputWorkloadType,
-    ServedModelInputWorkloadTypeParam,
-)
 from databricks.bundles.model_serving_endpoints._models.serving_endpoint_permission_level import (
     ServingEndpointPermissionLevel,
     ServingEndpointPermissionLevelParam,
-)
-from databricks.bundles.model_serving_endpoints._models.serving_model_workload_type import (
-    ServingModelWorkloadType,
-    ServingModelWorkloadTypeParam,
 )
 from databricks.bundles.model_serving_endpoints._models.telemetry_config import (
     TelemetryConfig,

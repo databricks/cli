@@ -3,13 +3,14 @@ package dresources
 import (
 	"context"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // PostgresBranchRemote is the return type for DoRead. It embeds BranchSpec so that
@@ -24,18 +25,8 @@ type PostgresBranchRemote struct {
 	Name       string                 `json:"name,omitempty"`
 	Status     *postgres.BranchStatus `json:"status,omitempty"`
 	Uid        string                 `json:"uid,omitempty"`
-	CreateTime *sdktime.Time          `json:"create_time,omitempty"`
-	UpdateTime *sdktime.Time          `json:"update_time,omitempty"`
-}
-
-// Custom marshaler needed because embedded BranchSpec has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *PostgresBranchRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresBranchRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	CreateTime *types.Time            `json:"create_time,omitempty"`
+	UpdateTime *types.Time            `json:"update_time,omitempty"`
 }
 
 type ResourcePostgresBranch struct {
@@ -55,7 +46,6 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 		ReplaceExisting: input.ReplaceExisting,
 		PurgeOnDelete:   input.PurgeOnDelete,
 		BranchSpec:      input.BranchSpec,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -70,8 +60,7 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
 		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		PurgeOnDelete: false,
 
 		BranchSpec: remote.BranchSpec,
 	}
@@ -81,51 +70,47 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_branches.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
-func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
+func makePostgresBranchRemote(resp *sdkpostgres.Branch) (*PostgresBranchRemote, error) {
+	branch, err := postgres.BranchFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
 	var spec postgres.BranchSpec
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
-		BranchId:   branch.BranchId,
-		Parent:     branch.Parent,
-		Name:       branch.Name,
+		BranchId:   utils.Deref(branch.BranchId),
+		Parent:     utils.Deref(branch.Parent),
+		Name:       utils.Deref(branch.Name),
 		Status:     branch.Status,
-		Uid:        branch.Uid,
+		Uid:        utils.Deref(branch.Uid),
 		CreateTime: branch.CreateTime,
 		UpdateTime: branch.UpdateTime,
-	}
+	}, nil
 }
 
 func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*PostgresBranchRemote, error) {
-	branch, err := r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: id})
+	branch, err := r.client.Postgres.GetBranch(ctx, sdkpostgres.GetBranchRequest{Name: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresBranchRemote(branch), nil
+	return makePostgresBranchRemote(branch)
 }
 
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
-	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
-		BranchId: config.BranchId,
-		Parent:   config.Parent,
-		Branch: postgres.Branch{
-			Spec: &config.BranchSpec,
-
-			// Output-only fields.
-			BranchId:        "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
-		},
-		ReplaceExisting: config.ReplaceExisting,
-		ForceSendFields: nil,
+	// Only spec is set; the other Branch fields are output-only.
+	request, err := postgres.CreateBranchRequestToSDK(&postgres.CreateBranchRequest{
+		BranchId:        new(config.BranchId),
+		Parent:          new(config.Parent),
+		Branch:          &postgres.Branch{Spec: &config.BranchSpec},
+		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.Postgres.CreateBranch(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -136,7 +121,10 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 		return "", nil, err
 	}
 
-	remote := makePostgresBranchRemote(result)
+	remote, err := makePostgresBranchRemote(result)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 
@@ -169,25 +157,19 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 		return nil, nil
 	}
 
-	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
-		Branch: postgres.Branch{
+	// Only name (which addresses the branch) and spec are set; the other
+	// Branch fields are output-only.
+	request, err := postgres.UpdateBranchRequestToSDK(&postgres.UpdateBranchRequest{
+		Branch: &postgres.Branch{
+			Name: new(id),
 			Spec: &config.BranchSpec,
-
-			// Output-only fields.
-			BranchId:        "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
 		},
-		Name: id,
-		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
-		},
+		UpdateMask: new(strings.Join(fieldPaths, ",")),
 	})
+	if err != nil {
+		return nil, err
+	}
+	waiter, err := r.client.Postgres.UpdateBranch(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +179,13 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresBranchRemote(result), nil
+	return makePostgresBranchRemote(result)
 }
 
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
-	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
-		Name:            id,
-		Purge:           state.PurgeOnDelete,
-		ForceSendFields: nil,
+	waiter, err := r.client.Postgres.DeleteBranch(ctx, sdkpostgres.DeleteBranchRequest{
+		Name:  new(id),
+		Purge: trueOrNil(state.PurgeOnDelete),
 	})
 	if err != nil {
 		return err

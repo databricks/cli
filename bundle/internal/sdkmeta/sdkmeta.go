@@ -30,6 +30,11 @@ const LegacyPkgPrefix = "github.com/databricks/databricks-sdk-go/service/"
 type Meta struct {
 	schemas map[string]*clijson.SchemaJSON
 	names   map[reflect.Type]string
+	// order records the walk order of types, see Order.
+	order map[reflect.Type]int
+	// alt lists, for types that sdk-go unified from several previous types,
+	// the other schemas they stand for (see legacyFile.FieldRefs).
+	alt map[reflect.Type][]string
 }
 
 // legacyFile is the format of legacy.json: the schema names API types had in
@@ -42,6 +47,11 @@ type legacyFile struct {
 	Names map[string]string `json:"names"`
 	// Required maps a cli.json schema name to its required fields.
 	Required map[string][]string `json:"required"`
+	// FieldRefs maps "<schema>.<field>" to the schema the field referred to
+	// where sdk-go changed the field's type: an enum replaced by a plain
+	// string, or two messages unified into one (jobs.TaskEmailNotifications
+	// and jobs.JobEmailNotifications).
+	FieldRefs map[string]string `json:"field_refs"`
 }
 
 //go:embed legacy.json
@@ -57,7 +67,7 @@ var legacy = sync.OnceValue(func() legacyFile {
 
 // Build walks root and maps every API type reachable from it.
 func Build(root reflect.Type, schemas map[string]*clijson.SchemaJSON) (*Meta, error) {
-	m := &Meta{schemas: schemas, names: map[reflect.Type]string{}}
+	m := &Meta{schemas: schemas, names: map[reflect.Type]string{}, alt: map[reflect.Type][]string{}, order: map[reflect.Type]int{}}
 	for t, name := range roots() {
 		m.names[t] = name
 	}
@@ -76,6 +86,7 @@ func Build(root reflect.Type, schemas map[string]*clijson.SchemaJSON) (*Meta, er
 			return
 		}
 		seen[t] = true
+		m.order[t] = len(m.order)
 		if isAPIType(t) {
 			if name := lookup(t); name != "" {
 				m.names[t] = name
@@ -91,6 +102,11 @@ func Build(root reflect.Type, schemas map[string]*clijson.SchemaJSON) (*Meta, er
 					if fs := s.Fields[f.name]; fs != nil && fs.Ref != "" {
 						m.names[ft] = fs.Ref
 					}
+				}
+			}
+			if !f.field.Anonymous && f.owner != nil {
+				if ref, ok := FieldRef(m.names[f.owner], f.name); ok && lookup(ft) != ref && !slices.Contains(m.alt[ft], ref) {
+					m.alt[ft] = append(m.alt[ft], ref)
 				}
 			}
 			walk(ft)
@@ -140,6 +156,26 @@ func (m *Meta) Enum(t reflect.Type) ([]string, bool) {
 	return s.Enum, true
 }
 
+// SchemaHasField reports whether the named cli.json schema defines field. It
+// reports true for names without a schema with fields (CLI types).
+func (m *Meta) SchemaHasField(schema, field string) bool {
+	s, ok := m.schemas[schema]
+	if !ok || s.Fields == nil {
+		return true
+	}
+	_, ok = s.Fields[field]
+	return ok
+}
+
+// EnumOf returns the enum values of the named cli.json schema.
+func (m *Meta) EnumOf(schema string) ([]string, bool) {
+	s, ok := m.schemas[schema]
+	if !ok || len(s.Enum) == 0 {
+		return nil, false
+	}
+	return s.Enum, true
+}
+
 // Required returns the JSON names of the required fields of t, including
 // those of API types embedded in t.
 func (m *Meta) Required(t reflect.Type) []string {
@@ -163,6 +199,50 @@ func (m *Meta) Required(t reflect.Type) []string {
 	}
 	slices.Sort(out)
 	return slices.Compact(out)
+}
+
+// FieldRef returns the schema the given field of schema referred to before
+// sdk-go changed the field's type, if it did.
+func FieldRef(schema, field string) (string, bool) {
+	ref, ok := legacy().FieldRefs[schema+"."+field]
+	return ref, ok
+}
+
+// Order returns the position of t in a depth-first walk of the root type in
+// field declaration order, which is the order jsonschema.FromType visits
+// types in. ok is false for types not reachable from the root.
+func (m *Meta) Order(t reflect.Type) (int, bool) {
+	i, ok := m.order[elem(t)]
+	return i, ok
+}
+
+// RequiredFields returns the required fields of a cli.json schema.
+func RequiredFields(schema string) []string {
+	return legacy().Required[schema]
+}
+
+// AltSchemas returns the cli.json schemas of the previous types that t also
+// stands for, beyond the one returned by Schema.
+func (m *Meta) AltSchemas(t reflect.Type) []*clijson.SchemaJSON {
+	var out []*clijson.SchemaJSON
+	for _, name := range m.alt[elem(t)] {
+		if s, ok := m.schemas[name]; ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// FieldOwners returns, for each serialized field of t, the API type declaring
+// it, if any.
+func (m *Meta) FieldOwners(t reflect.Type) map[string]reflect.Type {
+	out := map[string]reflect.Type{}
+	for _, f := range fields(elem(t)) {
+		if !f.field.Anonymous && f.owner != nil {
+			out[f.name] = f.owner
+		}
+	}
+	return out
 }
 
 // Types returns all mapped types.

@@ -15,7 +15,7 @@ func TestValidateJobRunIdempotencyTokenAcceptsRunsWithoutOne(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				JobRuns: map[string]*resources.JobRun{
-					"my_run": {RunNow: jobs.RunNow{JobId: 456}},
+					"my_run": {RunNowRequest: jobs.RunNowRequest{JobId: new(int64(456))}},
 					// An empty `job_runs.<name>:` entry loads as a present key with a nil value.
 					"empty": nil,
 				},

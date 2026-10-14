@@ -4,7 +4,8 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) {
@@ -16,8 +17,8 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) 
 	// The majority of fields of the app struct are read-only.
 	// We copy the relevant fields manually.
 	dv := map[string]dyn.Value{
-		"name":        dyn.NewValue(app.Name, []diag.Location{{Line: 1}}),
-		"description": dyn.NewValue(app.Description, []diag.Location{{Line: 2}}),
+		"name":        dyn.NewValue(utils.Deref(app.Name), []diag.Location{{Line: 1}}),
+		"description": dyn.NewValue(utils.Deref(app.Description), []diag.Location{{Line: 2}}),
 	}
 
 	// For a git-backed app, emit git_repository + git_source instead of a
@@ -42,11 +43,11 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) 
 
 func gitRepositoryValue(r *apps.GitRepository) dyn.Value {
 	m := map[string]dyn.Value{
-		"url":      dyn.NewValue(r.Url, []diag.Location{{Line: 1}}),
-		"provider": dyn.NewValue(r.Provider, []diag.Location{{Line: 2}}),
+		"url":      dyn.NewValue(utils.Deref(r.Url), []diag.Location{{Line: 1}}),
+		"provider": dyn.NewValue(utils.Deref(r.Provider), []diag.Location{{Line: 2}}),
 	}
-	if r.AutoDeploy {
-		m["auto_deploy"] = dyn.NewValue(r.AutoDeploy, []diag.Location{{Line: 3}})
+	if utils.Deref(r.AutoDeploy) {
+		m["auto_deploy"] = dyn.NewValue(true, []diag.Location{{Line: 3}})
 	}
 	return dyn.NewValue(m, []diag.Location{{Line: 3}})
 }
@@ -67,15 +68,15 @@ func gitSourceValue(app *apps.App) dyn.Value {
 
 	m := map[string]dyn.Value{}
 	switch {
-	case src.Branch != "":
-		m["branch"] = dyn.NewValue(src.Branch, []diag.Location{{Line: 1}})
-	case src.Tag != "":
-		m["tag"] = dyn.NewValue(src.Tag, []diag.Location{{Line: 1}})
-	case src.Commit != "":
-		m["commit"] = dyn.NewValue(src.Commit, []diag.Location{{Line: 1}})
+	case utils.Deref(src.Branch) != "":
+		m["branch"] = dyn.NewValue(*src.Branch, []diag.Location{{Line: 1}})
+	case utils.Deref(src.Tag) != "":
+		m["tag"] = dyn.NewValue(*src.Tag, []diag.Location{{Line: 1}})
+	case utils.Deref(src.Commit) != "":
+		m["commit"] = dyn.NewValue(*src.Commit, []diag.Location{{Line: 1}})
 	}
-	if src.SourceCodePath != "" {
-		m["source_code_path"] = dyn.NewValue(src.SourceCodePath, []diag.Location{{Line: 2}})
+	if sourceCodePath := utils.Deref(src.SourceCodePath); sourceCodePath != "" {
+		m["source_code_path"] = dyn.NewValue(sourceCodePath, []diag.Location{{Line: 2}})
 	}
 	if len(m) == 0 {
 		return dyn.NilValue

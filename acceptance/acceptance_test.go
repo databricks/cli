@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"io"
 	"maps"
 	"math/rand/v2"
@@ -1013,7 +1014,7 @@ func runTest(t *testing.T,
 	// output) are stable across OSes and don't need per-test slash replacements.
 	cmd.Env = append(cmd.Env, "TESTDIR="+filepath.ToSlash(absDir))
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
-	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
+	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+utils.Deref(user.UserName))
 	if !isRunningOnCloud {
 		// Expose a guest token for the as-test-sp helper: the guest prefix plus
 		// the primary identity's uuid suffix make it share the same fake

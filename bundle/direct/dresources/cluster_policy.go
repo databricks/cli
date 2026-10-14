@@ -5,8 +5,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	sdkclusterpolicies "github.com/databricks/sdk-go/clusterpolicies/v2"
 )
 
 type ResourceClusterPolicy struct {
@@ -17,22 +18,22 @@ func (*ResourceClusterPolicy) New(client *sdkclients.Clients) *ResourceClusterPo
 	return &ResourceClusterPolicy{client: client}
 }
 
-func (*ResourceClusterPolicy) PrepareState(input *resources.ClusterPolicy) *compute.CreatePolicy {
-	cp := input.CreatePolicy
+func (*ResourceClusterPolicy) PrepareState(input *resources.ClusterPolicy) *clusterpolicies.CreatePolicyRequest {
+	cp := input.CreatePolicyRequest
 	// Copy the shadow fields, already normalized to JSON strings by ConfigureClusterPolicyDefinition.
 	if s, ok := input.Definition.(string); ok {
-		cp.Definition = s
+		cp.Definition = new(s)
 	}
 	if s, ok := input.PolicyFamilyDefinitionOverrides.(string); ok {
-		cp.PolicyFamilyDefinitionOverrides = s
+		cp.PolicyFamilyDefinitionOverrides = new(s)
 	}
 	return &cp
 }
 
-// RemapState copies the config fields shared by Policy and CreatePolicy;
+// RemapState copies the config fields shared by Policy and CreatePolicyRequest;
 // output-only fields (policy_id, created_at_timestamp, creator_user_name, is_default) are not in the state.
-func (*ResourceClusterPolicy) RemapState(remote *compute.Policy) *compute.CreatePolicy {
-	return &compute.CreatePolicy{
+func (*ResourceClusterPolicy) RemapState(remote *clusterpolicies.Policy) *clusterpolicies.CreatePolicyRequest {
+	return &clusterpolicies.CreatePolicyRequest{
 		Definition:                      remote.Definition,
 		Description:                     remote.Description,
 		Libraries:                       remote.Libraries,
@@ -40,26 +41,32 @@ func (*ResourceClusterPolicy) RemapState(remote *compute.Policy) *compute.Create
 		Name:                            remote.Name,
 		PolicyFamilyDefinitionOverrides: remote.PolicyFamilyDefinitionOverrides,
 		PolicyFamilyId:                  remote.PolicyFamilyId,
-		ForceSendFields:                 utils.FilterFields[compute.CreatePolicy](remote.ForceSendFields),
 	}
 }
 
-func (r *ResourceClusterPolicy) DoRead(ctx context.Context, id string) (*compute.Policy, error) {
-	return r.client.ClusterPolicies.GetByPolicyId(ctx, id)
+func (r *ResourceClusterPolicy) DoRead(ctx context.Context, id string) (*clusterpolicies.Policy, error) {
+	policy, err := r.client.ClusterPolicies.GetPolicy(ctx, sdkclusterpolicies.GetPolicyRequest{PolicyId: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	return clusterpolicies.PolicyFromSDK(policy)
 }
 
-func (r *ResourceClusterPolicy) DoCreate(ctx context.Context, config *compute.CreatePolicy) (string, *compute.Policy, error) {
-	resp, err := r.client.ClusterPolicies.Create(ctx, *config)
+func (r *ResourceClusterPolicy) DoCreate(ctx context.Context, config *clusterpolicies.CreatePolicyRequest) (string, *clusterpolicies.Policy, error) {
+	request, err := clusterpolicies.CreatePolicyRequestToSDK(config)
 	if err != nil {
 		return "", nil, err
 	}
-
-	return resp.PolicyId, nil, nil
+	resp, err := r.client.ClusterPolicies.CreatePolicy(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(resp.PolicyId), nil, nil
 }
 
-func (r *ResourceClusterPolicy) DoUpdate(ctx context.Context, id string, config *compute.CreatePolicy, _ *PlanEntry) (*compute.Policy, error) {
-	return nil, r.client.ClusterPolicies.Edit(ctx, compute.EditPolicy{
-		PolicyId:                        id,
+func (r *ResourceClusterPolicy) DoUpdate(ctx context.Context, id string, config *clusterpolicies.CreatePolicyRequest, _ *PlanEntry) (*clusterpolicies.Policy, error) {
+	request, err := clusterpolicies.EditPolicyRequestToSDK(&clusterpolicies.EditPolicyRequest{
+		PolicyId:                        new(id),
 		Name:                            config.Name,
 		Definition:                      config.Definition,
 		Description:                     config.Description,
@@ -67,10 +74,15 @@ func (r *ResourceClusterPolicy) DoUpdate(ctx context.Context, id string, config 
 		MaxClustersPerUser:              config.MaxClustersPerUser,
 		PolicyFamilyDefinitionOverrides: config.PolicyFamilyDefinitionOverrides,
 		PolicyFamilyId:                  config.PolicyFamilyId,
-		ForceSendFields:                 utils.FilterFields[compute.EditPolicy](config.ForceSendFields),
 	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.client.ClusterPolicies.EditPolicy(ctx, *request)
+	return nil, err
 }
 
-func (r *ResourceClusterPolicy) DoDelete(ctx context.Context, id string, _ *compute.CreatePolicy) error {
-	return r.client.ClusterPolicies.DeleteByPolicyId(ctx, id)
+func (r *ResourceClusterPolicy) DoDelete(ctx context.Context, id string, _ *clusterpolicies.CreatePolicyRequest) error {
+	_, err := r.client.ClusterPolicies.DeletePolicy(ctx, sdkclusterpolicies.DeletePolicyRequest{PolicyId: new(id)})
+	return err
 }

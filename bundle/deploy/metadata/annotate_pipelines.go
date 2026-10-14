@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 )
 
 type annotatePipelines struct{}
@@ -21,8 +21,8 @@ func (m *annotatePipelines) Name() string {
 func (m *annotatePipelines) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, pipeline := range b.Config.Resources.Pipelines {
 		pipeline.Deployment = &pipelines.PipelineDeployment{
-			Kind:             pipelines.DeploymentKindBundle,
-			MetadataFilePath: metadataFilePath(b),
+			Kind:             pipelines.DeploymentKind_Bundle,
+			MetadataFilePath: new(metadataFilePath(b)),
 		}
 	}
 

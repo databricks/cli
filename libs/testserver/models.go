@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/utils"
 	"strconv"
 )
 
@@ -20,7 +21,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 
 	// MLflow rejects an empty name; the fake would otherwise store a model under a key
 	// nothing can look up.
-	if val(request.Name) == "" {
+	if utils.Deref(request.Name) == "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -38,8 +39,8 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		Tags:        request.Tags,
 	}
 
-	s.ModelRegistryModels[val(request.Name)] = model
-	s.ModelRegistryModelIDs[val(request.Name)] = modelId
+	s.ModelRegistryModels[utils.Deref(request.Name)] = model
+	s.ModelRegistryModelIDs[utils.Deref(request.Name)] = modelId
 
 	return Response{
 		Body: modelregistry.CreateRegisteredModelResponse{
@@ -59,7 +60,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
-	existingModel, ok := s.ModelRegistryModels[val(request.Name)]
+	existingModel, ok := s.ModelRegistryModels[utils.Deref(request.Name)]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -69,7 +70,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 
 	// Update the model
 	existingModel.Description = request.Description
-	s.ModelRegistryModels[val(request.Name)] = existingModel
+	s.ModelRegistryModels[utils.Deref(request.Name)] = existingModel
 
 	return Response{
 		Body: modelregistry.UpdateRegisteredModelResponse{
@@ -94,10 +95,10 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	return Response{
 		Body: modelregistry.GetRegisteredModelDatabricksResponse{
 			RegisteredModelDatabricks: &modelregistry.RegisteredModelDatabricks{
-				Id:              nonZero(s.ModelRegistryModelIDs[name]),
-				Name:            model.Name,
-				Description:     model.Description,
-				Tags:            model.Tags,
+				Id:          utils.NonZero(s.ModelRegistryModelIDs[name]),
+				Name:        model.Name,
+				Description: model.Description,
+				Tags:        model.Tags,
 			},
 		},
 	}

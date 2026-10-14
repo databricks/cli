@@ -9,12 +9,12 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/testserver"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,10 +27,10 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalogN",
-							Name:        "volumeN",
-							SchemaName:  "schemaN",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("catalogN"),
+							Name:        new("volumeN"),
+							SchemaName:  new("schemaN"),
 						},
 					},
 				},
@@ -42,12 +42,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	bundletest.SetLocation(b, "resources.volumes.foo", []diag.Location{{File: "file", Line: 2, Column: 2}})
 
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockVolumesAPI()
-	api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-	})
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(volumeClients(t, 404, ""))
 
 	diags := ValidateArtifactPath().Apply(ctx, b)
 	assert.Equal(t, diag.Diagnostics{{
@@ -91,40 +86,56 @@ func TestValidateArtifactPath(t *testing.T) {
 	ctx := t.Context()
 
 	tcases := []struct {
-		err             error
+		statusCode      int
+		message         string
 		expectedSummary string
 	}{
 		{
-			err: &apierr.APIError{
-				StatusCode: 403,
-				Message:    "User does not have USE SCHEMA on Schema 'catalogN.schemaN'",
-			},
-			expectedSummary: "cannot access volume catalogN.schemaN.volumeN: User does not have USE SCHEMA on Schema 'catalogN.schemaN'",
+			statusCode:      403,
+			message:         "User does not have USE SCHEMA on Schema 'catalogN.schemaN'",
+			expectedSummary: "cannot access volume catalogN.schemaN.volumeN: " + apiErrorText("User does not have USE SCHEMA on Schema 'catalogN.schemaN'"),
 		},
 		{
-			err: &apierr.APIError{
-				StatusCode: 404,
-			},
+			statusCode:      404,
 			expectedSummary: "volume catalogN.schemaN.volumeN does not exist",
 		},
 		{
-			err: &apierr.APIError{
-				StatusCode: 500,
-				Message:    "Internal Server Error",
-			},
-			expectedSummary: "cannot read volume catalogN.schemaN.volumeN: Internal Server Error",
+			statusCode:      500,
+			message:         "Internal Server Error",
+			expectedSummary: "cannot read volume catalogN.schemaN.volumeN: " + apiErrorText("Internal Server Error"),
 		},
 	}
 
 	for _, tc := range tcases {
-		m := mocks.NewMockWorkspaceClient(t)
-		api := m.GetMockVolumesAPI()
-		api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
-		b.SetWorkpaceClient(m.WorkspaceClient)
+		b.SetWorkpaceClient(volumeClients(t, tc.statusCode, tc.message))
 
 		diags := ValidateArtifactPath().Apply(ctx, b)
 		assertDiags(t, diags, tc.expectedSummary)
 	}
+}
+
+// volumeClients returns clients for a workspace that fails every volume GET
+// with the given status code and message.
+func volumeClients(t *testing.T, statusCode int, message string) *sdkclients.Clients {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/unity-catalog/volumes/catalogN.schemaN.volumeN", func(testserver.Request) any {
+		return testserver.Response{
+			StatusCode: statusCode,
+			Body:       map[string]string{"message": message},
+		}
+	})
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
+	})
+	require.NoError(t, err)
+	return w
+}
+
+// apiErrorText is how an API error with the given message renders.
+func apiErrorText(message string) string {
+	return apierr.FromHTTPError(500, nil, []byte(`{"message":"`+message+`"}`)).Error()
 }
 
 func invalidVolumePaths() []string {
@@ -182,10 +193,10 @@ func TestFindVolumeInBundle(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							Name:        "my_volume",
-							SchemaName:  "my_schema",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							Name:        new("my_volume"),
+							SchemaName:  new("my_schema"),
 						},
 					},
 				},
@@ -225,12 +236,12 @@ func TestFindVolumeInBundle(t *testing.T) {
 
 	// schema name is interpolated but does not have the right prefix. In this case
 	// we should not match the volume.
-	b.Config.Resources.Volumes["foo"].SchemaName = "${foo.bar.baz}"
+	b.Config.Resources.Volumes["foo"].SchemaName = new("${foo.bar.baz}")
 	_, _, ok = findVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
 	assert.False(t, ok)
 
 	// schema name is interpolated.
-	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema.name}"
+	b.Config.Resources.Volumes["foo"].SchemaName = new("${resources.schemas.my_schema.name}")
 	path, locations, ok = findVolumeInBundle(b.Config, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []diag.Location{{

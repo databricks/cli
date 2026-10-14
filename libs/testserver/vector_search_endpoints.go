@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 )
 
@@ -18,10 +19,10 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchEndpoints[val(createReq.Name)]; exists {
+	if _, exists := s.VectorSearchEndpoints[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
 
@@ -29,9 +30,9 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
-		CreationTimestamp:       nonZero(nowMilli()),
+		CreationTimestamp:       utils.NonZero(nowMilli()),
 		EndpointType:            createReq.EndpointType,
-		Id:                      nonZero(nextUUID()),
+		Id:                      utils.NonZero(nextUUID()),
 		LastUpdatedUser:         s.CurrentUser().UserName,
 		Name:                    createReq.Name,
 		EndpointStatus: &vectorsearch.EndpointStatus{
@@ -43,7 +44,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
 
-	s.VectorSearchEndpoints[val(createReq.Name)] = endpoint
+	s.VectorSearchEndpoints[utils.Deref(createReq.Name)] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -71,7 +72,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 
 	endpoint.BudgetPolicyId = patchReq.BudgetPolicyId
 	endpoint.EffectiveBudgetPolicyId = patchReq.BudgetPolicyId // assume it always becomes the effective policy
-	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint
@@ -106,7 +107,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
 	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
-	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint

@@ -16,12 +16,12 @@ func TestFindForEachTask(t *testing.T) {
 	assert.Nil(t, findForEachTask(&jobs.GetRunResponse{}))
 
 	// A task that is not a foreach.
-	assert.Nil(t, findForEachTask(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{TaskKey: "a"}}}))
+	assert.Nil(t, findForEachTask(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{TaskKey: new("a")}}}))
 
 	// The foreach task is found even when it isn't first.
 	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{
-		{TaskKey: "a"},
-		{TaskKey: "sweep", ForEachTask: &jobs.RunForEachTask{}},
+		{TaskKey: new("a")},
+		{TaskKey: new("sweep"), ForEachTask: &jobs.RunForEachTask{}},
 	}}
 	got := findForEachTask(run)
 	require.NotNil(t, got)
@@ -30,7 +30,7 @@ func TestFindForEachTask(t *testing.T) {
 
 func sweepTaskFixture() *jobs.RunTask {
 	return &jobs.RunTask{
-		RunId: 99,
+		RunId: new(int64(99)),
 		ForEachTask: &jobs.RunForEachTask{
 			Stats: &jobs.ForEachStats{TaskRunStats: &jobs.ForEachTaskTaskRunStats{
 				TotalIterations:     4,
@@ -48,12 +48,12 @@ func TestBuildSweepInfo(t *testing.T) {
 
 	t.Run("counts and iteration rows", func(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 99}).Return(
+		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: new(int64(99))}).Return(
 			&jobs.GetRunResponse{Iterations: []jobs.RunTask{{
-				TaskKey:          "iter_0",
-				RunId:            100,
+				TaskKey:          new("iter_0"),
+				RunId:            new(int64(100)),
 				State:            &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success},
-				GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: "/Users/me@example.com/exp"},
+				GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: new("/Users/me@example.com/exp")},
 			}}}, nil)
 
 		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())
@@ -71,7 +71,7 @@ func TestBuildSweepInfo(t *testing.T) {
 
 	t.Run("iteration lookup failure still returns counts", func(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 99}).Return(
+		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: new(int64(99))}).Return(
 			nil, apierrs.ErrResourceDoesNotExist)
 
 		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())

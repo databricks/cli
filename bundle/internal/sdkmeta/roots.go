@@ -52,8 +52,10 @@ var roots = sync.OnceValue(func() map[reflect.Type]string {
 		reflect.TypeFor[sdktypes.Time]():     nativeTime,
 		reflect.TypeFor[sdktypes.Duration](): nativeDuration,
 
-		reflect.TypeFor[alerts.Alert]():                                  "sql.AlertV2",
-		reflect.TypeFor[apps.App]():                                      "apps.App",
+		reflect.TypeFor[alerts.Alert](): "sql.AlertV2",
+		reflect.TypeFor[apps.App]():     "apps.App",
+		// Only referenced from output-only fields, so not reached through refs.
+		reflect.TypeFor[apps.EnvVar]():                                   "apps.EnvVar",
 		reflect.TypeFor[resources.CreateCatalog]():                       "catalog.CreateCatalog",
 		reflect.TypeFor[clusterpolicies.CreatePolicyRequest]():           "compute.CreatePolicy",
 		reflect.TypeFor[clusters.CreateClusterRequest]():                 "compute.ClusterSpec",

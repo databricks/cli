@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -55,14 +56,14 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 // the deployment state. It returns nil only when no permissions are declared, in
 // which case no folders are synced.
 func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle, wsConfig config.Workspace) (*WorkspacePathPermissions, error) {
-	var permissions []workspace.WorkspaceObjectAccessControlRequest
+	var permissions []workspaceapi.WorkspaceObjectAccessControlRequest
 	for _, p := range b.Config.Permissions {
 		level, err := GetWorkspaceObjectPermissionLevel(string(p.Level))
 		if err != nil {
 			return nil, err
 		}
 
-		permissions = append(permissions, workspace.WorkspaceObjectAccessControlRequest{
+		permissions = append(permissions, workspaceapi.WorkspaceObjectAccessControlRequest{
 			GroupName:            p.GroupName,
 			UserName:             p.UserName,
 			ServicePrincipalName: p.ServicePrincipalName,
@@ -104,7 +105,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle, wsConfig 
 	return folderPermissions[i], nil
 }
 
-func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) (*WorkspacePathPermissions, error) {
+func setPermissions(ctx context.Context, w *workspaceapi.Client, path string, permissions []workspaceapi.WorkspaceObjectAccessControlRequest) (*WorkspacePathPermissions, error) {
 	// Shared folders are writable by all workspace users and the sync does not modify
 	// them. Return that ACL statically so callers need no special case for them.
 	if libraries.IsWorkspaceSharedPath(path) {
@@ -123,7 +124,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 	// it against the declaration without an extra API call. The Set replaces the direct
 	// ACL with the declared permissions, so any principal still showing higher access is
 	// inherited from a parent folder.
-	resp, err := w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	resp, err := w.SetPermissions(ctx, workspaceapi.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
@@ -135,14 +136,14 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 	return ObjectAclToResourcePermissions(path, resp.AccessControlList), nil
 }
 
-func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
+func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspaceapi.WorkspaceObjectPermissionLevel, error) {
 	switch bundlePermission {
 	case CAN_MANAGE:
-		return workspace.WorkspaceObjectPermissionLevelCanManage, nil
+		return workspaceapi.WorkspaceObjectPermissionLevelCanManage, nil
 	case CAN_RUN:
-		return workspace.WorkspaceObjectPermissionLevelCanRun, nil
+		return workspaceapi.WorkspaceObjectPermissionLevelCanRun, nil
 	case CAN_VIEW:
-		return workspace.WorkspaceObjectPermissionLevelCanRead, nil
+		return workspaceapi.WorkspaceObjectPermissionLevelCanRead, nil
 	default:
 		return "", fmt.Errorf("unsupported bundle permission level %s", bundlePermission)
 	}
@@ -265,7 +266,7 @@ func deployingUserName(b *bundle.Bundle) string {
 	if b.Config.Workspace.CurrentUser == nil {
 		return ""
 	}
-	return b.Config.Workspace.CurrentUser.UserName
+	return utils.Deref(b.Config.Workspace.CurrentUser.UserName)
 }
 
 // isDeployingUser reports whether p is the user performing the deploy.

@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"github.com/databricks/cli/libs/utils"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 // trainingETA is a best-effort estimate of how far a running training job has
@@ -91,7 +92,7 @@ func estimateTrainingETA(ctx context.Context, w *sdkclients.Clients, mlflowRunID
 		return nil
 	}
 
-	resp, err := w.Experiments.GetRun(ctx, experiments.GetRunRequest{RunId: new(mlflowRunID)})
+	resp, err := w.Experiments.GetRun(ctx, sdkexperiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air: could not fetch MLflow run for progress estimate: %v", err)
 		return nil
@@ -102,18 +103,35 @@ func estimateTrainingETA(ctx context.Context, w *sdkclients.Clients, mlflowRunID
 
 	// The total is only present once the contract is met; skip the metric-history
 	// fetch entirely when it is absent, so a run we can't estimate costs one call.
-	params := paramMap(resp.Run.Data.Params)
+	var mlflowParams []experiments.Param
+	for i := range resp.Run.Data.Params {
+		p, err := experiments.ParamFromSDK(&resp.Run.Data.Params[i])
+		if err != nil {
+			log.Debugf(ctx, "air: could not read MLflow run params for progress estimate: %v", err)
+			return nil
+		}
+		mlflowParams = append(mlflowParams, *p)
+	}
+	params := paramMap(mlflowParams)
 	if _, hasSteps := positiveInt(params["max_steps"]); !hasSteps {
 		if _, hasEpochs := positiveFloat(params["num_train_epochs"]); !hasEpochs {
 			return nil
 		}
 	}
 
-	history, err := w.Experiments.GetHistoryAll(ctx, experiments.GetHistoryRequest{
-		RunId:     mlflowRunID,
-		MetricKey: etaProgressMetric,
-	})
-	if err != nil {
+	var history []experiments.Metric
+	for m, err := range w.Experiments.ListMetricHistoryIter(ctx, sdkexperiments.ListMetricHistoryRequest{
+		RunId:     new(mlflowRunID),
+		MetricKey: new(etaProgressMetric),
+	}) {
+		if err == nil {
+			var metric *experiments.Metric
+			metric, err = experiments.MetricFromSDK(m)
+			if err == nil {
+				history = append(history, *metric)
+				continue
+			}
+		}
 		log.Debugf(ctx, "air: could not fetch %q metric history for progress estimate: %v", etaProgressMetric, err)
 		return nil
 	}
@@ -135,7 +153,9 @@ func computeETA(params map[string]string, history []experiments.Metric) *trainin
 	// History should already be ordered by step; sort by timestamp defensively so
 	// the rate is measured over increasing wall-clock time.
 	points := append([]experiments.Metric(nil), history...)
-	slices.SortStableFunc(points, func(a, b experiments.Metric) int { return cmp.Compare(a.Timestamp, b.Timestamp) })
+	slices.SortStableFunc(points, func(a, b experiments.Metric) int {
+		return cmp.Compare(utils.Deref(a.Timestamp), utils.Deref(b.Timestamp))
+	})
 	if len(points) > etaWindowPoints {
 		points = points[len(points)-etaWindowPoints:]
 	}

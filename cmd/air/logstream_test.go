@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,17 +30,17 @@ func TestClassifyLogError(t *testing.T) {
 	}{
 		{
 			name: "feature disabled falls back",
-			err:  &apierr.APIError{ErrorCode: "FEATURE_DISABLED", StatusCode: http.StatusForbidden},
+			err:  newAPIError(http.StatusForbidden, "FEATURE_DISABLED", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
 			name: "endpoint not found falls back",
-			err:  &apierr.APIError{ErrorCode: "ENDPOINT_NOT_FOUND", StatusCode: http.StatusNotFound},
+			err:  newAPIError(http.StatusNotFound, "ENDPOINT_NOT_FOUND", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
 			name: "bare 404 falls back",
-			err:  &apierr.APIError{ErrorCode: "SOMETHING", StatusCode: http.StatusNotFound},
+			err:  newAPIError(http.StatusNotFound, "SOMETHING", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
@@ -50,7 +50,7 @@ func TestClassifyLogError(t *testing.T) {
 		},
 		{
 			name: "transient 500 is retried",
-			err:  &apierr.APIError{ErrorCode: "INTERNAL", StatusCode: http.StatusInternalServerError},
+			err:  newAPIError(http.StatusInternalServerError, "INTERNAL", ""),
 			want: nil,
 		},
 		{
@@ -77,17 +77,17 @@ func TestClassifyLogError(t *testing.T) {
 
 func TestProjectRunStatus(t *testing.T) {
 	run := &jobs.GetRunResponse{
-		StartTime: 1000,
-		EndTime:   2000,
+		StartTime: new(int64(1000)),
+		EndTime:   new(int64(2000)),
 		State: &jobs.RunState{
 			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
 			ResultState:    jobs.RunResultState_RunResultState_Success,
-			StateMessage:   "done",
+			StateMessage:   new("done"),
 		},
 		Tasks: []jobs.RunTask{
-			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Queued}},
-			{AttemptNumber: 2, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry}},
-			{AttemptNumber: 1},
+			{AttemptNumber: new(0), State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Queued}},
+			{AttemptNumber: new(2), State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry}},
+			{AttemptNumber: new(1)},
 		},
 	}
 
@@ -241,7 +241,7 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 
 	var buf bytes.Buffer
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),
@@ -289,7 +289,7 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 
 	var buf bytes.Buffer
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:            t.Context(),
@@ -582,7 +582,7 @@ func TestRequestPageRetriesThenFallsBack(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),
@@ -619,7 +619,7 @@ func TestRequestPageRetriesThenSucceeds(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	wc := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(wc.Config)
+	apiClient, err := apiclient.New(wc.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),

@@ -1,6 +1,7 @@
 package resourcemutator_test
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,55 +51,55 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./**/*.ipynb",
+										Path: new("./**/*.ipynb"),
 									},
 								},
 								{
-									Jar: "./*.jar",
+									Jar: new("./*.jar"),
 								},
 								{
-									File: &pipelines.FileLibrary{
-										Path: "./test/*.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./test/*.py"),
 									},
 								},
 								{
 									// This value is annotated to be defined in the "./relative" directory.
-									File: &pipelines.FileLibrary{
-										Path: "./*.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./*.py"),
 									},
 								},
 								{
-									Maven: &compute.MavenLibrary{
-										Coordinates: "org.jsoup:jsoup:1.7.2",
-									},
-								},
-								{
-									Notebook: &pipelines.NotebookLibrary{
-										Path: "./test1.ipynb",
+									Maven: &pipelines.PipelinesMavenLibrary{
+										Coordinates: new("org.jsoup:jsoup:1.7.2"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "/Workspace/Users/me@company.com/test.ipynb",
+										Path: new("./test1.ipynb"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "dbfs:/me@company.com/test.ipynb",
+										Path: new("/Workspace/Users/me@company.com/test.ipynb"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "/Repos/somerepo/test.ipynb",
+										Path: new("dbfs:/me@company.com/test.ipynb"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./non-existent.ipynb",
+										Path: new("/Repos/somerepo/test.ipynb"),
+									},
+								},
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: new("./non-existent.ipynb"),
 									},
 								},
 							},
@@ -159,7 +159,7 @@ func collectNotebooks(libraries []pipelines.PipelineLibrary) []string {
 	var paths []string
 	for _, l := range libraries {
 		if l.Notebook != nil {
-			paths = append(paths, l.Notebook.Path)
+			paths = append(paths, utils.Deref(l.Notebook.Path))
 		}
 	}
 
@@ -169,8 +169,8 @@ func collectNotebooks(libraries []pipelines.PipelineLibrary) []string {
 func collectJars(libraries []pipelines.PipelineLibrary) []string {
 	var paths []string
 	for _, l := range libraries {
-		if l.Jar != "" {
-			paths = append(paths, l.Jar)
+		if utils.Deref(l.Jar) != "" {
+			paths = append(paths, utils.Deref(l.Jar))
 		}
 	}
 
@@ -181,7 +181,7 @@ func collectMaven(libraries []pipelines.PipelineLibrary) []string {
 	var coordinates []string
 	for _, l := range libraries {
 		if l.Maven != nil {
-			coordinates = append(coordinates, l.Maven.Coordinates)
+			coordinates = append(coordinates, utils.Deref(l.Maven.Coordinates))
 		}
 	}
 
@@ -192,7 +192,7 @@ func collectFiles(libraries []pipelines.PipelineLibrary) []string {
 	var paths []string
 	for _, l := range libraries {
 		if l.File != nil {
-			paths = append(paths, l.File.Path)
+			paths = append(paths, utils.Deref(l.File.Path))
 		}
 	}
 

@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"path/filepath"
 	"testing"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,14 +32,14 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name:           "app1",
-							SourceCodePath: "./app1",
+							Name:           new("app1"),
+							SourceCodePath: new("./app1"),
 						},
 					},
 					"app2": {
 						App: apps.App{
-							Name:           "app2",
-							SourceCodePath: "./app1",
+							Name:           new("app2"),
+							SourceCodePath: new("./app1"),
 						},
 					},
 				},
@@ -66,7 +66,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "job with permissions warns",
 			appResources: []apps.AppResource{
-				{Name: "my-job", Job: &apps.AppResourceJob{Id: "${resources.jobs.my_job.id}", Permission: "CAN_MANAGE_RUN"}},
+				{Name: new("my-job"), Job: &apps.AppResourceJob{Id: new("${resources.jobs.my_job.id}"), Permission: "CAN_MANAGE_RUN"}},
 			},
 			resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -79,7 +79,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "job with SP already included no warning",
 			appResources: []apps.AppResource{
-				{Name: "my-job", Job: &apps.AppResourceJob{Id: "${resources.jobs.my_job.id}", Permission: "CAN_MANAGE_RUN"}},
+				{Name: new("my-job"), Job: &apps.AppResourceJob{Id: new("${resources.jobs.my_job.id}"), Permission: "CAN_MANAGE_RUN"}},
 			},
 			resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -94,7 +94,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "job without permissions no warning",
 			appResources: []apps.AppResource{
-				{Name: "my-job", Job: &apps.AppResourceJob{Id: "${resources.jobs.my_job.id}", Permission: "CAN_MANAGE_RUN"}},
+				{Name: new("my-job"), Job: &apps.AppResourceJob{Id: new("${resources.jobs.my_job.id}"), Permission: "CAN_MANAGE_RUN"}},
 			},
 			resources: config.Resources{
 				Jobs: map[string]*resources.Job{"my_job": {}},
@@ -104,7 +104,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "sql_warehouse with permissions warns",
 			appResources: []apps.AppResource{
-				{Name: "my-wh", SqlWarehouse: &apps.AppResourceSqlWarehouse{Id: "${resources.sql_warehouses.my_wh.id}", Permission: "CAN_USE"}},
+				{Name: new("my-wh"), SqlWarehouse: &apps.AppResourceSqlWarehouse{Id: new("${resources.sql_warehouses.my_wh.id}"), Permission: "CAN_USE"}},
 			},
 			resources: config.Resources{
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -117,7 +117,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "serving_endpoint with permissions warns",
 			appResources: []apps.AppResource{
-				{Name: "my-ep", ServingEndpoint: &apps.AppResourceServingEndpoint{Name: "${resources.model_serving_endpoints.my_ep.name}", Permission: "CAN_QUERY"}},
+				{Name: new("my-ep"), ServingEndpoint: &apps.AppResourceServingEndpoint{Name: new("${resources.model_serving_endpoints.my_ep.name}"), Permission: "CAN_QUERY"}},
 			},
 			resources: config.Resources{
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
@@ -130,7 +130,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "experiment with permissions warns",
 			appResources: []apps.AppResource{
-				{Name: "my-exp", Experiment: &apps.AppResourceExperiment{ExperimentId: "${resources.experiments.my_exp.experiment_id}", Permission: "CAN_READ"}},
+				{Name: new("my-exp"), Experiment: &apps.AppResourceExperiment{ExperimentId: new("${resources.experiments.my_exp.experiment_id}"), Permission: "CAN_READ"}},
 			},
 			resources: config.Resources{
 				Experiments: map[string]*resources.MlflowExperiment{
@@ -143,7 +143,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "postgres with permissions warns",
 			appResources: []apps.AppResource{
-				{Name: "my-pg", Postgres: &apps.AppResourcePostgres{Branch: "${resources.postgres_projects.my_pg.name}", Permission: "CAN_CONNECT_AND_CREATE"}},
+				{Name: new("my-pg"), Postgres: &apps.AppResourcePostgres{Branch: new("${resources.postgres_projects.my_pg.name}"), Permission: "CAN_CONNECT_AND_CREATE"}},
 			},
 			resources: config.Resources{
 				PostgresProjects: map[string]*resources.PostgresProject{
@@ -156,7 +156,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "postgres without permissions no warning",
 			appResources: []apps.AppResource{
-				{Name: "my-pg", Postgres: &apps.AppResourcePostgres{Branch: "${resources.postgres_projects.my_pg.name}", Permission: "CAN_CONNECT_AND_CREATE"}},
+				{Name: new("my-pg"), Postgres: &apps.AppResourcePostgres{Branch: new("${resources.postgres_projects.my_pg.name}"), Permission: "CAN_CONNECT_AND_CREATE"}},
 			},
 			resources: config.Resources{
 				PostgresProjects: map[string]*resources.PostgresProject{
@@ -168,7 +168,7 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 		{
 			name: "non-reference id no warning",
 			appResources: []apps.AppResource{
-				{Name: "my-job", Job: &apps.AppResourceJob{Id: "12345", Permission: "CAN_MANAGE_RUN"}},
+				{Name: new("my-job"), Job: &apps.AppResourceJob{Id: new("12345"), Permission: "CAN_MANAGE_RUN"}},
 			},
 			resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -187,9 +187,9 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 			tc.resources.Apps = map[string]*resources.App{
 				"my_app": {
 					App: apps.App{
-						Name:           "my_app",
+						Name:           new("my_app"),
 						Resources:      tc.appResources,
-						SourceCodePath: "./app1",
+						SourceCodePath: new("./app1"),
 					},
 				},
 			}
@@ -236,10 +236,10 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name:           "app1",
-							SourceCodePath: "./app1",
+							Name:           new("app1"),
+							SourceCodePath: new("./app1"),
 							GitSource: &apps.GitSource{
-								Branch: "main",
+								Branch: new("main"),
 							},
 						},
 					},

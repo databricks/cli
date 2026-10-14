@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,8 +22,8 @@ func TestEnvironmentOverridesResourcesDev(t *testing.T) {
 	assert.Equal(t, "base job", b.Config.Resources.Jobs["job1"].Name)
 
 	// Base values are preserved in the development environment.
-	assert.True(t, b.Config.Resources.Pipelines["boolean1"].Photon)
-	assert.False(t, b.Config.Resources.Pipelines["boolean2"].Photon)
+	assert.True(t, utils.Deref(b.Config.Resources.Pipelines["boolean1"].Photon))
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["boolean2"].Photon))
 }
 
 func TestEnvironmentOverridesResourcesStaging(t *testing.T) {
@@ -30,6 +31,6 @@ func TestEnvironmentOverridesResourcesStaging(t *testing.T) {
 	assert.Equal(t, "staging job", b.Config.Resources.Jobs["job1"].Name)
 
 	// Override values are applied in the staging environment.
-	assert.False(t, b.Config.Resources.Pipelines["boolean1"].Photon)
-	assert.True(t, b.Config.Resources.Pipelines["boolean2"].Photon)
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["boolean1"].Photon))
+	assert.True(t, utils.Deref(b.Config.Resources.Pipelines["boolean2"].Photon))
 }

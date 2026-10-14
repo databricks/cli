@@ -69,8 +69,8 @@
   (CreateCatalog, CreateSchema, CreateVolumeRequestContent, CreateExternalLocation) with `AsRequest()` -> mirror request.
 - Permission levels: CLI-owned enums in bundle/config/resources/permission_levels.go (same names/values as old SDK).
 - No MarshalJSON/UnmarshalJSON wrappers anymore (encoding/json works directly on mirrors). GetName uses utils.Deref.
-- IMPORTANT (added by bundle-direct agent): generated mirrors only have the converter directions sdk-go's wire.go has
-  (request-only types: FromSDK only; response-only types: ToSDK only). Use libs/sdktypes/sdkconv for any direction:
+- libs/sdktypes/sdkconv (generic reflection converter; generated mirrors now have both <T>ToSDK/<T>FromSDK, prefer those):
+  useful for converting between different-but-compatible types, e.g. PipelineSpec mirror -> CreatePipelineRequest:
   `sdkconv.FromSDK[jobs.GetJobResponse](resp)`, `sdkconv.ToSDK[sdkjobs.CreateJobRequest](&mirrorReq)`, `sdkconv.Convert(&dst, src)`.
   It matches fields by Go name and handles oneofs via the wrapper registry libs/sdktypes/sdkconv/oneofs.generated.go
   (regenerate: go run ./internal/sdkconvgen libs/sdktypes/sdkconv/oneofs.generated.go <sdk packages...>, same list as sdktypesgen).

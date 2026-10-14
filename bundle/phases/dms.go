@@ -13,13 +13,12 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
@@ -98,7 +97,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 		_, err := w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
 			Name:       dms.DeploymentName(deploymentID),
 			Deployment: dms.DeploymentUpdate(metadata, mask),
-			UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
+			UpdateMask: bundledeployments.FieldMask{Paths: strings.Split(mask, ",")},
 		})
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -72,7 +73,7 @@ func renderError(ctx context.Context, cmd *cobra.Command, code, kind string, ret
 		Error: jsonError{
 			Code:      code,
 			Kind:      kind,
-			Message:   err.Error(),
+			Message:   apierrs.ErrorString(err),
 			Retryable: retryable,
 		},
 	}); rerr != nil {

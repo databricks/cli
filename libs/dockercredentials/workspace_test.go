@@ -1,6 +1,7 @@
 package dockercredentials_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -8,12 +9,12 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	mockcatalog "github.com/databricks/databricks-sdk-go/experimental/mocks/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/options/call"
+	"github.com/databricks/sdk-go/uc/metastores/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,7 +32,7 @@ func TestWorkspaceID(t *testing.T) {
 				assert.Empty(t, req.Headers.Get(auth.WorkspaceIDHeader))
 				return testserver.Response{Headers: http.Header{"X-Databricks-Org-Id": {"456"}}, Body: map[string]any{}}
 			})
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "test-token"})
 			require.NoError(t, err)
 			w.Config.WorkspaceID = "ambient-id"
 			got, err := dockercredentials.WorkspaceID(t.Context(), profile.Profile{Name: "workspace", WorkspaceID: id}, w)
@@ -53,9 +54,8 @@ func TestWorkspaceRegion(t *testing.T) {
 		{name: "error", err: wantErr, wantError: "summary failed"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			metastores := mockcatalog.NewMockMetastoresInterface(t)
-			metastores.EXPECT().Summary(mock.Anything).Return(&catalog.GetMetastoreSummaryResponse{Region: tt.region}, tt.err)
-			got, err := dockercredentials.WorkspaceRegion(t.Context(), profile.Profile{Name: "workspace"}, metastores)
+			api := fakeSummarizer{resp: &metastores.GetMetastoreSummaryResponse{Region: new(tt.region)}, err: tt.err}
+			got, err := dockercredentials.WorkspaceRegion(t.Context(), profile.Profile{Name: "workspace"}, api)
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, `resolve workspace region for profile "workspace": `+tt.wantError)
 				if tt.err != nil {
@@ -67,4 +67,13 @@ func TestWorkspaceRegion(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+type fakeSummarizer struct {
+	resp *metastores.GetMetastoreSummaryResponse
+	err  error
+}
+
+func (f fakeSummarizer) GetMetastoreSummary(context.Context, metastores.GetMetastoreSummaryRequest, ...call.Option) (*metastores.GetMetastoreSummaryResponse, error) {
+	return f.resp, f.err
 }

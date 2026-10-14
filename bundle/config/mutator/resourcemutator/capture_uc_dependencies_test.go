@@ -1,6 +1,9 @@
 package resourcemutator
 
 import (
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -9,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,9 +22,9 @@ func bundleWithSchemas() *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
-					"schema1": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
-					"schema2": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog2", Name: "foobar"}},
-					"schema3": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "barfoo"}},
+					"schema1": {CreateSchema: resources.CreateSchema{CatalogName: new("catalog1"), Name: new("foobar")}},
+					"schema2": {CreateSchema: resources.CreateSchema{CatalogName: new("catalog2"), Name: new("foobar")}},
+					"schema3": {CreateSchema: resources.CreateSchema{CatalogName: new("catalog1"), Name: new("barfoo")}},
 				},
 			},
 		},
@@ -35,8 +37,8 @@ func bundleWithCatalogs() *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"dev_catalog":  {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
-					"prod_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog2"}},
+					"dev_catalog":  {CreateCatalog: resources.CreateCatalog{Name: new("catalog1")}},
+					"prod_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("catalog2")}},
 				},
 			},
 		},
@@ -98,36 +100,36 @@ func TestCaptureUCDependencies(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+					"my_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("mycatalog")}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+					"my_schema": {CreateSchema: resources.CreateSchema{CatalogName: new("mycatalog"), Name: new("myschema")}},
 				},
 				Volumes: map[string]*resources.Volume{
-					"my_volume": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-						CatalogName: "mycatalog", SchemaName: "myschema",
+					"my_volume": {CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+						CatalogName: new("mycatalog"), SchemaName: new("myschema"),
 					}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
-					"my_model": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-						CatalogName: "mycatalog", SchemaName: "myschema",
+					"my_model": {CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{
+						CatalogName: new("mycatalog"), SchemaName: new("myschema"),
 					}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"my_pipeline": {CreatePipeline: pipelines.CreatePipeline{
-						Catalog: "mycatalog", Schema: "myschema",
+					"my_pipeline": {CreatePipelineRequest: pipelines.CreatePipelineRequest{
+						Catalog: new("mycatalog"), Schema: new("myschema"),
 					}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					"my_monitor": {CreateMonitor: catalog.CreateMonitor{
+					"my_monitor": {CreateMonitor: qualitymonitors.CreateMonitor{
 						OutputSchemaName: "mycatalog.myschema",
 					}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"my_endpoint": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
+					"my_endpoint": {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
 						AiGateway: &modelserving.AiGatewayConfig{
-							InferenceTableConfig: &modelserving.AiGatewayInferenceTableConfig{
-								CatalogName: "mycatalog", SchemaName: "myschema",
+							InferenceTableConfig: &modelserving.InferenceTableConfig{
+								CatalogName: new("mycatalog"), SchemaName: new("myschema"),
 							},
 						},
 					}},
@@ -139,7 +141,7 @@ func TestCaptureUCDependencies(t *testing.T) {
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"my_index": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-						Name: "mycatalog.myschema.myindex",
+						Name: new("mycatalog.myschema.myindex"),
 					}},
 				},
 				McpServices: map[string]*resources.McpService{
@@ -163,33 +165,33 @@ func TestCaptureUCDependencies(t *testing.T) {
 	catalogRef := "${resources.catalogs.my_catalog.name}"
 
 	// Schema catalog dependency.
-	assert.Equal(t, catalogRef, b.Config.Resources.Schemas["my_schema"].CatalogName)
+	assert.Equal(t, catalogRef, utils.Deref(b.Config.Resources.Schemas["my_schema"].CatalogName))
 
 	// Volume.
-	assert.Equal(t, schemaRef, b.Config.Resources.Volumes["my_volume"].SchemaName)
-	assert.Equal(t, catalogRef, b.Config.Resources.Volumes["my_volume"].CatalogName)
+	assert.Equal(t, schemaRef, utils.Deref(b.Config.Resources.Volumes["my_volume"].SchemaName))
+	assert.Equal(t, catalogRef, utils.Deref(b.Config.Resources.Volumes["my_volume"].CatalogName))
 
 	// Registered model.
-	assert.Equal(t, schemaRef, b.Config.Resources.RegisteredModels["my_model"].SchemaName)
-	assert.Equal(t, catalogRef, b.Config.Resources.RegisteredModels["my_model"].CatalogName)
+	assert.Equal(t, schemaRef, utils.Deref(b.Config.Resources.RegisteredModels["my_model"].SchemaName))
+	assert.Equal(t, catalogRef, utils.Deref(b.Config.Resources.RegisteredModels["my_model"].CatalogName))
 
 	// Pipeline.
-	assert.Equal(t, schemaRef, b.Config.Resources.Pipelines["my_pipeline"].Schema)
-	assert.Equal(t, catalogRef, b.Config.Resources.Pipelines["my_pipeline"].Catalog)
+	assert.Equal(t, schemaRef, utils.Deref(b.Config.Resources.Pipelines["my_pipeline"].Schema))
+	assert.Equal(t, catalogRef, utils.Deref(b.Config.Resources.Pipelines["my_pipeline"].Catalog))
 
 	// Quality monitor (compound "catalog.schema" field).
 	assert.Equal(t, catalogRef+"."+schemaRef, b.Config.Resources.QualityMonitors["my_monitor"].OutputSchemaName)
 
 	// Model serving endpoint.
 	itc := b.Config.Resources.ModelServingEndpoints["my_endpoint"].AiGateway.InferenceTableConfig
-	assert.Equal(t, schemaRef, itc.SchemaName)
-	assert.Equal(t, catalogRef, itc.CatalogName)
+	assert.Equal(t, schemaRef, utils.Deref(itc.SchemaName))
+	assert.Equal(t, catalogRef, utils.Deref(itc.CatalogName))
 
 	// Model service (compound "schemas/{catalog}.{schema}" parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelServices["my_model_service"].Parent)
 
 	// Vector search index (three-part "catalog.schema.index" name).
-	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
+	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", utils.Deref(b.Config.Resources.VectorSearchIndexes["my_index"].Name))
 
 	// MCP service (same compound parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
@@ -205,11 +207,11 @@ func TestCaptureUCDependenciesPipelineSchemaTarget(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
-					"s": {CreateSchema: catalog.CreateSchema{CatalogName: "c", Name: "n"}},
+					"s": {CreateSchema: resources.CreateSchema{CatalogName: new("c"), Name: new("n")}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"with_schema": {CreatePipeline: pipelines.CreatePipeline{Catalog: "c", Schema: "n"}},
-					"with_target": {CreatePipeline: pipelines.CreatePipeline{Catalog: "c", Target: "n"}},
+					"with_schema": {CreatePipelineRequest: pipelines.CreatePipelineRequest{Catalog: new("c"), Schema: new("n")}},
+					"with_target": {CreatePipelineRequest: pipelines.CreatePipelineRequest{Catalog: new("c"), Target: new("n")}},
 				},
 			},
 		},
@@ -220,11 +222,11 @@ func TestCaptureUCDependenciesPipelineSchemaTarget(t *testing.T) {
 
 	ref := "${resources.schemas.s.name}"
 
-	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_schema"].Schema)
-	assert.Empty(t, b.Config.Resources.Pipelines["with_schema"].Target)
+	assert.Equal(t, ref, utils.Deref(b.Config.Resources.Pipelines["with_schema"].Schema))
+	assert.Empty(t, utils.Deref(b.Config.Resources.Pipelines["with_schema"].Target))
 
-	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_target"].Target)
-	assert.Empty(t, b.Config.Resources.Pipelines["with_target"].Schema)
+	assert.Equal(t, ref, utils.Deref(b.Config.Resources.Pipelines["with_target"].Target))
+	assert.Empty(t, utils.Deref(b.Config.Resources.Pipelines["with_target"].Schema))
 }
 
 func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
@@ -232,16 +234,16 @@ func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+					"my_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("mycatalog")}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+					"my_schema": {CreateSchema: resources.CreateSchema{CatalogName: new("mycatalog"), Name: new("myschema")}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					"catalog_only": {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "mycatalog.other"}},
-					"no_match":     {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "other.other"}},
-					"empty":        {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: ""}},
-					"no_dot":       {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "nodot"}},
+					"catalog_only": {CreateMonitor: qualitymonitors.CreateMonitor{OutputSchemaName: "mycatalog.other"}},
+					"no_match":     {CreateMonitor: qualitymonitors.CreateMonitor{OutputSchemaName: "other.other"}},
+					"empty":        {CreateMonitor: qualitymonitors.CreateMonitor{OutputSchemaName: ""}},
+					"no_dot":       {CreateMonitor: qualitymonitors.CreateMonitor{OutputSchemaName: "nodot"}},
 					"nil_monitor":  nil,
 				},
 			},
@@ -263,32 +265,32 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+					"my_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("mycatalog")}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+					"my_schema": {CreateSchema: resources.CreateSchema{CatalogName: new("mycatalog"), Name: new("myschema")}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					// AutoCaptureConfig path.
-					"auto_capture": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
-						Config: &modelserving.EndpointCoreConfigInput{
+					"auto_capture": {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+						Config: &modelserving.EndpointCoreConfig{
 							//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-							AutoCaptureConfig: &modelserving.AutoCaptureConfigInput{
-								CatalogName: "mycatalog", SchemaName: "myschema",
+							AutoCaptureConfig: &modelserving.AutoCaptureConfig{
+								CatalogName: new("mycatalog"), SchemaName: new("myschema"),
 							},
 						},
 					}},
 					// No match.
-					"no_match": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
+					"no_match": {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
 						AiGateway: &modelserving.AiGatewayConfig{
-							InferenceTableConfig: &modelserving.AiGatewayInferenceTableConfig{
-								CatalogName: "other", SchemaName: "other",
+							InferenceTableConfig: &modelserving.InferenceTableConfig{
+								CatalogName: new("other"), SchemaName: new("other"),
 							},
 						},
 					}},
 					// Various nil nesting levels.
-					"nil_gateway":         {CreateServingEndpoint: modelserving.CreateServingEndpoint{}},
-					"nil_inference_table": {CreateServingEndpoint: modelserving.CreateServingEndpoint{AiGateway: &modelserving.AiGatewayConfig{}}},
+					"nil_gateway":         {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{}},
+					"nil_inference_table": {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{AiGateway: &modelserving.AiGatewayConfig{}}},
 					"nil_endpoint":        nil,
 				},
 			},
@@ -302,12 +304,12 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 	catalogRef := "${resources.catalogs.my_catalog.name}"
 
 	acc := b.Config.Resources.ModelServingEndpoints["auto_capture"].Config.AutoCaptureConfig
-	assert.Equal(t, schemaRef, acc.SchemaName)
-	assert.Equal(t, catalogRef, acc.CatalogName)
+	assert.Equal(t, schemaRef, utils.Deref(acc.SchemaName))
+	assert.Equal(t, catalogRef, utils.Deref(acc.CatalogName))
 
 	itc := b.Config.Resources.ModelServingEndpoints["no_match"].AiGateway.InferenceTableConfig
-	assert.Equal(t, "other", itc.CatalogName)
-	assert.Equal(t, "other", itc.SchemaName)
+	assert.Equal(t, "other", utils.Deref(itc.CatalogName))
+	assert.Equal(t, "other", utils.Deref(itc.SchemaName))
 
 	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nil_endpoint"])
 }
@@ -317,16 +319,16 @@ func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+					"my_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("mycatalog")}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+					"my_schema": {CreateSchema: resources.CreateSchema{CatalogName: new("mycatalog"), Name: new("myschema")}},
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
-					"catalog_only": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.other.myindex"}},
-					"no_match":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "other.other.myindex"}},
-					"empty":        {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: ""}},
-					"two_part":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.myschema"}},
+					"catalog_only": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: new("mycatalog.other.myindex")}},
+					"no_match":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: new("other.other.myindex")}},
+					"empty":        {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: new("")}},
+					"two_part":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: new("mycatalog.myschema")}},
 					"nil_index":    nil,
 				},
 			},
@@ -336,10 +338,10 @@ func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other.myindex", b.Config.Resources.VectorSearchIndexes["catalog_only"].Name)
-	assert.Equal(t, "other.other.myindex", b.Config.Resources.VectorSearchIndexes["no_match"].Name)
-	assert.Empty(t, b.Config.Resources.VectorSearchIndexes["empty"].Name)
-	assert.Equal(t, "mycatalog.myschema", b.Config.Resources.VectorSearchIndexes["two_part"].Name)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other.myindex", utils.Deref(b.Config.Resources.VectorSearchIndexes["catalog_only"].Name))
+	assert.Equal(t, "other.other.myindex", utils.Deref(b.Config.Resources.VectorSearchIndexes["no_match"].Name))
+	assert.Empty(t, utils.Deref(b.Config.Resources.VectorSearchIndexes["empty"].Name))
+	assert.Equal(t, "mycatalog.myschema", utils.Deref(b.Config.Resources.VectorSearchIndexes["two_part"].Name))
 	assert.Nil(t, b.Config.Resources.VectorSearchIndexes["nil_index"])
 }
 
@@ -399,13 +401,13 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 			Config: config.Root{
 				Resources: config.Resources{
 					Catalogs: map[string]*resources.Catalog{
-						"dev_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+						"dev_catalog": {CreateCatalog: resources.CreateCatalog{Name: new("catalog1")}},
 					},
 					Schemas: map[string]*resources.Schema{
-						"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "myschema"}},
+						"my_schema": {CreateSchema: resources.CreateSchema{CatalogName: new("catalog1"), Name: new("myschema")}},
 					},
 					VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
-						"idx": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: indexName}},
+						"idx": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: new(indexName)}},
 					},
 				},
 			},
@@ -444,7 +446,7 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 			b := newBundle(tc.input)
 			d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 			require.Nil(t, d)
-			assert.Equal(t, tc.expected, b.Config.Resources.VectorSearchIndexes["idx"].Name)
+			assert.Equal(t, tc.expected, utils.Deref(b.Config.Resources.VectorSearchIndexes["idx"].Name))
 		})
 	}
 }

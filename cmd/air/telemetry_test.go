@@ -58,7 +58,7 @@ func TestAirRunTelemetry(t *testing.T) {
 						"error_code": "INVALID_PARAMETER_VALUE", "message": "submission rejected",
 					}}
 				}
-				return jobs.SubmitRunResponse{RunId: 555}
+				return jobs.SubmitRunResponse{RunId: new(int64(555))}
 			})
 			var uploadedSize int64
 			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {

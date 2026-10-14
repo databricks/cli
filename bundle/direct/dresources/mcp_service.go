@@ -7,8 +7,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
 )
 
 // AI Gateway MCP service.
@@ -48,41 +49,36 @@ func mcpServiceIdentityFromName(name string) (parent, mcpServiceId string, err e
 	return "schemas/" + parts[0] + "." + parts[1], parts[2], nil
 }
 
-func responseToMcpServiceConfig(ms *catalog.McpService) (*resources.McpServiceConfig, error) {
-	parent, id, err := mcpServiceIdentityFromName(ms.Name)
+func responseToMcpServiceConfig(resp *sdkaigateway.McpService) (*resources.McpServiceConfig, error) {
+	ms, err := aigateway.McpServiceFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	parent, id, err := mcpServiceIdentityFromName(utils.Deref(ms.Name))
 	if err != nil {
 		return nil, err
 	}
 	return &resources.McpServiceConfig{
-		Parent:          parent,
-		McpServiceId:    id,
-		Comment:         ms.Comment,
-		Config:          ms.Config,
-		ForceSendFields: nil,
+		Parent:       parent,
+		McpServiceId: id,
+		Comment:      utils.Deref(ms.Comment),
+		Config:       ms.Config,
 	}, nil
 }
 
 // mcpServiceBody builds the McpService write payload from the bundle config.
 // Only comment and config are client-settable; every other field is OUTPUT_ONLY
-// (server-derived) and sent as its zero value.
-func mcpServiceBody(config *resources.McpServiceConfig) catalog.McpService {
-	return catalog.McpService{
-		Comment:         config.Comment,
-		Config:          config.Config,
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		Etag:            "",
-		MetastoreId:     "",
-		Name:            "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: nil,
+// (server-derived) and not sent. name addresses the resource on update.
+func mcpServiceBody(config *resources.McpServiceConfig, name *string) *aigateway.McpService {
+	return &aigateway.McpService{
+		Name:    name,
+		Comment: nonEmpty(config.Comment),
+		Config:  config.Config,
 	}
 }
 
 func (r *ResourceMcpService) DoRead(ctx context.Context, id string) (*resources.McpServiceConfig, error) {
-	ms, err := r.client.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServiceNamePrefix + id})
+	ms, err := r.client.AiGateway.GetMcpService(ctx, sdkaigateway.GetMcpServiceRequest{Name: new(mcpServiceNamePrefix + id)})
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +86,15 @@ func (r *ResourceMcpService) DoRead(ctx context.Context, id string) (*resources.
 }
 
 func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.McpServiceConfig) (string, *resources.McpServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateMcpService(ctx, catalog.CreateMcpServiceRequest{
-		Parent:       config.Parent,
-		McpServiceId: config.McpServiceId,
-		McpService:   mcpServiceBody(config),
+	request, err := aigateway.CreateMcpServiceRequestToSDK(&aigateway.CreateMcpServiceRequest{
+		Parent:       new(config.Parent),
+		McpServiceId: new(config.McpServiceId),
+		McpService:   mcpServiceBody(config, nil),
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := r.client.AiGateway.CreateMcpService(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -102,7 +102,7 @@ func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.Mcp
 	if err != nil {
 		return "", nil, err
 	}
-	return strings.TrimPrefix(resp.Name, mcpServiceNamePrefix), state, nil
+	return strings.TrimPrefix(utils.Deref(resp.Name), mcpServiceNamePrefix), state, nil
 }
 
 // DoUpdate sends update_mask "*" on every update. name, parent and
@@ -115,13 +115,14 @@ func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.Mcp
 // which also does not send etag. We deliberately do not do optimistic
 // concurrency on these resources.
 func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *resources.McpServiceConfig, _ *PlanEntry) (*resources.McpServiceConfig, error) {
-	resp, err := r.client.AiGateway.UpdateMcpService(ctx, catalog.UpdateMcpServiceRequest{
-		Etag:            "",
-		McpService:      mcpServiceBody(config),
-		Name:            mcpServiceNamePrefix + id,
-		UpdateMask:      fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields: nil,
+	request, err := aigateway.UpdateMcpServiceRequestToSDK(&aigateway.UpdateMcpServiceRequest{
+		McpService: mcpServiceBody(config, new(mcpServiceNamePrefix+id)),
+		UpdateMask: new("*"),
 	})
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.AiGateway.UpdateMcpService(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +130,7 @@ func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *re
 }
 
 func (r *ResourceMcpService) DoDelete(ctx context.Context, id string, _ *resources.McpServiceConfig) error {
-	return r.client.AiGateway.DeleteMcpService(ctx, catalog.DeleteMcpServiceRequest{
-		Etag:            "",
-		Name:            mcpServiceNamePrefix + id,
-		ForceSendFields: nil,
+	return r.client.AiGateway.DeleteMcpService(ctx, sdkaigateway.DeleteMcpServiceRequest{
+		Name: new(mcpServiceNamePrefix + id),
 	})
 }

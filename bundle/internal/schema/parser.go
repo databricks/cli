@@ -3,10 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"path"
 	"reflect"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
@@ -15,6 +13,11 @@ import (
 
 type annotationParser struct {
 	ref map[string]*clijson.SchemaJSON
+	// schemaName returns the cli.json schema name of an API type.
+	schemaName func(reflect.Type) (string, bool)
+	// altSchemas returns further schemas an API type stands for; they document
+	// fields its own schema lacks.
+	altSchemas func(reflect.Type) []*clijson.SchemaJSON
 }
 
 // deprecationMessage is the message emitted for any field or type that the spec
@@ -31,16 +34,16 @@ func deprecationMessageFor(deprecated bool) string {
 	return ""
 }
 
-func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
-	return &annotationParser{ref: schemas}
+func newParser(schemas map[string]*clijson.SchemaJSON, schemaName func(reflect.Type) (string, bool), altSchemas func(reflect.Type) []*clijson.SchemaJSON) *annotationParser {
+	return &annotationParser{ref: schemas, schemaName: schemaName, altSchemas: altSchemas}
 }
 
 // This function checks if the input type:
-// 1. Is a Databricks Go SDK type.
-// 2. Has a Databricks Go SDK type embedded in it, at any depth.
+// 1. Is an API type (see sdkmeta).
+// 2. Has an API type embedded in it, at any depth.
 //
 // If the above conditions are met, the function returns the schema
-// corresponding to the Databricks Go SDK type from the spec.
+// corresponding to the API type from the spec.
 //
 // Embedded structs are traversed breadth first, mirroring how
 // [jsonschema.FromType] flattens them, so the shallowest SDK type present in
@@ -80,14 +83,13 @@ func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool)
 	return nil, false
 }
 
-// lookupSDKType returns the spec schema for a Databricks Go SDK type, if the
-// spec defines one for it.
+// lookupSDKType returns the spec schema for an API type, if the spec defines
+// one for it.
 func (p *annotationParser) lookupSDKType(typ reflect.Type) (*clijson.SchemaJSON, bool) {
-	if !strings.HasPrefix(typ.PkgPath(), "github.com/databricks/databricks-sdk-go") {
+	k, ok := p.schemaName(typ)
+	if !ok {
 		return nil, false
 	}
-
-	k := fmt.Sprintf("%s.%s", path.Base(typ.PkgPath()), typ.Name())
 	ref, ok := p.ref[k]
 	return ref, ok
 }
@@ -206,7 +208,13 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			}
 
 			for k := range s.Properties {
-				if refProp, ok := ref.Fields[k]; ok {
+				refProp, ok := ref.Fields[k]
+				for _, alt := range p.altSchemas(typ) {
+					if !ok {
+						refProp, ok = alt.Fields[k]
+					}
+				}
+				if ok {
 					// An empty stage means the contract assigns none; keep it
 					// unmarked rather than letting ParseLaunchStage default it to GA.
 					var launchStage clijson.LaunchStage

@@ -1,51 +1,34 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/common"
-	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
-	"github.com/databricks/databricks-sdk-go/httpclient/traceparent"
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // validateConfigPath is AiTrainingService's pre-flight: it checks a training
 // config server-side and returns the problems, without submitting. Called with a
-// raw client.Do because the SDK does not model AiTrainingService.
+// raw request because the SDK does not model AiTrainingService.
 const validateConfigPath = "/api/2.0/ai-training/config:validate"
 
 const dryRunValidationMaxAttempts = 2
 
 const submissionValidationTimeout = 5 * time.Second
-
-type dryRunValidationAttemptBudgetKey struct{}
-
-func armDryRunValidationAttemptBudget(ctx context.Context) context.Context {
-	return context.WithValue(ctx, dryRunValidationAttemptBudgetKey{}, new(int))
-}
-
-func allowDryRunValidationRetry(ctx context.Context) bool {
-	attempts, ok := ctx.Value(dryRunValidationAttemptBudgetKey{}).(*int)
-	if !ok {
-		return false
-	}
-	*attempts++
-	return *attempts < dryRunValidationMaxAttempts
-}
 
 // configFieldError is one problem the server found, addressed to the config
 // field that caused it. Mirrors the proto FieldError.
@@ -105,52 +88,48 @@ func preflightValidate(ctx context.Context, w *sdkclients.Clients, cfg *runConfi
 }
 
 func validateConfigOnce(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	requestBody, err := common.NewRequestBody(validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken))
+	body, err := json.Marshal(validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken))
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, validateConfigPath, requestBody.Reader)
+	host := strings.TrimSuffix(w.Config.CanonicalHostName(), "/")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, host+validateConfigPath, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", requestBody.ContentType)
-	if clientCfg.AuthVisitor != nil {
-		// Some SDK OAuth visitors refresh with context.Background(). For those
-		// providers, acquire the token with the preflight context first.
-		switch w.Config.AuthType {
-		case auth.AuthTypePat, auth.AuthTypeBasic, "noop", auth.AuthTypeAzureCli, auth.AuthTypeAzureMSI, auth.AuthTypeAzureSecret, auth.AuthTypeGoogleCreds, auth.AuthTypeGoogleID:
-		default:
-			token, err := w.Config.GetTokenSource().Token(req.Context())
-			if err != nil {
-				return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
-			}
-			token.SetAuthHeader(req)
-		}
-		if err := clientCfg.AuthVisitor(req); err != nil {
+	req.Header.Set("Content-Type", "application/json")
+	// Some SDK OAuth visitors refresh with context.Background(). For those
+	// providers, acquire the token with the preflight context first.
+	switch w.Config.AuthType {
+	case auth.AuthTypePat, auth.AuthTypeBasic, "noop", auth.AuthTypeAzureCli, auth.AuthTypeAzureMSI, auth.AuthTypeAzureSecret, auth.AuthTypeGoogleCreds, auth.AuthTypeGoogleID:
+	default:
+		token, err := w.Config.GetTokenSource().Token(req.Context())
+		if err != nil {
 			return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
 		}
+		token.SetAuthHeader(req)
 	}
-	for _, visitor := range clientCfg.Visitors {
-		if err := visitor(req); err != nil {
+	if err := w.Config.Authenticate(req); err != nil {
+		return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
+	}
+	if w.Config.Headers != nil {
+		if err := w.Config.Headers(req); err != nil {
 			return fmt.Errorf("failed to validate config: %w", err)
 		}
 	}
 	for key, value := range auth.WorkspaceIDHeaders(w.Config) {
 		req.Header.Set(key, value)
 	}
-	req.Header.Set("User-Agent", useragent.FromContext(req.Context()))
-	traceparent.AddTraceparent(req)
+	uaCtx := useragent.InContext(req.Context(), useragent.AuthKey, w.Config.AuthType)
+	req.Header.Set("User-Agent", useragent.FromContext(uaCtx))
 
-	transport := clientCfg.Transport
+	// A single attempt without the retries of the regular API transport: the
+	// preflight must never delay submission.
+	transport := w.Config.HTTPTransport
 	if transport == nil {
 		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
-		if clientCfg.InsecureSkipVerify {
+		if w.Config.InsecureSkipVerify {
 			defaultTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		}
 		transport = defaultTransport
@@ -160,26 +139,25 @@ func validateConfigOnce(ctx context.Context, w *sdkclients.Clients, cfg *runConf
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 	defer resp.Body.Close()
-	responseBody, err := common.NewResponseWrapper(resp, requestBody)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		err = fmt.Errorf("failed to validate config: %w", err)
 		if errors.Is(err, context.Canceled) {
 			return err
 		}
 		if resp.StatusCode >= 400 {
-			return &apierr.APIError{
-				StatusCode: resp.StatusCode,
-				Message:    err.Error(),
-			}
+			// Keep the status so classifyValidationFailure can still tell a
+			// caller error from an unavailable service.
+			return fmt.Errorf("%w: %w", apierr.FromHTTPError(resp.StatusCode, resp.Header, nil), err)
 		}
 		return asValidationUnavailable(err, true)
 	}
-	if err := apierr.GetAPIError(ctx, responseBody); err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+	if apiErr := apierr.FromHTTPError(resp.StatusCode, resp.Header, responseBody); apiErr != nil {
+		return fmt.Errorf("failed to validate config: %w", apiErr)
 	}
 
 	var result validateConfigResponse
-	if err := json.Unmarshal(responseBody.DebugBytes, &result); err != nil {
+	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return asValidationUnavailable(fmt.Errorf("failed to validate config: %w", err), true)
 	}
 	if len(result.Errors) == 0 {
@@ -188,55 +166,22 @@ func validateConfigOnce(ctx context.Context, w *sdkclients.Clients, cfg *runConf
 	return errors.New(formatConfigErrors(result.Errors))
 }
 
-func newDryRunValidationClient(w *sdkclients.Clients) (*client.DatabricksClient, error) {
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
-	if err != nil {
-		return nil, err
-	}
-	clientCfg.TransientErrors = nil
-	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
-		apiErr, ok := errors.AsType[*apierr.APIError](err)
-		if !ok {
-			return false
-		}
-		if apiErr.StatusCode != http.StatusTooManyRequests && apiErr.StatusCode != http.StatusServiceUnavailable {
-			return false
-		}
-		return allowDryRunValidationRetry(ctx)
-	}
-	return client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
-}
-
 func validateDryRunConfig(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string, timeout time.Duration) error {
-	apiClient, err := newDryRunValidationClient(w)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-
 	validationCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	validationCtx = armDryRunValidationAttemptBudget(validationCtx)
 
-	err = validateConfig(validationCtx, apiClient, cfg, commandPath, containers, idempotencyToken)
+	var err error
+	for range dryRunValidationMaxAttempts {
+		err = validateConfigOnce(validationCtx, w, cfg, commandPath, containers, idempotencyToken)
+		code := apierrs.StatusCode(err)
+		if code != http.StatusTooManyRequests && code != http.StatusServiceUnavailable {
+			break
+		}
+	}
 	if unavailable, retryable := classifyValidationFailure(err); unavailable {
 		return asValidationUnavailable(err, retryable)
 	}
 	return err
-}
-
-// validateConfig performs the current backend validation without client-side
-// availability fallbacks. The legacy response reports field errors only; it
-// cannot yet distinguish complete success from skipped backend dependencies.
-func validateConfig(ctx context.Context, apiClient *client.DatabricksClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
-	var resp validateConfigResponse
-	err := apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(apiClient.Config), nil, validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken), &resp)
-	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
-	}
-	if len(resp.Errors) == 0 {
-		return nil
-	}
-	return errors.New(formatConfigErrors(resp.Errors))
 }
 
 // classifyValidationFailure separates service failures from caller errors and
@@ -263,14 +208,14 @@ func classifyValidationFailure(err error) (unavailable, retryable bool) {
 	if !ok {
 		return false, false
 	}
-	if apiErr.ErrorCode == "FEATURE_DISABLED" ||
-		apiErr.StatusCode == http.StatusNotFound ||
-		apiErr.StatusCode == http.StatusNotImplemented {
+	if apierrs.ErrorCode(apiErr) == "FEATURE_DISABLED" ||
+		apiErr.HTTPStatusCode() == http.StatusNotFound ||
+		apiErr.HTTPStatusCode() == http.StatusNotImplemented {
 		return true, false
 	}
-	if apiErr.StatusCode == http.StatusRequestTimeout ||
-		apiErr.StatusCode == http.StatusTooManyRequests ||
-		apiErr.StatusCode >= 500 {
+	if apiErr.HTTPStatusCode() == http.StatusRequestTimeout ||
+		apiErr.HTTPStatusCode() == http.StatusTooManyRequests ||
+		apiErr.HTTPStatusCode() >= 500 {
 		return true, true
 	}
 	return false, false

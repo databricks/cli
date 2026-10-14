@@ -3,17 +3,15 @@ package aircmd
 import (
 	"context"
 	"iter"
+	"net/http"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
-
-// The air commands operate on the JSON mirrors of the Jobs types (they render
-// runs as JSON and build submit bodies from them); these helpers convert at
-// the API boundary.
 
 // getRun fetches a run with all its tasks. runs/get returns at most 100 tasks
 // per page, so the remaining pages are fetched and merged.
@@ -22,7 +20,7 @@ func getRun(ctx context.Context, w *sdkclients.Clients, runID int64) (*jobs.GetR
 	if err != nil {
 		return nil, err
 	}
-	run, err := sdkconv.FromSDK[jobs.GetRunResponse](resp)
+	run, err := jobs.GetRunResponseFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +29,7 @@ func getRun(ctx context.Context, w *sdkclients.Clients, runID int64) (*jobs.GetR
 		if err != nil {
 			return nil, err
 		}
-		next, err := sdkconv.FromSDK[jobs.GetRunResponse](resp)
+		next, err := jobs.GetRunResponseFromSDK(resp)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +48,7 @@ func getRunOutput(ctx context.Context, w *sdkclients.Clients, taskRunID int64) (
 	if err != nil {
 		return nil, err
 	}
-	return sdkconv.FromSDK[jobs.GetRunOutputResponse](resp)
+	return jobs.GetRunOutputResponseFromSDK(resp)
 }
 
 // listRuns yields the runs matching req, converted to mirrors.
@@ -61,7 +59,7 @@ func listRuns(ctx context.Context, w *sdkclients.Clients, req sdkjobs.ListRunsRe
 				yield(nil, err)
 				return
 			}
-			run, err := sdkconv.FromSDK[jobs.BaseRun](base)
+			run, err := jobs.BaseRunFromSDK(base)
 			if !yield(run, err) || err != nil {
 				return
 			}
@@ -79,4 +77,15 @@ func currentUserName(ctx context.Context, w *sdkclients.Clients) (string, error)
 		return "", nil
 	}
 	return *me.UserName, nil
+}
+
+// getRunRaw decodes the runs/get response for runID into out. It is used for
+// response fields sdk-go does not model.
+func getRunRaw(ctx context.Context, w *sdkclients.Clients, runID int64, out any) error {
+	apiClient, err := apiclient.New(w.Config)
+	if err != nil {
+		return err
+	}
+	query := map[string]any{"run_id": runID}
+	return apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, auth.WorkspaceIDHeaders(w.Config), query, nil, out)
 }

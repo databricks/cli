@@ -9,10 +9,9 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 const (
@@ -26,18 +25,32 @@ const (
 	mlflowPermissionPollInterval = 100 * time.Millisecond
 )
 
+// permissionLevelCanManage is missing from the sdk-go PermissionLevel enum,
+// although the Permissions API accepts it.
+const permissionLevelCanManage accessmanagement.PermissionLevel = "CAN_MANAGE"
+
 // permissionAccessControl builds an ACL entry for a validated permission grant.
-func permissionAccessControl(p permission) iam.AccessControlRequest {
-	acl := iam.AccessControlRequest{PermissionLevel: iam.PermissionLevel(p.Level)}
-	switch {
-	case p.UserName != nil:
-		acl.UserName = *p.UserName
-	case p.GroupName != nil:
-		acl.GroupName = *p.GroupName
-	case p.ServicePrincipalName != nil:
-		acl.ServicePrincipalName = *p.ServicePrincipalName
+func permissionAccessControl(p permission) accessmanagement.AccessControlRequest {
+	return accessmanagement.AccessControlRequest{
+		PermissionLevel:      accessmanagement.PermissionLevel(p.Level),
+		UserName:             p.UserName,
+		GroupName:            p.GroupName,
+		ServicePrincipalName: p.ServicePrincipalName,
 	}
-	return acl
+}
+
+// updateObjectPermissions adds acl to the permissions of the given object.
+func updateObjectPermissions(ctx context.Context, w *sdkclients.Clients, objectType, objectID string, acl []accessmanagement.AccessControlRequest) error {
+	req, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&accessmanagement.UpdateObjectPermissionsRequest{
+		RequestObjectType: new(objectType),
+		RequestObjectId:   new(objectID),
+		AccessControlList: acl,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = w.AccessManagement.UpdateObjectPermissions(ctx, *req)
+	return err
 }
 
 // grantJobPermissions adds the configured ACLs to a job.
@@ -46,16 +59,12 @@ func grantJobPermissions(ctx context.Context, w *sdkclients.Clients, jobID strin
 		return nil
 	}
 
-	jobACL := make([]iam.AccessControlRequest, 0, len(permissions))
+	jobACL := make([]accessmanagement.AccessControlRequest, 0, len(permissions))
 	for _, p := range permissions {
 		jobACL = append(jobACL, permissionAccessControl(p))
 	}
 
-	_, err := w.Permissions.Update(ctx, iam.UpdateObjectPermissions{
-		RequestObjectType: "jobs",
-		RequestObjectId:   jobID,
-		AccessControlList: jobACL,
-	})
+	err := updateObjectPermissions(ctx, w, "jobs", jobID, jobACL)
 	if err != nil {
 		return fmt.Errorf("failed to grant job permissions: %w", err)
 	}
@@ -66,14 +75,14 @@ func grantJobPermissions(ctx context.Context, w *sdkclients.Clients, jobID strin
 // experiment permission level. Experiments only support CAN_READ/CAN_EDIT/
 // CAN_MANAGE, so the job-oriented levels fold onto those. ok is false when the
 // level has no experiment equivalent and the grant should be skipped.
-func experimentPermissionLevel(level string) (experiments.ExperimentPermissionLevel, bool) {
-	switch iam.PermissionLevel(level) {
-	case iam.PermissionLevelCanView:
-		return experiments.ExperimentPermissionLevelCanRead, true
-	case iam.PermissionLevelCanManageRun:
-		return experiments.ExperimentPermissionLevelCanEdit, true
-	case iam.PermissionLevelCanManage, iam.PermissionLevelIsOwner:
-		return experiments.ExperimentPermissionLevelCanManage, true
+func experimentPermissionLevel(level string) (accessmanagement.PermissionLevel, bool) {
+	switch accessmanagement.PermissionLevel(level) {
+	case accessmanagement.PermissionLevel_CanView:
+		return accessmanagement.PermissionLevel_CanRead, true
+	case accessmanagement.PermissionLevel_CanManageRun:
+		return accessmanagement.PermissionLevel_CanEdit, true
+	case permissionLevelCanManage, accessmanagement.PermissionLevel_IsOwner:
+		return permissionLevelCanManage, true
 	default:
 		return "", false
 	}
@@ -81,20 +90,13 @@ func experimentPermissionLevel(level string) (experiments.ExperimentPermissionLe
 
 // experimentAccessControl builds an experiment ACL entry from a validated grant.
 // ok is false when the grant's level has no experiment equivalent.
-func experimentAccessControl(p permission) (experiments.ExperimentAccessControlRequest, bool) {
+func experimentAccessControl(p permission) (accessmanagement.AccessControlRequest, bool) {
 	level, ok := experimentPermissionLevel(p.Level)
 	if !ok {
-		return experiments.ExperimentAccessControlRequest{}, false
+		return accessmanagement.AccessControlRequest{}, false
 	}
-	acl := experiments.ExperimentAccessControlRequest{PermissionLevel: level}
-	switch {
-	case p.UserName != nil:
-		acl.UserName = *p.UserName
-	case p.GroupName != nil:
-		acl.GroupName = *p.GroupName
-	case p.ServicePrincipalName != nil:
-		acl.ServicePrincipalName = *p.ServicePrincipalName
-	}
+	acl := permissionAccessControl(p)
+	acl.PermissionLevel = level
 	return acl, true
 }
 
@@ -125,7 +127,7 @@ func resolveSubmittedExperimentID(ctx context.Context, w *sdkclients.Clients, ru
 // experiment is created by the AI Runtime backend so its ACLs must be set here
 // from the client.
 func grantExperimentPermissions(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse, permissions []permission) error {
-	experimentACL := make([]experiments.ExperimentAccessControlRequest, 0, len(permissions))
+	experimentACL := make([]accessmanagement.AccessControlRequest, 0, len(permissions))
 	for _, p := range permissions {
 		if acl, ok := experimentAccessControl(p); ok {
 			experimentACL = append(experimentACL, acl)
@@ -145,10 +147,7 @@ func grantExperimentPermissions(ctx context.Context, w *sdkclients.Clients, run 
 		return errors.New("could not resolve the run's MLflow experiment")
 	}
 
-	_, err := w.Experiments.UpdatePermissions(ctx, experiments.ExperimentPermissionsRequest{
-		ExperimentId:      experimentID,
-		AccessControlList: experimentACL,
-	})
+	err := updateObjectPermissions(ctx, w, "experiments", experimentID, experimentACL)
 	if err != nil {
 		return fmt.Errorf("failed to grant experiment permissions: %w", err)
 	}

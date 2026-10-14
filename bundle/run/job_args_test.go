@@ -1,24 +1,24 @@
 package run
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJobParameterArgs(t *testing.T) {
 	a := jobParameterArgs{
 		&resources.Job{
-			Parameters: []jobs.JobParameterDefinition{
+			Parameters: []jobs.JobLevelParameter{
 				{
-					Name:    "foo",
-					Default: "value",
+					Name:    new("foo"),
+					Default: new("value"),
 				},
 				{
-					Name:    "bar",
-					Default: "value",
+					Name:    new("bar"),
+					Default: new("value"),
 				},
 			},
 		},
@@ -68,7 +68,7 @@ func TestJobParameterArgs(t *testing.T) {
 func TestJobTaskNotebookParamArgs(t *testing.T) {
 	a := jobTaskNotebookParamArgs{
 		&resources.Job{
-			Tasks: []jobs.Task{
+			Tasks: []jobs.TaskSettings{
 				{
 					NotebookTask: &jobs.NotebookTask{
 						BaseParameters: map[string]string{

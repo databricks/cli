@@ -17,7 +17,7 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &scim.User{
-						UserName: "jane@doe.com",
+						UserName: new("jane@doe.com"),
 					},
 				},
 				RootPath: "~/foo",
@@ -35,7 +35,7 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &scim.User{
-						UserName: "jane@doe.com",
+						UserName: new("jane@doe.com"),
 					},
 				},
 				RootPath: "/Users/charly@doe.com/foo",
@@ -53,7 +53,7 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &scim.User{
-						UserName: "jane@doe.com",
+						UserName: new("jane@doe.com"),
 					},
 				},
 			},

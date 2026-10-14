@@ -17,8 +17,8 @@ import (
 func indexRun(id, startMillis int64) jobs.GetRunResponse {
 	r := airRun(id, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/exp")
 	r.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Success}
-	r.Tasks[0].StartTime = startMillis
-	r.Tasks[0].EndTime = startMillis + 1000
+	r.Tasks[0].StartTime = new(startMillis)
+	r.Tasks[0].EndTime = new(startMillis + 1000)
 	return r
 }
 
@@ -96,9 +96,9 @@ func TestIndexStrategyOverFetchesWithTaskFilter(t *testing.T) {
 		{jobRunID: 2, submitTimeMs: 2000_000},
 	}
 	run1 := indexRun(1, 3000_000)
-	run1.Tasks[0].AiRuntimeTask.Experiment = "/Users/me@example.com/llama"
+	run1.Tasks[0].AiRuntimeTask.Experiment = new("/Users/me@example.com/llama")
 	run2 := indexRun(2, 2000_000)
-	run2.Tasks[0].AiRuntimeTask.Experiment = "/Users/me@example.com/qwen"
+	run2.Tasks[0].AiRuntimeTask.Experiment = new("/Users/me@example.com/qwen")
 	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.GetRunResponse{1: run1, 2: run2}, nil, nil)
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 

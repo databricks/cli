@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // sweepInfo summarizes a "foreach" run, which fans a single config out into many
@@ -40,13 +41,40 @@ func findForEachTask(run *jobs.GetRunResponse) *jobs.RunTask {
 }
 
 // buildSweepInfo gathers the iteration counts and per-iteration rows for a
-// sweep. The counts come from the task we already have; the individual
-// iterations require a second lookup. If that lookup fails we still return the
-// counts (logging the failure) so the user sees the summary.
-func buildSweepInfo(ctx context.Context, w *sdkclients.Clients, task *jobs.RunTask) *sweepInfo {
+// sweep. The counts come from the foreach task of the parent run; the
+// individual iterations require a lookup of the foreach task run. If a lookup
+// fails we still return what we have (logging the failure) so the user sees
+// the summary.
+//
+// sdk-go models neither for_each_task.stats nor iterations on runs/get, so both
+// are read with raw requests.
+func buildSweepInfo(ctx context.Context, w *sdkclients.Clients, runID int64, task *jobs.RunTask) *sweepInfo {
 	info := &sweepInfo{}
-	if task.ForEachTask.Stats != nil && task.ForEachTask.Stats.TaskRunStats != nil {
-		stats := task.ForEachTask.Stats.TaskRunStats
+
+	var parent struct {
+		Tasks []struct {
+			TaskKey     string `json:"task_key"`
+			ForEachTask *struct {
+				Stats *struct {
+					TaskRunStats *struct {
+						TotalIterations     int `json:"total_iterations"`
+						SucceededIterations int `json:"succeeded_iterations"`
+						FailedIterations    int `json:"failed_iterations"`
+						ActiveIterations    int `json:"active_iterations"`
+						CompletedIterations int `json:"completed_iterations"`
+					} `json:"task_run_stats"`
+				} `json:"stats"`
+			} `json:"for_each_task"`
+		} `json:"tasks"`
+	}
+	if err := getRunRaw(ctx, w, runID, &parent); err != nil {
+		log.Debugf(ctx, "air get: could not fetch sweep stats: %v", err)
+	}
+	for _, t := range parent.Tasks {
+		if t.TaskKey != utils.Deref(task.TaskKey) || t.ForEachTask == nil || t.ForEachTask.Stats == nil || t.ForEachTask.Stats.TaskRunStats == nil {
+			continue
+		}
+		stats := t.ForEachTask.Stats.TaskRunStats
 		info.Total = stats.TotalIterations
 		info.Succeeded = stats.SucceededIterations
 		info.Failed = stats.FailedIterations
@@ -55,20 +83,22 @@ func buildSweepInfo(ctx context.Context, w *sdkclients.Clients, task *jobs.RunTa
 	}
 
 	// The iterations are returned as part of a run lookup on the foreach task.
-	iterated, err := getRun(ctx, w, task.RunId)
-	if err != nil {
+	var iterated struct {
+		Iterations []jobs.RunTask `json:"iterations"`
+	}
+	if err := getRunRaw(ctx, w, utils.Deref(task.RunId), &iterated); err != nil {
 		log.Debugf(ctx, "air get: could not fetch sweep iterations: %v", err)
 		return info
 	}
 
 	for _, it := range iterated.Iterations {
 		row := sweepTask{
-			TaskKey: it.TaskKey,
-			RunID:   strconv.FormatInt(it.RunId, 10),
+			TaskKey: utils.Deref(it.TaskKey),
+			RunID:   strconv.FormatInt(utils.Deref(it.RunId), 10),
 			Status:  runStatus(it.State),
 		}
-		if it.GenAiComputeTask != nil && it.GenAiComputeTask.MlflowExperimentName != "" {
-			row.Experiment = stripExperimentUserPrefix(it.GenAiComputeTask.MlflowExperimentName)
+		if it.GenAiComputeTask != nil && utils.Deref(it.GenAiComputeTask.MlflowExperimentName) != "" {
+			row.Experiment = stripExperimentUserPrefix(*it.GenAiComputeTask.MlflowExperimentName)
 		}
 		info.Tasks = append(info.Tasks, row)
 	}

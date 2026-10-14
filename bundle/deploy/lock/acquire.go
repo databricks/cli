@@ -3,14 +3,15 @@ package lock
 import (
 	"context"
 	"errors"
+	"github.com/databricks/cli/libs/utils"
 	"io/fs"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // maxChildNodeSizeExceeded is the error_code the Workspace API returns (as a 403)
@@ -31,7 +32,7 @@ func (m *acquire) Name() string {
 }
 
 func (m *acquire) init(ctx context.Context, b *bundle.Bundle) error {
-	user := b.Config.Workspace.CurrentUser.UserName
+	user := utils.Deref(b.Config.Workspace.CurrentUser.UserName)
 	dir := b.Config.Workspace.StatePath
 	l, err := locker.CreateLocker(user, dir, b.WorkspaceClient(ctx))
 	if err != nil {
@@ -65,7 +66,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// This check must precede the fs.ErrPermission branch below because the API
 		// reports the child-node limit as a 403, which the filer maps to that error.
 		if m.goal == GoalDestroy && force {
-			if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.ErrorCode == maxChildNodeSizeExceeded {
+			if apierrs.ErrorCode(err) == maxChildNodeSizeExceeded {
 				log.Warnf(ctx, "Proceeding with destroy without a deployment lock: %v", err)
 				return nil
 			}

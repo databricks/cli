@@ -7,7 +7,7 @@ import (
 	"io/fs"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 	"github.com/stretchr/testify/assert"
 )
 

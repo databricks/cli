@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -63,6 +64,7 @@ func TestBootstrap(t *testing.T) {
 
 	names := map[string]string{}
 	required := map[string][]string{}
+	fieldRefs := map[string]string{}
 	seen := map[reflect.Type]bool{}
 	var walk func(t reflect.Type, def map[string]any)
 	walk = func(t reflect.Type, def map[string]any) {
@@ -87,10 +89,26 @@ func TestBootstrap(t *testing.T) {
 				continue
 			}
 			old := resolve(ref)
-			if isAPIType(ft) && strings.HasPrefix(old, LegacyPkgPrefix) {
+			if strings.HasPrefix(old, LegacyPkgPrefix) {
+				oldName := strings.TrimPrefix(old, LegacyPkgPrefix)
 				key := typeName(ft)
-				if _, ok := names[key]; !ok {
-					names[key] = strings.TrimPrefix(old, LegacyPkgPrefix)
+				if _, ok := names[key]; !ok && isAPIType(ft) {
+					if _, isRoot := roots()[ft]; !isRoot {
+						names[key] = oldName
+					}
+				}
+				mapped := names[key]
+				if n, ok := roots()[ft]; ok {
+					mapped = n
+				}
+				if mapped != oldName && f.owner != nil {
+					ownerName := names[typeName(f.owner)]
+					if n, ok := roots()[f.owner]; ok {
+						ownerName = n
+					}
+					if ownerName != "" {
+						fieldRefs[ownerName+"."+f.name] = oldName
+					}
 				}
 			}
 			if d, ok := defs[old]; ok {
@@ -118,10 +136,26 @@ func TestBootstrap(t *testing.T) {
 	}
 	walk(reflect.TypeFor[testRoot](), defs["github.com/databricks/cli/bundle/config.Resources"])
 
+	// Required fields of every previous type with a definition, including those
+	// only reachable through fields the schema prunes.
+	for k, def := range defs {
+		name, ok := strings.CutPrefix(k, LegacyPkgPrefix)
+		if !ok {
+			continue
+		}
+		reqs, _ := object(def)["required"].([]any)
+		for _, r := range reqs {
+			required[name] = append(required[name], r.(string))
+		}
+	}
+	// The JSON schema makes volume_type optional (DABs defaults it), but the
+	// API requires it, and bundle validation used to check it.
+	required["catalog.CreateVolumeRequestContent"] = append(required["catalog.CreateVolumeRequestContent"], "volume_type")
 	for k := range required {
 		sort.Strings(required[k])
+		required[k] = slices.Compact(required[k])
 	}
-	out, err := json.MarshalIndent(legacyFile{Names: names, Required: required}, "", "  ")
+	out, err := json.MarshalIndent(legacyFile{Names: names, Required: required, FieldRefs: fieldRefs}, "", "  ")
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile("legacy.json", append(out, '\n'), 0o644))
 }

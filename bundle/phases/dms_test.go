@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

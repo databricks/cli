@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"slices"
 	"strings"
@@ -40,11 +41,11 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Load current grants
 	for _, assignment := range s.Grants[key] {
-		if principalPrivs[val(assignment.Principal)] == nil {
-			principalPrivs[val(assignment.Principal)] = make(map[string]bool)
+		if principalPrivs[utils.Deref(assignment.Principal)] == nil {
+			principalPrivs[utils.Deref(assignment.Principal)] = make(map[string]bool)
 		}
 		for _, privilege := range assignment.Privileges {
-			principalPrivs[val(assignment.Principal)][privilege] = true
+			principalPrivs[utils.Deref(assignment.Principal)][privilege] = true
 		}
 	}
 
@@ -60,7 +61,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 					StatusCode: http.StatusBadRequest,
 					Body: map[string]string{
 						"error_code": "INVALID_PARAMETER_VALUE",
-						"message":    fmt.Sprintf("Duplicate privileges to add and delete for principal %s.", change.Principal),
+						"message":    fmt.Sprintf("Duplicate privileges to add and delete for principal %s.", utils.Deref(change.Principal)),
 					},
 				}
 			}
@@ -69,11 +70,11 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Apply changes
 	for _, change := range request.Changes {
-		if val(change.Principal) == "" {
+		if utils.Deref(change.Principal) == "" {
 			continue
 		}
-		if principalPrivs[val(change.Principal)] == nil {
-			principalPrivs[val(change.Principal)] = make(map[string]bool)
+		if principalPrivs[utils.Deref(change.Principal)] == nil {
+			principalPrivs[utils.Deref(change.Principal)] = make(map[string]bool)
 		}
 
 		// Remove privileges
@@ -84,19 +85,19 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 				// READ_METADATA, EXTERNAL_USE_SCHEMA, EXTERNAL_USE_LOCATION). Those
 				// are granted independently and survive. See
 				// https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
-				for p := range principalPrivs[val(change.Principal)] {
+				for p := range principalPrivs[utils.Deref(change.Principal)] {
 					if !notImpliedByAllPrivileges[p] {
-						delete(principalPrivs[val(change.Principal)], p)
+						delete(principalPrivs[utils.Deref(change.Principal)], p)
 					}
 				}
 			} else {
-				delete(principalPrivs[val(change.Principal)], privilege)
+				delete(principalPrivs[utils.Deref(change.Principal)], privilege)
 			}
 		}
 
 		// Add privileges
 		for _, privilege := range change.Add {
-			principalPrivs[val(change.Principal)][privilege] = true
+			principalPrivs[utils.Deref(change.Principal)][privilege] = true
 		}
 	}
 
@@ -120,7 +121,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		})
 
 		assignments = append(assignments, grants.PrivilegeAssignment{
-			Principal:  nonZero(principal),
+			Principal:  utils.NonZero(principal),
 			Privileges: privileges,
 		})
 	}
@@ -130,7 +131,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	if securableType == "schema" {
 		schema, ok := s.Schemas[fullName]
 		if ok {
-			schema.UpdatedAt = nonZero(nowMilli())
+			schema.UpdatedAt = utils.NonZero(nowMilli())
 			schema.UpdatedBy = s.CurrentUser().UserName
 			s.Schemas[fullName] = schema
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/http"
 	"strings"
@@ -20,11 +21,11 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	}
 
 	// UC normalizes schema and volume names to lowercase.
-	volume.SchemaName = nonZero(strings.ToLower(val(volume.SchemaName)))
-	volume.Name = nonZero(strings.ToLower(val(volume.Name)))
-	volume.FullName = nonZero(val(volume.CatalogName) + "." + val(volume.SchemaName) + "." + val(volume.Name))
+	volume.SchemaName = utils.NonZero(strings.ToLower(utils.Deref(volume.SchemaName)))
+	volume.Name = utils.NonZero(strings.ToLower(utils.Deref(volume.Name)))
+	volume.FullName = utils.NonZero(utils.Deref(volume.CatalogName) + "." + utils.Deref(volume.SchemaName) + "." + utils.Deref(volume.Name))
 
-	if val(volume.StorageLocation) != "" && volume.VolumeType != volumes.VolumeType_External {
+	if utils.Deref(volume.StorageLocation) != "" && volume.VolumeType != volumes.VolumeType_External {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -34,27 +35,27 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 
-	volume.VolumeId = nonZero(nextUUID())
+	volume.VolumeId = utils.NonZero(nextUUID())
 
-	if val(volume.StorageLocation) != "" {
+	if utils.Deref(volume.StorageLocation) != "" {
 		// Strip trailing slash to mimic UC API normalization behavior.
-		volume.StorageLocation = nonZero(strings.TrimRight(val(volume.StorageLocation), "/"))
+		volume.StorageLocation = utils.NonZero(strings.TrimRight(utils.Deref(volume.StorageLocation), "/"))
 	} else {
-		volume.StorageLocation = nonZero(fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, TestMetastore.MetastoreId, volume.VolumeId))
+		volume.StorageLocation = utils.NonZero(fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, utils.Deref(TestMetastore.MetastoreId), utils.Deref(volume.VolumeId)))
 	}
 
-	volume.CreatedAt = nonZero(nowMilli())
+	volume.CreatedAt = utils.NonZero(nowMilli())
 	volume.UpdatedAt = volume.CreatedAt
 	volume.CreatedBy = s.CurrentUser().UserName
 	volume.Owner = s.CurrentUser().UserName
 
 	defer s.LockUnlock()()
 
-	s.Volumes[val(volume.FullName)] = volume
+	s.Volumes[utils.Deref(volume.FullName)] = volume
 
 	// Register the volume path as a directory so that fs cp works without
 	// requiring an explicit mkdir.
-	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", volume.CatalogName, volume.SchemaName, volume.Name)
+	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", utils.Deref(volume.CatalogName), utils.Deref(volume.SchemaName), utils.Deref(volume.Name))
 	s.directories[volumePath] = workspaceapi.ObjectInfo{
 		ObjectType: "DIRECTORY",
 		Path:       volumePath,
@@ -91,16 +92,16 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 
 	applyUpdatedFields(&existing, request, fields)
 
-	if val(request.NewName) != "" {
+	if utils.Deref(request.NewName) != "" {
 		delete(s.Volumes, fullname)
 		existing.Name = request.NewName
-		existing.FullName = nonZero(val(existing.CatalogName) + "." + val(existing.SchemaName) + "." + val(request.NewName))
+		existing.FullName = utils.NonZero(utils.Deref(existing.CatalogName) + "." + utils.Deref(existing.SchemaName) + "." + utils.Deref(request.NewName))
 	}
 
-	existing.UpdatedAt = nonZero(nowMilli())
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Volumes[val(existing.FullName)] = existing
+	s.Volumes[utils.Deref(existing.FullName)] = existing
 	return Response{
 		Body: existing,
 	}

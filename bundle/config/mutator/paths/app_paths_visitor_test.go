@@ -16,7 +16,7 @@ func TestAppPathsVisitor(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"app0": {
 					App: apps.App{
-						SourceCodePath: "foo",
+						SourceCodePath: new("foo"),
 					},
 				},
 			},

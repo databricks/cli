@@ -3,21 +3,22 @@ package libraries
 import (
 	"errors"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
-func libraryPath(library *compute.Library) (string, error) {
-	if library.Whl != "" {
-		return library.Whl, nil
+func libraryPath(library *jobs.Library) (string, error) {
+	if whl := utils.Deref(library.Whl); whl != "" {
+		return whl, nil
 	}
-	if library.Jar != "" {
-		return library.Jar, nil
+	if jar := utils.Deref(library.Jar); jar != "" {
+		return jar, nil
 	}
-	if library.Egg != "" {
-		return library.Egg, nil
+	if egg := utils.Deref(library.Egg); egg != "" {
+		return egg, nil
 	}
-	if library.Requirements != "" {
-		return library.Requirements, nil
+	if requirements := utils.Deref(library.Requirements); requirements != "" {
+		return requirements, nil
 	}
 
 	return "", errors.New("not supported library type")

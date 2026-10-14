@@ -155,7 +155,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 	}{
 		{
 			name:          "add MANAGE for regular user when no permissions exist",
-			currentUser:   &scim.User{UserName: "user@example.com"},
+			currentUser:   &scim.User{UserName: new("user@example.com")},
 			existingPerms: []resources.SecretScopePermission{},
 			expectedPerms: []resources.SecretScopePermission{
 				{UserName: "user@example.com", Level: resources.SecretScopePermissionLevelManage},
@@ -164,7 +164,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:          "add MANAGE for service principal when no permissions exist",
-			currentUser:   &scim.User{UserName: "12345678-1234-1234-1234-123456789012"},
+			currentUser:   &scim.User{UserName: new("12345678-1234-1234-1234-123456789012")},
 			existingPerms: []resources.SecretScopePermission{},
 			expectedPerms: []resources.SecretScopePermission{
 				{ServicePrincipalName: "12345678-1234-1234-1234-123456789012", Level: resources.SecretScopePermissionLevelManage},
@@ -173,7 +173,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:        "do not add if user already has MANAGE",
-			currentUser: &scim.User{UserName: "user@example.com"},
+			currentUser: &scim.User{UserName: new("user@example.com")},
 			existingPerms: []resources.SecretScopePermission{
 				{UserName: "user@example.com", Level: resources.SecretScopePermissionLevelManage},
 			},
@@ -184,7 +184,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:        "add MANAGE if user has READ",
-			currentUser: &scim.User{UserName: "user@example.com"},
+			currentUser: &scim.User{UserName: new("user@example.com")},
 			existingPerms: []resources.SecretScopePermission{
 				{UserName: "user@example.com", Level: resources.SecretScopePermissionLevelRead},
 			},
@@ -196,7 +196,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:        "add MANAGE if user has WRITE",
-			currentUser: &scim.User{UserName: "user@example.com"},
+			currentUser: &scim.User{UserName: new("user@example.com")},
 			existingPerms: []resources.SecretScopePermission{
 				{UserName: "user@example.com", Level: resources.SecretScopePermissionLevelWrite},
 			},
@@ -208,7 +208,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:        "do not add if service principal already has MANAGE",
-			currentUser: &scim.User{UserName: "12345678-1234-1234-1234-123456789012"},
+			currentUser: &scim.User{UserName: new("12345678-1234-1234-1234-123456789012")},
 			existingPerms: []resources.SecretScopePermission{
 				{ServicePrincipalName: "12345678-1234-1234-1234-123456789012", Level: resources.SecretScopePermissionLevelManage},
 			},
@@ -219,7 +219,7 @@ func TestAddManageForCurrentUser(t *testing.T) {
 		},
 		{
 			name:        "add MANAGE when other users have permissions",
-			currentUser: &scim.User{UserName: "user1@example.com"},
+			currentUser: &scim.User{UserName: new("user1@example.com")},
 			existingPerms: []resources.SecretScopePermission{
 				{UserName: "user2@example.com", Level: resources.SecretScopePermissionLevelRead},
 				{GroupName: "group1", Level: resources.SecretScopePermissionLevelWrite},

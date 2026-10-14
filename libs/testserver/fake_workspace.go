@@ -37,6 +37,7 @@ import (
 	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
 	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/sdk-go/core/types"
 	"github.com/google/uuid"
@@ -75,13 +76,13 @@ const (
 )
 
 var TestUser = scim.User{
-	Id:       nonZero(UserID),
-	UserName: nonZero("tester@databricks.com"),
+	Id:       utils.NonZero(UserID),
+	UserName: utils.NonZero("tester@databricks.com"),
 }
 
 var TestUserSP = scim.User{
-	Id:       nonZero(UserID),
-	UserName: nonZero("aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"),
+	Id:       utils.NonZero(UserID),
+	UserName: utils.NonZero("aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"),
 }
 
 // guestServicePrincipalDisplayName is reported on /Me for the as-test-sp guest,
@@ -108,7 +109,7 @@ func userForToken(token string) scim.User {
 func (s *FakeWorkspace) MeUser(token string) scim.User {
 	user := userForToken(token)
 	if isGuestToken(token) {
-		user.DisplayName = nonZero(guestServicePrincipalDisplayName)
+		user.DisplayName = utils.NonZero(guestServicePrincipalDisplayName)
 	}
 	return user
 }
@@ -364,8 +365,8 @@ func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *
 }
 
 // applyUpdatedFields copies every field the update payload names from update onto
-// existing, matched by JSON name, and marks it force-send so a zero value survives the
-// response encoding (the stored *Info types are all omitempty).
+// existing, matched by JSON name. Optional fields are pointers, so a zero value the
+// payload sets survives the response encoding.
 //
 // Fields the payload omits are left untouched: a partial-update API changes only what the
 // caller names, and modelling that is the whole point of these fakes. Fields the payload
@@ -388,14 +389,6 @@ func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage)
 			continue
 		}
 		dstField.Set(src.Field(i))
-		forceSend := dst.FieldByName("ForceSendFields")
-		if forceSend.IsValid() && forceSend.CanSet() {
-			goName := src.Type().Field(i).Name
-			// Repeated updates would otherwise keep appending the same name.
-			if !slices.Contains(forceSend.Interface().([]string), goName) {
-				forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(goName)))
-			}
-		}
 	}
 }
 
@@ -481,14 +474,14 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Users",
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Users/" + val(TestUser.UserName): {
+			"/Users/" + utils.Deref(TestUser.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Users/" + val(TestUser.UserName),
+				Path:       "/Users/" + utils.Deref(TestUser.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Users/" + val(TestUserSP.UserName): {
+			"/Users/" + utils.Deref(TestUserSP.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Users/" + val(TestUserSP.UserName),
+				Path:       "/Users/" + utils.Deref(TestUserSP.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
 			// The user home also exists under the /Workspace alias on real
@@ -499,14 +492,14 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Workspace/Users",
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Workspace/Users/" + val(TestUser.UserName): {
+			"/Workspace/Users/" + utils.Deref(TestUser.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Workspace/Users/" + val(TestUser.UserName),
+				Path:       "/Workspace/Users/" + utils.Deref(TestUser.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Workspace/Users/" + val(TestUserSP.UserName): {
+			"/Workspace/Users/" + utils.Deref(TestUserSP.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Workspace/Users/" + val(TestUserSP.UserName),
+				Path:       "/Workspace/Users/" + utils.Deref(TestUserSP.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
 		},
@@ -535,8 +528,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		GenieSpaces:           map[string]genie.GenieSpace{},
 		SqlWarehouses: map[string]warehouses.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
-				Id:    nonZero(TestDefaultWarehouseId),
-				Name:  nonZero("DEFAULT Test SQL Warehouse"),
+				Id:    utils.NonZero(TestDefaultWarehouseId),
+				Name:  utils.NonZero("DEFAULT Test SQL Warehouse"),
 				State: warehouses.EndpointState_Running,
 			},
 		},
@@ -575,8 +568,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			// requires (ValidateClusterAccess rejects anything else), matching the cloud
 			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:        nonZero(TestDefaultClusterId),
-				ClusterName:      nonZero("DEFAULT Test Cluster"),
+				ClusterId:        utils.NonZero(TestDefaultClusterId),
+				ClusterName:      utils.NonZero("DEFAULT Test Cluster"),
 				State:            clusters.ClusterState_ClusterState_Running,
 				DataSecurityMode: clusters.DataSecurityMode_SingleUser,
 				SingleUserName:   TestUser.UserName,
@@ -587,8 +580,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ClusterPolicies: map[string]clusterpolicies.Policy{
 			// Seeded so the stateful list keeps backing the variable-lookup tests
 			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
-			"5678": {PolicyId: nonZero("5678"), Name: nonZero("wrong-cluster-policy")},
-			"9876": {PolicyId: nonZero("9876"), Name: nonZero("some-test-cluster-policy")},
+			"5678": {PolicyId: utils.NonZero("5678"), Name: utils.NonZero("wrong-cluster-policy")},
+			"9876": {PolicyId: utils.NonZero("9876"), Name: utils.NonZero("some-test-cluster-policy")},
 		},
 		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
@@ -719,13 +712,13 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 		if repo, ok := s.gitFolderFor(cleaned); ok {
 			// The real API reports the Git folder root without the /Workspace mount
 			// prefix, whichever spelling the folder was created with.
-			gi := gitInfoBlock{ID: val(repo.Id), Path: strings.TrimPrefix(val(repo.Path), "/Workspace")}
-			if isGitCliFolder(val(repo.Path)) {
+			gi := gitInfoBlock{ID: utils.Deref(repo.Id), Path: strings.TrimPrefix(utils.Deref(repo.Path), "/Workspace")}
+			if isGitCliFolder(utils.Deref(repo.Path)) {
 				info.DirectoryInfo = &workspaceapi.DirectoryInfo{IsGitFolder: true}
 			} else {
-				gi.Branch = val(repo.Branch)
-				gi.HeadCommitID = val(repo.HeadCommitId)
-				gi.URL = val(repo.Url)
+				gi.Branch = utils.Deref(repo.Branch)
+				gi.HeadCommitID = utils.Deref(repo.HeadCommitId)
+				gi.URL = utils.Deref(repo.Url)
 			}
 			body, err := withGitInfo(info, gi)
 			if err != nil {
@@ -801,24 +794,24 @@ func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	for filePath, entry := range s.files {
 		if path.Dir(filePath) == dirPath {
 			contents = append(contents, files.DirectoryEntry{
-				Name:     nonZero(path.Base(filePath)),
-				Path:     nonZero(filePath),
-				FileSize: nonZero(len(entry.Data)),
+				Name:     utils.NonZero(path.Base(filePath)),
+				Path:     utils.NonZero(filePath),
+				FileSize: utils.NonZero(len(entry.Data)),
 			})
 		}
 	}
 	for childPath := range s.directories {
 		if childPath != dirPath && path.Dir(childPath) == dirPath {
 			contents = append(contents, files.DirectoryEntry{
-				Name:        nonZero(path.Base(childPath)),
-				Path:        nonZero(childPath),
-				IsDirectory: nonZero(true),
+				Name:        utils.NonZero(path.Base(childPath)),
+				Path:        utils.NonZero(childPath),
+				IsDirectory: utils.NonZero(true),
 			})
 		}
 	}
 
 	slices.SortFunc(contents, func(a, b files.DirectoryEntry) int {
-		return strings.Compare(val(a.Path), val(b.Path))
+		return strings.Compare(utils.Deref(a.Path), utils.Deref(b.Path))
 	})
 
 	return Response{

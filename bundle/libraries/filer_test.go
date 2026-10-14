@@ -5,9 +5,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/filer"
-	databrickscfg "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,9 +20,8 @@ func TestGetFilerForLibrariesValidWsfs(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
 	require.NoError(t, diags.Error())
@@ -41,9 +39,8 @@ func TestGetFilerForLibrariesCleanupValidWsfs(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
 	require.NoError(t, diags.Error())
@@ -61,9 +58,8 @@ func TestGetFilerForLibrariesValidUcVolume(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
 	require.NoError(t, diags.Error())
@@ -81,9 +77,8 @@ func TestGetFilerForLibrariesCleanupValidUcVolume(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
 	require.NoError(t, diags.Error())
@@ -99,9 +94,8 @@ func TestGetFilerForLibrariesRemotePathNotSet(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	_, _, diags := GetFilerForLibraries(t.Context(), b)
 	require.EqualError(t, diags.Error(), "remote artifact path not configured")

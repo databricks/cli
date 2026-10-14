@@ -1,12 +1,12 @@
 package resourcemutator
 
 import (
+	"github.com/databricks/cli/libs/qualitymonitors"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,9 +24,9 @@ func TestApplyPresetsSkipsNilQualityMonitors(t *testing.T) {
 					"nil_monitor": nil,
 					"monitor": {
 						TableName: "monitor",
-						CreateMonitor: catalog.CreateMonitor{
+						CreateMonitor: qualitymonitors.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
-							Schedule:         &catalog.MonitorCronSchedule{},
+							Schedule:         &qualitymonitors.MonitorCronSchedule{},
 						},
 					},
 				},

@@ -7,13 +7,15 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/options/call"
+	"github.com/databricks/sdk-go/uc/metastores/v1"
 )
 
 // WorkspaceID uses the selected profile's ID, resolving it only when absent.
 // The client is only needed for profiles without an ID.
-func WorkspaceID(ctx context.Context, p profile.Profile, w *databricks.WorkspaceClient) (string, error) {
+func WorkspaceID(ctx context.Context, p profile.Profile, w *sdkclients.Clients) (string, error) {
 	if p.WorkspaceID != "" && p.WorkspaceID != profile.WorkspaceIDNone {
 		return p.WorkspaceID, nil
 	}
@@ -28,12 +30,18 @@ func WorkspaceID(ctx context.Context, p profile.Profile, w *databricks.Workspace
 }
 
 // WorkspaceRegion obtains and validates the region returned by the workspace's metastore.
-func WorkspaceRegion(ctx context.Context, p profile.Profile, metastores catalog.MetastoresInterface) (string, error) {
-	summary, err := metastores.Summary(ctx)
+// MetastoreSummarizer is the part of the metastores client WorkspaceRegion
+// needs; *metastores.Client implements it.
+type MetastoreSummarizer interface {
+	GetMetastoreSummary(ctx context.Context, req metastores.GetMetastoreSummaryRequest, opts ...call.Option) (*metastores.GetMetastoreSummaryResponse, error)
+}
+
+func WorkspaceRegion(ctx context.Context, p profile.Profile, api MetastoreSummarizer) (string, error) {
+	summary, err := api.GetMetastoreSummary(ctx, metastores.GetMetastoreSummaryRequest{})
 	if err != nil {
 		return "", RewriteProfileError(ctx, p, fmt.Errorf("resolve workspace region for profile %q: %w", p.Name, err))
 	}
-	region := strings.TrimSpace(summary.Region)
+	region := strings.TrimSpace(utils.Deref(summary.Region))
 	if region == "" {
 		return "", fmt.Errorf("resolve workspace region for profile %q: metastore summary did not include a region", p.Name)
 	}

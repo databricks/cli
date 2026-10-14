@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v3"
 )
@@ -170,7 +170,7 @@ func genAIComputeTask(run *jobs.GetRunResponse) *jobs.GenAiComputeTask {
 // no environments field, so the value is fetched with a raw request. Best-effort:
 // returns "" (logged) on any error or when the run declares no environment.
 func aiRuntimeEnvironmentVersion(ctx context.Context, w *sdkclients.Clients, runID int64) string {
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		log.Warnf(ctx, "air get: could not create client to read environment: %v", err)
 		return ""
@@ -218,7 +218,7 @@ func resolveConfigYAML(ctx context.Context, w *sdkclients.Clients, run *jobs.Get
 // parameters file, and only synthesize a minimal config as a last resort.
 func configYAML(ctx context.Context, w *sdkclients.Clients, task *jobs.GenAiComputeTask) string {
 	if utils.Deref(task.YamlParameters) != "" {
-		return strings.TrimRight(reformatYAMLForDisplay([]byte(task.YamlParameters)), "\n")
+		return strings.TrimRight(reformatYAMLForDisplay([]byte(*task.YamlParameters)), "\n")
 	}
 	if utils.Deref(task.YamlParametersFilePath) != "" {
 		if raw := downloadConfig(ctx, w, utils.Deref(task.YamlParametersFilePath)); len(raw) > 0 {

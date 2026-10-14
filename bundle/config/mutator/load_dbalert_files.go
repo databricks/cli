@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,9 +13,8 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type loadDBAlertFiles struct{}
@@ -30,20 +28,12 @@ func (m *loadDBAlertFiles) Name() string {
 }
 
 type AlertFile struct {
-	sql.AlertV2
+	alerts.Alert
 
 	// query_text and custom_description can be split into lines to make it easier to view the diff
 	// in a Git editor.
 	QueryLines             []string `json:"query_lines,omitempty"`
 	CustomDescriptionLines []string `json:"custom_description_lines,omitempty"`
-}
-
-func (d *AlertFile) UnmarshalJSON(data []byte) error {
-	return marshal.Unmarshal(data, d)
-}
-
-func (d AlertFile) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(d)
 }
 
 func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -164,40 +154,28 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			customDescription = sb.String()
 		}
 
-		newAlert := sql.AlertV2{
-			// Fields with different schema in file vs API.
-			CustomDescription: customDescription,
-			QueryText:         queryText,
+		// Fields with the same schema in file vs API are taken from the file as is.
+		newAlert := dbalertFromFile.Alert
 
-			// API only fields. All these should be present in [allowedInYAML]
-			DisplayName: utils.Deref(alert.DisplayName),
-			WarehouseId: utils.Deref(alert.WarehouseId),
+		// Fields with different schema in file vs API.
+		newAlert.CustomDescription = nonEmpty(customDescription)
+		newAlert.QueryText = nonEmpty(queryText)
 
-			// Fields with the same schema in file vs API.
-			CustomSummary:        dbalertFromFile.CustomSummary,
-			Schedule:             dbalertFromFile.Schedule,
-			Evaluation:           dbalertFromFile.Evaluation,
-			EffectiveRunAs:       dbalertFromFile.EffectiveRunAs,
-			RunAs:                dbalertFromFile.RunAs,
-			RunAsUserName:        dbalertFromFile.RunAsUserName,
-			ParentPath:           dbalertFromFile.ParentPath,
-			Parameters:           dbalertFromFile.Parameters,
-			CustomTemplateFormat: dbalertFromFile.CustomTemplateFormat,
-
-			// Output only fields.
-			CreateTime:     dbalertFromFile.CreateTime,
-			OwnerUserName:  dbalertFromFile.OwnerUserName,
-			UpdateTime:     dbalertFromFile.UpdateTime,
-			LifecycleState: dbalertFromFile.LifecycleState,
-
-			// Other fields.
-			Id:              dbalertFromFile.Id,
-			ForceSendFields: dbalertFromFile.ForceSendFields,
-		}
+		// API only fields. All these should be present in [allowedInYAML]
+		newAlert.DisplayName = alert.DisplayName
+		newAlert.WarehouseId = alert.WarehouseId
 
 		// write values from the file to the alert.
-		b.Config.Resources.Alerts[alertKey].AlertV2 = newAlert
+		b.Config.Resources.Alerts[alertKey].Alert = newAlert
 	}
 
 	return nil
+}
+
+// nonEmpty returns nil for an empty string so that it is omitted like an unset field.
+func nonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

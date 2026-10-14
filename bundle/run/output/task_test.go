@@ -2,9 +2,9 @@ package output
 
 import (
 	"fmt"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,10 +68,10 @@ func TestDbtOutputToString(t *testing.T) {
 
 func TestSqlOutputToString(t *testing.T) {
 	task := SqlOutput{
-		QueryOutput: &jobs.SqlQueryOutput{
-			OutputLink:  "a",
-			QueryText:   "b",
-			WarehouseId: "d",
+		QueryOutput: &jobs.SqlTask_SqlQueryOutput{
+			OutputLink:  new("a"),
+			QueryText:   new("b"),
+			WarehouseId: new("d"),
 		},
 	}
 

@@ -110,7 +110,7 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
 	run := indexRun(7, 1000_000)
-	run.Tasks[0].RunId = 70
+	run.Tasks[0].RunId = new(int64(70))
 	var getHits, outputHits, mlflowHits int
 	var outputRunIDs []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

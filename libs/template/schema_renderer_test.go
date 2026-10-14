@@ -6,7 +6,7 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestRenderSchemaWithLocalTemplate(t *testing.T) {
 	testutil.WriteFile(t, inputFile, `{"name": "TestUser"}`)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	reader := NewLocalReader(tmpDir)
 	result, err := RenderSchema(ctx, reader, RenderSchemaInput{
@@ -55,7 +55,7 @@ func TestRenderSchemaWithoutInputFile(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	reader := NewLocalReader(tmpDir)
 	result, err := RenderSchema(ctx, reader, RenderSchemaInput{})
@@ -76,7 +76,7 @@ func TestRenderSchemaWithMissingVariable(t *testing.T) {
 	testutil.WriteFile(t, inputFile, `{}`)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	reader := NewLocalReader(tmpDir)
 	// Missing variables are rendered as empty strings
@@ -94,7 +94,7 @@ func TestRenderSchemaWithInvalidInputFile(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	reader := NewLocalReader(tmpDir)
 	_, err := RenderSchema(ctx, reader, RenderSchemaInput{
@@ -114,7 +114,7 @@ func TestRenderSchemaWithMalformedInputJson(t *testing.T) {
 	testutil.WriteFile(t, inputFile, `{invalid json}`)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	reader := NewLocalReader(tmpDir)
 	_, err := RenderSchema(ctx, reader, RenderSchemaInput{
@@ -147,7 +147,7 @@ func TestRenderSchemaWithSimpleBuiltinTemplate(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
 	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{
 		Config: &workspaceConfig.Config{
 			Host: "https://test.databricks.com",
 		},

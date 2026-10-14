@@ -1,6 +1,17 @@
 package resourcemutator
 
 import (
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/utils"
 	"reflect"
 	"slices"
 	"testing"
@@ -20,10 +31,6 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,8 +52,8 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				CurrentUser: &config.User{
 					ShortName: "lennart",
 					User: &scim.User{
-						UserName: "lennart@company.com",
-						Id:       "1",
+						UserName: new("lennart@company.com"),
+						Id:       new("1"),
 					},
 				},
 				StatePath:    "/Users/lennart@company.com/.bundle/x/y/state",
@@ -57,56 +64,56 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Name: "job1",
+							Name: new("job1"),
 							Schedule: &jobs.CronSchedule{
-								QuartzCronExpression: "* * * * *",
+								QuartzCronExpression: new("* * * * *"),
 							},
 							Tags: map[string]string{"existing": "tag"},
 						},
 					},
 					"job2": {
 						JobSettings: jobs.JobSettings{
-							Name: "job2",
+							Name: new("job2"),
 							Schedule: &jobs.CronSchedule{
-								QuartzCronExpression: "* * * * *",
-								PauseStatus:          jobs.PauseStatusUnpaused,
+								QuartzCronExpression: new("* * * * *"),
+								PauseStatus:          jobs.SchedulePauseStatus("UNPAUSED"),
 							},
 						},
 					},
 					"job3": {
 						JobSettings: jobs.JobSettings{
-							Name: "job3",
+							Name: new("job3"),
 							Trigger: &jobs.TriggerSettings{
 								FileArrival: &jobs.FileArrivalTriggerConfiguration{
-									Url: "test.com",
+									Url: new("test.com"),
 								},
 							},
 						},
 					},
 					"job4": {
 						JobSettings: jobs.JobSettings{
-							Name: "job4",
-							Continuous: &jobs.Continuous{
-								PauseStatus: jobs.PauseStatusPaused,
+							Name: new("job4"),
+							Continuous: &jobs.ContinuousSettings{
+								PauseStatus: jobs.SchedulePauseStatus_Paused,
 							},
 						},
 					},
 				},
 				JobRuns: map[string]*resources.JobRun{
-					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+					"job_run1": {RunNowRequest: jobs.RunNowRequest{JobId: new(int64(1234))}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+					"pipeline1": {CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("pipeline1"), Continuous: new(true)}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
-					"experiment2": {CreateExperiment: ml.CreateExperiment{Name: "experiment2"}},
+					"experiment1": {CreateExperimentRequest: experiments.CreateExperimentRequest{Name: new("/Users/lennart.kats@databricks.com/experiment1")}},
+					"experiment2": {CreateExperimentRequest: experiments.CreateExperimentRequest{Name: new("experiment2")}},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model1": {CreateModelRequest: ml.CreateModelRequest{Name: "model1"}},
+					"model1": {CreateRegisteredModelRequest: modelregistry.CreateRegisteredModelRequest{Name: new("model1")}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"servingendpoint1": {CreateServingEndpoint: modelserving.CreateServingEndpoint{Name: "servingendpoint1"}},
+					"servingendpoint1": {CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{Name: new("servingendpoint1")}},
 				},
 				ModelServices: map[string]*resources.ModelService{
 					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},
@@ -118,52 +125,52 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"modelproviderservice1": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: "schemas/main.default", ModelProviderServiceId: "modelproviderservice1"}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
-					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
+					"registeredmodel1": {CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{Name: new("registeredmodel1")}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
 						TableName: "qualityMonitor1",
-						CreateMonitor: catalog.CreateMonitor{
+						CreateMonitor: qualitymonitors.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
 						},
 					},
 					"qualityMonitor2": {
 						TableName: "qualityMonitor2",
-						CreateMonitor: catalog.CreateMonitor{
+						CreateMonitor: qualitymonitors.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
-							Schedule:         &catalog.MonitorCronSchedule{},
+							Schedule:         &qualitymonitors.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
 						TableName: "qualityMonitor3",
-						CreateMonitor: catalog.CreateMonitor{
+						CreateMonitor: qualitymonitors.CreateMonitor{
 							OutputSchemaName: "catalog.schema",
-							Schedule: &catalog.MonitorCronSchedule{
-								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
+							Schedule: &qualitymonitors.MonitorCronSchedule{
+								PauseStatus: qualitymonitors.MonitorCronSchedulePauseStatusUnpaused,
 							},
 						},
 					},
 				},
 				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+					"catalog1": {CreateCatalog: resources.CreateCatalog{Name: new("catalog1")}},
 				},
 				ExternalLocations: map[string]*resources.ExternalLocation{
-					"externalLocation1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "externalLocation1"}},
+					"externalLocation1": {CreateExternalLocation: resources.CreateExternalLocation{Name: new("externalLocation1")}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
+					"schema1": {CreateSchema: resources.CreateSchema{Name: new("schema1")}},
 				},
 				Volumes: map[string]*resources.Volume{
-					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
+					"volume1": {CreateVolumeRequestContent: resources.CreateVolumeRequestContent{Name: new("volume1")}},
 				},
 				Clusters: map[string]*resources.Cluster{
-					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
+					"cluster1": {CreateClusterRequest: clusters.CreateClusterRequest{ClusterName: new("cluster1"), SparkVersion: new("13.2.x"), NumWorkers: new(1)}},
 				},
 				InstancePools: map[string]*resources.InstancePool{
-					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
+					"instance_pool1": {CreateInstancePoolRequest: instancepools.CreateInstancePoolRequest{InstancePoolName: new("instance_pool1"), NodeTypeId: new("i3.xlarge")}},
 				},
 				ClusterPolicies: map[string]*resources.ClusterPolicy{
-					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+					"cluster_policy1": {CreatePolicyRequest: clusterpolicies.CreatePolicyRequest{Name: new("cluster_policy1")}},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
@@ -182,7 +189,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name: "app1",
+							Name: new("app1"),
 						},
 					},
 				},
@@ -193,62 +200,62 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Secrets: map[string]*resources.Secret{
 					"secret1": {
-						Secret: catalog.Secret{
-							CatalogName: "main",
-							SchemaName:  "default",
-							Name:        "secret1",
+						Secret: ucsecrets.Secret{
+							CatalogName: new("main"),
+							SchemaName:  new("default"),
+							Name:        new("secret1"),
 						},
 					},
 				},
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
 					"sql_warehouse1": {
-						CreateWarehouseRequest: sql.CreateWarehouseRequest{
-							Name: "sql_warehouse1",
+						CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
+							Name: new("sql_warehouse1"),
 						},
 					},
 				},
 				DatabaseInstances: map[string]*resources.DatabaseInstance{
 					"database_instance1": {
 						DatabaseInstance: database.DatabaseInstance{
-							Name: "database_instance1",
+							Name: new("database_instance1"),
 						},
 					},
 				},
 				DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
 					"database_catalog1": {
 						DatabaseCatalog: database.DatabaseCatalog{
-							Name: "database_catalog1",
+							Name: new("database_catalog1"),
 						},
 					},
 				},
 				SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
 					"synced_database_table1": {
 						SyncedDatabaseTable: database.SyncedDatabaseTable{
-							Name: "synced_database_table1",
+							Name: new("synced_database_table1"),
 						},
 					},
 				},
 				Alerts: map[string]*resources.Alert{
 					"alert1": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert1",
-							Schedule: sql.CronSchedule{
-								QuartzCronSchedule: "0 0 12 * * ?",
+						Alert: alerts.Alert{
+							DisplayName: new("alert1"),
+							Schedule: &alerts.CronSchedule{
+								QuartzCronSchedule: new("0 0 12 * * ?"),
 							},
 						},
 					},
 					"alert2": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert2",
-							Schedule: sql.CronSchedule{
-								QuartzCronSchedule: "0 0 12 * * ?",
-								PauseStatus:        sql.SchedulePauseStatusUnpaused,
+						Alert: alerts.Alert{
+							DisplayName: new("alert2"),
+							Schedule: &alerts.CronSchedule{
+								QuartzCronSchedule: new("0 0 12 * * ?"),
+								PauseStatus:        alerts.SchedulePauseStatus_Unpaused,
 							},
 						},
 					},
 					"alert3": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert3",
+						Alert: alerts.Alert{
+							DisplayName: new("alert3"),
 						},
 					},
 				},
@@ -257,7 +264,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						PostgresProjectConfig: resources.PostgresProjectConfig{
 							ProjectId: "postgres-project-1",
 							ProjectSpec: postgres.ProjectSpec{
-								DisplayName: "postgres_project1",
+								DisplayName: new("postgres_project1"),
 							},
 						},
 					},
@@ -276,7 +283,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							EndpointId: "postgres-endpoint-1",
 							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
 							EndpointSpec: postgres.EndpointSpec{
-								EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+								EndpointType: postgres.EndpointType_EndpointTypeReadWrite,
 							},
 						},
 					},
@@ -301,8 +308,8 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						PostgresRoleConfig: resources.PostgresRoleConfig{
 							RoleId: "postgres-role-1",
 							Parent: "projects/postgres-project-1/branches/postgres-branch-1",
-							RoleRoleSpec: postgres.RoleRoleSpec{
-								PostgresRole: "postgres_role_1",
+							Role_RoleSpec: postgres.Role_RoleSpec{
+								PostgresRole: new("postgres_role_1"),
 							},
 						},
 					},
@@ -323,19 +330,19 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
-						CreateEndpoint: vectorsearch.CreateEndpoint{
-							Name:         "vs_endpoint1",
-							EndpointType: vectorsearch.EndpointTypeStandard,
+						CreateEndpointRequest: vectorsearch.CreateEndpointRequest{
+							Name:         new("vs_endpoint1"),
+							EndpointType: vectorsearch.EndpointType_Standard,
 						},
 					},
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"vs_index1": {
 						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-							Name:         "main.default.vs_index1",
-							EndpointName: "vs_endpoint1",
-							PrimaryKey:   "id",
-							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+							Name:         new("main.default.vs_index1"),
+							EndpointName: new("vs_endpoint1"),
+							PrimaryKey:   new("id"),
+							IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
 						},
 					},
 				},
@@ -362,59 +369,59 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Job 1
-	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "[dev lennart] job1", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job1"].Tags["dev"])
-	assert.Equal(t, jobs.PauseStatusPaused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
+	assert.Equal(t, jobs.SchedulePauseStatus_Paused, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus)
 
 	// Job 2
-	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
+	assert.Equal(t, "[dev lennart] job2", utils.Deref(b.Config.Resources.Jobs["job2"].Name))
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
-	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
+	assert.Equal(t, jobs.SchedulePauseStatus("UNPAUSED"), b.Config.Resources.Jobs["job2"].Schedule.PauseStatus)
 
 	// Pipeline 1
-	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+	assert.Equal(t, "[dev lennart] pipeline1", utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Name))
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Continuous)) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+	assert.True(t, utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 
 	// Experiment 1
-	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
-	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].CreateExperiment.Tags[0].Key)
+	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", utils.Deref(b.Config.Resources.Experiments["experiment1"].Name))
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, experiments.ExperimentTag{Key: new("dev"), Value: new("lennart")})
+	assert.Equal(t, "dev", utils.Deref(b.Config.Resources.Experiments["experiment1"].CreateExperimentRequest.Tags[0].Key))
 
 	// Experiment 2
-	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Equal(t, "[dev lennart] experiment2", utils.Deref(b.Config.Resources.Experiments["experiment2"].Name))
+	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Tags, experiments.ExperimentTag{Key: new("dev"), Value: new("lennart")})
 
 	// Model 1
-	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Tags, ml.ModelTag{Key: "dev", Value: "lennart"})
+	assert.Equal(t, "[dev lennart] model1", utils.Deref(b.Config.Resources.Models["model1"].Name))
+	assert.Contains(t, b.Config.Resources.Models["model1"].Tags, modelregistry.RegisteredModelTag{Key: new("dev"), Value: new("lennart")})
 
 	// Model serving endpoint 1
-	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+	assert.Equal(t, "dev_lennart_servingendpoint1", utils.Deref(b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name))
 
 	// Vector search endpoint 1: name is the primary key, so it must not be prefixed.
-	assert.Equal(t, "vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
+	assert.Equal(t, "vs_endpoint1", utils.Deref(b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name))
 
 	// Vector search index 1: name is the primary key, so it must not be prefixed.
-	assert.Equal(t, "main.default.vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
+	assert.Equal(t, "main.default.vs_index1", utils.Deref(b.Config.Resources.VectorSearchIndexes["vs_index1"].Name))
 
 	// Registered model 1
-	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "dev_lennart_registeredmodel1", utils.Deref(b.Config.Resources.RegisteredModels["registeredmodel1"].Name))
 
 	// Quality Monitor 1
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
-	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+	assert.Equal(t, qualitymonitors.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
 
 	// Schema 1
-	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "dev_lennart_schema1", utils.Deref(b.Config.Resources.Schemas["schema1"].Name))
 
 	// Clusters
-	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "[dev lennart] cluster1", utils.Deref(b.Config.Resources.Clusters["cluster1"].ClusterName))
 
 	// Instance pools
-	assert.Equal(t, "[dev lennart] instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
+	assert.Equal(t, "[dev lennart] instance_pool1", utils.Deref(b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName))
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
@@ -423,15 +430,15 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
 	// Alert 1: has schedule without pause status set - should be paused
-	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
-	assert.Equal(t, sql.SchedulePauseStatusPaused, b.Config.Resources.Alerts["alert1"].Schedule.PauseStatus)
+	assert.Equal(t, "[dev lennart] alert1", utils.Deref(b.Config.Resources.Alerts["alert1"].DisplayName))
+	assert.Equal(t, alerts.SchedulePauseStatus_Paused, b.Config.Resources.Alerts["alert1"].Schedule.PauseStatus)
 
 	// Alert 2: has schedule with pause status already set to unpaused - should remain unpaused
-	assert.Equal(t, "[dev lennart] alert2", b.Config.Resources.Alerts["alert2"].DisplayName)
-	assert.Equal(t, sql.SchedulePauseStatusUnpaused, b.Config.Resources.Alerts["alert2"].Schedule.PauseStatus)
+	assert.Equal(t, "[dev lennart] alert2", utils.Deref(b.Config.Resources.Alerts["alert2"].DisplayName))
+	assert.Equal(t, alerts.SchedulePauseStatus_Unpaused, b.Config.Resources.Alerts["alert2"].Schedule.PauseStatus)
 
 	// Alert 3: no schedule - pause status should remain empty
-	assert.Equal(t, "[dev lennart] alert3", b.Config.Resources.Alerts["alert3"].DisplayName)
+	assert.Equal(t, "[dev lennart] alert3", utils.Deref(b.Config.Resources.Alerts["alert3"].DisplayName))
 	assert.Empty(t, b.Config.Resources.Alerts["alert3"].Schedule.PauseStatus)
 }
 
@@ -482,18 +489,18 @@ func TestProcessTargetModeDefault(t *testing.T) {
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "job1", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
+	assert.Equal(t, "pipeline1", utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Name))
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+	assert.Equal(t, "servingendpoint1", utils.Deref(b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name))
+	assert.Equal(t, "registeredmodel1", utils.Deref(b.Config.Resources.RegisteredModels["registeredmodel1"].Name))
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
-	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
-	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
-	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
-	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
-	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
-	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
+	assert.Equal(t, "catalog1", utils.Deref(b.Config.Resources.Catalogs["catalog1"].Name))
+	assert.Equal(t, "schema1", utils.Deref(b.Config.Resources.Schemas["schema1"].Name))
+	assert.Equal(t, "volume1", utils.Deref(b.Config.Resources.Volumes["volume1"].Name))
+	assert.Equal(t, "cluster1", utils.Deref(b.Config.Resources.Clusters["cluster1"].ClusterName))
+	assert.Equal(t, "instance_pool1", utils.Deref(b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName))
+	assert.Equal(t, "sql_warehouse1", utils.Deref(b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name))
 }
 
 // Make sure that we have test coverage for all resource types
@@ -605,7 +612,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "custom_lennart_deploy_job1", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 }
 
 func TestTagsAlreadySet(t *testing.T) {
@@ -649,7 +656,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
+	assert.Equal(t, 10, utils.Deref(b.Config.Resources.Jobs["job1"].MaxConcurrentRuns))
 }
 
 func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
@@ -659,7 +666,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
+	assert.Equal(t, 1, utils.Deref(b.Config.Resources.Jobs["job1"].MaxConcurrentRuns))
 }
 
 func TestPipelinesDevelopmentDisabled(t *testing.T) {
@@ -670,5 +677,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 }

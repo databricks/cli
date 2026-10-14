@@ -8,13 +8,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/env"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/databricks/cli/libs/sdktypes/scim/v1"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 func TestResolveClusterReference(t *testing.T) {
@@ -41,17 +37,15 @@ func TestResolveClusterReference(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
-		FilterBy: &compute.ListClustersFilterBy{
-			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
-		},
-	}).Return([]compute.ClusterDetails{
-		{ClusterId: "1234-5678-abcd", ClusterName: clusterRef1},
-		{ClusterId: "9876-5432-xywz", ClusterName: clusterRef2},
-	}, nil)
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/clusters/list", func(req testserver.Request) any {
+		assert.Equal(t, []string{"API", "UI"}, req.URL.Query()["filter_by.cluster_sources"])
+		return map[string]any{"clusters": []map[string]any{
+			{"cluster_id": "1234-5678-abcd", "cluster_name": clusterRef1},
+			{"cluster_id": "9876-5432-xywz", "cluster_name": clusterRef2},
+		}}
+	})
+	b.SetWorkpaceClient(newTestClients(t, server))
 
 	diags := bundle.Apply(t.Context(), b, ResolveLookupVariables())
 	require.NoError(t, diags.Error())
@@ -77,16 +71,14 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
-		FilterBy: &compute.ListClustersFilterBy{
-			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
-		},
-	}).Return([]compute.ClusterDetails{
-		{ClusterId: "1234-5678-abcd", ClusterName: "some other cluster"},
-	}, nil)
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/clusters/list", func(req testserver.Request) any {
+		assert.Equal(t, []string{"API", "UI"}, req.URL.Query()["filter_by.cluster_sources"])
+		return map[string]any{"clusters": []map[string]any{
+			{"cluster_id": "1234-5678-abcd", "cluster_name": "some other cluster"},
+		}}
+	})
+	b.SetWorkpaceClient(newTestClients(t, server))
 
 	diags := bundle.Apply(t.Context(), b, ResolveLookupVariables())
 	require.ErrorContains(t, diags.Error(), "failed to resolve cluster: Random, err: cluster named 'Random' does not exist")
@@ -106,8 +98,7 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(newTestClients(t, testserver.New(t)))
 
 	err := b.Config.Variables["my-cluster-id"].Set("random value")
 	require.NoError(t, err)
@@ -131,20 +122,12 @@ func TestResolveServicePrincipal(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	api := m.GetMockServicePrincipalsV2API()
-	iterator := listing.SliceIterator[scim.ServicePrincipal]([]scim.ServicePrincipal{
-		{
-			ApplicationId: "app-1234",
-		},
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/preview/scim/v2/ServicePrincipals", func(req testserver.Request) any {
+		assert.Equal(t, fmt.Sprintf("displayName eq '%s'", spName), req.URL.Query().Get("filter"))
+		return map[string]any{"Resources": []map[string]any{{"applicationId": "app-1234"}}}
 	})
-	api.EXPECT().
-		List(mock.Anything, scim.ListServicePrincipalsRequest{
-			Filter: fmt.Sprintf("displayName eq '%s'", spName),
-		}).
-		Return(&iterator)
+	b.SetWorkpaceClient(newTestClients(t, server))
 
 	diags := bundle.Apply(t.Context(), b, ResolveLookupVariables())
 	require.NoError(t, diags.Error())
@@ -171,18 +154,15 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clusterApi := m.GetMockClustersAPI()
-
-	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
-		FilterBy: &compute.ListClustersFilterBy{
-			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
-		},
-	}).Return([]compute.ClusterDetails{
-		{ClusterId: "1234-5678-abcd", ClusterName: "cluster-bar-dev"},
-		{ClusterId: "9876-5432-xywz", ClusterName: "some other cluster"},
-	}, nil)
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/clusters/list", func(req testserver.Request) any {
+		assert.Equal(t, []string{"API", "UI"}, req.URL.Query()["filter_by.cluster_sources"])
+		return map[string]any{"clusters": []map[string]any{
+			{"cluster_id": "1234-5678-abcd", "cluster_name": "cluster-bar-dev"},
+			{"cluster_id": "9876-5432-xywz", "cluster_name": "some other cluster"},
+		}}
+	})
+	b.SetWorkpaceClient(newTestClients(t, server))
 
 	diags := bundle.ApplySeq(t.Context(), b, ResolveVariableReferencesInLookup(), ResolveLookupVariables())
 	require.NoError(t, diags.Error())
@@ -208,8 +188,7 @@ func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(newTestClients(t, testserver.New(t)))
 
 	diags := bundle.ApplySeq(t.Context(), b, ResolveVariableReferencesInLookup(), ResolveLookupVariables())
 	require.ErrorContains(t, diags.Error(), "lookup variables cannot contain references to another lookup variables")
@@ -231,8 +210,7 @@ func TestNoResolveLookupIfVariableSetWithEnvVariable(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(newTestClients(t, testserver.New(t)))
 
 	ctx := t.Context()
 	ctx = env.Set(ctx, "BUNDLE_VAR_lookup", "1234-5678-abcd")

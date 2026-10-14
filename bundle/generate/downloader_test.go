@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,10 +15,9 @@ import (
 	"testing/iotest"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +35,7 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 
 	// Test that the path is normalized to be relative to the config directory.
 	f1 := "/a/b/c"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f1).Return(&workspace.ObjectInfo{
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f1).Return(&workspaceapi.ObjectInfo{
 		Path: f1,
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f1)
@@ -44,7 +44,7 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 
 	// Test that the previous path doesn't influence the next path.
 	f2 := "/a/b/c/d"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f2).Return(&workspace.ObjectInfo{
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f2).Return(&workspaceapi.ObjectInfo{
 		Path: f2,
 	}, nil)
 	err = downloader.markFileForDownload(ctx, &f2)
@@ -66,12 +66,12 @@ func TestDownloader_DoesNotRecurseIntoNodeModules(t *testing.T) {
 	// Mock the root directory listing
 	m.GetMockWorkspaceAPI().EXPECT().
 		GetStatusByPath(ctx, rootPath).
-		Return(&workspace.ObjectInfo{Path: rootPath}, nil)
+		Return(&workspaceapi.ObjectInfo{Path: rootPath}, nil)
 
 	// Root directory contains: app.py, src/, node_modules/
 	m.GetMockWorkspaceAPI().EXPECT().
-		ListAll(ctx, workspace.ListWorkspaceRequest{Path: rootPath}).
-		Return([]workspace.ObjectInfo{
+		ListAll(ctx, workspaceapi.ListWorkspaceRequest{Path: rootPath}).
+		Return([]workspaceapi.ObjectInfo{
 			{Path: "/workspace/app/app.py", ObjectType: workspace.ObjectTypeFile},
 			{Path: "/workspace/app/src", ObjectType: workspace.ObjectTypeDirectory},
 			{Path: "/workspace/app/node_modules", ObjectType: workspace.ObjectTypeDirectory},
@@ -79,8 +79,8 @@ func TestDownloader_DoesNotRecurseIntoNodeModules(t *testing.T) {
 
 	// src/ directory contains: index.js
 	m.GetMockWorkspaceAPI().EXPECT().
-		ListAll(ctx, workspace.ListWorkspaceRequest{Path: "/workspace/app/src"}).
-		Return([]workspace.ObjectInfo{
+		ListAll(ctx, workspaceapi.ListWorkspaceRequest{Path: "/workspace/app/src"}).
+		Return([]workspaceapi.ObjectInfo{
 			{Path: "/workspace/app/src/index.js", ObjectType: workspace.ObjectTypeFile},
 		}, nil)
 
@@ -90,11 +90,11 @@ func TestDownloader_DoesNotRecurseIntoNodeModules(t *testing.T) {
 	// Mock file downloads to make markFileForDownload work
 	m.GetMockWorkspaceAPI().EXPECT().
 		GetStatusByPath(ctx, "/workspace/app/app.py").
-		Return(&workspace.ObjectInfo{Path: "/workspace/app/app.py"}, nil)
+		Return(&workspaceapi.ObjectInfo{Path: "/workspace/app/app.py"}, nil)
 
 	m.GetMockWorkspaceAPI().EXPECT().
 		GetStatusByPath(ctx, "/workspace/app/src/index.js").
-		Return(&workspace.ObjectInfo{Path: "/workspace/app/src/index.js"}, nil)
+		Return(&workspaceapi.ObjectInfo{Path: "/workspace/app/src/index.js"}, nil)
 
 	// Execute
 	err := downloader.MarkDirectoryForDownload(ctx, &rootPath)
@@ -200,7 +200,7 @@ func designerStatusHandler(t *testing.T) http.HandlerFunc {
 			t.Fatalf("unexpected request path: %s", r.URL.Path)
 		}
 		resp := workspaceStatus{
-			ObjectType: workspace.ObjectType("DESIGNER_FILE"),
+			ObjectType: workspaceapi.ObjectType("DESIGNER_FILE"),
 		}
 		w.Header().Set("Content-Type", "application/json")
 		assert.NoError(t, json.NewEncoder(w).Encode(resp))
@@ -216,11 +216,11 @@ func TestDownloader_MarkTasksForDownload_DesignerNotebook(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "designer_task",
+			TaskKey: new("designer_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/My Pipeline.designer.ipynb",
+				NotebookPath: new("/Users/user/project/My Pipeline.designer.ipynb"),
 			},
 		},
 	}
@@ -246,17 +246,17 @@ func TestDownloader_MarkTasksForDownload_PreservesStructure(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "extract_task",
+			TaskKey: new("extract_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/etl/extract",
+				NotebookPath: new("/Users/user/project/etl/extract"),
 			},
 		},
 		{
-			TaskKey: "dashboard_task",
+			TaskKey: new("dashboard_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/reporting/dashboard",
+				NotebookPath: new("/Users/user/project/reporting/dashboard"),
 			},
 		},
 	}
@@ -278,11 +278,11 @@ func TestDownloader_MarkTasksForDownload_SingleNotebook(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "task1",
+			TaskKey: new("task1"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/notebook",
+				NotebookPath: new("/Users/user/project/notebook"),
 			},
 		},
 	}
@@ -305,15 +305,15 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
 	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir, WithSparkPythonFiles())
 
 	pythonFile := "/Users/user/project/etl/job.py"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspace.ObjectInfo{
+	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspaceapi.ObjectInfo{
 		Path: pythonFile,
 	}, nil)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "spark_python_task",
+			TaskKey: new("spark_python_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: pythonFile,
+				PythonFile: new(pythonFile),
 			},
 		},
 	}
@@ -338,18 +338,18 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 
 	downloader := NewDownloader(w, "source", "config", WithSparkPythonFiles())
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "cloud_uri_task",
+			TaskKey: new("cloud_uri_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: "dbfs:/FileStore/job.py",
+				PythonFile: new("dbfs:/FileStore/job.py"),
 			},
 		},
 		{
-			TaskKey: "git_task",
+			TaskKey: new("git_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: "etl/job.py",
-				Source:     jobs.SourceGit,
+				PythonFile: new("etl/job.py"),
+				Source:     jobs.Source_Git,
 			},
 		},
 	}
@@ -372,11 +372,11 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *tes
 	downloader := NewDownloader(w, "source", "config")
 
 	pythonFile := "/Users/user/project/etl/job.py"
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "spark_python_task",
+			TaskKey: new("spark_python_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: pythonFile,
+				PythonFile: new(pythonFile),
 			},
 		},
 	}
@@ -395,9 +395,9 @@ func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
 
 	downloader := NewDownloader(w, "source", "config")
 
-	tasks := []jobs.Task{
-		{TaskKey: "spark_task"},
-		{TaskKey: "python_wheel_task"},
+	tasks := []jobs.TaskSettings{
+		{TaskKey: new("spark_task")},
+		{TaskKey: new("python_wheel_task")},
 	}
 
 	err := downloader.MarkTasksForDownload(ctx, tasks)
@@ -508,7 +508,7 @@ func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T)
 	filePath := "/pipeline/root/utils.py"
 
 	type listResponse struct {
-		Objects []workspace.ObjectInfo `json:"objects"`
+		Objects []workspaceapi.ObjectInfo `json:"objects"`
 	}
 
 	w := newTestWorkspaceClient(t, func(rw http.ResponseWriter, r *http.Request) {
@@ -516,7 +516,7 @@ func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T)
 		switch r.URL.Path {
 		case "/api/2.0/workspace/list":
 			err := json.NewEncoder(rw).Encode(listResponse{
-				Objects: []workspace.ObjectInfo{
+				Objects: []workspaceapi.ObjectInfo{
 					{Path: notebookPath, ObjectType: workspace.ObjectTypeNotebook},
 					{Path: filePath, ObjectType: workspace.ObjectTypeFile},
 				},
@@ -526,7 +526,7 @@ func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T)
 			path := r.URL.Query().Get("path")
 			switch path {
 			case rootPath:
-				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: rootPath})
+				err := json.NewEncoder(rw).Encode(workspaceapi.ObjectInfo{Path: rootPath})
 				assert.NoError(t, err)
 			case notebookPath:
 				err := json.NewEncoder(rw).Encode(workspaceStatus{
@@ -536,7 +536,7 @@ func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T)
 				})
 				assert.NoError(t, err)
 			case filePath:
-				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: filePath})
+				err := json.NewEncoder(rw).Encode(workspaceapi.ObjectInfo{Path: filePath})
 				assert.NoError(t, err)
 			default:
 				t.Fatalf("unexpected get-status path: %s", path)

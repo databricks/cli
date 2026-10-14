@@ -5,21 +5,22 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 var pipelineOrder = yamlsaver.NewOrder([]string{"name", "clusters", "configuration", "libraries"})
 
 func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRootPath string) (dyn.Value, error) {
-	if pipeline.RootPath != "" {
-		pipeline.RootPath = rootPath
+	if utils.Deref(pipeline.RootPath) != "" {
+		pipeline.RootPath = new(rootPath)
 	}
 
 	if pipeline.Libraries != nil && remoteRootPath != "" {
 		for i := range pipeline.Libraries {
 			lib := &pipeline.Libraries[i]
-			if lib.Glob != nil {
-				lib.Glob.Include = strings.ReplaceAll(lib.Glob.Include, remoteRootPath, rootPath)
+			if lib.Glob != nil && lib.Glob.Include != nil {
+				lib.Glob.Include = new(strings.ReplaceAll(*lib.Glob.Include, remoteRootPath, rootPath))
 			}
 		}
 	}

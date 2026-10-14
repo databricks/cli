@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"github.com/databricks/cli/libs/utils"
 	"io"
 	"net"
 	"net/http"
@@ -69,8 +70,8 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		// Fixed test identity; this adapter only connects to a local LITE fixture.
 		req.Header.Set("X-Databricks-Org-Id", "456")
 		req.Header.Set("X-Databricks-Workspace-Id", "456")
-		req.Header.Set("X-Databricks-User-Id", testserver.TestUser.Id)
-		req.Header.Set("X-Databricks-User-Name", testserver.TestUser.UserName)
+		req.Header.Set("X-Databricks-User-Id", utils.Deref(testserver.TestUser.Id))
+		req.Header.Set("X-Databricks-User-Name", utils.Deref(testserver.TestUser.UserName))
 		resp, err := client.Do(req)
 		if err != nil {
 			return liteboxFailure(err)

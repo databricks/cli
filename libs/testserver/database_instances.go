@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	database "github.com/databricks/cli/libs/sdktypes/database/v1"
-	"slices"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
 	"time"
 )
 
 // setEffectiveBools makes the effective_* booleans always serialize, false
 // included, as the real API returns them.
 func setEffectiveBools(d *database.DatabaseInstance) {
-	d.EffectiveEnableReadableSecondaries = new(val(d.EffectiveEnableReadableSecondaries))
-	d.EffectiveStopped = new(val(d.EffectiveStopped))
-	d.EffectiveEnablePgNativeLogin = new(val(d.EffectiveEnablePgNativeLogin))
+	d.EffectiveEnableReadableSecondaries = new(utils.Deref(d.EffectiveEnableReadableSecondaries))
+	d.EffectiveStopped = new(utils.Deref(d.EffectiveStopped))
+	d.EffectiveEnablePgNativeLogin = new(utils.Deref(d.EffectiveEnablePgNativeLogin))
 }
 
 func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
@@ -29,11 +30,11 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	}
 
 	// set default fields:
-	databaseInstance.Uid = nonZero(nextUUID())
+	databaseInstance.Uid = utils.NonZero(nextUUID())
 	databaseInstance.State = database.DatabaseInstance_State_Available
-	databaseInstance.PgVersion = nonZero("PG_VERSION_16")
-	databaseInstance.EffectiveNodeCount = nonZero(1)
-	databaseInstance.EffectiveRetentionWindowInDays = nonZero(7)
+	databaseInstance.PgVersion = utils.NonZero("PG_VERSION_16")
+	databaseInstance.EffectiveNodeCount = utils.NonZero(1)
+	databaseInstance.EffectiveRetentionWindowInDays = utils.NonZero(7)
 	databaseInstance.EffectiveCapacity = databaseInstance.Capacity
 	databaseInstance.Creator = req.Workspace.CurrentUser().UserName
 	databaseInstance.CreationTime = types.NewFromTime(time.Now().UTC().Truncate(time.Second))
@@ -42,7 +43,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	databaseInstance.EffectiveEnablePgNativeLogin = nil
 	setEffectiveBools(&databaseInstance)
 
-	s.DatabaseInstances[val(databaseInstance.Name)] = databaseInstance
+	s.DatabaseInstances[utils.Deref(databaseInstance.Name)] = databaseInstance
 
 	return Response{
 		Body: databaseInstance,
@@ -91,20 +92,20 @@ func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Respons
 	}
 
 	// Update the instance with new values while preserving system-managed fields
-	updated := val(updateReq.DatabaseInstance)
+	updated := utils.Deref(updateReq.DatabaseInstance)
 	updated.Uid = existing.Uid                   // Preserve UID
 	updated.Creator = existing.Creator           // Preserve creator
 	updated.CreationTime = existing.CreationTime // Preserve creation time
 	updated.State = existing.State               // Preserve state
 
 	// Set defaults for effective fields if not specified
-	if val(updated.EffectiveNodeCount) == 0 {
+	if utils.Deref(updated.EffectiveNodeCount) == 0 {
 		updated.EffectiveNodeCount = existing.EffectiveNodeCount
 	}
-	if val(updated.EffectiveRetentionWindowInDays) == 0 {
+	if utils.Deref(updated.EffectiveRetentionWindowInDays) == 0 {
 		updated.EffectiveRetentionWindowInDays = existing.EffectiveRetentionWindowInDays
 	}
-	if val(updated.PgVersion) == "" {
+	if utils.Deref(updated.PgVersion) == "" {
 		updated.PgVersion = existing.PgVersion
 	}
 

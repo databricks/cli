@@ -2,6 +2,7 @@ package testserver
 
 import (
 	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -21,7 +22,7 @@ func createTestPipeline(t *testing.T, workspace *FakeWorkspace) string {
 
 	createPipelineResponse, ok := createResponse.Body.(pipelines.CreatePipelineResponse)
 	require.True(t, ok)
-	return createPipelineResponse.PipelineId
+	return utils.Deref(createPipelineResponse.PipelineId)
 }
 
 func TestPipelineCreate_RejectsDottedTargetSchemaName(t *testing.T) {
@@ -81,6 +82,6 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 
 	stopBody, ok := stopResponse.Body.(pipelines.GetPipelineResponse)
 	require.True(t, ok)
-	assert.Equal(t, pipelineId, stopBody.PipelineId)
+	assert.Equal(t, pipelineId, utils.Deref(stopBody.PipelineId))
 	assert.Equal(t, pipelines.PipelineState_PipelineState_Idle, stopBody.State)
 }

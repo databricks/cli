@@ -1,4 +1,4 @@
-package root
+package apierrs
 
 import (
 	"strings"
@@ -6,21 +6,21 @@ import (
 	"github.com/databricks/sdk-go/core/apierr"
 )
 
-// errorMessage returns the text printed for a failed command.
+// ErrorString returns err.Error() with every API error in err's tree rendered
+// as just its server message.
 //
-// sdk-go renders API errors as "databricks-api error: <message>". The CLI has
-// always printed just the server message, so every API error in err's chain is
-// rendered with its message instead.
-func errorMessage(err error) string {
+// sdk-go renders API errors as "databricks-api error: <message>"; the CLI has
+// always shown only the message, so user-visible error text goes through here.
+func ErrorString(err error) string {
 	msg := err.Error()
-	for _, apiErr := range apiErrors(err) {
+	for _, apiErr := range all(err) {
 		msg = strings.Replace(msg, apiErr.Error(), apiErr.Message(), 1)
 	}
 	return msg
 }
 
-// apiErrors returns all API errors in err's tree, including joined errors.
-func apiErrors(err error) []*apierr.APIError {
+// all returns the API errors in err's tree, including joined errors.
+func all(err error) []*apierr.APIError {
 	var result []*apierr.APIError
 	var walk func(error)
 	walk = func(e error) {

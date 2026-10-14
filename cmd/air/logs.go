@@ -153,7 +153,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	status, err := resolveRunStatus(ctx, w, req.runID)
 	if err != nil {
-		if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
 		}
@@ -191,7 +191,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	out := cmd.OutOrStdout()
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
-		if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
 		}

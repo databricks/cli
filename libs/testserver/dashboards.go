@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	"github.com/databricks/cli/libs/utils"
 	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"path"
 	"strconv"
@@ -103,15 +104,15 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
-	if val(dashboard.ParentPath) == "" {
-		dashboard.ParentPath = nonZero("/Users/" + val(s.CurrentUser().UserName))
+	if utils.Deref(dashboard.ParentPath) == "" {
+		dashboard.ParentPath = utils.NonZero("/Users/" + utils.Deref(s.CurrentUser().UserName))
 	}
 
-	if _, ok := s.directories[val(dashboard.ParentPath)]; !ok {
+	if _, ok := s.directories[utils.Deref(dashboard.ParentPath)]; !ok {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]string{
-				"message": fmt.Sprintf("Path (%s) doesn't exist.", dashboard.ParentPath),
+				"message": fmt.Sprintf("Path (%s) doesn't exist.", utils.Deref(dashboard.ParentPath)),
 			},
 		}
 	}
@@ -119,7 +120,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	var err error
 	var dashboardId string
 	dashboardId, err = generateDashboardId()
-	dashboard.DashboardId = nonZero(dashboardId)
+	dashboard.DashboardId = utils.NonZero(dashboardId)
 	if err != nil {
 		return Response{
 			StatusCode: 500,
@@ -133,13 +134,13 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	dashboard.LifecycleState = lakeview.LifecycleState_Active
 
 	// Remove /Workspace prefix from parent_path. This matches the remote behavior.
-	if strings.HasPrefix(val(dashboard.ParentPath), "/Workspace/") {
-		dashboard.ParentPath = nonZero(strings.TrimPrefix(val(dashboard.ParentPath), "/Workspace"))
+	if strings.HasPrefix(utils.Deref(dashboard.ParentPath), "/Workspace/") {
+		dashboard.ParentPath = utils.NonZero(strings.TrimPrefix(utils.Deref(dashboard.ParentPath), "/Workspace"))
 	}
 
 	// Change path field if parent_path is provided
-	if val(dashboard.ParentPath) != "" {
-		dashboard.Path = nonZero(val(dashboard.ParentPath) + "/" + val(dashboard.DisplayName) + ".lvdash.json")
+	if utils.Deref(dashboard.ParentPath) != "" {
+		dashboard.Path = utils.NonZero(utils.Deref(dashboard.ParentPath) + "/" + utils.Deref(dashboard.DisplayName) + ".lvdash.json")
 	}
 
 	dashboard.CreateTime = nextTime()
@@ -152,27 +153,27 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	datasetSchema := req.URL.Query().Get("dataset_schema")
 
 	// Parse serializedDashboard into json and put it back as a string
-	if val(dashboard.SerializedDashboard) != "" {
-		dashboard.SerializedDashboard = nonZero(transformSerializedDashboard(val(dashboard.SerializedDashboard), datasetCatalog, datasetSchema))
+	if utils.Deref(dashboard.SerializedDashboard) != "" {
+		dashboard.SerializedDashboard = utils.NonZero(transformSerializedDashboard(utils.Deref(dashboard.SerializedDashboard), datasetCatalog, datasetSchema))
 	}
-	dashboard.Etag = nonZero("80611980")
+	dashboard.Etag = utils.NonZero("80611980")
 
 	// Write so that, when eventual consistency is enabled, the first GET after this
 	// create returns 404.
-	s.Dashboards.Write(val(dashboard.DashboardId), &fakeDashboard{
+	s.Dashboards.Write(utils.Deref(dashboard.DashboardId), &fakeDashboard{
 		Dashboard:                dashboard,
-		InputSerializedDashboard: val(inputSerializedDashboard),
+		InputSerializedDashboard: utils.Deref(inputSerializedDashboard),
 	})
 
-	workspacePath := path.Join("/Workspace", val(dashboard.Path))
+	workspacePath := path.Join("/Workspace", utils.Deref(dashboard.Path))
 	s.files[workspacePath] = FileEntry{
 		Info: workspaceapi.ObjectInfo{
 			ObjectType: "DASHBOARD",
 			// Include the /Workspace prefix for workspace get-status API.
 			Path:       workspacePath,
-			ResourceId: val(dashboard.DashboardId),
+			ResourceId: utils.Deref(dashboard.DashboardId),
 		},
-		Data: []byte(val(dashboard.SerializedDashboard)),
+		Data: []byte(utils.Deref(dashboard.SerializedDashboard)),
 	}
 
 	return Response{
@@ -200,34 +201,34 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	updated := *dashboard
 
 	// Bump etag on every write, matching cloud behavior.
-	prevEtag, err := strconv.Atoi(val(updated.Etag))
+	prevEtag, err := strconv.Atoi(utils.Deref(updated.Etag))
 	if err != nil {
 		return Response{
 			Body: map[string]string{
-				"message": "Invalid etag: " + val(updated.Etag),
+				"message": "Invalid etag: " + utils.Deref(updated.Etag),
 			},
 			StatusCode: 400,
 		}
 	}
-	updated.Etag = nonZero(strconv.Itoa(prevEtag + 1))
+	updated.Etag = utils.NonZero(strconv.Itoa(prevEtag + 1))
 
-	if val(updateReq.SerializedDashboard) != updated.InputSerializedDashboard {
-		updated.InputSerializedDashboard = val(updateReq.SerializedDashboard)
+	if utils.Deref(updateReq.SerializedDashboard) != updated.InputSerializedDashboard {
+		updated.InputSerializedDashboard = utils.Deref(updateReq.SerializedDashboard)
 	}
 
 	// Update the dashboard.
 	updated.LifecycleState = lakeview.LifecycleState_Active
-	if val(updateReq.DisplayName) != "" {
+	if utils.Deref(updateReq.DisplayName) != "" {
 		updated.DisplayName = updateReq.DisplayName
-		dir := path.Dir(val(updated.Path))
-		base := val(updateReq.DisplayName) + ".lvdash.json"
-		updated.Path = nonZero(path.Join(dir, base))
+		dir := path.Dir(utils.Deref(updated.Path))
+		base := utils.Deref(updateReq.DisplayName) + ".lvdash.json"
+		updated.Path = utils.NonZero(path.Join(dir, base))
 	}
-	if val(updateReq.SerializedDashboard) != "" {
+	if utils.Deref(updateReq.SerializedDashboard) != "" {
 		// Extract dataset_catalog and dataset_schema from query parameters
 		datasetCatalog := req.URL.Query().Get("dataset_catalog")
 		datasetSchema := req.URL.Query().Get("dataset_schema")
-		updated.SerializedDashboard = nonZero(transformSerializedDashboard(val(updateReq.SerializedDashboard), datasetCatalog, datasetSchema))
+		updated.SerializedDashboard = utils.NonZero(transformSerializedDashboard(utils.Deref(updateReq.SerializedDashboard), datasetCatalog, datasetSchema))
 	}
 	updated.WarehouseId = updateReq.WarehouseId
 	updated.UpdateTime = nextTime()
@@ -267,11 +268,11 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		RevisionCreateTime: nextTime(),
 	}
 
-	if val(publishReq.WarehouseId) != "" {
+	if utils.Deref(publishReq.WarehouseId) != "" {
 		publishedDashboard.WarehouseId = publishReq.WarehouseId
 	}
 	// embed_credentials is always reported, false when the request omitted it.
-	publishedDashboard.EmbedCredentials = new(val(publishReq.EmbedCredentials))
+	publishedDashboard.EmbedCredentials = new(utils.Deref(publishReq.EmbedCredentials))
 
 	s.PublishedDashboards[dashboardId] = publishedDashboard
 
@@ -299,9 +300,9 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	// The dashboard is marked as trashed and moved to the trash.
 	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Etag:           dashboard.Etag,
-		DashboardId:    nonZero(dashboardId),
+		DashboardId:    utils.NonZero(dashboardId),
 		LifecycleState: lakeview.LifecycleState_Trashed,
-		ParentPath:     nonZero(path.Join("/Users", val(s.CurrentUser().UserName), "Trash")),
+		ParentPath:     utils.NonZero(path.Join("/Users", utils.Deref(s.CurrentUser().UserName), "Trash")),
 	})
 
 	// The published dashboard is deleted.

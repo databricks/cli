@@ -286,7 +286,7 @@ func latestAttemptNumber(run *jobs.GetRunResponse) int {
 	if len(run.Tasks) == 0 {
 		return 0
 	}
-	return run.Tasks[len(run.Tasks)-1].AttemptNumber
+	return utils.Deref(run.Tasks[len(run.Tasks)-1].AttemptNumber)
 }
 
 // experimentName returns the MLflow experiment name for the run, or nil if there

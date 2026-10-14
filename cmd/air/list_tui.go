@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -201,7 +202,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.detailLoading = false
 		if msg.err != nil {
-			m.detailContent = fmt.Sprintf("Error: %v", msg.err)
+			m.detailContent = "Error: " + apierrs.ErrorString(msg.err)
 		} else {
 			m.detailContent = msg.body
 		}

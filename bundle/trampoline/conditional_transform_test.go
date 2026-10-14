@@ -1,14 +1,13 @@
 package trampoline
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,15 +28,15 @@ func TestNoTransformByDefault(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "key1",
+									TaskKey: new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "test_package",
-										EntryPoint:  "main",
+										PackageName: new("test_package"),
+										EntryPoint:  new("main"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/test@test.com/bundle/dist/test.whl")},
 									},
 								},
 							},
@@ -78,16 +77,16 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "key1",
+									TaskKey: new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "test_package",
-										EntryPoint:  "main",
+										PackageName: new("test_package"),
+										EntryPoint:  new("main"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
-										{Jar: "/Workspace/Users/test@test.com/bundle/dist/test.jar"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/test@test.com/bundle/dist/test.whl")},
+										{Jar: new("/Workspace/Users/test@test.com/bundle/dist/test.jar")},
 									},
 								},
 							},

@@ -22,10 +22,10 @@ import (
 )
 
 func TestResolveLogAttempt(t *testing.T) {
-	run := &jobs.GetRunResponse{RunId: 5, Tasks: []jobs.RunTask{
-		{RunId: 100, AttemptNumber: 0},
-		{RunId: 101, AttemptNumber: 1},
-		{RunId: 102, AttemptNumber: 2},
+	run := &jobs.GetRunResponse{RunId: new(int64(5)), Tasks: []jobs.RunTask{
+		{RunId: new(int64(100)), AttemptNumber: new(0)},
+		{RunId: new(int64(101)), AttemptNumber: new(1)},
+		{RunId: new(int64(102)), AttemptNumber: new(2)},
 	}}
 
 	attempt, taskRunID, err := resolveLogAttempt(run, -1)

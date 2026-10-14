@@ -1,20 +1,18 @@
 package statemgmt
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
@@ -185,7 +183,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			Jobs: map[string]*resources.Job{
 				"test_job": {
 					JobSettings: jobs.JobSettings{
-						Name: "test_job",
+						Name: new("test_job"),
 					},
 				},
 			},
@@ -198,8 +196,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					CreatePipeline: pipelines.CreatePipeline{
-						Name: "test_pipeline",
+					CreatePipelineRequest: pipelines.CreatePipelineRequest{
+						Name: new("test_pipeline"),
 					},
 				},
 			},
@@ -212,15 +210,15 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					CreateExperiment: ml.CreateExperiment{
-						Name: "test_mlflow_experiment",
+					CreateExperimentRequest: experiments.CreateExperimentRequest{
+						Name: new("test_mlflow_experiment"),
 					},
 				},
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: serving.CreateServingEndpoint{
-						Name: "test_model_serving",
+					CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+						Name: new("test_model_serving"),
 					},
 				},
 			},
@@ -247,8 +245,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: catalog.CreateSchema{
-						Name: "test_schema",
+					CreateSchema: resources.CreateSchema{
+						Name: new("test_schema"),
 					},
 				},
 			},
@@ -269,8 +267,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: compute.ClusterSpec{
-						ClusterName: "test_cluster",
+					ClusterSpec: jobs.ClusterSpec_NewCluster{
+						ClusterName: new("test_cluster"),
 					},
 				},
 			},
@@ -291,7 +289,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
-						Description: "test_app",
+						Description: new("test_app"),
 					},
 				},
 			},
@@ -587,12 +585,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			Jobs: map[string]*resources.Job{
 				"test_job": {
 					JobSettings: jobs.JobSettings{
-						Name: "test_job",
+						Name: new("test_job"),
 					},
 				},
 				"test_job_new": {
 					JobSettings: jobs.JobSettings{
-						Name: "test_job_new",
+						Name: new("test_job_new"),
 					},
 				},
 			},
@@ -610,13 +608,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Pipelines: map[string]*resources.Pipeline{
 				"test_pipeline": {
-					CreatePipeline: pipelines.CreatePipeline{
-						Name: "test_pipeline",
+					CreatePipelineRequest: pipelines.CreatePipelineRequest{
+						Name: new("test_pipeline"),
 					},
 				},
 				"test_pipeline_new": {
-					CreatePipeline: pipelines.CreatePipeline{
-						Name: "test_pipeline_new",
+					CreatePipelineRequest: pipelines.CreatePipelineRequest{
+						Name: new("test_pipeline_new"),
 					},
 				},
 			},
@@ -634,25 +632,25 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					CreateExperiment: ml.CreateExperiment{
-						Name: "test_mlflow_experiment",
+					CreateExperimentRequest: experiments.CreateExperimentRequest{
+						Name: new("test_mlflow_experiment"),
 					},
 				},
 				"test_mlflow_experiment_new": {
-					CreateExperiment: ml.CreateExperiment{
-						Name: "test_mlflow_experiment_new",
+					CreateExperimentRequest: experiments.CreateExperimentRequest{
+						Name: new("test_mlflow_experiment_new"),
 					},
 				},
 			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
-					CreateServingEndpoint: serving.CreateServingEndpoint{
-						Name: "test_model_serving",
+					CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+						Name: new("test_model_serving"),
 					},
 				},
 				"test_model_serving_new": {
-					CreateServingEndpoint: serving.CreateServingEndpoint{
-						Name: "test_model_serving_new",
+					CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+						Name: new("test_model_serving_new"),
 					},
 				},
 			},
@@ -694,13 +692,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Schemas: map[string]*resources.Schema{
 				"test_schema": {
-					CreateSchema: catalog.CreateSchema{
-						Name: "test_schema",
+					CreateSchema: resources.CreateSchema{
+						Name: new("test_schema"),
 					},
 				},
 				"test_schema_new": {
-					CreateSchema: catalog.CreateSchema{
-						Name: "test_schema_new",
+					CreateSchema: resources.CreateSchema{
+						Name: new("test_schema_new"),
 					},
 				},
 			},
@@ -726,13 +724,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: compute.ClusterSpec{
-						ClusterName: "test_cluster",
+					ClusterSpec: jobs.ClusterSpec_NewCluster{
+						ClusterName: new("test_cluster"),
 					},
 				},
 				"test_cluster_new": {
-					ClusterSpec: compute.ClusterSpec{
-						ClusterName: "test_cluster_new",
+					ClusterSpec: jobs.ClusterSpec_NewCluster{
+						ClusterName: new("test_cluster_new"),
 					},
 				},
 			},
@@ -763,12 +761,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
-						Name: "test_app",
+						Name: new("test_app"),
 					},
 				},
 				"test_app_new": {
 					App: apps.App{
-						Name: "test_app_new",
+						Name: new("test_app_new"),
 					},
 				},
 			},

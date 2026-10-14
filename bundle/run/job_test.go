@@ -2,6 +2,7 @@ package run
 
 import (
 	"errors"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"testing"
 	"time"
 
@@ -10,17 +11,16 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		Tasks: []jobs.Task{
+		Tasks: []jobs.TaskSettings{
 			{PythonWheelTask: &jobs.PythonWheelTask{
-				PackageName: "my_test_code",
-				EntryPoint:  "run",
+				PackageName: new("my_test_code"),
+				EntryPoint:  new("run"),
 			}},
 		},
 	}
@@ -74,11 +74,11 @@ func TestJobRunnerCancel(t *testing.T) {
 
 	jobApi := m.GetMockJobsAPI()
 	jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		ActiveOnly: true,
-		JobId:      123,
+		ActiveOnly: new(true),
+		JobId:      new(int64(123)),
 	}).Return([]jobs.BaseRun{
-		{RunId: 1},
-		{RunId: 2},
+		{RunId: new(int64(1))},
+		{RunId: new(int64(2))},
 	}, nil)
 
 	mockWait := &jobs.WaitGetRunJobTerminatedOrSkipped[struct{}]{
@@ -118,8 +118,8 @@ func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 
 	jobApi := m.GetMockJobsAPI()
 	jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		ActiveOnly: true,
-		JobId:      123,
+		ActiveOnly: new(true),
+		JobId:      new(int64(123)),
 	}).Return([]jobs.BaseRun{}, nil)
 
 	jobApi.AssertNotCalled(t, "CancelRun")
@@ -132,8 +132,8 @@ func TestJobRunnerRestart(t *testing.T) {
 	for _, jobSettings := range []jobs.JobSettings{
 		{},
 		{
-			Continuous: &jobs.Continuous{
-				PauseStatus: jobs.PauseStatusPaused,
+			Continuous: &jobs.ContinuousSettings{
+				PauseStatus: jobs.SchedulePauseStatus_Paused,
 			},
 		},
 	} {
@@ -160,11 +160,11 @@ func TestJobRunnerRestart(t *testing.T) {
 
 		jobApi := m.GetMockJobsAPI()
 		jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-			ActiveOnly: true,
-			JobId:      123,
+			ActiveOnly: new(true),
+			JobId:      new(int64(123)),
 		}).Return([]jobs.BaseRun{
-			{RunId: 1},
-			{RunId: 2},
+			{RunId: new(int64(1))},
+			{RunId: new(int64(2))},
 		}, nil)
 
 		// Mock the runner cancelling existing job runs.
@@ -185,7 +185,7 @@ func TestJobRunnerRestart(t *testing.T) {
 			Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
 				return &jobs.Run{
 					State: &jobs.RunState{
-						ResultState: jobs.RunResultStateSuccess,
+						ResultState: jobs.RunResultState_RunResultState_Success,
 					},
 				}, nil
 			},
@@ -230,7 +230,7 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 
 	// Run must surface the error instead of dereferencing the nil run details.
 	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{
-		RunId: 456,
+		RunId: new(int64(456)),
 	}).Return(nil, errors.New("transient error"))
 
 	_, err := runner.Run(ctx, &Options{NoWait: true})
@@ -240,7 +240,7 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
 		ID: "123",
-		Continuous: &jobs.Continuous{
+		Continuous: &jobs.ContinuousSettings{
 			PauseStatus: jobs.PauseStatusUnpaused,
 		},
 	}
@@ -272,7 +272,7 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 		Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
 			return &jobs.Run{
 				State: &jobs.RunState{
-					ResultState: jobs.RunResultStateSuccess,
+					ResultState: jobs.RunResultState_RunResultState_Success,
 				},
 			}, nil
 		},

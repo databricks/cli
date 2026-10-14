@@ -2,6 +2,7 @@ package sdkmeta
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -74,4 +75,24 @@ func TestDump(t *testing.T) {
 		}
 	}
 	t.Logf("mapped %d", len(m.Types()))
+}
+
+func TestEnvVar(t *testing.T) {
+	doc, _ := clijson.Parse("../../../.codegen/cli.json")
+	m, _ := Build(reflect.TypeFor[testRoot](), doc.Schemas)
+	for typ, n := range m.Types() {
+		if typ.Name() == "EnvVar" {
+			t.Logf("%s %s", typeName(typ), n)
+		}
+	}
+}
+
+func TestPipelinesStorage(t *testing.T) {
+	doc, _ := clijson.Parse("../../../.codegen/cli.json")
+	m, _ := Build(reflect.TypeFor[testRoot](), doc.Schemas)
+	for typ, n := range m.Types() {
+		if strings.Contains(typeName(typ), "pipelines/v2") && strings.Contains(typ.Name(), "Info") {
+			t.Logf("%s %s %v", typeName(typ), n, m.Required(typ))
+		}
+	}
 }

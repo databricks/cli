@@ -11,7 +11,7 @@ import (
 // metric builds one epoch-metric history point: fractional epoch as the value,
 // global step as the MLflow step, wall-clock as the timestamp (ms).
 func metric(tsMillis, step int64, epoch float64) experiments.Metric {
-	return experiments.Metric{Key: "epoch", Timestamp: tsMillis, Step: step, Value: epoch}
+	return experiments.Metric{Key: new("epoch"), Timestamp: new(tsMillis), Step: new(step), Value: new(epoch)}
 }
 
 func TestComputeETA_StepMode(t *testing.T) {

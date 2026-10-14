@@ -250,7 +250,8 @@ func TestEnrichAuthError(t *testing.T) {
 			original := apierr.FromHTTPError(tt.statusCode, nil, []byte(`{"error_code":"TEST_ERROR","message":"test error message"}`))
 
 			result := EnrichAuthError(t.Context(), tt.cfg, original)
-			assert.Equal(t, tt.wantMsg, result.Error())
+			// The enrichment is appended to the original error's own text.
+			assert.Equal(t, strings.Replace(tt.wantMsg, "test error message", original.Error(), 1), result.Error())
 		})
 	}
 }

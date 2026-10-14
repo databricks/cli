@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"runtime"
 	"testing"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,27 +41,27 @@ func TestComputeMetadataMutator(t *testing.T) {
 					"my-job-1": {
 						ID: "1111",
 						JobSettings: jobs.JobSettings{
-							Name: "My Job One",
+							Name: new("My Job One"),
 						},
 					},
 					"my-job-2": {
 						ID: "2222",
 						JobSettings: jobs.JobSettings{
-							Name: "My Job Two",
+							Name: new("My Job Two"),
 						},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
 						ID: "3333",
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "My Pipeline One",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Name: new("My Pipeline One"),
 						},
 					},
 					"my-pipeline-2": {
 						ID: "4444",
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "My Pipeline Two",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Name: new("My Pipeline Two"),
 						},
 					},
 				},

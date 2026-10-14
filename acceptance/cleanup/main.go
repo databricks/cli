@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -19,12 +18,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // ciRunID matches a valid GITHUB_RUN_ID (same cap as acceptance_test.go).
@@ -56,7 +57,7 @@ func main() {
 func cleanBundles(ctx context.Context, execPath, prefix string) error {
 	start := time.Now()
 
-	w, err := databricks.NewWorkspaceClient()
+	w, err := sdkclients.New(ctx, &config.Config{})
 	if err != nil {
 		return fmt.Errorf("cannot create workspace client: %w", err)
 	}
@@ -71,8 +72,8 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 	// so sweep both. A "/Shared/..." root_path is normalized to "/Workspace/Shared/..."
 	// by prependWorkspacePrefix, so the swept path uses that form.
 	bundleRoots := []string{
-		"/Workspace/Users/" + me.UserName + "/.bundle",
-		"/Workspace/Shared/" + me.UserName + "/.bundle",
+		"/Workspace/Users/" + utils.Deref(me.UserName) + "/.bundle",
+		"/Workspace/Shared/" + utils.Deref(me.UserName) + "/.bundle",
 	}
 
 	// The run's prefix always appears in the first path segment under .bundle
@@ -131,7 +132,7 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 // a "state" or "files" child, which the bundle deploy writes beneath the
 // resolved workspace.root_path. This works regardless of whether the root is
 // the default ~/.bundle/<name>/<target> or a custom ~/.bundle/<...> override.
-func findDeploymentRoots(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
+func findDeploymentRoots(ctx context.Context, w *sdkclients.Clients, dir string) []string {
 	var childDirs []string
 	for _, child := range listChildDirs(ctx, w, dir) {
 		if base := path.Base(child); base == "state" || base == "files" {
@@ -151,17 +152,17 @@ func findDeploymentRoots(ctx context.Context, w *databricks.WorkspaceClient, dir
 // listChildDirs returns the immediate subdirectory paths of dir. A missing dir
 // (nothing was deployed under it) yields nil silently; any other listing error
 // is logged loudly but does not stop the overall sweep.
-func listChildDirs(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
-	objects, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{Path: dir})
+func listChildDirs(ctx context.Context, w *sdkclients.Clients, dir string) []string {
+	objects, err := w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{Path: dir})
 	if err != nil {
-		if !errors.Is(err, apierr.ErrNotFound) {
+		if !apierrs.Is(err, apierrs.ErrNotFound) {
 			log.Infof(ctx, "WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
 		}
 		return nil
 	}
 	var dirs []string
 	for _, o := range objects {
-		if o.ObjectType == workspace.ObjectTypeDirectory {
+		if o.ObjectType == workspaceapi.ObjectTypeDirectory {
 			dirs = append(dirs, o.Path)
 		}
 	}

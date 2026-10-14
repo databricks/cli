@@ -2,7 +2,6 @@ package validate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/databricks/cli/libs/utils"
 	"slices"
@@ -11,11 +10,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkvolumes "github.com/databricks/sdk-go/uc/volumes/v1"
 )
 
 type validateArtifactPath struct{ bundle.RO }
@@ -98,12 +98,12 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 	}
 	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
 	w := b.WorkspaceClient(ctx)
-	_, err = w.Volumes.ReadByName(ctx, volumeFullName)
+	_, err = w.Volumes.GetVolume(ctx, sdkvolumes.GetVolumeRequest{FullNameArg: new(volumeFullName)})
 
-	if errors.Is(err, apierr.ErrPermissionDenied) {
+	if apierrs.Is(err, apierrs.ErrPermissionDenied) {
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
 	}
-	if errors.Is(err, apierr.ErrNotFound) {
+	if apierrs.Is(err, apierrs.ErrNotFound) {
 		path, locations, ok := findVolumeInBundle(b.Config, catalogName, schemaName, volumeName)
 		if !ok {
 			return wrapErrorMsg(fmt.Sprintf("volume %s does not exist", volumeFullName))

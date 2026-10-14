@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -39,8 +40,8 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 
 	body, ok := getResponse.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
-	assert.Equal(t, "my_catalog", body.Name)
-	assert.Equal(t, "my_catalog", body.FullName)
+	assert.Equal(t, "my_catalog", utils.Deref(body.Name))
+	assert.Equal(t, "my_catalog", utils.Deref(body.FullName))
 }
 
 // createCatalogRequest sets every field CreateCatalog accepts. Tests below assert
@@ -80,17 +81,37 @@ func TestCatalogsCreate_EchoesEveryAcceptedField(t *testing.T) {
 	info, ok := response.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
 
-	assert.Equal(t, "my_catalog", info.Name)
-	assert.Equal(t, "c", info.Comment)
-	assert.Equal(t, "my_connection", info.ConnectionName)
-	assert.Equal(t, int64(48), info.CustomMaxRetentionHours)
+	assert.Equal(t, "my_catalog", utils.Deref(info.Name))
+	assert.Equal(t, "c", utils.Deref(info.Comment))
+	assert.Equal(t, "my_connection", utils.Deref(info.ConnectionName))
+	assert.Equal(t, int64(48), utils.Deref(info.CustomMaxRetentionHours))
 	require.NotNil(t, info.ManagedEncryptionSettings)
-	assert.Equal(t, "key-1", info.ManagedEncryptionSettings.CustomerManagedKeyId)
+	assert.Equal(t, "key-1", utils.Deref(info.ManagedEncryptionSettings.CustomerManagedKeyId))
 	assert.Equal(t, map[string]string{"opt": "1"}, info.Options)
 	assert.Equal(t, map[string]string{"prop": "2"}, info.Properties)
-	assert.Equal(t, "my_provider", info.ProviderName)
-	assert.Equal(t, "my_share", info.ShareName)
-	assert.Equal(t, "s3://bucket/root", info.StorageRoot)
+	assert.Equal(t, "my_provider", utils.Deref(info.ProviderName))
+	assert.Equal(t, "my_share", utils.Deref(info.ShareName))
+	assert.Equal(t, "s3://bucket/root", utils.Deref(info.StorageRoot))
+}
+
+// catalogCreateServerFields are CreateCatalogRequest fields the server computes
+// or DABs never sends: sdk-go models the create request as a full CatalogInfo.
+var catalogCreateServerFields = map[string]bool{
+	"owner":                                  true,
+	"enable_predictive_optimization":         true,
+	"catalog_type":                           true,
+	"metastore_id":                           true,
+	"created_at":                             true,
+	"created_by":                             true,
+	"updated_at":                             true,
+	"updated_by":                             true,
+	"storage_location":                       true,
+	"isolation_mode":                         true,
+	"effective_predictive_optimization_flag": true,
+	"browse_only":                            true,
+	"provisioning_info":                      true,
+	"full_name":                              true,
+	"securable_type":                         true,
 }
 
 // CatalogsCreate builds its response field by field, so a field the SDK adds to
@@ -102,6 +123,9 @@ func TestCatalogsCreate_RequestCoversEveryAcceptedField(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(createCatalogRequest), &sent))
 
 	for _, name := range jsonFieldNames(reflect.TypeFor[catalogs.CreateCatalogRequest]()) {
+		if catalogCreateServerFields[name] {
+			continue
+		}
 		assert.Contains(t, sent, name)
 	}
 }
@@ -125,10 +149,10 @@ func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 	info, ok := response.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
 
-	assert.Equal(t, "updated", info.Comment)
-	assert.Equal(t, int64(72), info.CustomMaxRetentionHours)
+	assert.Equal(t, "updated", utils.Deref(info.Comment))
+	assert.Equal(t, int64(72), utils.Deref(info.CustomMaxRetentionHours))
 	require.NotNil(t, info.ManagedEncryptionSettings)
-	assert.Equal(t, "key-2", info.ManagedEncryptionSettings.CustomerManagedKeyId)
+	assert.Equal(t, "key-2", utils.Deref(info.ManagedEncryptionSettings.CustomerManagedKeyId))
 	assert.Equal(t, map[string]string{"opt": "3"}, info.Options)
 	assert.Equal(t, map[string]string{"prop": "4"}, info.Properties)
 }

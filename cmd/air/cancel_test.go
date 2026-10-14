@@ -12,20 +12,36 @@ import (
 	"testing/iotest"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// cancelServer serves runs/cancel with the handler registered for the run_id
+// in the request body; any other run id fails the test.
+func cancelServer(t *testing.T, byRunID map[int64]http.HandlerFunc) *sdkclients.Clients {
+	t.Helper()
+	return fakeWorkspace(t, map[string]http.HandlerFunc{
+		"POST /api/2.2/jobs/runs/cancel": func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				RunID int64 `json:"run_id"`
+			}
+			if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&req)) {
+				return
+			}
+			h, ok := byRunID[req.RunID]
+			if !assert.True(t, ok, "unexpected cancel of run %d", req.RunID) {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			h(w, r)
+		},
+	})
+}
 
 // runCancelAll runs `cancel --all` against w with the given output mode and
 // stdin, capturing output into buf.
@@ -87,21 +103,19 @@ func TestCancelArgs(t *testing.T) {
 }
 
 func TestCancelRunInvalidID(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
+	w := fakeWorkspace(t, nil)
 	for _, id := range []string{"abc", "0", "-1"} {
-		err := cancelRun(t.Context(), m.WorkspaceClient, id)
+		err := cancelRun(t.Context(), w, id)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid run ID")
 	}
 }
 
 func TestCancelByIDSuccess(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 456}).Return(nil, nil)
+	w := cancelServer(t, map[int64]http.HandlerFunc{123: respond(200, `{}`), 456: respond(200, `{}`)})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "123", "456")
+	_, err := runCancel(t, w, flags.OutputText, "", &buf, "123", "456")
 	require.NoError(t, err)
 
 	out := buf.String()
@@ -112,11 +126,10 @@ func TestCancelByIDSuccess(t *testing.T) {
 }
 
 func TestCancelByIDNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierrs.ErrResourceDoesNotExist)
+	w := cancelServer(t, map[int64]http.HandlerFunc{5: respond(404, `{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"Run 5 does not exist."}`)})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "5")
+	_, err := runCancel(t, w, flags.OutputText, "", &buf, "5")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 
 	out := buf.String()
@@ -127,23 +140,22 @@ func TestCancelByIDNotFound(t *testing.T) {
 func TestCancelByIDNotFoundInvalidParam(t *testing.T) {
 	// The cancel endpoint reports an unknown run as 400 INVALID_PARAMETER_VALUE,
 	// which the SDK does not remap to ErrResourceDoesNotExist for this path.
-	m := mocks.NewMockWorkspaceClient(t)
-	apiErr := &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "Run 5 does not exist."}
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apiErr)
+	w := cancelServer(t, map[int64]http.HandlerFunc{5: respond(400, `{"error_code":"INVALID_PARAMETER_VALUE","message":"Run 5 does not exist."}`)})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "5")
+	_, err := runCancel(t, w, flags.OutputText, "", &buf, "5")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "Run 5 not found")
 }
 
 func TestCancelPartialFailureJSON(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierrs.ErrResourceDoesNotExist)
+	w := cancelServer(t, map[int64]http.HandlerFunc{
+		123: respond(200, `{}`),
+		5:   respond(404, `{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"Run 5 does not exist."}`),
+	})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputJSON, "", &buf, "123", "5")
+	_, err := runCancel(t, w, flags.OutputJSON, "", &buf, "123", "5")
 	// The envelope is printed, but a failure still exits non-zero.
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 
@@ -156,11 +168,10 @@ func TestCancelPartialFailureJSON(t *testing.T) {
 }
 
 func TestCancelByIDSuccessJSON(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
+	w := cancelServer(t, map[int64]http.HandlerFunc{123: respond(200, `{}`)})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputJSON, "", &buf, "123")
+	_, err := runCancel(t, w, flags.OutputJSON, "", &buf, "123")
 	require.NoError(t, err)
 
 	var got cancelEnvelope
@@ -170,11 +181,10 @@ func TestCancelByIDSuccessJSON(t *testing.T) {
 }
 
 func TestCancelByIDGenericFailure(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 7}).Return(nil, errors.New("boom"))
+	w := cancelServer(t, map[int64]http.HandlerFunc{7: respond(500, `{"error_code":"INTERNAL_ERROR","message":"boom"}`)})
 
 	var buf bytes.Buffer
-	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "7")
+	_, err := runCancel(t, w, flags.OutputText, "", &buf, "7")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "Failed to cancel run 7: boom")
 }
@@ -240,11 +250,12 @@ func TestCancelAllConfirmReadError(t *testing.T) {
 }
 
 func TestCancelAllMeError(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, iam.MeRequest{}).Return(nil, errors.New("nope"))
+	w := fakeWorkspace(t, map[string]http.HandlerFunc{
+		"GET /api/2.0/preview/scim/v2/Me": respond(500, `{"error_code":"INTERNAL_ERROR","message":"nope"}`),
+	})
 
 	var buf bytes.Buffer
-	err := runCancelAll(t, m.WorkspaceClient, flags.OutputText, nil, &buf)
+	err := runCancelAll(t, w, flags.OutputText, nil, &buf)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to resolve current user")
 }

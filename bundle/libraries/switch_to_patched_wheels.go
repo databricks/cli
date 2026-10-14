@@ -2,6 +2,7 @@ package libraries
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/utils"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -32,12 +33,12 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 		for taskInd, task := range job.Tasks {
 			// Update resources.jobs.*.task[*].libraries[*].whl
 			for libInd, lib := range task.Libraries {
-				repl := replacements[lib.Whl]
+				repl := replacements[utils.Deref(lib.Whl)]
 				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
-					job.Tasks[taskInd].Libraries[libInd].Whl = repl
+					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].libraries[%d].whl from %s to %s", jobName, taskInd, libInd, utils.Deref(lib.Whl), repl)
+					job.Tasks[taskInd].Libraries[libInd].Whl = new(repl)
 				} else {
-					log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
+					log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, utils.Deref(lib.Whl), slices.Sorted(maps.Keys(replacements)))
 				}
 			}
 
@@ -46,12 +47,12 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 			foreachptr := task.ForEachTask
 			if foreachptr != nil {
 				for libInd, lib := range foreachptr.Task.Libraries {
-					repl := replacements[lib.Whl]
+					repl := replacements[utils.Deref(lib.Whl)]
 					if repl != "" {
-						log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
-						foreachptr.Task.Libraries[libInd].Whl = repl
+						log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, utils.Deref(lib.Whl), repl)
+						foreachptr.Task.Libraries[libInd].Whl = new(repl)
 					} else {
-						log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
+						log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, utils.Deref(lib.Whl), slices.Sorted(maps.Keys(replacements)))
 					}
 				}
 			}
@@ -85,12 +86,12 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 			continue
 		}
 		for libInd, lib := range clusterRef.Libraries {
-			repl := replacements[lib.Whl]
+			repl := replacements[utils.Deref(lib.Whl)]
 			if repl != "" {
-				log.Debugf(ctx, "Updating resources.clusters.%s.libraries[%d].whl from %s to %s", clusterName, libInd, lib.Whl, repl)
-				clusterRef.Libraries[libInd].Whl = repl
+				log.Debugf(ctx, "Updating resources.clusters.%s.libraries[%d].whl from %s to %s", clusterName, libInd, utils.Deref(lib.Whl), repl)
+				clusterRef.Libraries[libInd].Whl = new(repl)
 			} else {
-				log.Debugf(ctx, "Not updating resources.clusters.%s.libraries[%d].whl from %s. Available replacements: %v", clusterName, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
+				log.Debugf(ctx, "Not updating resources.clusters.%s.libraries[%d].whl from %s. Available replacements: %v", clusterName, libInd, utils.Deref(lib.Whl), slices.Sorted(maps.Keys(replacements)))
 			}
 		}
 	}

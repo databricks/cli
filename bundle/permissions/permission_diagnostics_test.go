@@ -1,6 +1,7 @@
 package permissions_test
 
 import (
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -8,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,11 +53,11 @@ func mockBundle(permissions []resources.Permission) *bundle.Bundle {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName:    "testuser@databricks.com",
-						DisplayName: "Test User",
-						Groups: []iam.ComplexValue{
-							{Display: "testgroup"},
+					User: &scim.User{
+						UserName:    new("testuser@databricks.com"),
+						DisplayName: new("Test User"),
+						Groups: []scim.ComplexValue{
+							{Display: new("testgroup")},
 						},
 					},
 				},

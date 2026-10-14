@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -48,19 +49,19 @@ func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path
 	var specified []string
 	var unspecified []string
 
-	if task.JobClusterKey != "" {
+	if utils.Deref(task.JobClusterKey) != "" {
 		specified = append(specified, "job_cluster_key")
 	} else {
 		unspecified = append(unspecified, "job_cluster_key")
 	}
 
-	if task.EnvironmentKey != "" {
+	if utils.Deref(task.EnvironmentKey) != "" {
 		specified = append(specified, "environment_key")
 	} else {
 		unspecified = append(unspecified, "environment_key")
 	}
 
-	if task.ExistingClusterId != "" {
+	if utils.Deref(task.ExistingClusterId) != "" {
 		specified = append(specified, "existing_cluster_id")
 	} else {
 		unspecified = append(unspecified, "existing_cluster_id")
@@ -75,7 +76,9 @@ func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
+		if task.ForEachTask.Task != nil {
+			diags = diags.Extend(validateJobTask(b, *task.ForEachTask.Task, forEachTaskPath))
+		}
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -85,7 +88,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path
 			// path might be not very helpful, adding user-specified task key clarifies the context
 			detail := fmt.Sprintf(
 				"Task %q requires a cluster or an environment to run.\nSpecify one of the following fields: %s.",
-				task.TaskKey,
+				utils.Deref(task.TaskKey),
 				strings.Join(unspecified, ", "),
 			)
 
@@ -107,7 +110,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path
 func isComputeTask(task jobs.TaskSettings) bool {
 	if task.NotebookTask != nil {
 		// if warehouse_id is set, it's SQL notebook that doesn't need cluster or serverless GC
-		if task.NotebookTask.WarehouseId != "" {
+		if utils.Deref(task.NotebookTask.WarehouseId) != "" {
 			return false
 		} else {
 			// task settings don't require specifying a cluster/serverless GC, but task itself can run on one

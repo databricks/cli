@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"strconv"
 
 	iam "github.com/databricks/cli/libs/sdktypes/scim/v1"
@@ -23,7 +24,7 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 	groupId := strconv.FormatInt(nextID(), 10)
 
 	group := iam.Group{
-		Id:          nonZero(groupId),
+		Id:          utils.NonZero(groupId),
 		DisplayName: request.DisplayName,
 	}
 

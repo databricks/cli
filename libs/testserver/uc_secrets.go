@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 	"strings"
 	"time"
 
@@ -28,9 +29,9 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	}
 
 	fullName := fmt.Sprintf("%s.%s.%s",
-		inputSecret.CatalogName,
-		inputSecret.SchemaName,
-		inputSecret.Name)
+		utils.Deref(inputSecret.CatalogName),
+		utils.Deref(inputSecret.SchemaName),
+		utils.Deref(inputSecret.Name))
 
 	// Check if secret already exists
 	if _, exists := s.UCSecrets[fullName]; exists {
@@ -48,7 +49,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		CatalogName:    inputSecret.CatalogName,
 		SchemaName:     inputSecret.SchemaName,
 		Name:           inputSecret.Name,
-		FullName:       nonZero(fullName),
+		FullName:       utils.NonZero(fullName),
 		Value:          inputSecret.Value,
 		EffectiveValue: inputSecret.Value,
 		Comment:        inputSecret.Comment,
@@ -59,10 +60,10 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		CreatedBy:      s.CurrentUser().UserName,
 		UpdatedBy:      s.CurrentUser().UserName,
 		EffectiveOwner: inputSecret.Owner,
-		MetastoreId:    nonZero("test-metastore-id"),
+		MetastoreId:    utils.NonZero("test-metastore-id"),
 	}
 
-	if val(secret.Owner) == "" {
+	if utils.Deref(secret.Owner) == "" {
 		secret.Owner = s.CurrentUser().UserName
 		secret.EffectiveOwner = s.CurrentUser().UserName
 	}
@@ -103,7 +104,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 	// The real API doesn't return the value unless specifically requested
 	returnSecret := secret
 	returnSecret.EffectiveValue = secret.Value
-	returnSecret.Value = nonZero("")
+	returnSecret.Value = nil
 
 	return Response{
 		Body: returnSecret,
@@ -149,13 +150,13 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	}
 
 	// Update fields based on update mask
-	if val(updateSecret.Value) != "" {
+	if utils.Deref(updateSecret.Value) != "" {
 		secret.Value = updateSecret.Value
 	}
 	if _, ok := fields["comment"]; ok {
 		secret.Comment = updateSecret.Comment
 	}
-	if val(updateSecret.Owner) != "" {
+	if utils.Deref(updateSecret.Owner) != "" {
 		secret.Owner = updateSecret.Owner
 		secret.EffectiveOwner = updateSecret.Owner
 	}

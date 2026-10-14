@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/databricks-sdk-go/client"
 )
 
 // serverlessPoliciesPath is the workspace-scoped ListBudgetPolicies endpoint on
@@ -51,7 +51,7 @@ type usagePoliciesResponse struct {
 // map: the SDK only flattens nesting for struct-typed query values, and would
 // format a nested map with %v into a useless "map[...]" literal.
 func listUsagePolicies(ctx context.Context, w *sdkclients.Clients, policyName string) ([]usagePolicy, error) {
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}

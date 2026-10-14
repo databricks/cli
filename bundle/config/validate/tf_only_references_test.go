@@ -20,8 +20,8 @@ func makeBundle(t *testing.T) *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"src": {JobSettings: jobs.JobSettings{Name: "source"}},
-					"dst": {JobSettings: jobs.JobSettings{Name: "placeholder"}},
+					"src": {JobSettings: jobs.JobSettings{Name: new("source")}},
+					"dst": {JobSettings: jobs.JobSettings{Name: new("placeholder")}},
 				},
 			},
 		},

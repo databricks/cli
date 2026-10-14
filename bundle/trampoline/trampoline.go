@@ -10,18 +10,19 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type TaskWithJobKey struct {
-	Task   *jobs.Task
+	Task   *jobs.TaskSettings
 	JobKey string
 }
 
 type TrampolineFunctions interface {
-	GetTemplateData(task *jobs.Task) (map[string]any, error)
+	GetTemplateData(task *jobs.TaskSettings) (map[string]any, error)
 	GetTasks(b *bundle.Bundle) []TaskWithJobKey
-	CleanUp(task *jobs.Task) error
+	CleanUp(task *jobs.TaskSettings) error
 }
 
 type trampoline struct {
@@ -61,7 +62,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 
 	// Keys may contain underscores, so joining with "_" alone is ambiguous ("a_b"+"c"
 	// vs "a"+"b_c"); the job key length prefix keeps the filename unique per task.
-	notebookName := fmt.Sprintf("notebook_%d_%s_%s", len(task.JobKey), task.JobKey, task.Task.TaskKey)
+	notebookName := fmt.Sprintf("notebook_%d_%s_%s", len(task.JobKey), task.JobKey, utils.Deref(task.Task.TaskKey))
 	localNotebookPath := filepath.Join(internalDir, notebookName+".py")
 
 	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0o755)
@@ -97,7 +98,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 	remotePath := path.Join(b.Config.Workspace.FilePath, filepath.ToSlash(internalDirRel), notebookName)
 
 	task.Task.NotebookTask = &jobs.NotebookTask{
-		NotebookPath: remotePath,
+		NotebookPath: new(remotePath),
 	}
 
 	return t.Execute(f, data)

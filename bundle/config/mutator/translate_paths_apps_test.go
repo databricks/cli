@@ -1,6 +1,7 @@
 package mutator_test
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"path/filepath"
 	"testing"
 
@@ -32,8 +33,8 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app": {
 						App: apps.App{
-							Name:           "My App",
-							SourceCodePath: "../src/app",
+							Name:           new("My App"),
+							SourceCodePath: new("../src/app"),
 						},
 					},
 				},
@@ -52,6 +53,6 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 	assert.Equal(
 		t,
 		"/bundle/files/src/app",
-		b.Config.Resources.Apps["app"].SourceCodePath,
+		utils.Deref(b.Config.Resources.Apps["app"].SourceCodePath),
 	)
 }

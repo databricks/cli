@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	"github.com/databricks/cli/libs/utils"
 	"net/http"
 	"strings"
 )
@@ -26,7 +27,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 
 	// UC rejects an empty name; the fake would otherwise store a catalog under a key
 	// nothing can look up. Message is UC's canned error, which names more than we check.
-	if val(createRequest.Name) == "" {
+	if utils.Deref(createRequest.Name) == "" {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -45,21 +46,21 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
 		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
 		// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
-		StorageRoot:  nonZero(strings.TrimRight(val(createRequest.StorageRoot), "/")),
+		StorageRoot:  utils.NonZero(strings.TrimRight(utils.Deref(createRequest.StorageRoot), "/")),
 		ProviderName: createRequest.ProviderName,
 		ShareName:    createRequest.ShareName,
 		Options:      createRequest.Options,
 		Properties:   createRequest.Properties,
 		FullName:     createRequest.Name,
-		CreatedAt:    nonZero(nowMilli()),
+		CreatedAt:    utils.NonZero(nowMilli()),
 		CreatedBy:    s.CurrentUser().UserName,
 		UpdatedBy:    s.CurrentUser().UserName,
-		MetastoreId:  nonZero(nextUUID()),
+		MetastoreId:  utils.NonZero(nextUUID()),
 		Owner:        s.CurrentUser().UserName,
 		CatalogType:  catalogs.CatalogType_ManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
-	if catalogInfo.Properties == nil && val(createRequest.Name) == catalogNameManagedDefaults {
+	if catalogInfo.Properties == nil && utils.Deref(createRequest.Name) == catalogNameManagedDefaults {
 		// Mirror UC: managed system defaults are populated when the user sets none.
 		catalogInfo.Properties = map[string]string{
 			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":                   "true",
@@ -72,7 +73,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
-	s.Catalogs[val(createRequest.Name)] = catalogInfo
+	s.Catalogs[utils.Deref(createRequest.Name)] = catalogInfo
 	return Response{
 		Body: catalogInfo,
 	}
@@ -103,16 +104,16 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	}
 
 	applyUpdatedFields(&existing, updateRequest, fields)
-	if val(updateRequest.NewName) != "" {
+	if utils.Deref(updateRequest.NewName) != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName
 
 		// Delete the old entry and create with new name
 		delete(s.Catalogs, name)
-		name = val(updateRequest.NewName)
+		name = utils.Deref(updateRequest.NewName)
 	}
 
-	existing.UpdatedAt = nonZero(nowMilli())
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.Catalogs[name] = existing

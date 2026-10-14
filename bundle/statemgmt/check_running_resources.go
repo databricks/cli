@@ -7,11 +7,12 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -47,7 +48,7 @@ func CheckRunningResource() bundle.Mutator {
 	return &checkRunningResources{}
 }
 
-func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {
+func checkAnyResourceRunning(ctx context.Context, w *sdkclients.Clients, state ExportedResourcesMap) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for resourceKey, attrs := range state {
@@ -88,33 +89,39 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 	return errs.Wait()
 }
 
-func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId string) (bool, error) {
+func IsJobRunning(ctx context.Context, w *sdkclients.Clients, jobId string) (bool, error) {
 	id, err := strconv.Atoi(jobId)
 	if err != nil {
 		return false, err
 	}
 
-	runs, err := w.Jobs.ListRunsAll(ctx, jobs.ListRunsRequest{JobId: int64(id), ActiveOnly: true})
-	if apierr.IsMissing(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
+	for _, err := range w.Jobs.ListRunsIter(ctx, sdkjobs.ListRunsRequest{
+		JobId:           new(int64(id)),
+		StateConstraint: &sdkjobs.ListRunsRequest_StateConstraint_ActiveOnly{ActiveOnly: true},
+	}) {
+		if apierrs.IsMissing(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		// Any active run means the job is running.
+		return true, nil
 	}
 
-	return len(runs) > 0, nil
+	return false, nil
 }
 
-func IsPipelineRunning(ctx context.Context, w *databricks.WorkspaceClient, pipelineId string) (bool, error) {
-	resp, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
-	if apierr.IsMissing(err) {
+func IsPipelineRunning(ctx context.Context, w *sdkclients.Clients, pipelineId string) (bool, error) {
+	resp, err := w.Pipelines.Get(ctx, sdkpipelines.GetPipelineRequest{PipelineId: new(pipelineId)})
+	if apierrs.IsMissing(err) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
 	switch resp.State {
-	case pipelines.PipelineStateIdle, pipelines.PipelineStateFailed, pipelines.PipelineStateDeleted:
+	case pipelines.PipelineState_PipelineState_Idle, pipelines.PipelineState_PipelineState_Failed, pipelines.PipelineState_PipelineState_Deleted:
 		return false, nil
 	default:
 		return true, nil

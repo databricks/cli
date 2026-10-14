@@ -206,5 +206,5 @@ func currentUser(ctx context.Context, w *sdkclients.Clients) (*scim.User, error)
 	if err != nil {
 		return nil, err
 	}
-	return iamutil.UserFromSDK(user)
+	return scim.UserFromSDK(user)
 }

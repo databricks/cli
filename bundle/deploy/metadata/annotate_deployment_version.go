@@ -26,11 +26,11 @@ func (m *annotateDeployment) Name() string {
 func (m *annotateDeployment) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, job := range b.Config.Resources.Jobs {
 		// Deployment is set by AnnotateJobs, which runs during initialize.
-		job.Deployment.DeploymentId = m.deploymentID
+		job.Deployment.DeploymentId = new(m.deploymentID)
 	}
 
 	for _, pipeline := range b.Config.Resources.Pipelines {
-		pipeline.Deployment.DeploymentId = m.deploymentID
+		pipeline.Deployment.DeploymentId = new(m.deploymentID)
 	}
 
 	return nil
@@ -54,11 +54,11 @@ func (m *annotateDeploymentVersion) Apply(_ context.Context, b *bundle.Bundle) d
 	versionID := strconv.Itoa(m.version)
 
 	for _, job := range b.Config.Resources.Jobs {
-		job.Deployment.VersionId = versionID
+		job.Deployment.VersionId = new(versionID)
 	}
 
 	for _, pipeline := range b.Config.Resources.Pipelines {
-		pipeline.Deployment.VersionId = versionID
+		pipeline.Deployment.VersionId = new(versionID)
 	}
 
 	return nil

@@ -1,7 +1,11 @@
 package dresources
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"errors"
+	"github.com/databricks/sdk-go/core/apierr"
 	"slices"
 	"strings"
 
@@ -99,4 +103,32 @@ func orZero[T any](p *T) *T {
 		return new(T)
 	}
 	return p
+}
+
+// nonEmpty returns a pointer to s, or nil if s is empty. It maps CLI string
+// fields where "" means unset onto optional sdk-go fields.
+func nonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// errResourceDoesNotExist builds the error a GET of a missing resource returns,
+// for resources whose existence is determined client-side (e.g. by listing).
+func errResourceDoesNotExist(message string) error {
+	body, _ := json.Marshal(map[string]string{
+		"error_code": "RESOURCE_DOES_NOT_EXIST",
+		"message":    message,
+	})
+	return apierr.FromHTTPError(http.StatusNotFound, nil, body)
+}
+
+// trueOrNil returns a pointer to true if b is set and nil otherwise, for optional
+// flags that are only sent when enabled.
+func trueOrNil(b bool) *bool {
+	if !b {
+		return nil
+	}
+	return new(true)
 }
