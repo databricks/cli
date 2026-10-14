@@ -56,7 +56,8 @@ type Experimental struct {
 	//
 	// Only for bundles with no deployed resources yet: DMS becomes the source of
 	// truth for their state.
-	DeploymentHistory bool `json:"deployment_history,omitempty"`
+	// An explicit value takes priority over the environment setting.
+	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }
 
 type Python struct {
