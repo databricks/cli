@@ -16,8 +16,8 @@ EnvMatrix.DMS = [""]
 
 # workspace list prints each state file's object id, minted per run.
 [[Repls]]
-Old = '(?m)^\d+(\s+FILE)'
-New = '[OBJECT_ID]${1}'
+Old = '(?m)^\d+ +FILE\b'
+New = '[OBJECT_ID]  FILE'
 
 # The ID column width depends on ID length, not migration behavior.
 [[Repls]]

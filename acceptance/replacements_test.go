@@ -48,7 +48,7 @@ func TestDeploymentIDReplacement(t *testing.T) {
 	}
 }
 
-func TestWorkspaceListHeaderReplacement(t *testing.T) {
+func TestWorkspaceListReplacement(t *testing.T) {
 	var config internal.TestConfig
 	_, err := toml.DecodeFile("bundle/migrate/test.toml", &config)
 	require.NoError(t, err)
@@ -68,6 +68,11 @@ func TestWorkspaceListHeaderReplacement(t *testing.T) {
 			name: "five-digit IDs",
 			old:  "ID     Type  Language  Path\n",
 			new:  "ID                   Type  Language  Path\n",
+		},
+		{
+			name: "mixed ID widths",
+			old:  "9999   FILE            /state/old.json\n10000  FILE            /state/new.json\n",
+			new:  "[OBJECT_ID]  FILE            /state/old.json\n[OBJECT_ID]  FILE            /state/new.json\n",
 		},
 		{
 			name: "other table",
