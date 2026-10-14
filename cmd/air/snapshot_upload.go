@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // uploadProvenanceSidecars controls collection and upload of git_state.json
@@ -28,7 +28,7 @@ const uploadProvenanceSidecars = false
 // artifact store's .internal directory, returning the remote path to attach to the
 // ai_runtime_task. Uploading reuses libs/filer for the workspace/volume write without
 // depending on the bundle package (see uploadSnapshotTarball / snapshotUploadFiler).
-func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
+func uploadSnapshot(ctx context.Context, w *sdkclients.Clients, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
@@ -157,7 +157,7 @@ const airArtifactInternalDir = ".internal"
 // The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
 // for git_archive and by the working-tree metadata fingerprint for plain_tar — so if
 // the identical object already exists we skip packaging and upload entirely and reuse it.
-func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string) (snapshotResult, error) {
+func uploadSnapshotTarball(ctx context.Context, w *sdkclients.Clients, repoPath string, plan snapshotPlan, artifactPath string) (snapshotResult, error) {
 	result := snapshotResult{UsesGit: &plan.isGitRepo, PackagingMode: &plan.mode}
 	f, uploadPath, err := snapshotUploadFiler(ctx, w, artifactPath)
 	if err != nil {
@@ -225,7 +225,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 // upload path. It routes /Volumes paths to a Files API filer and everything else to a
 // workspace files filer, matching bundle artifact-upload resolution without depending
 // on the bundle package.
-func snapshotUploadFiler(ctx context.Context, w *databricks.WorkspaceClient, artifactPath string) (filer.Filer, string, error) {
+func snapshotUploadFiler(ctx context.Context, w *sdkclients.Clients, artifactPath string) (filer.Filer, string, error) {
 	if artifactPath == "" {
 		return nil, "", errors.New("remote artifact path not configured")
 	}

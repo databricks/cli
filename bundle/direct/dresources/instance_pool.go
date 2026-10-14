@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type ResourceInstancePool struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceInstancePool) New(client *databricks.WorkspaceClient) *ResourceInstancePool {
+func (*ResourceInstancePool) New(client *sdkclients.Clients) *ResourceInstancePool {
 	return &ResourceInstancePool{client: client}
 }
 

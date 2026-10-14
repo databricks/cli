@@ -11,9 +11,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ import (
 // jobRunClientFor returns a client talking to server. Call it after the test
 // registers its own handlers: first registration wins, so the defaults added here
 // only fill the gaps.
-func jobRunClientFor(t *testing.T, server *testserver.Server) *databricks.WorkspaceClient {
+func jobRunClientFor(t *testing.T, server *testserver.Server) *sdkclients.Clients {
 	t.Helper()
 	testserver.AddDefaultHandlers(server)
 
@@ -36,7 +36,7 @@ func jobRunClientFor(t *testing.T, server *testserver.Server) *databricks.Worksp
 
 // jobRunServer returns a client whose runs/get is the given handler, so a wait can
 // be driven without a real run.
-func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *databricks.WorkspaceClient {
+func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *sdkclients.Clients {
 	t.Helper()
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", getRun)
@@ -51,7 +51,7 @@ const (
 )
 
 // jobRunClient returns a client whose GetRun always reports the given run state.
-func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
+func jobRunClient(t *testing.T, state *jobs.RunState) *sdkclients.Clients {
 	t.Helper()
 	return jobRunServer(t, func(req testserver.Request) any {
 		return jobs.Run{RunId: 123, JobId: 456, State: state, RunPageUrl: testRunPageURL}
@@ -60,7 +60,7 @@ func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClien
 
 // waitForTestRun drives the framework hook, so it covers parsing the id the
 // framework hands back from DoCreate along with the wait itself.
-func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient) (*JobRunRemote, error) {
+func waitForTestRun(t *testing.T, ctx context.Context, client *sdkclients.Clients) (*JobRunRemote, error) {
 	t.Helper()
 	r := (&ResourceJobRun{}).New(client)
 	return r.WaitAfterCreate(ctx, "123", &JobRunState{})

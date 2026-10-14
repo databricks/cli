@@ -1,13 +1,13 @@
 package testserver
 
 import (
-	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
 	"encoding/json"
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"reflect"
 	"strings"
 	"testing"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {

@@ -1,18 +1,18 @@
 package testserver
 
 import (
-	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
-	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	metastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
-	tables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
-	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
+	metastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
+	tables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -28,9 +28,9 @@ import (
 const TestWorkspaceID = 900800700600
 
 var TestMetastore = metastores.MetastoreAssignment{
-	DefaultCatalogName: "hive_metastore",
-	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        TestWorkspaceID,
+	DefaultCatalogName: nonZero("hive_metastore"),
+	MetastoreId:        nonZero("120efa64-9b68-46ba-be38-f319458430d2"),
+	WorkspaceId:        nonZero[int64](TestWorkspaceID),
 }
 
 // Extensions that format=AUTO maps to workspace asset types /workspace/import
@@ -178,12 +178,12 @@ func AddDefaultHandlers(server *Server) {
 		return instancepools.ListInstancePoolsResponse{
 			InstancePools: []instancepools.InstancePoolAndStats{
 				{
-					InstancePoolName: "DEFAULT Test Instance Pool",
-					InstancePoolId:   TestDefaultInstancePoolId,
+					InstancePoolName: nonZero("DEFAULT Test Instance Pool"),
+					InstancePoolId:   nonZero(TestDefaultInstancePoolId),
 				},
 				{
-					InstancePoolName: "some-test-instance-pool",
-					InstancePoolId:   "1234",
+					InstancePoolName: nonZero("some-test-instance-pool"),
+					InstancePoolId:   nonZero("1234"),
 				},
 			},
 		}
@@ -206,12 +206,12 @@ func AddDefaultHandlers(server *Server) {
 		return clusters.ListClustersResponse{
 			Clusters: []clusters.ClusterInfo{
 				{
-					ClusterName: "some-test-cluster",
-					ClusterId:   "4321",
+					ClusterName: nonZero("some-test-cluster"),
+					ClusterId:   nonZero("4321"),
 				},
 				{
-					ClusterName: "some-other-cluster",
-					ClusterId:   "9876",
+					ClusterName: nonZero("some-other-cluster"),
+					ClusterId:   nonZero("9876"),
 				},
 			},
 		}
@@ -446,7 +446,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
 		return metastores.GetMetastoreSummaryResponse{
 			MetastoreId: TestMetastore.MetastoreId,
-			Region:      "us-west-2",
+			Region:      nonZero("us-west-2"),
 		}
 	})
 
@@ -494,7 +494,7 @@ func AddDefaultHandlers(server *Server) {
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return req.Workspace.JobsDelete(req, request.JobId)
+		return req.Workspace.JobsDelete(req, val(request.JobId))
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
@@ -643,10 +643,10 @@ func AddDefaultHandlers(server *Server) {
 		}
 		return Response{
 			Body: tables.TableInfo{
-				CatalogName: parts[0],
-				SchemaName:  parts[1],
-				Name:        parts[2],
-				FullName:    req.Vars["full_name"],
+				CatalogName: nonZero(parts[0]),
+				SchemaName:  nonZero(parts[1]),
+				Name:        nonZero(parts[2]),
+				FullName:    nonZero(req.Vars["full_name"]),
 			},
 		}
 	})
@@ -779,9 +779,9 @@ func AddDefaultHandlers(server *Server) {
 		return uccredentials.ListStorageCredentialsResponse{
 			StorageCredentials: []uccredentials.StorageCredentialInfo{
 				{
-					Name:        "some-test-credential",
-					Id:          "1234",
-					MetastoreId: "abcd",
+					Name:        nonZero("some-test-credential"),
+					Id:          nonZero("1234"),
+					MetastoreId: nonZero("abcd"),
 				},
 			},
 		}
@@ -895,7 +895,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+			"path": "/Workspace/Users/" + val(TestUserSP.UserName) + "/.snapshots/",
 		}
 	})
 

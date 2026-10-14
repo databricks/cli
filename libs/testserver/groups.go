@@ -23,7 +23,7 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 	groupId := strconv.FormatInt(nextID(), 10)
 
 	group := iam.Group{
-		Id:          new(groupId),
+		Id:          nonZero(groupId),
 		DisplayName: request.DisplayName,
 	}
 

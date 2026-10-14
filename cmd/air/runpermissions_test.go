@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,13 +43,13 @@ func TestGrantJobPermissions(t *testing.T) {
 func TestExperimentPermissionLevel(t *testing.T) {
 	cases := []struct {
 		job  string
-		want ml.ExperimentPermissionLevel
+		want experiments.ExperimentPermissionLevel
 		ok   bool
 	}{
-		{"CAN_VIEW", ml.ExperimentPermissionLevelCanRead, true},
-		{"CAN_MANAGE_RUN", ml.ExperimentPermissionLevelCanEdit, true},
-		{"CAN_MANAGE", ml.ExperimentPermissionLevelCanManage, true},
-		{"IS_OWNER", ml.ExperimentPermissionLevelCanManage, true},
+		{"CAN_VIEW", experiments.ExperimentPermissionLevelCanRead, true},
+		{"CAN_MANAGE_RUN", experiments.ExperimentPermissionLevelCanEdit, true},
+		{"CAN_MANAGE", experiments.ExperimentPermissionLevelCanManage, true},
+		{"IS_OWNER", experiments.ExperimentPermissionLevelCanManage, true},
 		{"CAN_ATTACH_TO", "", false},
 	}
 	for _, tc := range cases {
@@ -78,7 +77,7 @@ func TestGrantExperimentPermissions(t *testing.T) {
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 456, AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "submit-smoke"}}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 456, AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "submit-smoke"}}}}
 	err = grantExperimentPermissions(t.Context(), w, run, []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
 		{GroupName: new("data-team"), Level: "CAN_VIEW"},
@@ -111,7 +110,7 @@ func TestResolveSubmittedExperimentIDTimesOut(t *testing.T) {
 	// An already-expired context gives up on the first miss without polling.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Nanosecond)
 	defer cancel()
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 456}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 456}}}
 	assert.Empty(t, resolveSubmittedExperimentID(ctx, w, run))
 }
 

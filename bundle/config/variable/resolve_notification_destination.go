@@ -4,28 +4,27 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/settings"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/notificationdestinations/v1"
 )
 
 type resolveNotificationDestination struct {
 	name string
 }
 
-func (l resolveNotificationDestination) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	result, err := w.NotificationDestinations.ListAll(ctx, settings.ListNotificationDestinationsRequest{
+func (l resolveNotificationDestination) Resolve(ctx context.Context, w *sdkclients.Clients) (string, error) {
+	// Collect all notification destinations with the given name.
+	var entities []*notificationdestinations.ListNotificationDestinationsResult
+	for entity, err := range w.NotificationDestinations.ListNotificationDestinationsIter(ctx, notificationdestinations.ListNotificationDestinationsRequest{
 		// The default page size for this API is 20.
 		// We use a higher value to make fewer API calls.
-		PageSize: 200,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	// Collect all notification destinations with the given name.
-	var entities []settings.ListNotificationDestinationsResult
-	for _, entity := range result {
-		if entity.DisplayName == l.name {
+		PageSize: new(int64(200)),
+	}) {
+		if err != nil {
+			return "", err
+		}
+		if utils.Deref(entity.DisplayName) == l.name {
 			entities = append(entities, entity)
 		}
 	}
@@ -35,7 +34,7 @@ func (l resolveNotificationDestination) Resolve(ctx context.Context, w *databric
 	case 0:
 		return "", fmt.Errorf("notification destination named %q does not exist", l.name)
 	case 1:
-		return entities[0].Id, nil
+		return utils.Deref(entities[0].Id), nil
 	default:
 		return "", fmt.Errorf("there are %d instances of clusters named %q", len(entities), l.name)
 	}

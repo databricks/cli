@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"encoding/json"
 	"fmt"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchEndpoints[createReq.Name]; exists {
+	if _, exists := s.VectorSearchEndpoints[val(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", createReq.Name)},
@@ -29,9 +29,9 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
-		CreationTimestamp:       nowMilli(),
+		CreationTimestamp:       nonZero(nowMilli()),
 		EndpointType:            createReq.EndpointType,
-		Id:                      nextUUID(),
+		Id:                      nonZero(nextUUID()),
 		LastUpdatedUser:         s.CurrentUser().UserName,
 		Name:                    createReq.Name,
 		EndpointStatus: &vectorsearch.EndpointStatus{
@@ -43,7 +43,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
 
-	s.VectorSearchEndpoints[createReq.Name] = endpoint
+	s.VectorSearchEndpoints[val(createReq.Name)] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -71,7 +71,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 
 	endpoint.BudgetPolicyId = patchReq.BudgetPolicyId
 	endpoint.EffectiveBudgetPolicyId = patchReq.BudgetPolicyId // assume it always becomes the effective policy
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint
@@ -106,7 +106,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
 	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = nonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint

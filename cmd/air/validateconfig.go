@@ -13,7 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common"
@@ -90,7 +90,7 @@ func validationUnavailable(err error) (*validationUnavailableError, bool) {
 // a bad config fails fast with the server's own field-level errors.
 //
 // Availability failures fail open, while caller failures and field errors block.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+func preflightValidate(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
 	validationCtx, cancel := context.WithTimeout(ctx, submissionValidationTimeout)
 	defer cancel()
 
@@ -104,7 +104,7 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	return err
 }
 
-func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+func validateConfigOnce(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
@@ -188,7 +188,7 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	return errors.New(formatConfigErrors(result.Errors))
 }
 
-func newDryRunValidationClient(w *databricks.WorkspaceClient) (*client.DatabricksClient, error) {
+func newDryRunValidationClient(w *sdkclients.Clients) (*client.DatabricksClient, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func newDryRunValidationClient(w *databricks.WorkspaceClient) (*client.Databrick
 	return client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
 }
 
-func validateDryRunConfig(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string, timeout time.Duration) error {
+func validateDryRunConfig(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string, timeout time.Duration) error {
 	apiClient, err := newDryRunValidationClient(w)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)

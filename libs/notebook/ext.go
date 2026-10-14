@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 )
 
 const (

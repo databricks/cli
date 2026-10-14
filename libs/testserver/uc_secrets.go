@@ -1,13 +1,13 @@
 package testserver
 
 import (
-	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"encoding/json"
 	"fmt"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"strings"
 	"time"
 
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/sdk-go/core/types"
 )
 
 // SecretsUcCreateSecret handles POST /api/2.1/unity-catalog/secrets
@@ -43,12 +43,12 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		}
 	}
 
-	now := sdktime.New(time.Now())
+	now := types.NewFromTime(time.Now())
 	secret := ucsecrets.Secret{
 		CatalogName:    inputSecret.CatalogName,
 		SchemaName:     inputSecret.SchemaName,
 		Name:           inputSecret.Name,
-		FullName:       fullName,
+		FullName:       nonZero(fullName),
 		Value:          inputSecret.Value,
 		EffectiveValue: inputSecret.Value,
 		Comment:        inputSecret.Comment,
@@ -59,10 +59,10 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		CreatedBy:      s.CurrentUser().UserName,
 		UpdatedBy:      s.CurrentUser().UserName,
 		EffectiveOwner: inputSecret.Owner,
-		MetastoreId:    "test-metastore-id",
+		MetastoreId:    nonZero("test-metastore-id"),
 	}
 
-	if secret.Owner == "" {
+	if val(secret.Owner) == "" {
 		secret.Owner = s.CurrentUser().UserName
 		secret.EffectiveOwner = s.CurrentUser().UserName
 	}
@@ -103,7 +103,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 	// The real API doesn't return the value unless specifically requested
 	returnSecret := secret
 	returnSecret.EffectiveValue = secret.Value
-	returnSecret.Value = ""
+	returnSecret.Value = nonZero("")
 
 	return Response{
 		Body: returnSecret,
@@ -149,13 +149,13 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	}
 
 	// Update fields based on update mask
-	if updateSecret.Value != "" {
+	if val(updateSecret.Value) != "" {
 		secret.Value = updateSecret.Value
 	}
 	if _, ok := fields["comment"]; ok {
 		secret.Comment = updateSecret.Comment
 	}
-	if updateSecret.Owner != "" {
+	if val(updateSecret.Owner) != "" {
 		secret.Owner = updateSecret.Owner
 		secret.EffectiveOwner = updateSecret.Owner
 	}
@@ -166,7 +166,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 		secret.ExpireTime = updateSecret.ExpireTime
 	}
 
-	secret.UpdateTime = sdktime.New(time.Now())
+	secret.UpdateTime = types.NewFromTime(time.Now())
 	secret.UpdatedBy = s.CurrentUser().UserName
 
 	s.UCSecrets[fullName] = secret

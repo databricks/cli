@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 )
 
 type StateLifecycle struct {
@@ -78,4 +79,24 @@ func maskPath(path string) string {
 		return before
 	}
 	return path
+}
+
+// toSDK converts a JSON mirror value (or pointer to one) into an sdk-go request value.
+func toSDK[S any](v any) (S, error) {
+	p, err := sdkconv.ToSDK[S](v)
+	if err != nil || p == nil {
+		var zero S
+		return zero, err
+	}
+	return *p, nil
+}
+
+// orZero returns p, or a pointer to the zero value if p is nil. It is used for
+// fields that must always be sent on update so that unsetting them in config
+// clears them remotely.
+func orZero[T any](p *T) *T {
+	if p == nil {
+		return new(T)
+	}
+	return p
 }

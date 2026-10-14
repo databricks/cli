@@ -1,13 +1,12 @@
 package testserver
 
 import (
-	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"encoding/json"
 	"fmt"
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/http"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -19,7 +18,7 @@ import (
 type alertFile struct {
 	CustomSummary          string                  `json:"custom_summary,omitempty"`
 	Evaluation             *materializedEvaluation `json:"evaluation,omitempty"`
-	Schedule               *alerts.CronSchedule       `json:"schedule,omitempty"`
+	Schedule               *alerts.CronSchedule    `json:"schedule,omitempty"`
 	QueryLines             []string                `json:"query_lines,omitempty"`
 	CustomDescriptionLines []string                `json:"custom_description_lines,omitempty"`
 }
@@ -30,8 +29,8 @@ type alertFile struct {
 // notification object (an empty {} when none is configured).
 type materializedEvaluation struct {
 	Source             alerts.AlertOperandColumn `json:"source"`
-	ComparisonOperator alerts.ComparisonOperator   `json:"comparison_operator"`
-	Threshold          *materializedOperand     `json:"threshold,omitempty"`
+	ComparisonOperator alerts.ComparisonOperator `json:"comparison_operator"`
+	Threshold          *materializedOperand      `json:"threshold,omitempty"`
 	Notification       *alerts.AlertNotification `json:"notification"`
 }
 
@@ -39,7 +38,7 @@ type materializedEvaluation struct {
 // format double_value via jsonFloat so it keeps its decimal point in the file.
 type materializedOperand struct {
 	Column *alerts.AlertOperandColumn `json:"column,omitempty"`
-	Value  *materializedOperandValue `json:"value,omitempty"`
+	Value  *materializedOperandValue  `json:"value,omitempty"`
 }
 
 type materializedOperandValue struct {
@@ -62,8 +61,8 @@ func (f jsonFloat) MarshalJSON() ([]byte, error) {
 }
 
 // materializeThreshold converts the SDK threshold into the file representation.
-// double_value is emitted whenever the source request set it explicitly (tracked
-// via ForceSendFields), even when it is the zero value.
+// double_value is emitted whenever the source request set it, even when it is
+// the zero value.
 func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 	if t == nil {
 		return nil
@@ -71,11 +70,11 @@ func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 	out := &materializedOperand{Column: t.Column}
 	if v := t.Value; v != nil {
 		out.Value = &materializedOperandValue{
-			BoolValue:   v.BoolValue,
-			StringValue: v.StringValue,
+			BoolValue:   val(v.BoolValue),
+			StringValue: val(v.StringValue),
 		}
-		if v.DoubleValue != 0 || slices.Contains(v.ForceSendFields, "DoubleValue") {
-			d := jsonFloat(v.DoubleValue)
+		if v.DoubleValue != nil {
+			d := jsonFloat(*v.DoubleValue)
 			out.Value.DoubleValue = &d
 		}
 	}
@@ -85,7 +84,7 @@ func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 // alertFilePath returns the workspace path of the .dbalert.json file the backend
 // materializes for an alert: <parent_path>/<display_name>.dbalert.json.
 func alertFilePath(alert alerts.Alert) string {
-	return path.Join(alert.ParentPath, alert.DisplayName+".dbalert.json")
+	return path.Join(val(alert.ParentPath), val(alert.DisplayName)+".dbalert.json")
 }
 
 // splitLines reverses the line-joining done in load_dbalert_files.go: each line
@@ -101,16 +100,19 @@ func splitLines(s string) []string {
 // the backend writes this file as a side effect of alert creation/update, which
 // the `workspace export` round-trip and `bundle generate alert` rely on.
 func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
-	if alert.ParentPath == "" || alert.DisplayName == "" {
+	if val(alert.ParentPath) == "" || val(alert.DisplayName) == "" {
 		return nil
 	}
 
-	notification := alert.Evaluation.Notification
+	evaluation := alert.Evaluation
+	if evaluation == nil {
+		evaluation = &alerts.AlertEvaluation{}
+	}
+	notification := evaluation.Notification
 	if notification != nil {
-		// The backend always serializes notify_on_ok in the file, even when
-		// false; the SDK marshaler would otherwise drop the zero value.
+		// The backend always serializes notify_on_ok in the file, even when false.
 		n := *notification
-		n.ForceSendFields = append(n.ForceSendFields, "NotifyOnOk")
+		n.NotifyOnOk = new(val(n.NotifyOnOk))
 		notification = &n
 	} else {
 		// The backend always writes a notification object, materializing an
@@ -119,16 +121,16 @@ func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
 	}
 
 	af := alertFile{
-		CustomSummary: alert.CustomSummary,
+		CustomSummary: val(alert.CustomSummary),
 		Evaluation: &materializedEvaluation{
-			Source:             alert.Evaluation.Source,
-			ComparisonOperator: alert.Evaluation.ComparisonOperator,
-			Threshold:          materializeThreshold(alert.Evaluation.Threshold),
+			Source:             val(evaluation.Source),
+			ComparisonOperator: evaluation.ComparisonOperator,
+			Threshold:          materializeThreshold(evaluation.Threshold),
 			Notification:       notification,
 		},
-		Schedule:               &alert.Schedule,
-		QueryLines:             splitLines(alert.QueryText),
-		CustomDescriptionLines: splitLines(alert.CustomDescription),
+		Schedule:               alert.Schedule,
+		QueryLines:             splitLines(val(alert.QueryText)),
+		CustomDescriptionLines: splitLines(val(alert.CustomDescription)),
 	}
 
 	data, err := json.MarshalIndent(af, "", "  ")
@@ -172,7 +174,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		alertId = nextUUID()
 	}
 
-	alert.Id = alertId
+	alert.Id = nonZero(alertId)
 	alert.LifecycleState = alerts.AlertLifecycleState_Active
 	s.Alerts[alertId] = alert
 

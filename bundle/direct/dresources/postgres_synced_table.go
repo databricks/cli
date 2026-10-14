@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -44,12 +44,12 @@ func (s PostgresSyncedTableRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourcePostgresSyncedTable struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresSyncedTableState = resources.PostgresSyncedTableConfig
 
-func (*ResourcePostgresSyncedTable) New(client *databricks.WorkspaceClient) *ResourcePostgresSyncedTable {
+func (*ResourcePostgresSyncedTable) New(client *sdkclients.Clients) *ResourcePostgresSyncedTable {
 	return &ResourcePostgresSyncedTable{client: client}
 }
 

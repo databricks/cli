@@ -1,15 +1,15 @@
 package testserver
 
 import (
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"encoding/json"
 	"errors"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func submitRun(t *testing.T, workspace *FakeWorkspace, request jobs.SubmitRunRequest) jobs.SubmitRunResponse {

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -27,10 +27,10 @@ func (s QualityMonitorState) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceQualityMonitor struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceQualityMonitor) New(client *databricks.WorkspaceClient) *ResourceQualityMonitor {
+func (*ResourceQualityMonitor) New(client *sdkclients.Clients) *ResourceQualityMonitor {
 	return &ResourceQualityMonitor{client: client}
 }
 

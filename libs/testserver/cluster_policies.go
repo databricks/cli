@@ -1,11 +1,10 @@
 package testserver
 
 import (
-	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
-	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"encoding/json"
 	"fmt"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"maps"
 	"reflect"
 	"slices"
@@ -30,7 +29,7 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	}
 
 	// The backend rejects definition and policy_family_id together.
-	if policy.Definition != "" && policy.PolicyFamilyId != "" {
+	if val(policy.Definition) != "" && val(policy.PolicyFamilyId) != "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -40,17 +39,17 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 		}
 	}
 
-	if policy.Definition == "" && policy.PolicyFamilyId != "" {
-		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
+	if val(policy.Definition) == "" && val(policy.PolicyFamilyId) != "" {
+		policy.Definition = nonZero(policyFamilyDefinition(val(policy.PolicyFamilyId)))
 	}
 
 	defer s.LockUnlock()()
 
 	id := nextUUID()
-	policy.PolicyId = id
+	policy.PolicyId = nonZero(id)
 	s.ClusterPolicies[id] = policy
 
-	return Response{Body: clusterpolicies.CreatePolicyResponse{PolicyId: id}}
+	return Response{Body: clusterpolicies.CreatePolicyResponse{PolicyId: nonZero(id)}}
 }
 
 func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
@@ -89,7 +88,7 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 
 	defer s.LockUnlock()()
 
-	policy, ok := s.ClusterPolicies[request.PolicyId]
+	policy, ok := s.ClusterPolicies[val(request.PolicyId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -103,10 +102,10 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 	policy.MaxClustersPerUser = request.MaxClustersPerUser
 	policy.PolicyFamilyDefinitionOverrides = request.PolicyFamilyDefinitionOverrides
 	policy.PolicyFamilyId = request.PolicyFamilyId
-	if policy.Definition == "" && policy.PolicyFamilyId != "" {
-		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
+	if val(policy.Definition) == "" && val(policy.PolicyFamilyId) != "" {
+		policy.Definition = nonZero(policyFamilyDefinition(val(policy.PolicyFamilyId)))
 	}
-	s.ClusterPolicies[request.PolicyId] = policy
+	s.ClusterPolicies[val(request.PolicyId)] = policy
 
 	return Response{}
 }
@@ -119,11 +118,11 @@ func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.ClusterPolicies[request.PolicyId]; !ok {
+	if _, ok := s.ClusterPolicies[val(request.PolicyId)]; !ok {
 		return Response{StatusCode: 404}
 	}
 
-	delete(s.ClusterPolicies, request.PolicyId)
+	delete(s.ClusterPolicies, val(request.PolicyId))
 
 	return Response{}
 }
@@ -161,7 +160,7 @@ func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool)
 		return nil
 	}
 	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(policy.Definition), &elements); err != nil {
+	if err := json.Unmarshal([]byte(val(policy.Definition)), &elements); err != nil {
 		return nil
 	}
 	values := make(map[string]any, len(elements))
@@ -179,7 +178,7 @@ func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool)
 // surface a non-empty message as a 400.
 //
 // spec is a pointer to any struct with cluster-spec JSON tags (clusters.ClusterInfo or
-// clusters.ClusterSpec); the policy's attribute paths are applied against its JSON shape so
+// jobs.ClusterSpec_NewCluster); the policy's attribute paths are applied against its JSON shape so
 // one implementation covers both.
 func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefaults bool) string {
 	if policyID == "" {
@@ -203,9 +202,7 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 	}
 
 	// Collect only the attributes the request omitted, then unmarshal just those back onto
-	// the spec. Unmarshaling the whole document instead would rebuild ForceSendFields from
-	// every key present, which makes fields the backend omits (e.g. the Jobs API dropping
-	// apply_policy_default_values) serialize as explicit zeros.
+	// the spec, leaving everything the request set untouched.
 	patch := map[string]any{}
 	for _, path := range slices.Sorted(maps.Keys(values)) {
 		value := values[path]
@@ -237,7 +234,7 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 // isFixed reports whether the policy's element at path is a "fixed" element.
 func (s *FakeWorkspace) isFixed(policyID, path string) bool {
 	var elements map[string]policyElement
-	if err := json.Unmarshal([]byte(s.ClusterPolicies[policyID].Definition), &elements); err != nil {
+	if err := json.Unmarshal([]byte(val(s.ClusterPolicies[policyID].Definition)), &elements); err != nil {
 		return false
 	}
 	return elements[path].Type == "fixed"
@@ -272,7 +269,9 @@ func setPatch(patch map[string]any, path []string, value any) {
 // applyPolicyDefaultValues reads apply_policy_default_values from a raw cluster request body.
 // clusters.ClusterInfo has no such field, so it cannot be read off the decoded request.
 func applyPolicyDefaultValues(body []byte) bool {
-	var spec clusters.ClusterSpec
+	var spec struct {
+		ApplyPolicyDefaultValues bool `json:"apply_policy_default_values"`
+	}
 	if err := json.Unmarshal(body, &spec); err != nil {
 		return false
 	}
@@ -306,9 +305,9 @@ func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) stri
 	return ""
 }
 
-func (s *FakeWorkspace) applyClusterSpecPolicy(spec *clusters.ClusterSpec) string {
+func (s *FakeWorkspace) applyClusterSpecPolicy(spec *jobs.ClusterSpec_NewCluster) string {
 	if spec == nil {
 		return ""
 	}
-	return s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues)
+	return s.applyClusterPolicy(spec, val(spec.PolicyId), val(spec.ApplyPolicyDefaultValues))
 }

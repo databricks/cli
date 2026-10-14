@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // Set sets the value at the given path inside the target object.
@@ -128,9 +126,9 @@ func setFieldOrMapValue(parentVal reflect.Value, key string, valueVal reflect.Va
 	}
 }
 
-// setStructField sets a field in a struct and handles ForceSendFields
+// setStructField sets a field in a struct
 func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.Value) error {
-	fv, sf, owner, ok := findStructFieldByKey(parentVal, fieldName)
+	fv, sf, ok := findStructFieldByKey(parentVal, fieldName)
 	if !ok {
 		return fmt.Errorf("field %q not found in %s", fieldName, parentVal.Type())
 	}
@@ -145,19 +143,7 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 	if err != nil {
 		return err
 	}
-	if err := assignValue(fv, converted); err != nil {
-		return err
-	}
-
-	// ForceSendFields is decided from the converted value, not the caller's: setting an
-	// omitempty int64 from the string "0" stores 0, which is empty and must be forced, while
-	// the string "0" is not empty and would have left the field to be omitted.
-	if !valueVal.IsValid() {
-		// Setting nil: the field is being made absent, which convertValue renders as the zero
-		// value. Pass the invalid value through so it is removed from ForceSendFields.
-		return updateForceSendFields(owner, sf.Name, valueVal, sf)
-	}
-	return updateForceSendFields(owner, sf.Name, converted, sf)
+	return assignValue(fv, converted)
 }
 
 // setMapValue sets a value in a map
@@ -206,6 +192,18 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 	}
 
 	valueType := valueVal.Type()
+
+	// Pointer target from a non-pointer value (e.g. "0" into *int): convert to the
+	// element type with the same rules and store it behind a new pointer.
+	if targetType.Kind() == reflect.Pointer && valueType.Kind() != reflect.Pointer {
+		elem, err := convertValue(valueVal, targetType.Elem())
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		ptr := reflect.New(targetType.Elem())
+		ptr.Elem().Set(elem)
+		return ptr, nil
+	}
 
 	// Handle scalar-to-string conversions first (before Go's built-in convertibility).
 	// This is critical because Go's built-in ConvertibleTo/Convert has different behavior:
@@ -285,22 +283,6 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 		return valueVal.Convert(targetType), nil
 	}
 
-	// Handle pointer types
-	if targetType.Kind() == reflect.Pointer {
-		elemType := targetType.Elem()
-		if valueType.AssignableTo(elemType) {
-			// Create a new pointer and set the value
-			ptr := reflect.New(elemType)
-			ptr.Elem().Set(valueVal)
-			return ptr, nil
-		}
-		if valueType.ConvertibleTo(elemType) {
-			ptr := reflect.New(elemType)
-			ptr.Elem().Set(valueVal.Convert(elemType))
-			return ptr, nil
-		}
-	}
-
 	// Handle case where value is a pointer but target is not
 	if valueType.Kind() == reflect.Pointer && !valueVal.IsNil() {
 		elemVal := valueVal.Elem()
@@ -308,73 +290,4 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 	}
 
 	return reflect.Value{}, fmt.Errorf("cannot convert %s to %s", valueType, targetType)
-}
-
-// updateForceSendFields handles ForceSendFields when setting values:
-// - If setting nil: remove field from ForceSendFields
-// - If setting empty value: add field to ForceSendFields (if not already present)
-// Only applies to fields with omitempty tag
-func updateForceSendFields(owner reflect.Value, fieldName string, valueVal reflect.Value, structField reflect.StructField) error {
-	isSettingNil := !valueVal.IsValid()
-	isSettingEmptyValue := valueVal.IsValid() && isEmptyForOmitEmpty(valueVal)
-
-	// Early return if we don't need to modify ForceSendFields
-	if !isSettingNil && !isSettingEmptyValue {
-		return nil
-	}
-
-	// Check if field has omitempty tag - only omitempty fields need ForceSendFields management
-	jsonTag := structtag.JSONTag(structField.Tag.Get("json"))
-	if !jsonTag.OmitEmpty() {
-		// Non-omitempty fields don't need ForceSendFields management
-		return nil
-	}
-
-	// Only the struct that declares the field tracks it.
-	forceSendFieldsSlice := forceSendFields(owner)
-	if !forceSendFieldsSlice.IsValid() {
-		// No ForceSendFields to update
-		return nil
-	}
-
-	if isSettingNil {
-		// Remove from ForceSendFields
-		removeFromForceSendFields(forceSendFieldsSlice, fieldName)
-	} else if isSettingEmptyValue {
-		// Add to ForceSendFields if not already present
-		addToForceSendFields(forceSendFieldsSlice, fieldName)
-	}
-
-	return nil
-}
-
-// removeFromForceSendFields removes fieldName from the ForceSendFields slice
-func removeFromForceSendFields(forceSendFieldsSlice reflect.Value, fieldName string) {
-	// Get the original []string slice
-	fields, _ := reflect.TypeAssert[[]string](forceSendFieldsSlice)
-
-	// Find the index of the field to remove
-	index := slices.Index(fields, fieldName)
-	if index == -1 {
-		return // Field not found, nothing to remove
-	}
-
-	// Remove the field using slices.Delete
-	newFields := slices.Delete(fields, index, index+1)
-	forceSendFieldsSlice.Set(reflect.ValueOf(newFields))
-}
-
-// addToForceSendFields adds fieldName to the ForceSendFields slice if not already present
-func addToForceSendFields(forceSendFieldsSlice reflect.Value, fieldName string) {
-	// Get the original []string slice
-	fields, _ := reflect.TypeAssert[[]string](forceSendFieldsSlice)
-
-	// Check if already present
-	if slices.Contains(fields, fieldName) {
-		return // Already present
-	}
-
-	// Add the new field
-	newFields := append(fields, fieldName)
-	forceSendFieldsSlice.Set(reflect.ValueOf(newFields))
 }

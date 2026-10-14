@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/tags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type populateCurrentUser struct{}
@@ -30,7 +30,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	w := b.WorkspaceClient(ctx)
 
 	fingerprint := b.GetUserFingerprint(ctx)
-	me, err := cache.GetOrCompute(ctx, b.Cache, fingerprint, func(ctx context.Context) (*iam.User, error) {
+	me, err := cache.GetOrCompute(ctx, b.Cache, fingerprint, func(ctx context.Context) (*scim.User, error) {
 		return iamutil.GetCurrentUser(ctx, w)
 	})
 	if err != nil {

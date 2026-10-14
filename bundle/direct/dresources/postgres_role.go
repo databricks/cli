@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,7 +12,7 @@ import (
 )
 
 type ResourcePostgresRole struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 // PostgresRoleState keeps role_id and parent as separate fields rather than a
@@ -68,7 +68,7 @@ func (s PostgresRoleRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (*ResourcePostgresRole) New(client *databricks.WorkspaceClient) *ResourcePostgresRole {
+func (*ResourcePostgresRole) New(client *sdkclients.Clients) *ResourcePostgresRole {
 	return &ResourcePostgresRole{client: client}
 }
 

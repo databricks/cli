@@ -2,17 +2,17 @@ package dresources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type ResourceSecretScope struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type SecretScopeConfig struct {
@@ -43,7 +43,7 @@ func (s SecretScopeRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSecretScope {
+func (*ResourceSecretScope) New(client *sdkclients.Clients) *ResourceSecretScope {
 	return &ResourceSecretScope{
 		client: client,
 	}
@@ -90,7 +90,7 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretSco
 		}
 	}
 
-	return nil, apierr.ErrNotFound
+	return nil, apierrs.ErrNotFound
 }
 
 func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *SecretScopeRemote, error) {

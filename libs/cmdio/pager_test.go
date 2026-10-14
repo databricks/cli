@@ -8,12 +8,11 @@ import (
 	"text/template"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pagerModel[int] {
+func newTestPager(t *testing.T, iter pullIter[int], pageSize int) *pagerModel[int] {
 	t.Helper()
 	ctx := MockDiscard(t.Context())
 	fm := renderFuncMap(ctx)

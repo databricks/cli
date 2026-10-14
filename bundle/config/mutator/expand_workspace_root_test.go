@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
+					User: &scim.User{
 						UserName: "jane@doe.com",
 					},
 				},
@@ -34,7 +34,7 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
+					User: &scim.User{
 						UserName: "jane@doe.com",
 					},
 				},
@@ -52,7 +52,7 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
+					User: &scim.User{
 						UserName: "jane@doe.com",
 					},
 				},

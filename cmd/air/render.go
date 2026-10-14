@@ -12,9 +12,10 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v3"
 )
@@ -92,7 +93,7 @@ type runView struct {
 // completed progress bar, and a field list, separated by blank lines. It is a
 // one-shot renderer — it builds the full string and writes it once, with no
 // streaming, spinner, or redraw.
-func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers) {
+func renderRunText(ctx context.Context, out io.Writer, w *sdkclients.Clients, run *jobs.GetRunResponse, data *getData, ids *mlflowIdentifiers) {
 	// cmdio.NewRenderer sets the Ascii color profile when color is off, which
 	// emits no SGR codes; combined with the link fallback below this gives clean,
 	// un-escaped output under --no-color / NO_COLOR / piped stdout.
@@ -102,7 +103,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// The serverless environment version lives on the run's environments[].spec,
 	// which the typed SDK Run drops, so read it with a raw request. Empty (a run
 	// with no serverless environment) stays "N/A".
-	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, run.RunId))
+	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, utils.Deref(run.RunId)))
 
 	view := runView{
 		runID:        data.RunID,
@@ -156,7 +157,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 }
 
 // genAIComputeTask returns the run's first GenAI-compute task, or nil.
-func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
+func genAIComputeTask(run *jobs.GetRunResponse) *jobs.GenAiComputeTask {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
@@ -168,7 +169,7 @@ func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
 // environments[] entry keyed by aiRuntimeEnvironmentKey. The typed SDK Run has
 // no environments field, so the value is fetched with a raw request. Best-effort:
 // returns "" (logged) on any error or when the run declares no environment.
-func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+func aiRuntimeEnvironmentVersion(ctx context.Context, w *sdkclients.Clients, runID int64) string {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		log.Warnf(ctx, "air get: could not create client to read environment: %v", err)
@@ -199,7 +200,7 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 
 // resolveConfigYAML returns the config box body: from the downloaded config file
 // when we have its path, else from the legacy task.
-func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) string {
+func resolveConfigYAML(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse, data *getData) string {
 	if data.TrainingConfigPath != "" {
 		if raw := downloadConfig(ctx, w, data.TrainingConfigPath); len(raw) > 0 {
 			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
@@ -215,12 +216,12 @@ func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *
 // full config (including the command/script) lives in the run's parameters, not
 // the structured task fields, so we prefer the inline parameters, then the
 // parameters file, and only synthesize a minimal config as a last resort.
-func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.GenAiComputeTask) string {
-	if task.YamlParameters != "" {
+func configYAML(ctx context.Context, w *sdkclients.Clients, task *jobs.GenAiComputeTask) string {
+	if utils.Deref(task.YamlParameters) != "" {
 		return strings.TrimRight(reformatYAMLForDisplay([]byte(task.YamlParameters)), "\n")
 	}
-	if task.YamlParametersFilePath != "" {
-		if raw := downloadConfig(ctx, w, task.YamlParametersFilePath); len(raw) > 0 {
+	if utils.Deref(task.YamlParametersFilePath) != "" {
+		if raw := downloadConfig(ctx, w, utils.Deref(task.YamlParametersFilePath)); len(raw) > 0 {
 			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
 		}
 	}
@@ -229,7 +230,7 @@ func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.G
 
 // downloadConfig fetches the run's training-config file, returning nil on
 // failure (logged as a warning). Best-effort, like the rest of the enrichment.
-func downloadConfig(ctx context.Context, w *databricks.WorkspaceClient, path string) []byte {
+func downloadConfig(ctx context.Context, w *sdkclients.Clients, path string) []byte {
 	r, err := w.Workspace.Download(ctx, path)
 	if err != nil {
 		log.Warnf(ctx, "air get: could not download training config %s: %v", path, err)
@@ -260,13 +261,13 @@ type configCompute struct {
 // omits the command, which is only available in the run parameters.
 func synthConfigYAML(task *jobs.GenAiComputeTask) string {
 	cfg := configBox{}
-	if task.MlflowExperimentName != "" {
-		cfg.ExperimentName = stripExperimentUserPrefix(task.MlflowExperimentName)
+	if utils.Deref(task.MlflowExperimentName) != "" {
+		cfg.ExperimentName = stripExperimentUserPrefix(utils.Deref(task.MlflowExperimentName))
 	}
-	if task.Compute != nil && task.Compute.NumGpus > 0 {
+	if task.Compute != nil && utils.Deref(task.Compute.NumGpus) > 0 {
 		cfg.Compute = &configCompute{
-			AcceleratorType: task.Compute.GpuType,
-			NumAccelerators: task.Compute.NumGpus,
+			AcceleratorType: utils.Deref(task.Compute.GpuType),
+			NumAccelerators: utils.Deref(task.Compute.NumGpus),
 		}
 	}
 	if cfg.ExperimentName == "" && cfg.Compute == nil {

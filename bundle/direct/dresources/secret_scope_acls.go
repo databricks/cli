@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type ResourceSecretScopeAcls struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type SecretScopeAclsState struct {
@@ -22,7 +22,7 @@ type SecretScopeAclsState struct {
 	Acls      []workspace.AclItem `json:"acls,omitempty"`
 }
 
-func (*ResourceSecretScopeAcls) New(client *databricks.WorkspaceClient) *ResourceSecretScopeAcls {
+func (*ResourceSecretScopeAcls) New(client *sdkclients.Clients) *ResourceSecretScopeAcls {
 	return &ResourceSecretScopeAcls{client: client}
 }
 
@@ -173,7 +173,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	for _, acl := range toDelete {
 		err := r.client.Secrets.DeleteAcl(ctx, acl)
 		// Ignore not found errors for ACLs.
-		if errors.Is(err, apierr.ErrNotFound) {
+		if apierrs.Is(err, apierrs.ErrNotFound) {
 			continue
 		}
 		if err != nil {

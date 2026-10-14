@@ -1,12 +1,12 @@
 package testserver
 
 import (
+	"encoding/json"
 	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
 	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
-	"encoding/json"
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // A "fixed" element both supplies and enforces its value; a "defaultValue" element only

@@ -12,11 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,8 +45,8 @@ func TestClassifyLogError(t *testing.T) {
 		},
 		{
 			name: "genuine resource-does-not-exist surfaces",
-			err:  apierr.ErrResourceDoesNotExist,
-			want: apierr.ErrResourceDoesNotExist,
+			err:  apierrs.ErrResourceDoesNotExist,
+			want: apierrs.ErrResourceDoesNotExist,
 		},
 		{
 			name: "transient 500 is retried",
@@ -75,17 +76,17 @@ func TestClassifyLogError(t *testing.T) {
 }
 
 func TestProjectRunStatus(t *testing.T) {
-	run := &jobs.Run{
+	run := &jobs.GetRunResponse{
 		StartTime: 1000,
 		EndTime:   2000,
 		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Success,
 			StateMessage:   "done",
 		},
 		Tasks: []jobs.RunTask{
-			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
-			{AttemptNumber: 2, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateWaitingForRetry}},
+			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Queued}},
+			{AttemptNumber: 2, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry}},
 			{AttemptNumber: 1},
 		},
 	}
@@ -108,14 +109,14 @@ func TestRetryTrackerDeduplicatesWaitingAndAttemptIncrease(t *testing.T) {
 
 	retry, ok := tracker.observe(logRunStatus{
 		latestAttempt:            0,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	})
 	assert.True(t, ok)
 	assert.Equal(t, 1, retry)
 
 	_, ok = tracker.observe(logRunStatus{
 		latestAttempt:            1,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	})
 	assert.False(t, ok)
 }
@@ -124,7 +125,7 @@ func TestRetryTrackerDetectsAttemptCreatedInWaitingState(t *testing.T) {
 	tracker := newRetryTracker(logRunStatus{latestAttempt: 0})
 	waiting := logRunStatus{
 		latestAttempt:            1,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	}
 
 	retry, ok := tracker.observe(waiting)
@@ -152,7 +153,7 @@ func TestReportRetryText(t *testing.T) {
 
 	req.reportRetry(ctx, &stdout, logRunStatus{
 		latestAttempt:            0,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	}, func() { stopped = true })
 
 	assert.True(t, stopped)

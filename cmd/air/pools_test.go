@@ -339,7 +339,7 @@ func TestGetPoolNotFoundJSON(t *testing.T) {
 
 func TestGetPoolPlain404(t *testing.T) {
 	// A bare HTTP 404 (no RESOURCE_DOES_NOT_EXIST error code) must still map to
-	// NOT_FOUND, since apierr.ErrNotFound covers any 404.
+	// NOT_FOUND, since apierrs.ErrNotFound covers any 404.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"message":"no such thing"}`))

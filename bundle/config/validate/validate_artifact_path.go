@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strings"
 
@@ -55,7 +56,7 @@ func extractVolumeFromPath(artifactPath string) (string, string, string, error) 
 func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName string) (dyn.Path, []diag.Location, bool) {
 	volumes := r.Resources.Volumes
 	for k, v := range volumes {
-		if v.CatalogName != catalogName || v.Name != volumeName {
+		if utils.Deref(v.CatalogName) != catalogName || utils.Deref(v.Name) != volumeName {
 			continue
 		}
 		// UC schemas can be defined in the bundle itself, and thus might be interpolated
@@ -64,9 +65,9 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 		// schema name is interpolated.
 		// We only have to check for ${resources.schemas...} references because any
 		// other valid reference (like ${var.foo}) would have been interpolated by this point.
-		p, ok := dynvar.PureReferenceToPath(v.SchemaName)
+		p, ok := dynvar.PureReferenceToPath(utils.Deref(v.SchemaName))
 		isSchemaDefinedInBundle := ok && p.HasPrefix(dyn.Path{dyn.Key("resources"), dyn.Key("schemas")})
-		if v.SchemaName != schemaName && !isSchemaDefinedInBundle {
+		if utils.Deref(v.SchemaName) != schemaName && !isSchemaDefinedInBundle {
 			continue
 		}
 		return dyn.Path{dyn.Key("resources"), dyn.Key("volumes"), dyn.Key(k)}, r.GetLocationsOf(structpath.NewPath(nil, "resources", "volumes", k)), true

@@ -3,9 +3,9 @@ package variable
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

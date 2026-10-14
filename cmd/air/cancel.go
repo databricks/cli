@@ -10,13 +10,13 @@ import (
 	"text/tabwriter"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
 
@@ -86,7 +86,7 @@ all active runs submitted by the current user.
 		if all {
 			data.All = true
 
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+			me, err := currentUserName(ctx, w)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to resolve current user: %w", err))
@@ -183,7 +183,7 @@ all active runs submitted by the current user.
 // an unknown run, and the SDK only remaps that to ErrResourceDoesNotExist for
 // the runs/get path, not cancel — so we also detect the raw code here.
 func runNotFound(err error) bool {
-	if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+	if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
 		return true
 	}
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
@@ -194,7 +194,7 @@ func runNotFound(err error) bool {
 
 // cancelRun requests cancellation of a single job run. The cancel is async, so
 // the returned waiter is ignored.
-func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string) error {
+func cancelRun(ctx context.Context, w *sdkclients.Clients, rid string) error {
 	runID, err := strconv.ParseInt(rid, 10, 64)
 	if err != nil || runID <= 0 {
 		return fmt.Errorf("invalid run ID %q: must be a positive integer", rid)

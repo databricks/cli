@@ -9,10 +9,11 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type setRunAs struct{}
@@ -48,7 +49,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	identityCount := 0
 	runAs := b.Config.RunAs
 	if runAs != nil {
-		for _, identity := range []string{runAs.UserName, runAs.ServicePrincipalName, runAs.GroupName} {
+		for _, identity := range []string{utils.Deref(runAs.UserName), utils.Deref(runAs.ServicePrincipalName), utils.Deref(runAs.GroupName)} {
 			if identity != "" {
 				identityCount++
 			}
@@ -62,18 +63,20 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		}}
 	}
 
-	identity := runAs.ServicePrincipalName
+	identity := utils.Deref(runAs.ServicePrincipalName)
 	if identity == "" {
-		identity = runAs.UserName
+		identity = utils.Deref(runAs.UserName)
 	}
+	currentUser := utils.Deref(b.Config.Workspace.CurrentUser.UserName)
+	groupName := utils.Deref(runAs.GroupName)
 
 	// All resources are supported if the run_as identity is the same as the current deployment identity.
-	if runAs.GroupName == "" && identity == b.Config.Workspace.CurrentUser.UserName {
+	if groupName == "" && identity == currentUser {
 		return diags
 	}
 
-	if runAs.GroupName != "" {
-		identity = fmt.Sprintf("group %q", runAs.GroupName)
+	if groupName != "" {
+		identity = fmt.Sprintf("group %q", groupName)
 		for _, alert := range b.Config.Resources.Alerts {
 			if alert.RunAs == nil {
 				return diag.Errorf("alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on each alert")
@@ -86,7 +89,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"model_serving_endpoints",
 			b.Config.GetLocation("resources.model_serving_endpoints"),
-			b.Config.Workspace.CurrentUser.UserName,
+			currentUser,
 			identity,
 		))
 	}
@@ -96,7 +99,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"quality_monitors",
 			b.Config.GetLocation("resources.quality_monitors"),
-			b.Config.Workspace.CurrentUser.UserName,
+			currentUser,
 			identity,
 		))
 	}
@@ -110,7 +113,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 			diags = diags.Extend(reportRunAsNotSupported(
 				"dashboards with embed_credentials set to true",
 				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
-				b.Config.Workspace.CurrentUser.UserName,
+				currentUser,
 				identity,
 			))
 		}
@@ -121,7 +124,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(reportRunAsNotSupported(
 			"apps",
 			b.Config.GetLocation("resources.apps"),
-			b.Config.Workspace.CurrentUser.UserName,
+			currentUser,
 			identity,
 		))
 	}
@@ -159,7 +162,7 @@ func setRunAsForPipelines(b *bundle.Bundle) {
 		if pipeline.RunAs != nil {
 			continue
 		}
-		pipeline.RunAs = &pipelines.RunAs{
+		pipeline.RunAs = &pipelines.PipelinesJobRunAs{
 			GroupName:            runAs.GroupName,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
@@ -178,7 +181,7 @@ func setRunAsForAlerts(b *bundle.Bundle) {
 		if alert.RunAs != nil {
 			continue
 		}
-		alert.RunAs = &sql.AlertV2RunAs{
+		alert.RunAs = &alerts.AlertRunAs{
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		}
@@ -193,24 +196,26 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 		return
 	}
 
-	me := b.Config.Workspace.CurrentUser.UserName
+	me := utils.Deref(b.Config.Workspace.CurrentUser.UserName)
+	runAsUserName := utils.Deref(runAs.UserName)
+	runAsServicePrincipalName := utils.Deref(runAs.ServicePrincipalName)
 	// If user deploying the bundle and the one defined in run_as are the same
 	// Do not add IS_OWNER permission. Current user is implied to be an owner in this case.
 	// Otherwise, it will fail due to this bug https://github.com/databricks/terraform-provider-databricks/issues/2407
-	if runAs.UserName == me || runAs.ServicePrincipalName == me {
+	if runAsUserName == me || runAsServicePrincipalName == me {
 		return
 	}
 
 	for i := range b.Config.Resources.Pipelines {
 		pipeline := b.Config.Resources.Pipelines[i]
 		pipeline.Permissions = slices.DeleteFunc(pipeline.Permissions, func(p resources.PipelinePermission) bool {
-			return (runAs.ServicePrincipalName != "" && p.ServicePrincipalName == runAs.ServicePrincipalName) ||
-				(runAs.UserName != "" && p.UserName == runAs.UserName)
+			return (runAsServicePrincipalName != "" && p.ServicePrincipalName == runAsServicePrincipalName) ||
+				(runAsUserName != "" && p.UserName == runAsUserName)
 		})
 		pipeline.Permissions = append(pipeline.Permissions, resources.PipelinePermission{
-			Level:                pipelines.PipelinePermissionLevelIsOwner,
-			ServicePrincipalName: runAs.ServicePrincipalName,
-			UserName:             runAs.UserName,
+			Level:                resources.PipelinePermissionLevelIsOwner,
+			ServicePrincipalName: runAsServicePrincipalName,
+			UserName:             runAsUserName,
 		})
 	}
 }

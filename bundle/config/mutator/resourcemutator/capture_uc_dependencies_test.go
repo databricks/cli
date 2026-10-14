@@ -6,10 +6,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -124,9 +124,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 					}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"my_endpoint": {CreateServingEndpoint: serving.CreateServingEndpoint{
-						AiGateway: &serving.AiGatewayConfig{
-							InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+					"my_endpoint": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
+						AiGateway: &modelserving.AiGatewayConfig{
+							InferenceTableConfig: &modelserving.AiGatewayInferenceTableConfig{
 								CatalogName: "mycatalog", SchemaName: "myschema",
 							},
 						},
@@ -270,25 +270,25 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					// AutoCaptureConfig path.
-					"auto_capture": {CreateServingEndpoint: serving.CreateServingEndpoint{
-						Config: &serving.EndpointCoreConfigInput{
+					"auto_capture": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
+						Config: &modelserving.EndpointCoreConfigInput{
 							//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-							AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+							AutoCaptureConfig: &modelserving.AutoCaptureConfigInput{
 								CatalogName: "mycatalog", SchemaName: "myschema",
 							},
 						},
 					}},
 					// No match.
-					"no_match": {CreateServingEndpoint: serving.CreateServingEndpoint{
-						AiGateway: &serving.AiGatewayConfig{
-							InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+					"no_match": {CreateServingEndpoint: modelserving.CreateServingEndpoint{
+						AiGateway: &modelserving.AiGatewayConfig{
+							InferenceTableConfig: &modelserving.AiGatewayInferenceTableConfig{
 								CatalogName: "other", SchemaName: "other",
 							},
 						},
 					}},
 					// Various nil nesting levels.
-					"nil_gateway":         {CreateServingEndpoint: serving.CreateServingEndpoint{}},
-					"nil_inference_table": {CreateServingEndpoint: serving.CreateServingEndpoint{AiGateway: &serving.AiGatewayConfig{}}},
+					"nil_gateway":         {CreateServingEndpoint: modelserving.CreateServingEndpoint{}},
+					"nil_inference_table": {CreateServingEndpoint: modelserving.CreateServingEndpoint{AiGateway: &modelserving.AiGatewayConfig{}}},
 					"nil_endpoint":        nil,
 				},
 			},

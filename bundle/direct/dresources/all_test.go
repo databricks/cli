@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"encoding/json"
+	"github.com/databricks/cli/libs/apierrs"
 	"math"
 	"os"
 	"path/filepath"
@@ -13,14 +14,13 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -281,11 +281,11 @@ var testConfig map[string]any = map[string]any{
 	},
 }
 
-type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
+type prepareWorkspace func(ctx context.Context, client *sdkclients.Clients) (any, error)
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
-	"database_catalogs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"database_catalogs": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "mydbinstance1",
@@ -298,7 +298,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, err
 	},
 
-	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"vector_search_indexes": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
 			Name:         "my-index-endpoint",
 			EndpointType: vectorsearch.EndpointTypeStandard,
@@ -310,7 +310,7 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
-	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"job_runs": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// A run can only be triggered against an existing job, so create one first.
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-for-run",
@@ -332,7 +332,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"jobs.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
 			Tasks: []jobs.Task{
@@ -357,7 +357,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"pipelines.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"pipelines.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.Pipelines.Create(ctx, pipelines.CreatePipeline{
 			Name: "pipeline-permissions",
 		})
@@ -375,7 +375,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"models.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"models.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.ModelRegistry.CreateModel(ctx, ml.CreateModelRequest{
 			Name:        "model-permissions",
 			Description: "model for permissions testing",
@@ -393,7 +393,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"experiments.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"experiments.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.Experiments.CreateExperiment(ctx, ml.CreateExperiment{
 			Name: "experiment-permissions",
 		})
@@ -410,7 +410,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"clusters.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -420,7 +420,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"cluster_policies.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/cluster-policies/cluster-policy-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -430,7 +430,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"instance_pools.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/instance-pools/pool-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -440,7 +440,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"apps.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"apps.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
 			App: apps.App{
 				Name: "app-permissions",
@@ -459,7 +459,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"sql_warehouses.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -469,7 +469,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"database_instances.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"database_instances.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		waiter, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "dbinstance-permissions",
@@ -488,7 +488,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_projects.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		const projectID = "permissions-project"
 		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: projectID,
@@ -509,7 +509,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"dashboards.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"dashboards.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
@@ -538,7 +538,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"genie_spaces.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
 			Title:           "genie-space-permissions",
 			WarehouseId:     "test-warehouse-id",
@@ -557,7 +557,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"model_serving_endpoints.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
 			Config: &serving.EndpointCoreConfigInput{
@@ -584,7 +584,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
 			Name:         "vs-endpoint-permissions",
 			EndpointType: vectorsearch.EndpointTypeStandard,
@@ -602,7 +602,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"alerts.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"alerts.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		resp, err := client.AlertsV2.CreateAlert(ctx, sql.CreateAlertV2Request{
 			Alert: sql.AlertV2{
 				DisplayName: "alert-permissions",
@@ -633,7 +633,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"catalogs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"catalogs.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "catalog",
 			FullName:      "mycatalog",
@@ -644,7 +644,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"external_locations.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"external_locations.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "external_location",
 			FullName:      "myexternallocation",
@@ -655,7 +655,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"schemas.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"schemas.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
@@ -666,7 +666,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"volumes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"volumes.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
@@ -677,7 +677,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"registered_models.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"registered_models.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
@@ -688,7 +688,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"vector_search_indexes.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "table",
 			FullName:      "main.default.my_index",
@@ -699,7 +699,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"secrets.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "secret",
 			FullName:      "main.default.my_secret",
@@ -710,7 +710,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"model_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "model_service",
 			FullName:      "main.myschema.mymodelservice",
@@ -721,7 +721,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"mcp_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "mcp_service",
 			FullName:      "main.myschema.mymcpservice",
@@ -732,7 +732,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"model_provider_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "model_provider_service",
 			FullName:      "main.myschema.myproviderservice",
@@ -743,7 +743,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"secret_scopes.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
 			ScopeBackendType: workspace.ScopeBackendTypeAzureKeyvault,
@@ -767,7 +767,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_branches": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_branches": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: "test-project-for-branch",
@@ -789,7 +789,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_snapshot_schedules": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Creating the project implicitly provisions the root "production"
 		// branch, the only branch a snapshot schedule may target.
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -810,7 +810,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_endpoints": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_endpoints": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: "test-project-for-endpoint",
@@ -842,7 +842,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_databases": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_databases": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: "test-project-for-database",
@@ -875,7 +875,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_roles": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: "test-project-for-role",
@@ -1001,7 +1001,7 @@ func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgA
 	require.Empty(t, relevantChanges, msgAndArgs...)
 }
 
-func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+func testCRUD(t *testing.T, group string, adapter *Adapter, client *sdkclients.Clients) {
 	var inputConfig any
 	var err error
 
@@ -1150,7 +1150,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
 	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	if !apierr.IsMissing(err) {
+	if !apierrs.IsMissing(err) {
 		require.NoError(t, err)
 	}
 
@@ -1406,7 +1406,7 @@ func TestNameStableOrOptedOut(t *testing.T) {
 	}
 }
 
-func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
+func setupTestServerClient(t *testing.T) (*testserver.Server, *sdkclients.Clients) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{

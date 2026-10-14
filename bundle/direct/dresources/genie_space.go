@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
@@ -33,10 +34,10 @@ import (
 // Permissions follow the standard /permissions/genie/{id} endpoint and are wired
 // up via the generic permissions adapter (permissions.go).
 type ResourceGenieSpace struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceGenieSpace) New(client *databricks.WorkspaceClient) *ResourceGenieSpace {
+func (*ResourceGenieSpace) New(client *sdkclients.Clients) *ResourceGenieSpace {
 	return &ResourceGenieSpace{client: client}
 }
 
@@ -109,7 +110,7 @@ func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace st
 //
 // Both forms unambiguously mean "create the parent and retry once".
 func isMissingGenieParentPathError(err error) bool {
-	if apierr.IsMissing(err) {
+	if apierrs.IsMissing(err) {
 		return true
 	}
 

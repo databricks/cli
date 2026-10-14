@@ -65,7 +65,6 @@ type diffContext struct {
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
-// Respects ForceSendFields if present.
 // Types of a and b must match exactly, otherwise returns an error.
 //
 // The sliceKeys parameter maps path patterns to functions that extract
@@ -200,12 +199,9 @@ func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[
 
 func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
 	t := s1.Type()
-	forced1 := getForceSendFields(s1)
-	forced2 := getForceSendFields(s2)
-
 	for i := range t.NumField() {
 		sf := t.Field(i)
-		if !sf.IsExported() || sf.Name == "ForceSendFields" {
+		if !sf.IsExported() {
 			continue
 		}
 
@@ -242,14 +238,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		if zero1 || zero2 {
 			if jsonTag.OmitEmpty() {
 				if zero1 {
-					if !slices.Contains(forced1, sf.Name) {
-						v1Field = reflect.ValueOf(nil)
-					}
+					v1Field = reflect.ValueOf(nil)
 				}
 				if zero2 {
-					if !slices.Contains(forced2, sf.Name) {
-						v2Field = reflect.ValueOf(nil)
-					}
+					v2Field = reflect.ValueOf(nil)
 				}
 			}
 		}
@@ -291,21 +283,6 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		if err := diffValues(ctx, node, v1, v2, changes); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func getForceSendFields(v reflect.Value) []string {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return nil
-	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
-		return nil
-	}
-	result, ok := reflect.TypeAssert[[]string](fsField)
-	if ok {
-		return result
 	}
 	return nil
 }

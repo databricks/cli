@@ -5,15 +5,15 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type ResourceDatabaseInstance struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceDatabaseInstance) New(client *databricks.WorkspaceClient) *ResourceDatabaseInstance {
+func (*ResourceDatabaseInstance) New(client *sdkclients.Clients) *ResourceDatabaseInstance {
 	return &ResourceDatabaseInstance{client: client}
 }
 

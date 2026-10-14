@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -23,10 +23,10 @@ var (
 )
 
 type ResourceModelServingEndpoint struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceModelServingEndpoint) New(client *databricks.WorkspaceClient) *ResourceModelServingEndpoint {
+func (*ResourceModelServingEndpoint) New(client *sdkclients.Clients) *ResourceModelServingEndpoint {
 	return &ResourceModelServingEndpoint{
 		client: client,
 	}

@@ -9,13 +9,13 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"golang.org/x/sync/errgroup"
 )
@@ -81,10 +81,10 @@ func (r ClusterRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceCluster struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
+func (r *ResourceCluster) New(client *sdkclients.Clients) any {
 	return &ResourceCluster{
 		client: client,
 	}

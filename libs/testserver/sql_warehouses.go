@@ -1,24 +1,23 @@
 package testserver
 
 import (
-	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"encoding/json"
 	"fmt"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"net/http"
 )
 
 func sqlWarehouseFixUps(warehouse *warehouses.GetWarehouseResponse, userName string) {
-	if warehouse.CreatorName == "" {
-		warehouse.CreatorName = userName
+	if val(warehouse.CreatorName) == "" {
+		warehouse.CreatorName = nonZero(userName)
 	}
 
-	if warehouse.MinNumClusters == 0 {
-		warehouse.MinNumClusters = 1
-		warehouse.ForceSendFields = append(warehouse.ForceSendFields, "MinNumClusters")
+	if val(warehouse.MinNumClusters) == 0 {
+		warehouse.MinNumClusters = new(1)
 	}
 
 	if warehouse.WarehouseType == "" {
-		warehouse.WarehouseType = sql.GetWarehouseResponseWarehouseTypeClassic
+		warehouse.WarehouseType = warehouses.WarehouseType_Classic
 	}
 }
 
@@ -44,12 +43,12 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	} else {
 		warehouseId = nextUUID()
 	}
-	warehouse.Id = warehouseId
-	if warehouse.Name == "" {
-		warehouse.Name = warehouseId
+	warehouse.Id = nonZero(warehouseId)
+	if val(warehouse.Name) == "" {
+		warehouse.Name = nonZero(warehouseId)
 	}
-	warehouse.State = sql.StateRunning
-	sqlWarehouseFixUps(&warehouse, s.CurrentUser().UserName)
+	warehouse.State = warehouses.EndpointState_Running
+	sqlWarehouseFixUps(&warehouse, val(s.CurrentUser().UserName))
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{
@@ -66,7 +65,7 @@ func (s *FakeWorkspace) SqlWarehousesStart(req Request, warehouseId string) Resp
 		return Response{StatusCode: 404}
 	}
 
-	warehouse.State = sql.StateRunning
+	warehouse.State = warehouses.EndpointState_Running
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
@@ -80,16 +79,16 @@ func (s *FakeWorkspace) SqlWarehousesStop(req Request, warehouseId string) Respo
 		return Response{StatusCode: 404}
 	}
 
-	warehouse.State = sql.StateStopped
+	warehouse.State = warehouses.EndpointState_Stopped
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
 }
 
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
-	var warehouses []warehouses.EndpointInfo
+	var list []warehouses.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {
-		warehouses = append(warehouses, warehouses.EndpointInfo{
+		list = append(list, warehouses.EndpointInfo{
 			Id:   warehouse.Id,
 			Name: warehouse.Name,
 		})
@@ -97,22 +96,30 @@ func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	return Response{
 		StatusCode: 200,
 		Body: warehouses.ListWarehousesResponse{
-			Warehouses: warehouses,
+			Warehouses: list,
 		},
 	}
 }
 
 func (s *FakeWorkspace) SqlDataSourcesList(req Request) Response {
-	var dataSources []sql.DataSource
+	var dataSources []sqlDataSource
 	for key, warehouse := range s.SqlWarehouses {
-		dataSources = append(dataSources, sql.DataSource{
+		dataSources = append(dataSources, sqlDataSource{
 			Id:          key,
 			Name:        "test_data_source",
-			WarehouseId: warehouse.Id,
+			WarehouseId: val(warehouse.Id),
 		})
 	}
 	return Response{
 		StatusCode: 200,
 		Body:       dataSources,
 	}
+}
+
+// sqlDataSource is an entry of the legacy /api/2.0/preview/sql/data_sources
+// response, which has no sdk-go type.
+type sqlDataSource struct {
+	Id          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	WarehouseId string `json:"warehouse_id,omitempty"`
 }

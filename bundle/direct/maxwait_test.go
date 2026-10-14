@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/direct/internal/retries"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

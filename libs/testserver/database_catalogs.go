@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"encoding/json"
 	"fmt"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 )
 
 func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
@@ -34,9 +34,9 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 	}
 
 	// Assign uid like the real backend does
-	databaseCatalog.Uid = nextUUID()
+	databaseCatalog.Uid = nonZero(nextUUID())
 
-	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
+	s.DatabaseCatalogs[val(databaseCatalog.Name)] = databaseCatalog
 
 	return Response{
 		Body: databaseCatalog,
@@ -56,7 +56,7 @@ func (s *FakeWorkspace) DatabaseCatalogGet(name string) Response {
 
 	// create_database_if_not_exists is a write-only field - the real API doesn't return it
 	result := catalog
-	result.CreateDatabaseIfNotExists = false
+	result.CreateDatabaseIfNotExists = nonZero(false)
 
 	return Response{Body: result}
 }

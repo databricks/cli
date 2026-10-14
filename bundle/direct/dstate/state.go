@@ -23,7 +23,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/google/uuid"
 )
 

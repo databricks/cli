@@ -1,43 +1,45 @@
 package testserver
 
 import (
-	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
-	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
-	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
-	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
-	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
-	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
-	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
-	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
-	database "github.com/databricks/cli/libs/sdktypes/database/v1"
-	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
-	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
-	files "github.com/databricks/cli/libs/sdktypes/files/v2"
-	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
-	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
-	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
-	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
-	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
-	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
-	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
-	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
-	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
-	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
-	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
-	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
-	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
-	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
-	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
-	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
-	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	files "github.com/databricks/cli/libs/sdktypes/files/v2"
+	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/sdk-go/core/types"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
@@ -50,7 +52,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"github.com/google/uuid"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -74,13 +75,13 @@ const (
 )
 
 var TestUser = scim.User{
-	Id:       UserID,
-	UserName: "tester@databricks.com",
+	Id:       nonZero(UserID),
+	UserName: nonZero("tester@databricks.com"),
 }
 
 var TestUserSP = scim.User{
-	Id:       UserID,
-	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+	Id:       nonZero(UserID),
+	UserName: nonZero("aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"),
 }
 
 // guestServicePrincipalDisplayName is reported on /Me for the as-test-sp guest,
@@ -107,7 +108,7 @@ func userForToken(token string) scim.User {
 func (s *FakeWorkspace) MeUser(token string) scim.User {
 	user := userForToken(token)
 	if isGuestToken(token) {
-		user.DisplayName = guestServicePrincipalDisplayName
+		user.DisplayName = nonZero(guestServicePrincipalDisplayName)
 	}
 	return user
 }
@@ -167,6 +168,11 @@ func nowMilli() int64 {
 // a draft's update_time against a published revision's revision_create_time.
 func nextTimestamp() string {
 	return time.Unix(0, nowNano()).UTC().Format(time.RFC3339Nano)
+}
+
+// nextTime is nextTimestamp for fields typed as a protobuf timestamp.
+func nextTime() *types.Time {
+	return types.NewFromTime(time.Unix(0, nowNano()).UTC())
 }
 
 func nextUUID() string {
@@ -475,14 +481,14 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Users",
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Users/" + TestUser.UserName: {
+			"/Users/" + val(TestUser.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Users/" + TestUser.UserName,
+				Path:       "/Users/" + val(TestUser.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Users/" + TestUserSP.UserName: {
+			"/Users/" + val(TestUserSP.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Users/" + TestUserSP.UserName,
+				Path:       "/Users/" + val(TestUserSP.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
 			// The user home also exists under the /Workspace alias on real
@@ -493,14 +499,14 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Workspace/Users",
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Workspace/Users/" + TestUser.UserName: {
+			"/Workspace/Users/" + val(TestUser.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Workspace/Users/" + TestUser.UserName,
+				Path:       "/Workspace/Users/" + val(TestUser.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
-			"/Workspace/Users/" + TestUserSP.UserName: {
+			"/Workspace/Users/" + val(TestUserSP.UserName): {
 				ObjectType: "DIRECTORY",
-				Path:       "/Workspace/Users/" + TestUserSP.UserName,
+				Path:       "/Workspace/Users/" + val(TestUserSP.UserName),
 				ObjectId:   nextTreenodeID(),
 			},
 		},
@@ -529,9 +535,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		GenieSpaces:           map[string]genie.GenieSpace{},
 		SqlWarehouses: map[string]warehouses.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
-				Id:    TestDefaultWarehouseId,
-				Name:  "DEFAULT Test SQL Warehouse",
-				State: sql.StateRunning,
+				Id:    nonZero(TestDefaultWarehouseId),
+				Name:  nonZero("DEFAULT Test SQL Warehouse"),
+				State: warehouses.EndpointState_Running,
 			},
 		},
 		ServingEndpoints:          map[string]serving.InferenceEndpointDetailed{},
@@ -569,9 +575,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			// requires (ValidateClusterAccess rejects anything else), matching the cloud
 			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:        TestDefaultClusterId,
-				ClusterName:      "DEFAULT Test Cluster",
-				State:            compute.StateRunning,
+				ClusterId:        nonZero(TestDefaultClusterId),
+				ClusterName:      nonZero("DEFAULT Test Cluster"),
+				State:            clusters.ClusterState_ClusterState_Running,
 				DataSecurityMode: clusters.DataSecurityMode_SingleUser,
 				SingleUserName:   TestUser.UserName,
 			},
@@ -581,8 +587,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ClusterPolicies: map[string]clusterpolicies.Policy{
 			// Seeded so the stateful list keeps backing the variable-lookup tests
 			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
-			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
-			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+			"5678": {PolicyId: nonZero("5678"), Name: nonZero("wrong-cluster-policy")},
+			"9876": {PolicyId: nonZero("9876"), Name: nonZero("some-test-cluster-policy")},
 		},
 		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
@@ -713,13 +719,13 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 		if repo, ok := s.gitFolderFor(cleaned); ok {
 			// The real API reports the Git folder root without the /Workspace mount
 			// prefix, whichever spelling the folder was created with.
-			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
-			if isGitCliFolder(repo.Path) {
+			gi := gitInfoBlock{ID: val(repo.Id), Path: strings.TrimPrefix(val(repo.Path), "/Workspace")}
+			if isGitCliFolder(val(repo.Path)) {
 				info.DirectoryInfo = &workspaceapi.DirectoryInfo{IsGitFolder: true}
 			} else {
-				gi.Branch = repo.Branch
-				gi.HeadCommitID = repo.HeadCommitId
-				gi.URL = repo.Url
+				gi.Branch = val(repo.Branch)
+				gi.HeadCommitID = val(repo.HeadCommitId)
+				gi.URL = val(repo.Url)
 			}
 			body, err := withGitInfo(info, gi)
 			if err != nil {
@@ -795,24 +801,24 @@ func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
 	for filePath, entry := range s.files {
 		if path.Dir(filePath) == dirPath {
 			contents = append(contents, files.DirectoryEntry{
-				Name:     path.Base(filePath),
-				Path:     filePath,
-				FileSize: int64(len(entry.Data)),
+				Name:     nonZero(path.Base(filePath)),
+				Path:     nonZero(filePath),
+				FileSize: nonZero(len(entry.Data)),
 			})
 		}
 	}
 	for childPath := range s.directories {
 		if childPath != dirPath && path.Dir(childPath) == dirPath {
 			contents = append(contents, files.DirectoryEntry{
-				Name:        path.Base(childPath),
-				Path:        childPath,
-				IsDirectory: true,
+				Name:        nonZero(path.Base(childPath)),
+				Path:        nonZero(childPath),
+				IsDirectory: nonZero(true),
 			})
 		}
 	}
 
 	slices.SortFunc(contents, func(a, b files.DirectoryEntry) int {
-		return strings.Compare(a.Path, b.Path)
+		return strings.Compare(val(a.Path), val(b.Path))
 	})
 
 	return Response{

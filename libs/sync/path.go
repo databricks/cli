@@ -6,25 +6,28 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/utils"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 // getStatusWithRetry returns the workspace object at remotePath, retrying transient failures.
 // The read has no side effects, so a transient server error or a refused HTTP/2 stream
 // (https://github.com/databricks/cli/issues/6472) is safe to replay instead of failing the sync.
-func getStatusWithRetry(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) (*workspace.ObjectInfo, error) {
+func getStatusWithRetry(ctx context.Context, wsc *sdkclients.Clients, remotePath string) (*workspace.ObjectInfo, error) {
 	return retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
 		return wsc.Workspace.GetStatusByPath(ctx, remotePath)
 	})
 }
 
-func repoPathForPath(me *iam.User, remotePath string) string {
-	base := path.Clean("/Repos/" + me.UserName)
+func repoPathForPath(me *scim.User, remotePath string) string {
+	base := path.Clean("/Repos/" + utils.Deref(me.UserName))
 	remotePath = path.Clean(remotePath)
 	for strings.HasPrefix(path.Dir(remotePath), base) && path.Dir(remotePath) != base {
 		remotePath = path.Dir(remotePath)
@@ -35,13 +38,17 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
 // If dryRun is set, a missing remote directory is not created.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) error {
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *sdkclients.Clients, remotePath string, me *scim.User, dryRun bool) error {
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
 	//      for now we let clients pass in any existing user they might already have
 	if me == nil {
-		me, err = wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+		user, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
+		if err != nil {
+			return err
+		}
+		me, err = iamutil.UserFromSDK(user)
 		if err != nil {
 			return err
 		}
@@ -53,7 +60,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	info, err := getStatusWithRetry(ctx, wsc, remotePath)
 	if err != nil {
 		// We only deal with 404s below.
-		if !apierr.IsMissing(err) {
+		if !apierrs.IsMissing(err) {
 			return err
 		}
 
@@ -61,7 +68,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		if strings.HasPrefix(remotePath, "/Repos/") {
 			repoPath := repoPathForPath(me, remotePath)
 			_, err = getStatusWithRetry(ctx, wsc, repoPath)
-			if err != nil && apierr.IsMissing(err) {
+			if err != nil && apierrs.IsMissing(err) {
 				return fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
 		}

@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // JobTaskClusterSpec validates that job tasks have cluster spec defined
@@ -42,7 +42,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string
@@ -104,7 +104,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 }
 
 // isComputeTask returns true if the task runs on a cluster or serverless GC
-func isComputeTask(task jobs.Task) bool {
+func isComputeTask(task jobs.TaskSettings) bool {
 	if task.NotebookTask != nil {
 		// if warehouse_id is set, it's SQL notebook that doesn't need cluster or serverless GC
 		if task.NotebookTask.WarehouseId != "" {

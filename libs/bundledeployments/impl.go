@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/apiclient"
@@ -305,7 +307,11 @@ func (a *bundleDeploymentsImpl) UpdateDeployment(ctx context.Context, request Up
 	headers["Accept"] = "application/json"
 	headers["Content-Type"] = "application/json"
 	addWorkspaceID(a.client, headers)
-	err := a.client.Do(ctx, http.MethodPatch, path, headers, queryParams, request.Deployment, &deployment)
+	body, err := withMaskedFields(request.Deployment, request.UpdateMask.Paths)
+	if err != nil {
+		return nil, err
+	}
+	err = a.client.Do(ctx, http.MethodPatch, path, headers, queryParams, body, &deployment)
 	return &deployment, err
 }
 
@@ -324,6 +330,38 @@ func (a *bundleDeploymentsImpl) UpdateOperation(ctx context.Context, request Upd
 	headers["Accept"] = "application/json"
 	headers["Content-Type"] = "application/json"
 	addWorkspaceID(a.client, headers)
-	err := a.client.Do(ctx, http.MethodPatch, path, headers, queryParams, request.Operation, &operation)
+	// sequence_id is the optimistic-concurrency precondition; 0 is a real value.
+	body, err := withMaskedFields(request.Operation, append(slices.Clone(request.UpdateMask.Paths), "sequence_id"))
+	if err != nil {
+		return nil, err
+	}
+	err = a.client.Do(ctx, http.MethodPatch, path, headers, queryParams, body, &operation)
 	return &operation, err
+}
+
+// withMaskedFields encodes v as a JSON object in which every top-level field
+// named in paths is present, even when empty: for an update, an empty value in
+// the mask means "clear it", and omitempty would drop it. state is the
+// exception: an absent state is how a cleared resource is reported.
+func withMaskedFields(v any, paths []string) (map[string]any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var body map[string]any
+	if err := json.Unmarshal(data, &body); err != nil {
+		return nil, err
+	}
+	rv := reflect.ValueOf(v)
+	rt := rv.Type()
+	for i := range rt.NumField() {
+		name, _, _ := strings.Cut(rt.Field(i).Tag.Get("json"), ",")
+		if name == "" || name == "-" || name == "state" || !slices.Contains(paths, name) {
+			continue
+		}
+		if _, ok := body[name]; !ok {
+			body[name] = rv.Field(i).Interface()
+		}
+	}
+	return body, nil
 }

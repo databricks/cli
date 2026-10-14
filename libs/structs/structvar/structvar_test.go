@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -212,13 +212,11 @@ func TestResolveRefEscaped(t *testing.T) {
 func TestResolveRefJobSettings(t *testing.T) {
 	// Create a realistic JobSettings based on the provided YAML config
 	jobSettings := jobs.JobSettings{
-		Name: "job foo",
-		Tasks: []jobs.Task{
+		Name: new("job foo"),
+		Tasks: []jobs.TaskSettings{
 			{
-				TaskKey: "job_task",
-				RunJobTask: &jobs.RunJobTask{
-					JobId: 0, // This will be resolved from the reference
-				},
+				TaskKey:    new("job_task"),
+				RunJobTask: &jobs.RunJobTask{}, // JobId will be resolved from the reference
 			},
 		},
 	}
@@ -236,11 +234,11 @@ func TestResolveRefJobSettings(t *testing.T) {
 
 	// Verify the job ID was set correctly
 	updatedSettings := sv.Value.(*jobs.JobSettings)
-	assert.Equal(t, "job foo", updatedSettings.Name)
+	assert.Equal(t, new("job foo"), updatedSettings.Name)
 	assert.Len(t, updatedSettings.Tasks, 1)
-	assert.Equal(t, "job_task", updatedSettings.Tasks[0].TaskKey)
+	assert.Equal(t, new("job_task"), updatedSettings.Tasks[0].TaskKey)
 	assert.NotNil(t, updatedSettings.Tasks[0].RunJobTask)
-	assert.Equal(t, int64(123), updatedSettings.Tasks[0].RunJobTask.JobId)
+	assert.Equal(t, new(int64(123)), updatedSettings.Tasks[0].RunJobTask.JobId)
 
 	// Verify the reference was removed after resolution
 	assert.Empty(t, sv.Refs)

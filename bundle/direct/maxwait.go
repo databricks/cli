@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/bundle/direct/internal/retries"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/retries"
 )
 
 // maxWaitUnset means "no cap configured", which must stay distinguishable from an explicit

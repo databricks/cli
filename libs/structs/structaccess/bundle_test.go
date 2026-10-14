@@ -6,8 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,11 +19,11 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 					ID:           "jobid",
 					BaseResource: resources.BaseResource{URL: "joburl"},
 					JobSettings: jobs.JobSettings{
-						Name: "example",
-						Tasks: []jobs.Task{
+						Name: new("example"),
+						Tasks: []jobs.TaskSettings{
 							{
-								TaskKey:      "t1",
-								NotebookTask: &jobs.NotebookTask{NotebookPath: "/Workspace/Users/user@example.com/nb"},
+								TaskKey:      new("t1"),
+								NotebookTask: &jobs.NotebookTask{NotebookPath: new("/Workspace/Users/user@example.com/nb")},
 							},
 						},
 						Tags: map[string]string{
@@ -37,7 +37,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 				"my_app": {
 					BaseResource: resources.BaseResource{URL: "app_outer_url"},
 					App: apps.App{
-						Url: "app_inner_url",
+						Url: new("app_inner_url"),
 					},
 				},
 			},
@@ -79,9 +79,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 }
 
 // A bundle resource embeds a config struct that embeds the SDK request struct, so its
-// fields sit two levels down. Get, Set and ValidatePath all have to reach them, and
-// ForceSendFields belongs to the struct that declares the field -- not to the outer one
-// that shadows the name.
+// fields sit two levels down. Get, Set and ValidatePath all have to reach them.
 func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 	project := &resources.PostgresProject{} //exhaustruct:ignore
 	project.ProjectId = "p"
@@ -89,16 +87,15 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 	require.NoError(t, ValidateByString(reflect.TypeOf(project), "budget_policy_id"))
 
 	require.NoError(t, SetByString(project, "budget_policy_id", "abc"))
-	require.Equal(t, "abc", project.BudgetPolicyId)
+	require.Equal(t, new("abc"), project.BudgetPolicyId)
 
 	value, err := GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Equal(t, "abc", value)
 
-	// An explicit empty value is recorded on ProjectSpec, which declares the field.
+	// An explicit empty value is kept behind the pointer.
 	require.NoError(t, SetByString(project, "budget_policy_id", ""))
-	require.Contains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
-	require.NotContains(t, project.ForceSendFields, "BudgetPolicyId")
+	require.Equal(t, new(""), project.ProjectSpec.BudgetPolicyId)
 
 	value, err = GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
@@ -107,7 +104,7 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 
 	// And dropping it again leaves the field absent.
 	require.NoError(t, SetByString(project, "budget_policy_id", nil))
-	require.NotContains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
+	require.Nil(t, project.ProjectSpec.BudgetPolicyId)
 	value, err = GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Nil(t, value)

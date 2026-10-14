@@ -6,10 +6,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -17,10 +17,10 @@ import (
 // Terraform provider implementation:
 // https://github.com/databricks/terraform-provider-databricks/blob/main/catalog/resource_secret.go
 type ResourceSecret struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
+func (*ResourceSecret) New(client *sdkclients.Clients) *ResourceSecret {
 	return &ResourceSecret{client: client}
 }
 

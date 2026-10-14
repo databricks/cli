@@ -12,13 +12,13 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
 )
@@ -78,10 +78,10 @@ func (s JobRunRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceJobRun struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
+func (*ResourceJobRun) New(client *sdkclients.Clients) *ResourceJobRun {
 	return &ResourceJobRun{
 		client: client,
 	}

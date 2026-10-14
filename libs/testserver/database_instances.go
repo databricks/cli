@@ -1,17 +1,19 @@
 package testserver
 
 import (
-	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"encoding/json"
 	"fmt"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"slices"
 	"time"
 )
 
-var ForceSendFields []string = []string{
-	"EffectiveEnableReadableSecondaries",
-	"EffectiveStopped",
-	"EffectiveEnablePgNativeLogin",
+// setEffectiveBools makes the effective_* booleans always serialize, false
+// included, as the real API returns them.
+func setEffectiveBools(d *database.DatabaseInstance) {
+	d.EffectiveEnableReadableSecondaries = new(val(d.EffectiveEnableReadableSecondaries))
+	d.EffectiveStopped = new(val(d.EffectiveStopped))
+	d.EffectiveEnablePgNativeLogin = new(val(d.EffectiveEnablePgNativeLogin))
 }
 
 func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
@@ -27,21 +29,20 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	}
 
 	// set default fields:
-	databaseInstance.Uid = nextUUID()
+	databaseInstance.Uid = nonZero(nextUUID())
 	databaseInstance.State = database.DatabaseInstance_State_Available
-	databaseInstance.PgVersion = "PG_VERSION_16"
-	databaseInstance.EffectiveNodeCount = 1
-	databaseInstance.EffectiveRetentionWindowInDays = 7
+	databaseInstance.PgVersion = nonZero("PG_VERSION_16")
+	databaseInstance.EffectiveNodeCount = nonZero(1)
+	databaseInstance.EffectiveRetentionWindowInDays = nonZero(7)
 	databaseInstance.EffectiveCapacity = databaseInstance.Capacity
 	databaseInstance.Creator = req.Workspace.CurrentUser().UserName
-	databaseInstance.CreationTime = time.Now().UTC().Format(time.RFC3339)
-	databaseInstance.EffectiveEnableReadableSecondaries = false
-	databaseInstance.EffectiveStopped = false
-	databaseInstance.EffectiveEnablePgNativeLogin = false
+	databaseInstance.CreationTime = types.NewFromTime(time.Now().UTC().Truncate(time.Second))
+	databaseInstance.EffectiveEnableReadableSecondaries = nil
+	databaseInstance.EffectiveStopped = nil
+	databaseInstance.EffectiveEnablePgNativeLogin = nil
+	setEffectiveBools(&databaseInstance)
 
-	databaseInstance.ForceSendFields = slices.Clone(ForceSendFields)
-
-	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
+	s.DatabaseInstances[val(databaseInstance.Name)] = databaseInstance
 
 	return Response{
 		Body: databaseInstance,
@@ -60,7 +61,7 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 		}
 	}
 
-	value.ForceSendFields = slices.Clone(ForceSendFields)
+	setEffectiveBools(&value)
 
 	return Response{
 		Body: value,
@@ -90,25 +91,25 @@ func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Respons
 	}
 
 	// Update the instance with new values while preserving system-managed fields
-	updated := updateReq.DatabaseInstance
+	updated := val(updateReq.DatabaseInstance)
 	updated.Uid = existing.Uid                   // Preserve UID
 	updated.Creator = existing.Creator           // Preserve creator
 	updated.CreationTime = existing.CreationTime // Preserve creation time
 	updated.State = existing.State               // Preserve state
 
 	// Set defaults for effective fields if not specified
-	if updated.EffectiveNodeCount == 0 {
+	if val(updated.EffectiveNodeCount) == 0 {
 		updated.EffectiveNodeCount = existing.EffectiveNodeCount
 	}
-	if updated.EffectiveRetentionWindowInDays == 0 {
+	if val(updated.EffectiveRetentionWindowInDays) == 0 {
 		updated.EffectiveRetentionWindowInDays = existing.EffectiveRetentionWindowInDays
 	}
-	if updated.PgVersion == "" {
+	if val(updated.PgVersion) == "" {
 		updated.PgVersion = existing.PgVersion
 	}
 
-	// Set ForceSendFields to ensure consistent serialization with DatabaseInstanceMapGet
-	updated.ForceSendFields = slices.Clone(ForceSendFields)
+	// Ensure consistent serialization with DatabaseInstanceMapGet
+	setEffectiveBools(&updated)
 
 	// Update the stored instance
 	s.DatabaseInstances[name] = updated

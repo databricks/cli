@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
@@ -50,10 +50,10 @@ func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearc
 }
 
 type ResourceVectorSearchEndpoint struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceVectorSearchEndpoint) New(client *databricks.WorkspaceClient) *ResourceVectorSearchEndpoint {
+func (*ResourceVectorSearchEndpoint) New(client *sdkclients.Clients) *ResourceVectorSearchEndpoint {
 	return &ResourceVectorSearchEndpoint{client: client}
 }
 

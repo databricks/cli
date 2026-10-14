@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"encoding/json"
 	"fmt"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"strconv"
 )
 
@@ -20,7 +20,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 
 	// MLflow rejects an empty name; the fake would otherwise store a model under a key
 	// nothing can look up.
-	if request.Name == "" {
+	if val(request.Name) == "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -38,8 +38,8 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		Tags:        request.Tags,
 	}
 
-	s.ModelRegistryModels[request.Name] = model
-	s.ModelRegistryModelIDs[request.Name] = modelId
+	s.ModelRegistryModels[val(request.Name)] = model
+	s.ModelRegistryModelIDs[val(request.Name)] = modelId
 
 	return Response{
 		Body: modelregistry.CreateRegisteredModelResponse{
@@ -59,7 +59,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
-	existingModel, ok := s.ModelRegistryModels[request.Name]
+	existingModel, ok := s.ModelRegistryModels[val(request.Name)]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -69,7 +69,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 
 	// Update the model
 	existingModel.Description = request.Description
-	s.ModelRegistryModels[request.Name] = existingModel
+	s.ModelRegistryModels[val(request.Name)] = existingModel
 
 	return Response{
 		Body: modelregistry.UpdateRegisteredModelResponse{
@@ -94,11 +94,10 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	return Response{
 		Body: modelregistry.GetRegisteredModelDatabricksResponse{
 			RegisteredModelDatabricks: &modelregistry.RegisteredModelDatabricks{
-				Id:              s.ModelRegistryModelIDs[name],
+				Id:              nonZero(s.ModelRegistryModelIDs[name]),
 				Name:            model.Name,
 				Description:     model.Description,
 				Tags:            model.Tags,
-				ForceSendFields: model.ForceSendFields,
 			},
 		},
 	}

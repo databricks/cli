@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 var (
@@ -200,7 +199,7 @@ func convertPermissions(
 		}
 
 		permissions = append(permissions, resources.Permission{
-			Level:                iam.PermissionLevel(level),
+			Level:                resources.PermissionLevel(level),
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,

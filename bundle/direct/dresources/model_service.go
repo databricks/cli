@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -27,10 +27,10 @@ import (
 const modelServiceNamePrefix = "model-services/"
 
 type ResourceModelService struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceModelService) New(client *databricks.WorkspaceClient) *ResourceModelService {
+func (*ResourceModelService) New(client *sdkclients.Clients) *ResourceModelService {
 	return &ResourceModelService{client: client}
 }
 

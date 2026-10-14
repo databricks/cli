@@ -8,12 +8,12 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
 
@@ -91,7 +91,7 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 	if errors.Is(err, config.ErrCannotConfigureDefault) {
 		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, errNoProfile)
 	}
-	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+	if errors.Is(err, apierrs.ErrUnauthenticated) || errors.Is(err, apierrs.ErrPermissionDenied) {
 		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false,
 			fmt.Errorf("authentication was not successful: %w", err))
 	}
@@ -141,14 +141,14 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		// attaches credentials (e.g. it does not check a PAT server-side), so
 		// without this a bad credential would surface as a confusing failure
 		// mid-render instead of a clear "not authenticated" error here.
-		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+		if _, err := currentUserName(ctx, w); err != nil {
 			return authError(ctx, cmd, err)
 		}
 
-		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+		run, err := getRun(ctx, w, runID)
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
-			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			if errors.Is(err, apierrs.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 					fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", runID))
 			}
@@ -200,7 +200,7 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		}
 		statusMessage := ""
 		if taskOutput != nil {
-			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+			statusMessage = normalizeStatusMessage(utils.Deref(taskOutput.StatusMessage))
 		}
 		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
@@ -214,29 +214,29 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 // enrichFromAiRuntimeTask fills the config path, experiment, and accelerators
 // from the run's ai_runtime_task. Best-effort: empty fields leave the existing
 // "N/A" fallbacks in place.
-func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
+func enrichFromAiRuntimeTask(run *jobs.GetRunResponse, data *getData) {
 	task := aiRuntimeTaskOf(run)
 	if task == nil {
 		return
 	}
 	if len(task.Deployments) > 0 {
 		d := task.Deployments[0]
-		if d.CommandPath != "" {
-			data.TrainingConfigPath = path.Join(path.Dir(d.CommandPath), trainingConfigName)
+		if utils.Deref(d.CommandPath) != "" {
+			data.TrainingConfigPath = path.Join(path.Dir(utils.Deref(d.CommandPath)), trainingConfigName)
 		}
-		if a := acceleratorLabel(string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount); a != "" {
+		if a := acceleratorLabel(string(d.Compute.AcceleratorType), utils.Deref(d.Compute.AcceleratorCount)); a != "" {
 			data.AcceleratorsDisplay = a
 		}
 	}
-	if task.Experiment != "" {
-		exp := stripExperimentUserPrefix(task.Experiment)
+	if utils.Deref(task.Experiment) != "" {
+		exp := stripExperimentUserPrefix(utils.Deref(task.Experiment))
 		data.ExperimentName = &exp
 		data.ExperimentDisplay = exp
 	}
 }
 
 // aiRuntimeTaskOf returns the run's first ai_runtime_task, or nil.
-func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
+func aiRuntimeTaskOf(run *jobs.GetRunResponse) *jobs.AiRuntimeTask {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
@@ -246,9 +246,9 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 // buildGetData extracts the fields we display from a run. The text-view cells
 // are pre-rendered here with their "N/A" fallbacks; the styled renderer adds the
 // hyperlinks and colors once the dashboard and MLflow identifiers are known.
-func buildGetData(run *jobs.Run) getData {
+func buildGetData(run *jobs.GetRunResponse) getData {
 	data := getData{
-		RunID:             strconv.FormatInt(run.RunId, 10),
+		RunID:             strconv.FormatInt(utils.Deref(run.RunId), 10),
 		Status:            runStatus(run.State),
 		DisplayStatus:     displayRunStatus(run),
 		TerminationReason: terminationReason(run),
@@ -266,7 +266,7 @@ func buildGetData(run *jobs.Run) getData {
 	if data.ExperimentName != nil {
 		data.ExperimentDisplay = *data.ExperimentName
 	}
-	data.UserDisplay = orNA(run.CreatorUserName)
+	data.UserDisplay = orNA(utils.Deref(run.CreatorUserName))
 	data.AcceleratorsDisplay = orNA(accelerators(run))
 	// EnvironmentDisplay is resolved at render time: the serverless environment
 	// version needs a raw GetRun read (the typed SDK Run drops it), so it is not

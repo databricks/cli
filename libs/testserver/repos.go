@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
 	"encoding/json"
 	"fmt"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
 	"net/http"
 	"strconv"
 )
@@ -29,16 +29,16 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	id := strconv.FormatInt(repoId, 10)
 
 	repoInfo := repos.RepoInfo{
-		Id:           repoId,
+		Id:           nonZero(repoId),
 		Path:         repoReq.Path,
 		Provider:     repoReq.Provider,
 		Url:          repoReq.Url,
-		Branch:       "main",
-		HeadCommitId: fakeHeadCommitID,
+		Branch:       nonZero("main"),
+		HeadCommitId: nonZero(fakeHeadCommitID),
 	}
 
 	s.Repos[id] = repoInfo
-	s.repoIdByPath[repoReq.Path] = repoId
+	s.repoIdByPath[val(repoReq.Path)] = repoId
 
 	return Response{
 		Body: repoInfo,
@@ -66,7 +66,7 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 
 	newRepoInfo := repoInfo
 
-	if repoReq.Branch != "" {
+	if val(repoReq.Branch) != "" {
 		newRepoInfo.Branch = repoReq.Branch
 	}
 
@@ -88,6 +88,6 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	}
 
 	delete(s.Repos, req.Vars["repo_id"])
-	delete(s.repoIdByPath, repoInfo.Path)
+	delete(s.repoIdByPath, val(repoInfo.Path))
 	return Response{}
 }

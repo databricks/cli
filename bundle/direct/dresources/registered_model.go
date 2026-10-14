@@ -5,16 +5,16 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type ResourceRegisteredModel struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceRegisteredModel) New(client *databricks.WorkspaceClient) *ResourceRegisteredModel {
+func (*ResourceRegisteredModel) New(client *sdkclients.Clients) *ResourceRegisteredModel {
 	return &ResourceRegisteredModel{
 		client: client,
 	}

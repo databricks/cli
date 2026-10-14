@@ -1,10 +1,10 @@
 package testserver
 
 import (
-	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"encoding/json"
 	"fmt"
+	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/http"
 	"strings"
 )
@@ -20,11 +20,11 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	}
 
 	// UC normalizes schema and volume names to lowercase.
-	volume.SchemaName = strings.ToLower(volume.SchemaName)
-	volume.Name = strings.ToLower(volume.Name)
-	volume.FullName = volume.CatalogName + "." + volume.SchemaName + "." + volume.Name
+	volume.SchemaName = nonZero(strings.ToLower(val(volume.SchemaName)))
+	volume.Name = nonZero(strings.ToLower(val(volume.Name)))
+	volume.FullName = nonZero(val(volume.CatalogName) + "." + val(volume.SchemaName) + "." + val(volume.Name))
 
-	if volume.StorageLocation != "" && volume.VolumeType != volumes.VolumeType_External {
+	if val(volume.StorageLocation) != "" && volume.VolumeType != volumes.VolumeType_External {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -34,23 +34,23 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 
-	volume.VolumeId = nextUUID()
+	volume.VolumeId = nonZero(nextUUID())
 
-	if volume.StorageLocation != "" {
+	if val(volume.StorageLocation) != "" {
 		// Strip trailing slash to mimic UC API normalization behavior.
-		volume.StorageLocation = strings.TrimRight(volume.StorageLocation, "/")
+		volume.StorageLocation = nonZero(strings.TrimRight(val(volume.StorageLocation), "/"))
 	} else {
-		volume.StorageLocation = fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, TestMetastore.MetastoreId, volume.VolumeId)
+		volume.StorageLocation = nonZero(fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, TestMetastore.MetastoreId, volume.VolumeId))
 	}
 
-	volume.CreatedAt = nowMilli()
+	volume.CreatedAt = nonZero(nowMilli())
 	volume.UpdatedAt = volume.CreatedAt
 	volume.CreatedBy = s.CurrentUser().UserName
 	volume.Owner = s.CurrentUser().UserName
 
 	defer s.LockUnlock()()
 
-	s.Volumes[volume.FullName] = volume
+	s.Volumes[val(volume.FullName)] = volume
 
 	// Register the volume path as a directory so that fs cp works without
 	// requiring an explicit mkdir.
@@ -91,16 +91,16 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 
 	applyUpdatedFields(&existing, request, fields)
 
-	if request.NewName != "" {
+	if val(request.NewName) != "" {
 		delete(s.Volumes, fullname)
 		existing.Name = request.NewName
-		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + request.NewName
+		existing.FullName = nonZero(val(existing.CatalogName) + "." + val(existing.SchemaName) + "." + val(request.NewName))
 	}
 
-	existing.UpdatedAt = nowMilli()
+	existing.UpdatedAt = nonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Volumes[existing.FullName] = existing
+	s.Volumes[val(existing.FullName)] = existing
 	return Response{
 		Body: existing,
 	}

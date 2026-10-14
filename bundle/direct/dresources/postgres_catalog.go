@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -37,12 +37,12 @@ func (s PostgresCatalogRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourcePostgresCatalog struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresCatalogState = resources.PostgresCatalogConfig
 
-func (*ResourcePostgresCatalog) New(client *databricks.WorkspaceClient) *ResourcePostgresCatalog {
+func (*ResourcePostgresCatalog) New(client *sdkclients.Clients) *ResourcePostgresCatalog {
 	return &ResourcePostgresCatalog{client: client}
 }
 

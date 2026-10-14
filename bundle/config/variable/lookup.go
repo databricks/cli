@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 type Lookup struct {
@@ -35,7 +35,7 @@ type Lookup struct {
 
 type resolver interface {
 	// Resolve resolves the underlying entity's ID.
-	Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error)
+	Resolve(ctx context.Context, w *sdkclients.Clients) (string, error)
 
 	// String returns a human-readable representation of the resolver.
 	String() string
@@ -91,7 +91,7 @@ func (l *Lookup) constructResolver() (resolver, error) {
 	}
 }
 
-func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l *Lookup) Resolve(ctx context.Context, w *sdkclients.Clients) (string, error) {
 	r, err := l.constructResolver()
 	if err != nil {
 		return "", err

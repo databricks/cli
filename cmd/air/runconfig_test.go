@@ -167,7 +167,7 @@ containers:
   - name: inference
     command: python infer.py
     ranks: [0, 1]
-    unity_catalog_image: main.ml.inference:v1
+    unity_catalog_image: main.experiments.inference:v1
     environment_variables:
       variables:
         MODEL_NAME: llama
@@ -175,7 +175,7 @@ containers:
   - name: dataproc
     command: python dataproc.py
     ranks: [2, 3]
-    unity_catalog_image: main.ml.dataproc:v2
+    unity_catalog_image: main.experiments.dataproc:v2
 `))
 	require.NoError(t, err)
 	require.Nil(t, cfg.Command)
@@ -201,11 +201,11 @@ containers:
   - name: first
     command: echo first
     ranks: [0]
-    unity_catalog_image: main.ml.first:v1
+    unity_catalog_image: main.experiments.first:v1
   - name: second
     command: echo second
     ranks: [%s]
-    unity_catalog_image: main.ml.second:v1
+    unity_catalog_image: main.experiments.second:v1
 `
 	for _, tc := range []struct {
 		name    string

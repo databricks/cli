@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"encoding/json"
 	"fmt"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"strings"
 )
 
@@ -38,7 +38,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	// dotted catalog.schema value is rejected; the catalog belongs in the separate
 	// catalog field. Only the dot trips this check, but the backend's canned error
 	// also lists dashes and other characters as invalid.
-	if strings.Contains(spec.Target, ".") {
+	if strings.Contains(val(spec.Target), ".") {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -64,16 +64,16 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Parameters = create.Parameters
 
 	pipelineId := nextUUID()
-	r.PipelineId = pipelineId
-	r.CreatorUserName = "tester@databricks.com"
-	r.LastModified = nowMilli()
+	r.PipelineId = nonZero(pipelineId)
+	r.CreatorUserName = nonZero("tester@databricks.com")
+	r.LastModified = nonZero(nowMilli())
 	r.Name = r.Spec.Name
 	// run_as is on CreatePipeline, not PipelineSpec, so the spec decode drops it. The backend
 	// echoes it top-level on GetPipelineResponse.RunAs; mirror that so a re-read is faithful.
 	if create.RunAs != nil {
 		r.RunAs = create.RunAs
 	}
-	r.RunAsUserName = "tester@databricks.com"
+	r.RunAsUserName = nonZero("tester@databricks.com")
 	r.State = "IDLE"
 	r.EffectivePublishingMode = pipelines.PublishingMode_DefaultPublishingMode
 
@@ -82,18 +82,18 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
+			PipelineId: nonZero(pipelineId),
 		},
 	}
 }
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
-	spec.Id = pipelineId
+	spec.Id = nonZero(pipelineId)
 	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
 	// and if the storage location is not specified, API automatically generates a storage location
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if spec.Storage == "" && spec.Catalog == "" {
-		spec.Storage = "dbfs:/pipelines/" + pipelineId
+	if val(spec.Storage) == "" && val(spec.Catalog) == "" {
+		spec.Storage = nonZero("dbfs:/pipelines/" + pipelineId)
 	}
 }
 
@@ -158,7 +158,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
-			UpdateId: updateId,
+			UpdateId: nonZero(updateId),
 		},
 	}
 }
@@ -204,8 +204,8 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 	return Response{
 		Body: pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{
-				UpdateId: updateId,
-				State:    pipelines.UpdateInfoStateCompleted,
+				UpdateId: nonZero(updateId),
+				State:    pipelines.UpdateState_Completed,
 			},
 		},
 	}
@@ -224,7 +224,7 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
+			PipelineId: nonZero(pipelineId),
 			State:      pipelines.PipelineState_PipelineState_Idle,
 		},
 	}

@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func TestResolveClusterReference(t *testing.T) {
@@ -135,13 +135,13 @@ func TestResolveServicePrincipal(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	api := m.GetMockServicePrincipalsV2API()
-	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{
+	iterator := listing.SliceIterator[scim.ServicePrincipal]([]scim.ServicePrincipal{
 		{
 			ApplicationId: "app-1234",
 		},
 	})
 	api.EXPECT().
-		List(mock.Anything, iam.ListServicePrincipalsRequest{
+		List(mock.Anything, scim.ListServicePrincipalsRequest{
 			Filter: fmt.Sprintf("displayName eq '%s'", spName),
 		}).
 		Return(&iterator)

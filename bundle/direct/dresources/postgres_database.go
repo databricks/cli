@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -38,12 +38,12 @@ func (s PostgresDatabaseRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourcePostgresDatabase struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresDatabaseState = resources.PostgresDatabaseConfig
 
-func (*ResourcePostgresDatabase) New(client *databricks.WorkspaceClient) *ResourcePostgresDatabase {
+func (*ResourcePostgresDatabase) New(client *sdkclients.Clients) *ResourcePostgresDatabase {
 	return &ResourcePostgresDatabase{client: client}
 }
 

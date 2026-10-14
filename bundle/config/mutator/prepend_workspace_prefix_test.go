@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -91,7 +91,7 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 			},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
+					User: &scim.User{
 						UserName: "jane@doe.com",
 					},
 				},

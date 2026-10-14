@@ -5,14 +5,14 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type ResourceMlflowModel struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 // MlflowModelRemote wraps the API response with the numeric model ID.
@@ -34,7 +34,7 @@ func (s MlflowModelRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (*ResourceMlflowModel) New(client *databricks.WorkspaceClient) *ResourceMlflowModel {
+func (*ResourceMlflowModel) New(client *sdkclients.Clients) *ResourceMlflowModel {
 	return &ResourceMlflowModel{client: client}
 }
 

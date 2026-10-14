@@ -2,7 +2,6 @@ package structdiff
 
 import (
 	"reflect"
-	"slices"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -11,9 +10,9 @@ import (
 // IsEqual compares two Go structs and returns true if they are equal.
 // It uses the same comparison logic as GetStructDiff but is more efficient
 // as it short-circuits on the first difference found.
-// Respects ForceSendFields if present.
 // Types of a and b must match exactly, otherwise returns false.
-// Note, reflect.DeepEqual() does not work for SDK structs, because ForceSendFields can contain different sets for the same value.
+// Note, unlike reflect.DeepEqual(), omitempty zero values are equal to absent ones and opaque structs
+// (e.g. types.Time) are compared by their JSON form.
 func IsEqual(a, b any) bool {
 	v1 := reflect.ValueOf(a)
 	v2 := reflect.ValueOf(b)
@@ -99,12 +98,9 @@ func equalValues(v1, v2 reflect.Value) bool {
 
 func equalStruct(s1, s2 reflect.Value) bool {
 	t := s1.Type()
-	forced1 := getForceSendFields(s1)
-	forced2 := getForceSendFields(s2)
-
 	for i := range t.NumField() {
 		sf := t.Field(i)
-		if !sf.IsExported() || sf.Name == "ForceSendFields" {
+		if !sf.IsExported() {
 			continue
 		}
 
@@ -133,14 +129,10 @@ func equalStruct(s1, s2 reflect.Value) bool {
 		if zero1 || zero2 {
 			if jsonTag.OmitEmpty() {
 				if zero1 {
-					if !slices.Contains(forced1, sf.Name) {
-						v1Field = reflect.ValueOf(nil)
-					}
+					v1Field = reflect.ValueOf(nil)
 				}
 				if zero2 {
-					if !slices.Contains(forced2, sf.Name) {
-						v2Field = reflect.ValueOf(nil)
-					}
+					v2Field = reflect.ValueOf(nil)
 				}
 			}
 		}

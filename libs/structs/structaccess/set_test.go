@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -553,13 +553,11 @@ func TestSet_EmbedTag(t *testing.T) {
 
 func TestSetJobSettings(t *testing.T) {
 	jobSettings := jobs.JobSettings{
-		Name: "job foo",
-		Tasks: []jobs.Task{
+		Name: new("job foo"),
+		Tasks: []jobs.TaskSettings{
 			{
-				TaskKey: "job_task",
-				RunJobTask: &jobs.RunJobTask{
-					JobId: 0, // This will be resolved from the reference
-				},
+				TaskKey:    new("job_task"),
+				RunJobTask: &jobs.RunJobTask{}, // JobId will be resolved from the reference
 			},
 		},
 	}
@@ -568,246 +566,48 @@ func TestSetJobSettings(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, &jobs.JobSettings{
-		Name: "job foo",
-		Tasks: []jobs.Task{
+		Name: new("job foo"),
+		Tasks: []jobs.TaskSettings{
 			{
-				TaskKey: "job_task",
+				TaskKey: new("job_task"),
 				RunJobTask: &jobs.RunJobTask{
-					JobId: 123,
+					JobId: new(int64(123)),
 				},
 			},
 		},
 	}, &jobSettings)
 }
 
-func TestSet_EmbeddedStructForceSendFields(t *testing.T) {
-	type Inner struct {
-		InnerFieldOmit   string   `json:"inner_field_omit,omitempty"`
-		InnerFieldNoOmit string   `json:"inner_field_no_omit"`
-		ForceSendFields  []string `json:"-"`
-	}
-
-	type Outer struct {
-		OuterFieldOmit   string `json:"outer_field_omit,omitempty"`
-		OuterFieldNoOmit string `json:"outer_field_no_omit"`
-		Inner
-	}
-
-	t.Run("set nil", func(t *testing.T) {
-		obj := Outer{
-			OuterFieldOmit:   "outer_value",
-			OuterFieldNoOmit: "outer_no_omit",
-			InnerFieldOmit:   "inner_value",
-			InnerFieldNoOmit: "inner_no_omit",
-			ForceSendFields:  []string{"OuterFieldOmit", "InnerFieldOmit"},
-		}
-
-		// Set nil value for outer field - roundtrip nil -> nil
-		// Outer has no ForceSendFields, so Inner.ForceSendFields unchanged
-		testSet(t, &obj, "outer_field_omit", nil)
-		assert.Equal(t, []string{"OuterFieldOmit", "InnerFieldOmit"}, obj.ForceSendFields)
-
-		// Set nil value for outer field no-omit - roundtrip nil -> ""
-		// Outer has no ForceSendFields, so Inner.ForceSendFields unchanged
-		testSetGet(t, &obj, "outer_field_no_omit", nil, "")
-		assert.Equal(t, []string{"OuterFieldOmit", "InnerFieldOmit"}, obj.ForceSendFields)
-
-		// Set nil value for inner field no-omit - roundtrip nil -> ""
-		// Inner has ForceSendFields but this field has no omitempty, so no change to ForceSendFields
-		testSetGet(t, &obj, "inner_field_no_omit", nil, "")
-		assert.Equal(t, []string{"OuterFieldOmit", "InnerFieldOmit"}, obj.ForceSendFields)
-
-		// Set nil value for inner field omit - should clear and remove from Inner.ForceSendFields
-		testSet(t, &obj, "inner_field_omit", nil)
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-
-		// Repeat
-		testSet(t, &obj, "inner_field_omit", nil)
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-	})
-
-	t.Run("set empty", func(t *testing.T) {
-		obj := Outer{
-			OuterFieldOmit:   "outer_value",
-			OuterFieldNoOmit: "outer_no_omit",
-			InnerFieldOmit:   "inner_value",
-			InnerFieldNoOmit: "inner_no_omit",
-			ForceSendFields:  []string{},
-		}
-
-		// Set empty string for outer field, but get nil back (omitempty, no ForceSendFields)
-		testSetGet(t, &obj, "outer_field_omit", "", nil)
-		// Outer has no ForceSendFields, so Inner.ForceSendFields unchanged
-		assert.Equal(t, []string{}, obj.ForceSendFields)
-
-		// Set empty string for outer field no-omit - roundtrip "" -> ""
-		testSet(t, &obj, "outer_field_no_omit", "")
-		// Outer has no ForceSendFields, so Inner.ForceSendFields unchanged
-		assert.Equal(t, []string{}, obj.ForceSendFields)
-
-		// Set empty string for inner field no-omit - roundtrip "" -> ""
-		testSet(t, &obj, "inner_field_no_omit", "")
-		// Inner has ForceSendFields but this field has no omitempty, so no change to ForceSendFields
-		assert.Equal(t, []string{}, obj.ForceSendFields)
-
-		// Set empty string for inner field omit - should set field and add to Inner.ForceSendFields
-		testSet(t, &obj, "inner_field_omit", "")
-		assert.Equal(t, []string{"InnerFieldOmit"}, obj.ForceSendFields)
-
-		// Repeat - should not duplicate in ForceSendFields
-		testSet(t, &obj, "inner_field_omit", "")
-		assert.Equal(t, []string{"InnerFieldOmit"}, obj.ForceSendFields)
-	})
-}
-
-func TestSet_MixedForceSendFields(t *testing.T) {
-	type First struct {
-		FirstFieldOmit   string `json:"first_field_omit,omitempty"`
-		FirstFieldNoOmit string `json:"first_field_no_omit"`
-	}
-
-	type Second struct {
-		SecondFieldOmit   string   `json:"second_field_omit,omitempty"`
-		SecondFieldNoOmit string   `json:"second_field_no_omit"`
-		ForceSendFields   []string `json:"-"`
-	}
-
-	type Outer struct {
-		OuterFieldOmit   string   `json:"outer_field_omit,omitempty"`
-		OuterFieldNoOmit string   `json:"outer_field_no_omit"`
-		ForceSendFields  []string `json:"-"`
-		First
-		Second
-	}
-
-	t.Run("set nil", func(t *testing.T) {
-		obj := Outer{
-			OuterFieldOmit:   "outer_value",
-			OuterFieldNoOmit: "outer_no_omit",
-			ForceSendFields:  []string{"OuterFieldOmit", "FirstFieldOmit"},
-			FirstFieldOmit:   "first_value",
-			FirstFieldNoOmit: "first_no_omit",
-			Second: Second{
-				SecondFieldOmit:   "second_value",
-				SecondFieldNoOmit: "second_no_omit",
-				ForceSendFields:   []string{"SecondFieldOmit"},
-			},
-		}
-
-		// Set nil for outer field - should clear and remove from Outer.ForceSendFields
-		testSet(t, &obj, "outer_field_omit", nil)
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Set nil for outer field no-omit - roundtrip nil -> ""
-		testSetGet(t, &obj, "outer_field_no_omit", nil, "")
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Set nil for first field no-omit - roundtrip nil -> ""
-		testSetGet(t, &obj, "first_field_no_omit", nil, "")
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Set nil for first field omit - should clear field but NOT affect any ForceSendFields
-		// (First has no ForceSendFields, so nothing to manage there)
-		testSet(t, &obj, "first_field_omit", nil)
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields) // unchanged - First fields don't belong to Outer's ForceSendFields management
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Set nil for second field no-omit - roundtrip nil -> ""
-		testSetGet(t, &obj, "second_field_no_omit", nil, "")
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Set nil for second field omit - should clear and remove from Second.ForceSendFields
-		// (Second owns its own fields since it has ForceSendFields)
-		testSet(t, &obj, "second_field_omit", nil)
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields) // unchanged
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Repeat operations - should be idempotent
-		testSet(t, &obj, "first_field_omit", nil)
-		testSet(t, &obj, "second_field_omit", nil)
-		assert.Equal(t, []string{"FirstFieldOmit"}, obj.ForceSendFields) // unchanged
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-	})
-
-	t.Run("set empty", func(t *testing.T) {
-		obj := Outer{
-			OuterFieldOmit:   "outer_value",
-			OuterFieldNoOmit: "outer_no_omit",
-			ForceSendFields:  []string{},
-			FirstFieldOmit:   "first_value",
-			FirstFieldNoOmit: "first_no_omit",
-			Second: Second{
-				SecondFieldOmit:   "second_value",
-				SecondFieldNoOmit: "second_no_omit",
-				ForceSendFields:   []string{},
-			},
-		}
-
-		// Set empty for outer field omit - should zero and add to Outer.ForceSendFields
-		testSet(t, &obj, "outer_field_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Set empty for outer field no-omit - roundtrip "" -> ""
-		testSet(t, &obj, "outer_field_no_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Set empty for first field no-omit - roundtrip "" -> ""
-		testSet(t, &obj, "first_field_no_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Set empty for first field omit - should zero field but get nil back (no ForceSendFields to manage)
-		// (First has no ForceSendFields, so empty value won't survive roundtrip)
-		testSetGet(t, &obj, "first_field_omit", "", nil)
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields) // unchanged - First fields don't belong to Outer's ForceSendFields management
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Set empty for second field no-omit - roundtrip "" -> ""
-		testSet(t, &obj, "second_field_no_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{}, obj.Second.ForceSendFields)
-
-		// Set empty for second field omit - should zero and add to Second.ForceSendFields
-		// (Second owns its own fields since it has ForceSendFields)
-		testSet(t, &obj, "second_field_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields)
-
-		// Repeat operations - should not duplicate
-		testSet(t, &obj, "second_field_omit", "")
-		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
-		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields) // no duplicates
-	})
-}
-
-// A value that cannot be converted must leave the struct untouched, ForceSendFields included.
-func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
-	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+// A value that cannot be converted must leave the struct untouched.
+func TestSet_FailedConversionLeavesStruct(t *testing.T) {
+	job := &jobs.JobSettings{Name: new("n")} //exhaustruct:ignore
 
 	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", ""))
-	assert.Empty(t, job.ForceSendFields)
-	assert.Equal(t, "n", job.Name)
+	assert.Nil(t, job.MaxConcurrentRuns)
+	assert.Equal(t, new("n"), job.Name)
 }
 
-// ForceSendFields is decided from the value actually stored, not the one the caller passed:
-// setting an omitempty numeric field from the string "0" stores zero, which has to be forced
-// or the field marshals as absent.
-func TestSet_StringZeroIntoOmitemptyNumberIsForced(t *testing.T) {
-	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+// Setting a pointer-to-scalar field to a zero value allocates the pointer, so the
+// zero value is marshaled; setting nil clears it.
+func TestSet_PointerScalarZeroValue(t *testing.T) {
+	job := &jobs.JobSettings{Name: new("n")} //exhaustruct:ignore
 
 	require.NoError(t, structaccess.SetByString(job, "max_concurrent_runs", "0"))
-	assert.Equal(t, 0, job.MaxConcurrentRuns)
-	assert.Contains(t, job.ForceSendFields, "MaxConcurrentRuns")
+	assert.Equal(t, new(0), job.MaxConcurrentRuns)
 
 	blob, err := json.Marshal(job)
 	require.NoError(t, err)
 	assert.Contains(t, string(blob), `"max_concurrent_runs":0`)
+
+	require.NoError(t, structaccess.SetByString(job, "description", ""))
+	assert.Equal(t, new(""), job.Description)
+
+	require.NoError(t, structaccess.SetByString(job, "max_concurrent_runs", nil))
+	assert.Nil(t, job.MaxConcurrentRuns)
+
+	got, err := structaccess.GetByString(job, "description")
+	require.NoError(t, err)
+	assert.Equal(t, "", got)
 }
 
 // encoding/json resolves a name declared at two embedding depths in favour of the shallower

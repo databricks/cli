@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
 	"encoding/json"
 	"fmt"
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
 	"net/http"
 	"reflect"
 )
@@ -16,18 +16,18 @@ func (s *FakeWorkspace) LibrariesInstall(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.Clusters[request.ClusterId]; !ok {
+	if _, ok := s.Clusters[val(request.ClusterId)]; !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
 
 	// Install is additive and idempotent: installing an already-present library is a no-op.
-	installed := s.ClusterLibraries[request.ClusterId]
+	installed := s.ClusterLibraries[val(request.ClusterId)]
 	for _, lib := range request.Libraries {
 		if !containsLibrary(installed, lib) {
 			installed = append(installed, lib)
 		}
 	}
-	s.ClusterLibraries[request.ClusterId] = installed
+	s.ClusterLibraries[val(request.ClusterId)] = installed
 
 	return Response{}
 }
@@ -40,14 +40,14 @@ func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
 
 	defer s.LockUnlock()()
 
-	installed := s.ClusterLibraries[request.ClusterId]
+	installed := s.ClusterLibraries[val(request.ClusterId)]
 	remaining := make([]clusterlibraries.Library, 0, len(installed))
 	for _, lib := range installed {
 		if !containsLibrary(request.Libraries, lib) {
 			remaining = append(remaining, lib)
 		}
 	}
-	s.ClusterLibraries[request.ClusterId] = remaining
+	s.ClusterLibraries[val(request.ClusterId)] = remaining
 
 	return Response{}
 }
@@ -70,7 +70,7 @@ func (s *FakeWorkspace) LibrariesClusterStatus(req Request, clusterId string) an
 
 	return Response{
 		Body: clusterlibraries.ClusterLibraryStatuses{
-			ClusterId:       clusterId,
+			ClusterId:       nonZero(clusterId),
 			LibraryStatuses: statuses,
 		},
 	}

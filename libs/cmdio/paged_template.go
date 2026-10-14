@@ -10,7 +10,6 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // ansiCSIPattern matches ANSI SGR escape sequences so colored cells
@@ -23,7 +22,7 @@ var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
 // drains the rest, q/esc/Ctrl+C quit.
 func renderIteratorPagedTemplate[T any](
 	ctx context.Context,
-	iter listing.Iterator[T],
+	iter pullIter[T],
 	in io.Reader,
 	out io.Writer,
 	headerTemplate, tmpl string,
@@ -80,7 +79,7 @@ func (p *templatePager) flushLines(buf []any) ([]string, error) {
 
 func renderIteratorPagedTemplateCore[T any](
 	ctx context.Context,
-	iter listing.Iterator[T],
+	iter pullIter[T],
 	in io.Reader,
 	out io.Writer,
 	headerTemplate, tmpl string,

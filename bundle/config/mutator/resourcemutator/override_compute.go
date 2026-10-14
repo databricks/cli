@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type overrideCompute struct{}
@@ -25,15 +26,15 @@ func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
 		task := &j.Tasks[i]
 
-		if task.ForEachTask != nil {
-			task = &task.ForEachTask.Task
+		if task.ForEachTask != nil && task.ForEachTask.Task != nil {
+			task = task.ForEachTask.Task
 		}
 
-		if task.NewCluster != nil || task.ExistingClusterId != "" || task.EnvironmentKey != "" || task.JobClusterKey != "" {
+		if task.NewCluster != nil || utils.Deref(task.ExistingClusterId) != "" || utils.Deref(task.EnvironmentKey) != "" || utils.Deref(task.JobClusterKey) != "" {
 			task.NewCluster = nil
-			task.JobClusterKey = ""
-			task.EnvironmentKey = ""
-			task.ExistingClusterId = compute
+			task.JobClusterKey = nil
+			task.EnvironmentKey = nil
+			task.ExistingClusterId = new(compute)
 		}
 	}
 }

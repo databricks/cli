@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -32,13 +32,13 @@ type GrantsState struct {
 }
 
 type ResourceGrants struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 
 	// securableType is the UC securable type of the parent resource, e.g. "schema".
 	securableType string
 }
 
-func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
+func (*ResourceGrants) New(client *sdkclients.Clients) *ResourceGrants {
 	return &ResourceGrants{client: client, securableType: ""}
 }
 

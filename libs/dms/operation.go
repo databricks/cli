@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/cli/libs/bundledeployments"
 )
 
 // StatePrefix is the "resources." that bundle keys carry but DMS keys don't
@@ -146,26 +146,22 @@ func (u OperationUpdate) Merge(newer OperationUpdate) OperationUpdate {
 }
 
 // operation builds the request body from the masked fields, plus the sequence_id check.
-// Force-send them (empty = clear, and 0 is a real sequence_id); never force state, since a missing state means the resource is gone.
+// The client force-sends them (empty = clear, and 0 is a real sequence_id) except state, since a missing state means the resource is gone.
 func (u OperationUpdate) operation(sequenceID int64) bundledeployments.Operation {
 	operation := bundledeployments.Operation{
-		SequenceId:      sequenceID,
-		ForceSendFields: []string{"SequenceId"},
+		SequenceId: sequenceID,
 	}
 	if u.Fields.Has(FieldState) && u.State != nil {
 		operation.State = string(u.State)
 	}
 	if u.Fields.Has(FieldErrorMessage) {
 		operation.ErrorMessage = u.ErrorMessage
-		operation.ForceSendFields = append(operation.ForceSendFields, "ErrorMessage")
 	}
 	if u.Fields.Has(FieldResourceID) {
 		operation.ResourceId = u.ResourceID
-		operation.ForceSendFields = append(operation.ForceSendFields, "ResourceId")
 	}
 	if u.Fields.Has(FieldStatus) {
 		operation.Status = u.Status
-		operation.ForceSendFields = append(operation.ForceSendFields, "Status")
 	}
 	return operation
 }

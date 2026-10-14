@@ -1,12 +1,12 @@
 package testserver
 
 import (
-	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"path"
 	"strconv"
 	"strings"
@@ -103,11 +103,11 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
-	if dashboard.ParentPath == "" {
-		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName
+	if val(dashboard.ParentPath) == "" {
+		dashboard.ParentPath = nonZero("/Users/" + val(s.CurrentUser().UserName))
 	}
 
-	if _, ok := s.directories[dashboard.ParentPath]; !ok {
+	if _, ok := s.directories[val(dashboard.ParentPath)]; !ok {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]string{
@@ -117,7 +117,9 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	var err error
-	dashboard.DashboardId, err = generateDashboardId()
+	var dashboardId string
+	dashboardId, err = generateDashboardId()
+	dashboard.DashboardId = nonZero(dashboardId)
 	if err != nil {
 		return Response{
 			StatusCode: 500,
@@ -131,16 +133,16 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	dashboard.LifecycleState = lakeview.LifecycleState_Active
 
 	// Remove /Workspace prefix from parent_path. This matches the remote behavior.
-	if strings.HasPrefix(dashboard.ParentPath, "/Workspace/") {
-		dashboard.ParentPath = strings.TrimPrefix(dashboard.ParentPath, "/Workspace")
+	if strings.HasPrefix(val(dashboard.ParentPath), "/Workspace/") {
+		dashboard.ParentPath = nonZero(strings.TrimPrefix(val(dashboard.ParentPath), "/Workspace"))
 	}
 
 	// Change path field if parent_path is provided
-	if dashboard.ParentPath != "" {
-		dashboard.Path = dashboard.ParentPath + "/" + dashboard.DisplayName + ".lvdash.json"
+	if val(dashboard.ParentPath) != "" {
+		dashboard.Path = nonZero(val(dashboard.ParentPath) + "/" + val(dashboard.DisplayName) + ".lvdash.json")
 	}
 
-	dashboard.CreateTime = nextTimestamp()
+	dashboard.CreateTime = nextTime()
 	dashboard.UpdateTime = dashboard.CreateTime
 
 	inputSerializedDashboard := dashboard.SerializedDashboard
@@ -150,27 +152,27 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	datasetSchema := req.URL.Query().Get("dataset_schema")
 
 	// Parse serializedDashboard into json and put it back as a string
-	if dashboard.SerializedDashboard != "" {
-		dashboard.SerializedDashboard = transformSerializedDashboard(dashboard.SerializedDashboard, datasetCatalog, datasetSchema)
+	if val(dashboard.SerializedDashboard) != "" {
+		dashboard.SerializedDashboard = nonZero(transformSerializedDashboard(val(dashboard.SerializedDashboard), datasetCatalog, datasetSchema))
 	}
-	dashboard.Etag = "80611980"
+	dashboard.Etag = nonZero("80611980")
 
 	// Write so that, when eventual consistency is enabled, the first GET after this
 	// create returns 404.
-	s.Dashboards.Write(dashboard.DashboardId, &fakeDashboard{
+	s.Dashboards.Write(val(dashboard.DashboardId), &fakeDashboard{
 		Dashboard:                dashboard,
-		InputSerializedDashboard: inputSerializedDashboard,
+		InputSerializedDashboard: val(inputSerializedDashboard),
 	})
 
-	workspacePath := path.Join("/Workspace", dashboard.Path)
+	workspacePath := path.Join("/Workspace", val(dashboard.Path))
 	s.files[workspacePath] = FileEntry{
 		Info: workspaceapi.ObjectInfo{
 			ObjectType: "DASHBOARD",
 			// Include the /Workspace prefix for workspace get-status API.
 			Path:       workspacePath,
-			ResourceId: dashboard.DashboardId,
+			ResourceId: val(dashboard.DashboardId),
 		},
-		Data: []byte(dashboard.SerializedDashboard),
+		Data: []byte(val(dashboard.SerializedDashboard)),
 	}
 
 	return Response{
@@ -198,37 +200,37 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	updated := *dashboard
 
 	// Bump etag on every write, matching cloud behavior.
-	prevEtag, err := strconv.Atoi(updated.Etag)
+	prevEtag, err := strconv.Atoi(val(updated.Etag))
 	if err != nil {
 		return Response{
 			Body: map[string]string{
-				"message": "Invalid etag: " + updated.Etag,
+				"message": "Invalid etag: " + val(updated.Etag),
 			},
 			StatusCode: 400,
 		}
 	}
-	updated.Etag = strconv.Itoa(prevEtag + 1)
+	updated.Etag = nonZero(strconv.Itoa(prevEtag + 1))
 
-	if updateReq.SerializedDashboard != updated.InputSerializedDashboard {
-		updated.InputSerializedDashboard = updateReq.SerializedDashboard
+	if val(updateReq.SerializedDashboard) != updated.InputSerializedDashboard {
+		updated.InputSerializedDashboard = val(updateReq.SerializedDashboard)
 	}
 
 	// Update the dashboard.
 	updated.LifecycleState = lakeview.LifecycleState_Active
-	if updateReq.DisplayName != "" {
+	if val(updateReq.DisplayName) != "" {
 		updated.DisplayName = updateReq.DisplayName
-		dir := path.Dir(updated.Path)
-		base := updateReq.DisplayName + ".lvdash.json"
-		updated.Path = path.Join(dir, base)
+		dir := path.Dir(val(updated.Path))
+		base := val(updateReq.DisplayName) + ".lvdash.json"
+		updated.Path = nonZero(path.Join(dir, base))
 	}
-	if updateReq.SerializedDashboard != "" {
+	if val(updateReq.SerializedDashboard) != "" {
 		// Extract dataset_catalog and dataset_schema from query parameters
 		datasetCatalog := req.URL.Query().Get("dataset_catalog")
 		datasetSchema := req.URL.Query().Get("dataset_schema")
-		updated.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
+		updated.SerializedDashboard = nonZero(transformSerializedDashboard(val(updateReq.SerializedDashboard), datasetCatalog, datasetSchema))
 	}
 	updated.WarehouseId = updateReq.WarehouseId
-	updated.UpdateTime = nextTimestamp()
+	updated.UpdateTime = nextTime()
 
 	// Write stages a stale value: like a real backend, the first read after an update
 	// returns the pre-update value. Tests that read right after an update wait for the
@@ -262,16 +264,14 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		WarehouseId:        dashboard.WarehouseId,
 		DisplayName:        dashboard.DisplayName,
 		EmbedCredentials:   publishReq.EmbedCredentials,
-		RevisionCreateTime: nextTimestamp(),
-		ForceSendFields:    []string{"EmbedCredentials"},
+		RevisionCreateTime: nextTime(),
 	}
 
-	if publishReq.WarehouseId != "" {
+	if val(publishReq.WarehouseId) != "" {
 		publishedDashboard.WarehouseId = publishReq.WarehouseId
 	}
-	if publishReq.EmbedCredentials {
-		publishedDashboard.EmbedCredentials = publishReq.EmbedCredentials
-	}
+	// embed_credentials is always reported, false when the request omitted it.
+	publishedDashboard.EmbedCredentials = new(val(publishReq.EmbedCredentials))
 
 	s.PublishedDashboards[dashboardId] = publishedDashboard
 
@@ -281,7 +281,6 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 			DisplayName:        publishedDashboard.DisplayName,
 			EmbedCredentials:   publishedDashboard.EmbedCredentials,
 			RevisionCreateTime: publishedDashboard.RevisionCreateTime,
-			ForceSendFields:    []string{"EmbedCredentials"},
 		},
 	}
 }
@@ -300,9 +299,9 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	// The dashboard is marked as trashed and moved to the trash.
 	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Etag:           dashboard.Etag,
-		DashboardId:    dashboardId,
+		DashboardId:    nonZero(dashboardId),
 		LifecycleState: lakeview.LifecycleState_Trashed,
-		ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
+		ParentPath:     nonZero(path.Join("/Users", val(s.CurrentUser().UserName), "Trash")),
 	})
 
 	// The published dashboard is deleted.

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,9 +16,9 @@ func TestOrNA(t *testing.T) {
 }
 
 func TestSubmittedDisplay(t *testing.T) {
-	assert.Equal(t, "N/A", submittedDisplay(&jobs.Run{}))
+	assert.Equal(t, "N/A", submittedDisplay(&jobs.GetRunResponse{}))
 	// 1700000000000 ms == 2023-11-14 22:13:20 UTC.
-	assert.Equal(t, "2023-11-14 22:13 UTC", submittedDisplay(&jobs.Run{StartTime: 1700000000000}))
+	assert.Equal(t, "2023-11-14 22:13 UTC", submittedDisplay(&jobs.GetRunResponse{StartTime: 1700000000000}))
 }
 
 func TestHyperlink(t *testing.T) {
@@ -78,12 +78,12 @@ func TestGpuDisplayName(t *testing.T) {
 func TestRunStatusPrefersResultState(t *testing.T) {
 	// Result state wins once the run has finished.
 	assert.Equal(t, "SUCCESS", runStatus(&jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+		ResultState:    jobs.RunResultState_RunResultState_Success,
 	}))
 	// Before completion only the lifecycle state is set.
 	assert.Equal(t, "RUNNING", runStatus(&jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateRunning,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running,
 	}))
 	// Non-nil state with neither field set, and nil state.
 	assert.Equal(t, "UNKNOWN", runStatus(&jobs.RunState{}))
@@ -92,13 +92,13 @@ func TestRunStatusPrefersResultState(t *testing.T) {
 
 func TestReportedTiming(t *testing.T) {
 	// No tasks: run-level times are used.
-	start, end := reportedTiming(&jobs.Run{StartTime: 100, EndTime: 200})
+	start, end := reportedTiming(&jobs.GetRunResponse{StartTime: 100, EndTime: 200})
 	assert.Equal(t, int64(100), start)
 	assert.Equal(t, int64(200), end)
 
 	// The last task's window is preferred over the run-level window, so a
 	// retried run reports its most recent attempt.
-	start, end = reportedTiming(&jobs.Run{
+	start, end = reportedTiming(&jobs.GetRunResponse{
 		StartTime: 100, EndTime: 200,
 		Tasks: []jobs.RunTask{
 			{StartTime: 100, EndTime: 150},
@@ -109,7 +109,7 @@ func TestReportedTiming(t *testing.T) {
 	assert.Equal(t, int64(450), end)
 
 	// A task missing a field falls back to the run-level value for that field.
-	start, end = reportedTiming(&jobs.Run{
+	start, end = reportedTiming(&jobs.GetRunResponse{
 		StartTime: 100, EndTime: 200,
 		Tasks: []jobs.RunTask{{StartTime: 300}},
 	})
@@ -119,17 +119,17 @@ func TestReportedTiming(t *testing.T) {
 
 func TestStartedAt(t *testing.T) {
 	// Not started yet.
-	assert.Nil(t, startedAt(&jobs.Run{}))
+	assert.Nil(t, startedAt(&jobs.GetRunResponse{}))
 	// 1700000000000 ms == 2023-11-14T22:13:20+00:00 (Python isoformat, not "Z").
-	got := startedAt(&jobs.Run{StartTime: 1700000000000})
+	got := startedAt(&jobs.GetRunResponse{StartTime: 1700000000000})
 	require.NotNil(t, got)
 	assert.Equal(t, "2023-11-14T22:13:20+00:00", *got)
 	// A sub-second start time carries microsecond precision.
-	got = startedAt(&jobs.Run{StartTime: 1700000000500})
+	got = startedAt(&jobs.GetRunResponse{StartTime: 1700000000500})
 	require.NotNil(t, got)
 	assert.Equal(t, "2023-11-14T22:13:20.500000+00:00", *got)
 	// The last attempt's start time is reported. 1700000060000 ms == 22:14:20.
-	got = startedAt(&jobs.Run{
+	got = startedAt(&jobs.GetRunResponse{
 		StartTime: 1700000000000,
 		Tasks:     []jobs.RunTask{{StartTime: 1700000060000}},
 	})
@@ -139,21 +139,21 @@ func TestStartedAt(t *testing.T) {
 
 func TestDurationSeconds(t *testing.T) {
 	// Not started yet.
-	assert.Nil(t, durationSeconds(&jobs.Run{}))
+	assert.Nil(t, durationSeconds(&jobs.GetRunResponse{}))
 
 	// Finished run: reported end - start.
-	d := durationSeconds(&jobs.Run{StartTime: 1700000000000, EndTime: 1700000012000})
+	d := durationSeconds(&jobs.GetRunResponse{StartTime: 1700000000000, EndTime: 1700000012000})
 	require.NotNil(t, d)
 	assert.Equal(t, int64(12), *d)
 
 	// Sub-second remainders round to the nearest second, matching Python: an
 	// 11,500 ms run reports 12s, not 11s.
-	d = durationSeconds(&jobs.Run{StartTime: 1700000000000, EndTime: 1700000011500})
+	d = durationSeconds(&jobs.GetRunResponse{StartTime: 1700000000000, EndTime: 1700000011500})
 	require.NotNil(t, d)
 	assert.Equal(t, int64(12), *d)
 
 	// The last attempt's window drives the duration for a retried run.
-	d = durationSeconds(&jobs.Run{
+	d = durationSeconds(&jobs.GetRunResponse{
 		StartTime: 1700000000000, EndTime: 1700000012000,
 		Tasks: []jobs.RunTask{{StartTime: 1700000000000, EndTime: 1700000005000}},
 	})
@@ -161,7 +161,7 @@ func TestDurationSeconds(t *testing.T) {
 	assert.Equal(t, int64(5), *d)
 
 	// Still running: measured against the current time, so positive.
-	d = durationSeconds(&jobs.Run{StartTime: 1700000000000})
+	d = durationSeconds(&jobs.GetRunResponse{StartTime: 1700000000000})
 	require.NotNil(t, d)
 	assert.Positive(t, *d)
 }
@@ -172,18 +172,18 @@ func TestDashboardURL(t *testing.T) {
 }
 
 func TestLatestAttemptNumber(t *testing.T) {
-	assert.Equal(t, 0, latestAttemptNumber(&jobs.Run{}))
-	run := &jobs.Run{Tasks: []jobs.RunTask{{AttemptNumber: 0}, {AttemptNumber: 2}}}
+	assert.Equal(t, 0, latestAttemptNumber(&jobs.GetRunResponse{}))
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{AttemptNumber: 0}, {AttemptNumber: 2}}}
 	assert.Equal(t, 2, latestAttemptNumber(run))
 }
 
 func TestExperimentName(t *testing.T) {
-	assert.Nil(t, experimentName(&jobs.Run{}))
-	assert.Nil(t, experimentName(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
-	assert.Nil(t, experimentName(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Nil(t, experimentName(&jobs.GetRunResponse{}))
+	assert.Nil(t, experimentName(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}))
+	assert.Nil(t, experimentName(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: ""},
 	}}}))
-	got := experimentName(&jobs.Run{Tasks: []jobs.RunTask{{
+	got := experimentName(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: "/Users/me@example.com/exp"},
 	}}})
 	require.NotNil(t, got)
@@ -210,15 +210,15 @@ func TestReformatYAMLForDisplay(t *testing.T) {
 }
 
 func TestAccelerators(t *testing.T) {
-	assert.Empty(t, accelerators(&jobs.Run{}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Empty(t, accelerators(&jobs.GetRunResponse{}))
+	assert.Empty(t, accelerators(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}))
+	assert.Empty(t, accelerators(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{},
 	}}}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Empty(t, accelerators(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 0}},
 	}}}))
-	assert.Equal(t, "8x H100", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Equal(t, "8x H100", accelerators(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 8, GpuType: "GPU_8xH100"}},
 	}}}))
 }
@@ -239,67 +239,67 @@ func TestStatusWord(t *testing.T) {
 }
 
 func TestDisplayRunStatus(t *testing.T) {
-	pendingStates := []jobs.RunLifeCycleState{
-		jobs.RunLifeCycleStatePending,
-		jobs.RunLifeCycleStateQueued,
-		jobs.RunLifeCycleStateWaitingForRetry,
-		jobs.RunLifeCycleStateBlocked,
+	pendingStates := []jobs.RunLifeCycleState_RunLifeCycleState{
+		jobs.RunLifeCycleState_RunLifeCycleState_Pending,
+		jobs.RunLifeCycleState_RunLifeCycleState_Queued,
+		jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry,
+		jobs.RunLifeCycleState_RunLifeCycleState_Blocked,
 	}
 	for _, state := range pendingStates {
-		run := &jobs.Run{
-			State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		run := &jobs.GetRunResponse{
+			State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
 			Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: state}}},
 		}
 		assert.Equal(t, "PENDING", displayRunStatus(run))
 	}
 
-	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.Run{
-		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.GetRunResponse{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}}},
 	}))
-	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}))
-	assert.Equal(t, "FAILED", displayRunStatus(&jobs.Run{
-		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}},
+	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.GetRunResponse{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}}))
+	assert.Equal(t, "FAILED", displayRunStatus(&jobs.GetRunResponse{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Failed},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Pending}}},
 	}))
 }
 
 func TestDetailedDisplayRunStatus(t *testing.T) {
-	waiting := &jobs.Run{
-		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}}},
+	waiting := &jobs.GetRunResponse{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Queued}}},
 	}
 	assert.Equal(t, "Waiting for GPU capacity...", detailedDisplayRunStatus(waiting, "Waiting for GPU capacity..."))
 	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(waiting, ""))
 
-	started := &jobs.Run{
-		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	started := &jobs.GetRunResponse{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}}},
 	}
 	assert.Equal(t, "RUNNING", detailedDisplayRunStatus(started, ""))
 
-	failed := &jobs.Run{
-		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}},
+	failed := &jobs.GetRunResponse{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Failed},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Pending}}},
 	}
 	assert.Equal(t, "FAILED", detailedDisplayRunStatus(failed, "stale status..."))
 }
 
 func TestTerminationReason(t *testing.T) {
-	reason := terminationReason(&jobs.Run{
-		State:  &jobs.RunState{ResultState: jobs.RunResultStateFailed, StateMessage: "parent reason"},
+	reason := terminationReason(&jobs.GetRunResponse{
+		State:  &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Failed, StateMessage: "parent reason"},
 		Status: &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: " detailed reason "}},
 	})
 	require.NotNil(t, reason)
 	assert.Equal(t, "detailed reason", *reason)
 
-	reason = terminationReason(&jobs.Run{
-		State: &jobs.RunState{ResultState: jobs.RunResultStateTimedout},
+	reason = terminationReason(&jobs.GetRunResponse{
+		State: &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Timedout},
 		Tasks: []jobs.RunTask{{State: &jobs.RunState{StateMessage: "task timed out"}}},
 	})
 	require.NotNil(t, reason)
 	assert.Equal(t, "task timed out", *reason)
 
-	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateSuccess, StateMessage: "done"}}))
-	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "cancelled"}}))
+	assert.Nil(t, terminationReason(&jobs.GetRunResponse{State: &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success, StateMessage: "done"}}))
+	assert.Nil(t, terminationReason(&jobs.GetRunResponse{State: &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Canceled, StateMessage: "cancelled"}}))
 }

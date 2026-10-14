@@ -15,13 +15,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // Type that implements fs.DirEntry for WSFS.
@@ -89,26 +89,11 @@ func (info wsfsFileInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
 	return info.ObjectInfo
 }
 
-// UnmarshalJSON is a custom unmarshaller for the wsfsFileInfo struct.
-// It must be defined for this type because otherwise the implementation
-// of the embedded ObjectInfo type will be used.
-func (info *wsfsFileInfo) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, info)
-}
-
-// MarshalJSON is a custom marshaller for the wsfsFileInfo struct.
-// It must be defined for this type because otherwise the implementation
-// of the embedded ObjectInfo type will be used.
-func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(info)
-}
-
-// Interface for *client.DatabricksClient from the Databricks Go SDK. Abstracted
-// as an interface to allow for mocking in tests.
+// Interface for *apiclient.Client. Abstracted as an interface to allow for
+// mocking in tests.
 type apiClient interface {
 	Do(ctx context.Context, method, path string,
-		headers map[string]string, queryString map[string]any, request, response any,
-		visitors ...func(*http.Request) error) error
+		headers map[string]string, queryString map[string]any, request, response any) error
 }
 
 // Extensions that format=AUTO imports as the same asset type the legacy import-file
@@ -149,7 +134,7 @@ func importRequest(absPath string, content []byte) (string, []workspace.UploadOp
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
 // It can access any workspace path if files-in-workspace is enabled.
 type WorkspaceFilesClient struct {
-	workspaceClient *databricks.WorkspaceClient
+	workspaceClient *sdkclients.Clients
 	apiClient       apiClient
 
 	// File operations will be relative to this path.
@@ -168,8 +153,8 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 	return auth.WorkspaceIDHeaders(w.workspaceClient.Config)
 }
 
-func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	apiClient, err := client.New(w.Config)
+func NewWorkspaceFilesClient(w *sdkclients.Clients, root string) (Filer, error) {
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +206,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// Parent directory does not exist.
-	if errors.Is(err, apierr.ErrNotFound) {
+	if apierrs.Is(err, apierrs.ErrNotFound) {
 		if !slices.Contains(mode, CreateParentDirectories) {
 			return noSuchDirectoryError{path.Dir(absPath)}
 		}
@@ -229,7 +214,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			if errors.Is(err, apierr.ErrPermissionDenied) {
+			if apierrs.Is(err, apierrs.ErrPermissionDenied) {
 				return permissionError{absPath, err}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
@@ -242,22 +227,22 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// Path already taken. ErrResourceConflict covers every 409 (including the
 	// bare 409 with only a message); ErrResourceAlreadyExists covers the 400
 	// RESOURCE_ALREADY_EXISTS, which no status maps to a conflict.
-	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
+	if apierrs.Is(err, apierrs.ErrResourceConflict) || apierrs.Is(err, apierrs.ErrResourceAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
 	// Overwrite rejected because the existing object's node type differs from
 	// the upload. The collision carries an AIP-193 ErrorInfo with a stable
 	// reason, so branch on it rather than the message text.
-	if errors.Is(err, apierr.ErrInvalidParameterValue) {
+	if apierrs.Is(err, apierrs.ErrInvalidParameterValue) {
 		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
-			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
+			if info := aerr.Details().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
 				return fileAlreadyExistsError{absPath}
 			}
 		}
 	}
 
 	// Caller has read access but no write access.
-	if errors.Is(err, apierr.ErrPermissionDenied) {
+	if apierrs.Is(err, apierrs.ErrPermissionDenied) {
 		return permissionError{absPath, err}
 	}
 
@@ -320,9 +305,9 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 		return err
 	}
 
-	switch aerr.StatusCode {
+	switch aerr.HTTPStatusCode() {
 	case http.StatusBadRequest:
-		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
+		if apierrs.ErrorCode(aerr) == "DIRECTORY_NOT_EMPTY" {
 			return directoryNotEmptyError{absPath}
 		}
 	case http.StatusNotFound:
@@ -355,7 +340,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 
 		// NOTE: This API returns a 404 if the specified path does not exist,
 		// but can also do so if we don't have read access.
-		if aerr.StatusCode == http.StatusNotFound {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
 			return nil, noSuchDirectoryError{path.Dir(absPath)}
 		}
 		return nil, err
@@ -406,7 +391,7 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		}
 
 		// This API returns a 404 if the specified path does not exist.
-		if aerr.StatusCode == http.StatusNotFound {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
 			return nil, fileDoesNotExistError{absPath}
 		}
 

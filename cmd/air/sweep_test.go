@@ -3,9 +3,9 @@ package aircmd
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -13,13 +13,13 @@ import (
 
 func TestFindForEachTask(t *testing.T) {
 	// No tasks at all.
-	assert.Nil(t, findForEachTask(&jobs.Run{}))
+	assert.Nil(t, findForEachTask(&jobs.GetRunResponse{}))
 
 	// A task that is not a foreach.
-	assert.Nil(t, findForEachTask(&jobs.Run{Tasks: []jobs.RunTask{{TaskKey: "a"}}}))
+	assert.Nil(t, findForEachTask(&jobs.GetRunResponse{Tasks: []jobs.RunTask{{TaskKey: "a"}}}))
 
 	// The foreach task is found even when it isn't first.
-	run := &jobs.Run{Tasks: []jobs.RunTask{
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{
 		{TaskKey: "a"},
 		{TaskKey: "sweep", ForEachTask: &jobs.RunForEachTask{}},
 	}}
@@ -49,10 +49,10 @@ func TestBuildSweepInfo(t *testing.T) {
 	t.Run("counts and iteration rows", func(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
 		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 99}).Return(
-			&jobs.Run{Iterations: []jobs.RunTask{{
+			&jobs.GetRunResponse{Iterations: []jobs.RunTask{{
 				TaskKey:          "iter_0",
 				RunId:            100,
-				State:            &jobs.RunState{ResultState: jobs.RunResultStateSuccess},
+				State:            &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success},
 				GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: "/Users/me@example.com/exp"},
 			}}}, nil)
 
@@ -72,7 +72,7 @@ func TestBuildSweepInfo(t *testing.T) {
 	t.Run("iteration lookup failure still returns counts", func(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
 		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 99}).Return(
-			nil, apierr.ErrResourceDoesNotExist)
+			nil, apierrs.ErrResourceDoesNotExist)
 
 		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())
 		assert.Equal(t, 4, info.Total)

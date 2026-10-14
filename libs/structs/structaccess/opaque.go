@@ -14,11 +14,16 @@ var (
 	opaqueStructCache sync.Map
 )
 
-// IsOpaqueStruct reports whether t is a struct whose fields cannot be walked
-// (no exported fields) but that still carries a value, marshaling itself
-// through json.Marshaler. The sdk-go core types (types.Time, types.Duration,
-// types.FieldMask[T]) are of this shape and are scalars (strings) in JSON.
-// Without special handling, any two of their values would compare equal.
+// sdkTypesPkgPath is the package of the sdk-go native types: types.Time,
+// types.Duration and types.FieldMask[T]. They marshal to JSON strings, so their
+// Go fields (e.g. Time.Seconds) are not paths in the JSON representation.
+const sdkTypesPkgPath = "github.com/databricks/sdk-go/core/types"
+
+// IsOpaqueStruct reports whether t is a struct that must be treated as a scalar
+// rather than walked field by field: the sdk-go native types, and any struct
+// whose fields cannot be walked (no exported fields) but that still carries a
+// value, marshaling itself through json.Marshaler. Without this, any two of
+// their values would compare equal or be reported by their Go fields.
 //
 // Genuinely empty proto messages (jobs.ScheduleTriggerState, and similar) have
 // no exported fields either, but they implement no marshaler and hold nothing,
@@ -35,6 +40,9 @@ func IsOpaqueStruct(t reflect.Type) bool {
 func isOpaqueStruct(t reflect.Type) bool {
 	if t.Kind() != reflect.Struct {
 		return false
+	}
+	if t.PkgPath() == sdkTypesPkgPath {
+		return true
 	}
 	for sf := range t.Fields() {
 		if sf.IsExported() {

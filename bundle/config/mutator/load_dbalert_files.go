@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"slices"
@@ -169,8 +170,8 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			QueryText:         queryText,
 
 			// API only fields. All these should be present in [allowedInYAML]
-			DisplayName: alert.DisplayName,
-			WarehouseId: alert.WarehouseId,
+			DisplayName: utils.Deref(alert.DisplayName),
+			WarehouseId: utils.Deref(alert.WarehouseId),
 
 			// Fields with the same schema in file vs API.
 			CustomSummary:        dbalertFromFile.CustomSummary,

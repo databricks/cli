@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"path"
 	"slices"
 	"strings"
@@ -11,10 +12,9 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"golang.org/x/sync/errgroup"
@@ -22,7 +22,7 @@ import (
 
 // Terraform implementation reference: https://github.com/databricks/terraform-provider-databricks/blob/main/dashboards/resource_dashboard.go
 type ResourceDashboard struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type DashboardState struct {
@@ -63,7 +63,7 @@ func ensureWorkspacePrefix(parentPath string) string {
 	return path.Join("/Workspace", parentPath)
 }
 
-func (*ResourceDashboard) New(client *databricks.WorkspaceClient) *ResourceDashboard {
+func (*ResourceDashboard) New(client *sdkclients.Clients) *ResourceDashboard {
 	return &ResourceDashboard{client: client}
 }
 
@@ -105,7 +105,7 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardSt
 
 	// A trashed dashboard is considered deleted - return not found error
 	if dashboard.LifecycleState == dashboards.LifecycleStateTrashed {
-		return nil, apierr.ErrNotFound
+		return nil, apierrs.ErrNotFound
 	}
 
 	// A dashboard is published (in the sense that matters for planning: the current
@@ -268,7 +268,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 
 	// The API returns 404 if the parent directory doesn't exist.
 	// If the parent directory doesn't exist, create it and try again.
-	if err != nil && apierr.IsMissing(err) {
+	if err != nil && apierrs.IsMissing(err) {
 		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)

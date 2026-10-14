@@ -1,10 +1,11 @@
 package testserver
 
 import (
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/cli/libs/bundledeployments"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"path"
 	"slices"
 	"strconv"

@@ -10,8 +10,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // trainingETA is a best-effort estimate of how far a running training job has
@@ -85,12 +86,12 @@ func coarseDuration(totalSeconds int64) string {
 // estimate can't be made (no known total, too little history, still warming up, an
 // API error): Progress is a convenience, so any failure is logged and treated as
 // "no estimate" rather than failing the command.
-func estimateTrainingETA(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) *trainingETA {
+func estimateTrainingETA(ctx context.Context, w *sdkclients.Clients, mlflowRunID string) *trainingETA {
 	if mlflowRunID == "" {
 		return nil
 	}
 
-	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
+	resp, err := w.Experiments.GetRun(ctx, experiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air: could not fetch MLflow run for progress estimate: %v", err)
 		return nil
@@ -108,7 +109,7 @@ func estimateTrainingETA(ctx context.Context, w *databricks.WorkspaceClient, mlf
 		}
 	}
 
-	history, err := w.Experiments.GetHistoryAll(ctx, ml.GetHistoryRequest{
+	history, err := w.Experiments.GetHistoryAll(ctx, experiments.GetHistoryRequest{
 		RunId:     mlflowRunID,
 		MetricKey: etaProgressMetric,
 	})
@@ -126,26 +127,26 @@ func estimateTrainingETA(ctx context.Context, w *databricks.WorkspaceClient, mlf
 //
 // When max_steps is set (> 0) the run trains by step and it wins over
 // num_train_epochs, matching HuggingFace Trainer's own precedence.
-func computeETA(params map[string]string, history []ml.Metric) *trainingETA {
+func computeETA(params map[string]string, history []experiments.Metric) *trainingETA {
 	if len(history) < 2 {
 		return nil
 	}
 
 	// History should already be ordered by step; sort by timestamp defensively so
 	// the rate is measured over increasing wall-clock time.
-	points := append([]ml.Metric(nil), history...)
-	slices.SortStableFunc(points, func(a, b ml.Metric) int { return cmp.Compare(a.Timestamp, b.Timestamp) })
+	points := append([]experiments.Metric(nil), history...)
+	slices.SortStableFunc(points, func(a, b experiments.Metric) int { return cmp.Compare(a.Timestamp, b.Timestamp) })
 	if len(points) > etaWindowPoints {
 		points = points[len(points)-etaWindowPoints:]
 	}
 	first, last := points[0], points[len(points)-1]
 
 	// Withhold an estimate during the first few steps while throughput settles.
-	if last.Step < minStepsForETA {
+	if utils.Deref(last.Step) < minStepsForETA {
 		return nil
 	}
 
-	elapsedSec := float64(last.Timestamp-first.Timestamp) / 1000.0
+	elapsedSec := float64(utils.Deref(last.Timestamp)-utils.Deref(first.Timestamp)) / 1000.0
 	if elapsedSec <= 0 {
 		return nil
 	}
@@ -161,39 +162,39 @@ func computeETA(params map[string]string, history []ml.Metric) *trainingETA {
 
 // stepETA projects from the global step (the metric's MLflow step) against a known
 // max_steps.
-func stepETA(first, last ml.Metric, elapsedSec float64, maxSteps int64) *trainingETA {
+func stepETA(first, last experiments.Metric, elapsedSec float64, maxSteps int64) *trainingETA {
 	current := last.Step
-	if current <= 0 || current >= maxSteps {
+	if utils.Deref(current) <= 0 || utils.Deref(current) >= maxSteps {
 		return nil
 	}
-	done := last.Step - first.Step
+	done := utils.Deref(last.Step) - utils.Deref(first.Step)
 	if done <= 0 {
 		return nil
 	}
 	perSec := float64(done) / elapsedSec
-	remaining := float64(maxSteps-current) / perSec
+	remaining := float64(maxSteps-utils.Deref(current)) / perSec
 	return &trainingETA{
 		RemainingSeconds: int64(math.Round(remaining)),
-		PercentComplete:  percentComplete(float64(current), float64(maxSteps)),
+		PercentComplete:  percentComplete(float64(utils.Deref(current)), float64(maxSteps)),
 	}
 }
 
 // epochETA projects from the fractional epoch (the metric's value) against a known
 // num_train_epochs.
-func epochETA(first, last ml.Metric, elapsedSec, totalEpochs float64) *trainingETA {
+func epochETA(first, last experiments.Metric, elapsedSec, totalEpochs float64) *trainingETA {
 	current := last.Value
-	if current <= 0 || current >= totalEpochs {
+	if utils.Deref(current) <= 0 || utils.Deref(current) >= totalEpochs {
 		return nil
 	}
-	done := last.Value - first.Value
+	done := utils.Deref(last.Value) - utils.Deref(first.Value)
 	if done <= 0 {
 		return nil
 	}
 	perSec := done / elapsedSec
-	remaining := (totalEpochs - current) / perSec
+	remaining := (totalEpochs - utils.Deref(current)) / perSec
 	return &trainingETA{
 		RemainingSeconds: int64(math.Round(remaining)),
-		PercentComplete:  percentComplete(current, totalEpochs),
+		PercentComplete:  percentComplete(utils.Deref(current), totalEpochs),
 	}
 }
 
@@ -211,10 +212,10 @@ func percentComplete(current, total float64) int {
 }
 
 // paramMap indexes MLflow params by key.
-func paramMap(params []ml.Param) map[string]string {
+func paramMap(params []experiments.Param) map[string]string {
 	m := make(map[string]string, len(params))
 	for _, p := range params {
-		m[p.Key] = p.Value
+		m[utils.Deref(p.Key)] = utils.Deref(p.Value)
 	}
 	return m
 }

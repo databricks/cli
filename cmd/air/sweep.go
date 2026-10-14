@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 )
 
 // sweepInfo summarizes a "foreach" run, which fans a single config out into many
@@ -30,7 +30,7 @@ type sweepTask struct {
 
 // findForEachTask returns the run's foreach task if it has one, or nil. A run is
 // a sweep when one of its tasks fans out into iterations.
-func findForEachTask(run *jobs.Run) *jobs.RunTask {
+func findForEachTask(run *jobs.GetRunResponse) *jobs.RunTask {
 	for i := range run.Tasks {
 		if run.Tasks[i].ForEachTask != nil {
 			return &run.Tasks[i]
@@ -43,7 +43,7 @@ func findForEachTask(run *jobs.Run) *jobs.RunTask {
 // sweep. The counts come from the task we already have; the individual
 // iterations require a second lookup. If that lookup fails we still return the
 // counts (logging the failure) so the user sees the summary.
-func buildSweepInfo(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.RunTask) *sweepInfo {
+func buildSweepInfo(ctx context.Context, w *sdkclients.Clients, task *jobs.RunTask) *sweepInfo {
 	info := &sweepInfo{}
 	if task.ForEachTask.Stats != nil && task.ForEachTask.Stats.TaskRunStats != nil {
 		stats := task.ForEachTask.Stats.TaskRunStats
@@ -55,7 +55,7 @@ func buildSweepInfo(ctx context.Context, w *databricks.WorkspaceClient, task *jo
 	}
 
 	// The iterations are returned as part of a run lookup on the foreach task.
-	iterated, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: task.RunId})
+	iterated, err := getRun(ctx, w, task.RunId)
 	if err != nil {
 		log.Debugf(ctx, "air get: could not fetch sweep iterations: %v", err)
 		return info

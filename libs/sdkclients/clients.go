@@ -12,7 +12,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/bundledeployments"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sqllegacy"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/options/client"
 )
@@ -25,6 +29,12 @@ type Clients struct {
 
 	// Config is the resolved authentication config the clients were built from.
 	Config *config.Config
+
+	// Hand-written clients for APIs sdk-go does not provide.
+	Workspace         *workspaceapi.Client
+	BundleDeployments *bundledeployments.Client
+	QualityMonitors   *qualitymonitors.Client
+	SqlLegacy         *sqllegacy.Client
 }
 
 // New returns sdk-go clients that authenticate with cfg. cfg must already be
@@ -38,7 +48,18 @@ func New(ctx context.Context, cfg *config.Config) (*Clients, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Clients{services: s, Config: cfg}, nil
+	api, err := apiclient.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Clients{
+		services:          s,
+		Config:            cfg,
+		Workspace:         workspaceapi.New(api),
+		BundleDeployments: bundledeployments.New(api),
+		QualityMonitors:   qualitymonitors.New(api),
+		SqlLegacy:         sqllegacy.New(api),
+	}, nil
 }
 
 // Options returns the sdk-go client options that make a client authenticate

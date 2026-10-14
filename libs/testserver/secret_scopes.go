@@ -1,10 +1,9 @@
 package testserver
 
 import (
-	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"encoding/json"
 	"fmt"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 )
 
 func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
@@ -19,7 +18,7 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	}
 
 	// Check if scope already exists
-	if _, exists := s.SecretScopes[request.Scope]; exists {
+	if _, exists := s.SecretScopes[val(request.Scope)]; exists {
 		return Response{
 			StatusCode: 400,
 			Body:       map[string]string{"message": fmt.Sprintf("Scope %s already exists", request.Scope)},
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	// Create the scope
 	backendType := request.ScopeBackendType
 	if backendType == "" {
-		backendType = workspaceapi.ScopeBackendTypeDatabricks
+		backendType = secrets.ScopeBackendType_Databricks
 	}
 
 	scope := secrets.SecretScope{
@@ -38,17 +37,17 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 		KeyvaultMetadata: request.BackendAzureKeyvault,
 	}
 
-	s.SecretScopes[request.Scope] = scope
+	s.SecretScopes[val(request.Scope)] = scope
 
 	// Automatically grant MANAGE permission to the creator (current user)
 	// This matches real Databricks behavior
 	if s.Acls == nil {
 		s.Acls = make(map[string][]secrets.AclItem)
 	}
-	s.Acls[request.Scope] = []secrets.AclItem{
+	s.Acls[val(request.Scope)] = []secrets.AclItem{
 		{
 			Principal:  s.CurrentUser().UserName,
-			Permission: workspaceapi.AclPermissionManage,
+			Permission: secrets.AclPermission_Manage,
 		},
 	}
 
@@ -81,17 +80,17 @@ func (s *FakeWorkspace) SecretsDeleteScope(req Request) Response {
 		}
 	}
 
-	if _, exists := s.SecretScopes[request.Scope]; !exists {
+	if _, exists := s.SecretScopes[val(request.Scope)]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
 		}
 	}
 
-	delete(s.SecretScopes, request.Scope)
+	delete(s.SecretScopes, val(request.Scope))
 	// Also delete ACLs and secrets for this scope
-	delete(s.Acls, request.Scope)
-	delete(s.Secrets, request.Scope)
+	delete(s.Acls, val(request.Scope))
+	delete(s.Secrets, val(request.Scope))
 
 	return Response{}
 }

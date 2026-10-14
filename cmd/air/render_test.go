@@ -7,8 +7,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -63,13 +63,13 @@ func TestResolveConfigYAML(t *testing.T) {
 		m.GetMockWorkspaceAPI().EXPECT().
 			Download(mock.Anything, "/Workspace/run/training_config.yaml").
 			Return(io.NopCloser(strings.NewReader("experiment_name: from-air\n")), nil)
-		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}
 		data := &getData{TrainingConfigPath: "/Workspace/run/training_config.yaml"}
 		assert.Equal(t, "experiment_name: from-air", resolveConfigYAML(ctx, m.WorkspaceClient, run, data))
 	})
 
 	t.Run("falls back to the legacy task when no path is set", func(t *testing.T) {
-		run := &jobs.Run{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
 			MlflowExperimentName: "/Users/me@example.com/exp",
 		}}}}
 		got := resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{})
@@ -77,7 +77,7 @@ func TestResolveConfigYAML(t *testing.T) {
 	})
 
 	t.Run("empty when neither source is present", func(t *testing.T) {
-		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}
 		assert.Empty(t, resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{}))
 	})
 }

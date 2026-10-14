@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type ResourceAlert struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 // New initializes a ResourceAlert with the given client.
-func (*ResourceAlert) New(client *databricks.WorkspaceClient) *ResourceAlert {
+func (*ResourceAlert) New(client *sdkclients.Clients) *ResourceAlert {
 	return &ResourceAlert{client: client}
 }
 

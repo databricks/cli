@@ -1,8 +1,8 @@
 package testserver
 
 import (
-	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 	"encoding/json"
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 	"regexp"
 	"testing"
 

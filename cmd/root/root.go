@@ -165,7 +165,7 @@ Stack Trace:
 		if cmdctx.HasWorkspaceClient(cmd.Context()) {
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
+		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", errorMessage(err))
 	}
 
 	// Log exit status and error

@@ -12,14 +12,15 @@ import (
 	"testing/iotest"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -28,7 +29,7 @@ import (
 
 // runCancelAll runs `cancel --all` against w with the given output mode and
 // stdin, capturing output into buf.
-func runCancelAll(t *testing.T, w *databricks.WorkspaceClient, out flags.Output, in io.Reader, buf *bytes.Buffer) error {
+func runCancelAll(t *testing.T, w *sdkclients.Clients, out flags.Output, in io.Reader, buf *bytes.Buffer) error {
 	t.Helper()
 	cmd := withOutput(newCancelCommand(), out)
 	require.NoError(t, cmd.Flags().Set("all", "true"))
@@ -45,7 +46,7 @@ type cancelEnvelope struct {
 
 // runCancel runs the cancel command against w with the given output mode and
 // stdin, capturing stdout/stderr into buf.
-func runCancel(t *testing.T, w *databricks.WorkspaceClient, out flags.Output, in string, buf *bytes.Buffer, args ...string) (*cobra.Command, error) {
+func runCancel(t *testing.T, w *sdkclients.Clients, out flags.Output, in string, buf *bytes.Buffer, args ...string) (*cobra.Command, error) {
 	t.Helper()
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, strings.NewReader(in), buf, buf, "", ""))
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
@@ -112,7 +113,7 @@ func TestCancelByIDSuccess(t *testing.T) {
 
 func TestCancelByIDNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
+	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierrs.ErrResourceDoesNotExist)
 
 	var buf bytes.Buffer
 	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "5")
@@ -139,7 +140,7 @@ func TestCancelByIDNotFoundInvalidParam(t *testing.T) {
 func TestCancelPartialFailureJSON(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
+	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierrs.ErrResourceDoesNotExist)
 
 	var buf bytes.Buffer
 	_, err := runCancel(t, m.WorkspaceClient, flags.OutputJSON, "", &buf, "123", "5")

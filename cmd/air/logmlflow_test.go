@@ -15,15 +15,14 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolveLogAttempt(t *testing.T) {
-	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{
+	run := &jobs.GetRunResponse{RunId: 5, Tasks: []jobs.RunTask{
 		{RunId: 100, AttemptNumber: 0},
 		{RunId: 101, AttemptNumber: 1},
 		{RunId: 102, AttemptNumber: 2},

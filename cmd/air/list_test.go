@@ -9,8 +9,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,19 +22,19 @@ func airBaseRun(id int64, user, accelType string, count int, experiment string) 
 		RunId:           id,
 		RunName:         "run-" + strconv.FormatInt(id, 10),
 		CreatorUserName: user,
-		State:           &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		State:           &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
 		Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{
 			Experiment: experiment,
 			Deployments: []jobs.DeploymentSpec{{
-				Compute: jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType(accelType), AcceleratorCount: count},
+				Compute: jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType(accelType), AcceleratorCount: count},
 			}},
 		}}},
 	}
 }
 
 // airRun is the runs/get equivalent of airBaseRun, for the helpers that operate
-// on a *jobs.Run.
-func airRun(id int64, user, accelType string, count int, experiment string) jobs.Run {
+// on a *jobs.GetRunResponse.
+func airRun(id int64, user, accelType string, count int, experiment string) jobs.GetRunResponse {
 	return *baseRunToRun(airBaseRun(id, user, accelType, count, experiment))
 }
 
@@ -159,7 +159,7 @@ func TestBuildListRowFromRun(t *testing.T) {
 	run := airRun(842552489592352, "me@example.com", "GPU_1xA10", 1, "my-first-air-run")
 	run.StartTime = 1700000000000
 	run.EndTime = 1700000012000
-	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}
+	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Success}
 
 	assert.True(t, isAirRun(&run))
 	assert.Equal(t, "my-first-air-run", jobExperiment(&run))
@@ -179,7 +179,7 @@ func TestBuildListRow(t *testing.T) {
 	run := airRun(123, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/exp")
 	run.StartTime = 1700000000000
 	run.EndTime = 1700000012000
-	run.State = &jobs.RunState{ResultState: jobs.RunResultStateSuccess}
+	run.State = &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success}
 
 	row := buildListRow(&run, "https://example.test", 0)
 	assert.Equal(t, "123", row.RunID)
@@ -195,8 +195,8 @@ func TestBuildListRow(t *testing.T) {
 
 func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	run := airRun(123, "me@example.com", "GPU_8xH100", 8, "exp")
-	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
-	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}
+	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}
+	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Pending}
 
 	row := buildListRow(&run, "https://example.test", 0)
 	body, err := json.Marshal(row)
@@ -212,7 +212,7 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 
 func TestBuildListRowDashFallbacks(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
-	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
+	row := buildListRow(&jobs.GetRunResponse{RunId: 7}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
 	assert.Equal(t, "-", row.Duration)
 	assert.Equal(t, "-", row.Accelerators)
@@ -222,7 +222,7 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 }
 
 func TestBuildListRowSweep(t *testing.T) {
-	run := jobs.Run{RunId: 9, Tasks: []jobs.RunTask{{
+	run := jobs.GetRunResponse{RunId: 9, Tasks: []jobs.RunTask{{
 		ForEachTask: &jobs.RunForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "sweep"}}},
 	}}}
 	assert.True(t, buildListRow(&run, "https://example.test", 0).IsSweep)

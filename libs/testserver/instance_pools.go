@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
 	"encoding/json"
 	"fmt"
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
 )
 
 func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
@@ -17,10 +17,10 @@ func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 	defer s.LockUnlock()()
 
 	id := nextUUID()
-	pool.InstancePoolId = id
+	pool.InstancePoolId = nonZero(id)
 	s.InstancePools[id] = pool
 
-	return Response{Body: instancepools.CreateInstancePoolResponse{InstancePoolId: id}}
+	return Response{Body: instancepools.CreateInstancePoolResponse{InstancePoolId: nonZero(id)}}
 }
 
 func (s *FakeWorkspace) InstancePoolsGet(req Request, instancePoolId string) any {
@@ -42,7 +42,7 @@ func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
 
 	defer s.LockUnlock()()
 
-	pool, ok := s.InstancePools[request.InstancePoolId]
+	pool, ok := s.InstancePools[val(request.InstancePoolId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -57,7 +57,7 @@ func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
 	pool.CustomTags = request.CustomTags
 	pool.RemoteDiskThroughput = request.RemoteDiskThroughput
 	pool.TotalInitialRemoteDiskSize = request.TotalInitialRemoteDiskSize
-	s.InstancePools[request.InstancePoolId] = pool
+	s.InstancePools[val(request.InstancePoolId)] = pool
 
 	return Response{}
 }
@@ -70,11 +70,11 @@ func (s *FakeWorkspace) InstancePoolsDelete(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.InstancePools[request.InstancePoolId]; !ok {
+	if _, ok := s.InstancePools[val(request.InstancePoolId)]; !ok {
 		return Response{StatusCode: 404}
 	}
 
-	delete(s.InstancePools, request.InstancePoolId)
+	delete(s.InstancePools, val(request.InstancePoolId))
 
 	return Response{}
 }

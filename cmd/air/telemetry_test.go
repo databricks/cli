@@ -11,16 +11,16 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func captureAirTelemetry(t *testing.T, server *testserver.Server, w *databricks.WorkspaceClient) (context.Context, *[]protos.FrontendLog) {
+func captureAirTelemetry(t *testing.T, server *testserver.Server, w *sdkclients.Clients) (context.Context, *[]protos.FrontendLog) {
 	t.Helper()
 	var events []protos.FrontendLog
 	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {

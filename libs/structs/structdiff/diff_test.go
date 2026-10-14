@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,12 +24,13 @@ type A struct {
 	Ignored string         `json:"-"`
 }
 
+// C has optional scalars behind pointers, as sdk-go types do: a nil pointer is
+// absent, a non-nil pointer to a zero value is present.
 type C struct {
-	Name            string   `json:"name,omitempty"`
-	Age             int      `json:"age,omitempty"`
-	IsEnabled       bool     `json:"is_enabled,omitempty"`
-	Title           string   `json:"title"` // no omitempty
-	ForceSendFields []string `json:"-"`
+	Name      *string `json:"name,omitempty"`
+	Age       *int    `json:"age,omitempty"`
+	IsEnabled *bool   `json:"is_enabled,omitempty"`
+	Title     string  `json:"title"` // no omitempty
 }
 
 type Embedded struct {
@@ -48,12 +48,11 @@ type E struct {
 	Name      string `json:"name,omitempty"`
 }
 
-// O holds opaque struct fields: Duration and Timestamp keep their payload in an
-// unexported protobuf pointer, while Empty is a proto message that really is
-// empty.
+// O holds opaque struct fields: Duration and Timestamp keep their payload in
+// unexported fields, while Empty is a proto message that really is empty.
 type O struct {
-	Duration  *duration.Duration         `json:"duration,omitempty"`
-	Timestamp *sdktime.Time              `json:"timestamp,omitempty"`
+	Duration  *types.Duration            `json:"duration,omitempty"`
+	Timestamp *types.Time                `json:"timestamp,omitempty"`
 	Empty     *jobs.ScheduleTriggerState `json:"empty,omitempty"`
 }
 
@@ -84,10 +83,10 @@ func TestGetStructDiff(t *testing.T) {
 	b1 := &B{S: "one"}
 	b2 := &B{S: "two"}
 
-	dur300 := duration.New(300 * time.Second)
-	dur600 := duration.New(600 * time.Second)
-	ts1 := sdktime.New(time.Unix(1000, 0))
-	ts2 := sdktime.New(time.Unix(2000, 0))
+	dur300 := types.NewFromDuration(300 * time.Second)
+	dur600 := types.NewFromDuration(600 * time.Second)
+	ts1 := types.NewFromTime(time.Unix(1000, 0))
+	ts2 := types.NewFromTime(time.Unix(2000, 0))
 
 	// An *invalid* reflect.Value (IsValid() == false)
 	var invalidRV reflect.Value
@@ -183,69 +182,49 @@ func TestGetStructDiff(t *testing.T) {
 			want: nil,
 		},
 
-		// ForceSendFields with non-empty fields (omitempty)
+		// Pointer scalars with non-empty values
 		{
-			name: "forcesend nonempty 1",
-			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
-			b:    C{Name: "World"},
+			name: "pointer nonempty",
+			a:    C{Name: new("Hello")},
+			b:    C{Name: new("World")},
 			want: []ResolvedChange{{Field: "name", Old: "Hello", New: "World"}},
 		},
 		{
-			name: "forcesend noneempty 2",
-			a:    C{Name: "Hello", ForceSendFields: []string{"Name"}},
-			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []ResolvedChange{{Field: "name", Old: "Hello", New: "World"}},
+			name: "pointer nonempty vs nil",
+			a:    C{Name: new("Hello")},
+			b:    C{},
+			want: []ResolvedChange{{Field: "name", Old: "Hello", New: nil}},
 		},
 		{
-			name: "forcesend noneempty 3",
-			a:    C{Name: "Hello"},
-			b:    C{Name: "World", ForceSendFields: []string{"Name"}},
-			want: []ResolvedChange{{Field: "name", Old: "Hello", New: "World"}},
-		},
-
-		// ForceSendFields with non-empty fields (required)
-		{
-			name: "forcesend nonempty required 1",
-			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
+			name: "required field",
+			a:    C{Title: "Hello"},
 			b:    C{Title: "World"},
 			want: []ResolvedChange{{Field: "title", Old: "Hello", New: "World"}},
 		},
-		{
-			name: "forcesend noneempty required 2",
-			a:    C{Title: "Hello", ForceSendFields: []string{"Title"}},
-			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []ResolvedChange{{Field: "title", Old: "Hello", New: "World"}},
-		},
-		{
-			name: "forcesend noneempty required 3",
-			a:    C{Title: "Hello"},
-			b:    C{Title: "World", ForceSendFields: []string{"Title"}},
-			want: []ResolvedChange{{Field: "title", Old: "Hello", New: "World"}},
-		},
 
-		// ForceSendFields with empty fields
+		// Pointer scalars with zero values are different from nil
 		{
-			name: "forcesend empty string diff",
-			a:    C{ForceSendFields: []string{"Name"}}, // Name == "" zero, but forced
+			name: "pointer empty string vs nil",
+			a:    C{Name: new("")},
 			b:    C{},
 			want: []ResolvedChange{{Field: "name", Old: "", New: nil}},
 		},
 		{
-			name: "forcesend empty int diff",
-			a:    C{ForceSendFields: []string{"Age"}},
+			name: "pointer zero int vs nil",
+			a:    C{Age: new(0)},
 			b:    C{},
 			want: []ResolvedChange{{Field: "age", Old: 0, New: nil}},
 		},
 		{
-			name: "forcesend empty bool diff",
-			a:    C{ForceSendFields: []string{"IsEnabled"}},
+			name: "pointer false vs nil",
+			a:    C{IsEnabled: new(false)},
 			b:    C{},
 			want: []ResolvedChange{{Field: "is_enabled", Old: false, New: nil}},
 		},
 		{
-			name: "forcesend empty all",
-			a:    C{ForceSendFields: []string{"Name", "IsEnabled"}},
-			b:    C{ForceSendFields: []string{"Age"}},
+			name: "pointer zero values both ways",
+			a:    C{Name: new(""), IsEnabled: new(false)},
+			b:    C{Age: new(0)},
 			want: []ResolvedChange{
 				{Field: "name", Old: "", New: nil},
 				{Field: "age", Old: nil, New: 0},
@@ -253,49 +232,35 @@ func TestGetStructDiff(t *testing.T) {
 			},
 		},
 		{
-			name: "forcesend is different but field is non empty – no diff",
-			a:    C{Name: "name", ForceSendFields: []string{"Name"}},
-			b:    C{Name: "name"},
-			want: nil,
-		},
-		{
-			name: "forcesend on non-omitempty field – no diff",
-			a:    C{Title: "", ForceSendFields: []string{"Title"}},
-			b:    C{},
+			name: "equal pointer values – no diff",
+			a:    C{Name: new("name"), Age: new(0)},
+			b:    C{Name: new("name"), Age: new(0)},
 			want: nil,
 		},
 
-		// ForceSendFields inside slice
+		// Pointer scalars inside slice
 		{
-			name: "slice of struct with only ForceSendFields diff",
-			a:    []C{{Name: "hello", ForceSendFields: []string{"Name"}}},
-			b:    []C{{Name: "hello"}},
-			want: nil,
-		},
-		{
-			name: "slice of struct with empty string and ForceSendFields diff",
-			a:    []C{{Name: "", ForceSendFields: []string{"Name"}}},
-			b:    []C{{Name: ""}},
+			name: "slice of struct with pointer zero value",
+			a:    []C{{Name: new("")}},
+			b:    []C{{}},
 			want: []ResolvedChange{{Field: "[0].name", Old: "", New: nil}},
 		},
 
-		// ForceSendFields inside map value
+		// Pointer scalars inside map value
 		{
-			name: "forcesend inside map",
-			a:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
-			b:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
+			name: "pointer zero values inside map",
+			a:    map[string]C{"key1": {Title: "title", Name: new(""), IsEnabled: new(false)}},
+			b:    map[string]C{"key1": {Title: "title", Age: new(0)}},
 			want: []ResolvedChange{
 				{Field: "['key1'].name", Old: "", New: nil},
 				{Field: "['key1'].age", Old: nil, New: 0},
 				{Field: "['key1'].is_enabled", Old: false, New: nil},
 			},
 		},
-
-		// ForceSendFields inside map value pointer
 		{
-			name: "forcesend inside map",
-			a:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
-			b:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
+			name: "pointer zero values inside map value pointer",
+			a:    map[string]*C{"key1": {Title: "title", Name: new(""), IsEnabled: new(false)}},
+			b:    map[string]*C{"key1": {Title: "title", Age: new(0)}},
 			want: []ResolvedChange{
 				{Field: "['key1'].name", Old: "", New: nil},
 				{Field: "['key1'].age", Old: nil, New: 0},

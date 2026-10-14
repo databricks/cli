@@ -6,10 +6,11 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 )
 
 // JobRemote is the return type for DoRead. It embeds JobSettings so that all
@@ -17,32 +18,22 @@ import (
 type JobRemote struct {
 	jobs.JobSettings
 
-	// Remote-specific fields from jobs.Job
-	CreatedTime             int64                   `json:"created_time,omitempty"`
-	CreatorUserName         string                  `json:"creator_user_name,omitempty"`
-	EffectiveBudgetPolicyId string                  `json:"effective_budget_policy_id,omitempty"`
-	EffectiveUsagePolicyId  string                  `json:"effective_usage_policy_id,omitempty"`
-	JobId                   int64                   `json:"job_id,omitempty"`
-	RunAsUserName           string                  `json:"run_as_user_name,omitempty"`
-	TriggerDetails          []jobs.TriggerDetails   `json:"trigger_details,omitempty"`
-	TriggerState            *jobs.TriggerStateProto `json:"trigger_state,omitempty"`
-}
-
-// Custom marshaler needed because embedded JobSettings has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *JobRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s JobRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	// Remote-specific fields from jobs.GetJobResponse
+	CreatedTime             *int64                `json:"created_time,omitempty"`
+	CreatorUserName         *string               `json:"creator_user_name,omitempty"`
+	EffectiveBudgetPolicyId *string               `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId  *string               `json:"effective_usage_policy_id,omitempty"`
+	JobId                   *int64                `json:"job_id,omitempty"`
+	RunAsUserName           *string               `json:"run_as_user_name,omitempty"`
+	TriggerDetails          []jobs.TriggerDetails `json:"trigger_details,omitempty"`
+	TriggerState            *jobs.TriggerState    `json:"trigger_state,omitempty"`
 }
 
 type ResourceJob struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceJob) New(client *databricks.WorkspaceClient) *ResourceJob {
+func (*ResourceJob) New(client *sdkclients.Clients) *ResourceJob {
 	return &ResourceJob{
 		client: client,
 	}
@@ -56,28 +47,28 @@ func (*ResourceJob) RemapState(remote *JobRemote) *jobs.JobSettings {
 	return &remote.JobSettings
 }
 
-func getTaskKey(x jobs.Task) (string, string) {
-	return "task_key", x.TaskKey
+func getTaskKey(x jobs.TaskSettings) (string, string) {
+	return "task_key", utils.Deref(x.TaskKey)
 }
 
-func getParameterName(x jobs.JobParameterDefinition) (string, string) {
-	return "name", x.Name
+func getParameterName(x jobs.JobLevelParameter) (string, string) {
+	return "name", utils.Deref(x.Name)
 }
 
 func getJobClusterKey(x jobs.JobCluster) (string, string) {
-	return "job_cluster_key", x.JobClusterKey
+	return "job_cluster_key", utils.Deref(x.JobClusterKey)
 }
 
 func getEnvironmentKey(x jobs.JobEnvironment) (string, string) {
-	return "environment_key", x.EnvironmentKey
+	return "environment_key", utils.Deref(x.EnvironmentKey)
 }
 
 func getDependsOnTaskKey(x jobs.TaskDependency) (string, string) {
-	return "task_key", x.TaskKey
+	return "task_key", utils.Deref(x.TaskKey)
 }
 
 func getWebhookKey(x jobs.Webhook) (string, string) {
-	return "id", x.Id
+	return "id", utils.Deref(x.Id)
 }
 
 // The Jobs API returns webhook_notifications.on_* in an arbitrary order, so
@@ -119,21 +110,44 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 	if err != nil {
 		return nil, err
 	}
-	// GetByJobId only fetches the first page (100 tasks). Jobs.Get handles
-	// pagination and returns the complete job with all tasks merged.
-	job, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{
-		JobId:               idInt,
-		PageToken:           "",
-		IncludeTriggerState: false,
-		ForceSendFields:     nil,
-	})
+	job, err := r.getJob(ctx, idInt)
 	if err != nil {
 		return nil, err
 	}
-	return makeJobRemote(job), nil
+	return makeJobRemote(job)
 }
 
-func makeJobRemote(job *jobs.Job) *JobRemote {
+// getJob fetches the job with all its tasks. jobs/get returns at most 100
+// tasks (and job clusters, parameters, environments) per page; later pages
+// are fetched with next_page_token and merged.
+func (r *ResourceJob) getJob(ctx context.Context, id int64) (*sdkjobs.GetJobResponse, error) {
+	req := sdkjobs.GetJobRequest{JobId: new(id)}
+	job, err := r.client.Jobs.GetJob(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	for job.NextPageToken != nil && *job.NextPageToken != "" {
+		req.PageToken = job.NextPageToken
+		next, err := r.client.Jobs.GetJob(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		if job.Settings != nil && next.Settings != nil {
+			job.Settings.Tasks = append(job.Settings.Tasks, next.Settings.Tasks...)
+			job.Settings.JobClusters = append(job.Settings.JobClusters, next.Settings.JobClusters...)
+			job.Settings.Parameters = append(job.Settings.Parameters, next.Settings.Parameters...)
+			job.Settings.Environments = append(job.Settings.Environments, next.Settings.Environments...)
+		}
+		job.NextPageToken = next.NextPageToken
+	}
+	return job, nil
+}
+
+func makeJobRemote(resp *sdkjobs.GetJobResponse) (*JobRemote, error) {
+	job, err := sdkconv.FromSDK[jobs.GetJobResponse](resp)
+	if err != nil {
+		return nil, err
+	}
 	var settings jobs.JobSettings
 	if job.Settings != nil {
 		settings = *job.Settings
@@ -148,27 +162,36 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 		RunAsUserName:           job.RunAsUserName,
 		TriggerDetails:          job.TriggerDetails,
 		TriggerState:            job.TriggerState,
-	}
+	}, nil
 }
 
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
-	request, err := makeCreateJob(*config)
+	// access_control_list is not supported by DABs; permissions are a separate resource.
+	request, err := sdkconv.ToSDK[sdkjobs.CreateJobRequest](config)
 	if err != nil {
 		return "", nil, err
 	}
-	response, err := r.client.Jobs.Create(ctx, request)
+	response, err := r.client.Jobs.CreateJob(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
-	return strconv.FormatInt(response.JobId, 10), nil, nil
+	return strconv.FormatInt(utils.Deref(response.JobId), 10), nil, nil
 }
 
 func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *PlanEntry) (*JobRemote, error) {
-	request, err := makeResetJob(*config, id)
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err
 	}
-	return nil, r.client.Jobs.Reset(ctx, request)
+	settings, err := jobs.JobSettingsToSDK(config)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.client.Jobs.ResetJob(ctx, sdkjobs.ResetJobRequest{
+		JobId:       new(idInt),
+		NewSettings: settings,
+	})
+	return nil, err
 }
 
 func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error {
@@ -176,58 +199,8 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettin
 	if err != nil {
 		return err
 	}
-	return r.client.Jobs.DeleteByJobId(ctx, idInt)
-}
-
-func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
-	// Note, exhaustruct linter validates that all off CreateJob fields are initialized.
-	// We don't have linter that validates that all of config fields are used.
-	result := jobs.CreateJob{
-		AccessControlList:    nil, // Not supported by DABs
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Continuous:           config.Continuous,
-		Deployment:           config.Deployment,
-		Description:          config.Description,
-		EditMode:             config.EditMode,
-		EmailNotifications:   config.EmailNotifications,
-		EnvironmentVariables: config.EnvironmentVariables,
-		Environments:         config.Environments,
-		Format:               config.Format,
-		GitSource:            config.GitSource,
-		Health:               config.Health,
-		JobClusters:          config.JobClusters,
-		MaxConcurrentRuns:    config.MaxConcurrentRuns,
-		Name:                 config.Name,
-		NotificationSettings: config.NotificationSettings,
-		Parameters:           config.Parameters,
-		ParentPath:           config.ParentPath,
-		PerformanceTarget:    config.PerformanceTarget,
-		Queue:                config.Queue,
-		RunAs:                config.RunAs,
-		Schedule:             config.Schedule,
-		Tags:                 config.Tags,
-		Tasks:                config.Tasks,
-		TimeoutSeconds:       config.TimeoutSeconds,
-		Trigger:              config.Trigger,
-		Triggers:             config.Triggers,
-		UsagePolicyId:        config.UsagePolicyId,
-		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      utils.FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
-	}
-
-	return result, nil
-}
-
-func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
-	idInt, err := parseJobID(id)
-	if err != nil {
-		return jobs.ResetJob{}, err
-	}
-	result := jobs.ResetJob{
-		JobId:       idInt,
-		NewSettings: config,
-	}
-	return result, err
+	_, err = r.client.Jobs.DeleteJob(ctx, sdkjobs.DeleteJobRequest{JobId: new(idInt)})
+	return err
 }
 
 func parseJobID(id string) (int64, error) {

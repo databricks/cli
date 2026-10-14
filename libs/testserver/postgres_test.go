@@ -1,8 +1,8 @@
 package testserver_test
 
 import (
-	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"encoding/json"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"net/http"
 	"strings"
 	"testing"

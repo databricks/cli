@@ -9,7 +9,6 @@ import (
 	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // pagerFallbackPageSize is used before the first WindowSizeMsg arrives,
@@ -34,7 +33,7 @@ const pagerLoadingText = "loading..."
 // fetch produces a batchMsg, Update prints it via tea.Println, and
 // View shows the prompt between pages.
 type pagerModel[T any] struct {
-	iter    listing.Iterator[T]
+	iter    pullIter[T]
 	pager   *templatePager
 	spinner bubblespinner.Model
 	// fetch is bound at construction with the caller's context captured
@@ -64,7 +63,7 @@ type pagerModel[T any] struct {
 func newPagerModel[T any](
 	ctx context.Context,
 	out io.Writer,
-	iter listing.Iterator[T],
+	iter pullIter[T],
 	pager *templatePager,
 	pageSize, limit int,
 ) *pagerModel[T] {
@@ -131,7 +130,7 @@ func (m *pagerModel[T]) doFetch(ctx context.Context, pageSize, limit, total int)
 		if err != nil {
 			return batchMsg{err: err}
 		}
-		buf = append(buf, n)
+		buf = append(buf, templateData(n))
 	}
 	lines, err := m.pager.flushLines(buf)
 	if err != nil {

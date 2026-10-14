@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
@@ -67,10 +68,10 @@ func (s VectorSearchIndexRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceVectorSearchIndex struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceVectorSearchIndex) New(client *databricks.WorkspaceClient) *ResourceVectorSearchIndex {
+func (*ResourceVectorSearchIndex) New(client *sdkclients.Clients) *ResourceVectorSearchIndex {
 	return &ResourceVectorSearchIndex{client: client}
 }
 
@@ -172,7 +173,7 @@ func (r *ResourceVectorSearchIndex) createIndex(ctx context.Context, req vectors
 // distinct error code for it — the backend returns a generic
 // INVALID_PARAMETER_VALUE — so the message has to be matched.
 func isIndexPendingDeletion(err error) bool {
-	if !errors.Is(err, apierr.ErrInvalidParameterValue) {
+	if !apierrs.Is(err, apierrs.ErrInvalidParameterValue) {
 		return false
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
@@ -274,7 +275,7 @@ func (r *ResourceVectorSearchIndex) lookupEndpointUuid(ctx context.Context, endp
 	}
 	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, endpointName)
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return "", nil
 		}
 		return "", fmt.Errorf("looking up vector search endpoint %q: %w", endpointName, err)

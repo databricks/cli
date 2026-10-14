@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structdiff"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/cli/libs/bundledeployments"
 )
 
 // VersionType identifies the kind of deployment a version records.
@@ -110,7 +110,7 @@ func DeploymentIDFromName(name string) (string, error) {
 }
 
 // DeploymentUpdate builds the deployment with only the masked fields.
-// A masked field must be sent even when empty (empty = clear it), so ForceSendFields stops omitempty dropping it.
+// A masked field is sent even when empty (empty = clear it); the client force-sends every masked field.
 func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployment {
 	full := metadata.Deployment()
 	var dep bundledeployments.Deployment
@@ -118,16 +118,12 @@ func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployme
 		switch path {
 		case "display_name":
 			dep.DisplayName = full.DisplayName
-			dep.ForceSendFields = append(dep.ForceSendFields, "DisplayName")
 		case "target_name":
 			dep.TargetName = full.TargetName
-			dep.ForceSendFields = append(dep.ForceSendFields, "TargetName")
 		case "deployment_mode":
 			dep.DeploymentMode = full.DeploymentMode
-			dep.ForceSendFields = append(dep.ForceSendFields, "DeploymentMode")
 		case "workspace_info":
 			dep.WorkspaceInfo = full.WorkspaceInfo
-			dep.ForceSendFields = append(dep.ForceSendFields, "WorkspaceInfo")
 		}
 	}
 	return dep

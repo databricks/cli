@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"encoding/json"
 	"fmt"
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,50 +26,50 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	// We replicate that behaviour in the test server as well.
 	appendTags := []experiments.ExperimentTag{
 		{
-			Key:   "mlflow.ownerId",
+			Key:   nonZero("mlflow.ownerId"),
 			Value: testUser.Id,
 		},
 		{
-			Key:   "mlflow.experiment.sourceName",
+			Key:   nonZero("mlflow.experiment.sourceName"),
 			Value: experiment.Name,
 		},
 		{
-			Key:   "mlflow.ownerId",
+			Key:   nonZero("mlflow.ownerId"),
 			Value: testUser.Id,
 		},
 		{
-			Key:   "mlflow.ownerEmail",
+			Key:   nonZero("mlflow.ownerEmail"),
 			Value: testUser.UserName,
 		},
 		{
-			Key:   "mlflow.experimentType",
-			Value: "MLFLOW_EXPERIMENT",
+			Key:   nonZero("mlflow.experimentType"),
+			Value: nonZero("MLFLOW_EXPERIMENT"),
 		},
 	}
 
 	experimentId := strconv.FormatInt(nextID(), 10)
 
-	if experiment.ArtifactLocation == "" {
-		experiment.ArtifactLocation = "dbfs:/databricks/mlflow-tracking/" + experimentId
+	if val(experiment.ArtifactLocation) == "" {
+		experiment.ArtifactLocation = nonZero("dbfs:/databricks/mlflow-tracking/" + experimentId)
 	}
 
 	// Strip /Workspace prefix from experiment name to match cloud behavior
 	// Input: //Workspace/Users/foo -> Output: /Users/foo
 	experimentName := experiment.Name
 	// Remove double slash used for Windows compatibility
-	if strings.HasPrefix(experimentName, "//") {
-		experimentName = strings.TrimPrefix(experimentName, "/")
+	if strings.HasPrefix(val(experimentName), "//") {
+		experimentName = nonZero(strings.TrimPrefix(val(experimentName), "/"))
 	}
 	// Remove /Workspace prefix
-	experimentName = strings.TrimPrefix(experimentName, "/Workspace")
+	experimentName = nonZero(strings.TrimPrefix(val(experimentName), "/Workspace"))
 
 	// Create the experiment
 	exp := experiments.Experiment{
-		ExperimentId:     experimentId,
+		ExperimentId:     nonZero(experimentId),
 		Name:             experimentName,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             append(experiment.Tags, appendTags...),
-		LifecycleStage:   "active",
+		LifecycleStage:   nonZero("active"),
 		// Echo back like the real GetExperiment; omitting this immutable field triggers a spurious recreate.
 		TraceLocation: experiment.TraceLocation,
 	}
@@ -80,7 +80,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 
 	return Response{
 		Body: experiments.CreateExperimentResponse{
-			ExperimentId: experimentId,
+			ExperimentId: nonZero(experimentId),
 		},
 	}
 }
@@ -96,7 +96,7 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 		}
 	}
 
-	experiment, exists := s.Experiments[updateReq.ExperimentId]
+	experiment, exists := s.Experiments[val(updateReq.ExperimentId)]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -105,19 +105,19 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 	}
 
 	// Update the experiment
-	if updateReq.NewName != "" {
+	if val(updateReq.NewName) != "" {
 		experiment.Experiment.Name = updateReq.NewName
 
 		// The server modifies the value of the tag as well. Mimic that behaviour
 		// in the test server as well.
 		for i := range experiment.Experiment.Tags {
-			if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
+			if val(experiment.Experiment.Tags[i].Key) == "mlflow.experiment.sourceName" {
 				experiment.Experiment.Tags[i].Value = updateReq.NewName
 			}
 		}
 	}
 
-	s.Experiments[updateReq.ExperimentId] = experiment
+	s.Experiments[val(updateReq.ExperimentId)] = experiment
 
 	return Response{}
 }
@@ -131,5 +131,5 @@ func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
 		}
 	}
 
-	return MapDelete(s, s.Experiments, deleteReq.ExperimentId)
+	return MapDelete(s, s.Experiments, val(deleteReq.ExperimentId))
 }

@@ -1,22 +1,21 @@
 package testserver
 
 import (
-	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/sdk-go/core/types"
 )
 
-func nowTime() *sdktime.Time {
-	return sdktime.New(time.Now().UTC())
+func nowTime() *types.Time {
+	return types.NewFromTime(time.Now().UTC())
 }
 
 // nextTraceID returns a 32-hex-character id shaped like the trace ids the real API puts
@@ -117,9 +116,9 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	}
 
 	now := nowTime()
-	project.Name = name
-	project.ProjectId = projectID
-	project.Uid = nextUUID()
+	project.Name = nonZero(name)
+	project.ProjectId = nonZero(projectID)
+	project.Uid = nonZero(nextUUID())
 	project.CreateTime = now
 	project.UpdateTime = now
 
@@ -128,33 +127,33 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 		// The backend materializes a default retention when the spec omits it.
 		historyRetention := project.Spec.HistoryRetentionDuration
 		if historyRetention == nil {
-			historyRetention = duration.New(defaultHistoryRetention)
+			historyRetention = types.NewFromDuration(defaultHistoryRetention)
 		}
 
 		project.Status = &postgres.ProjectStatus{
-			ProjectId:                   projectID,
-			DefaultBranch:               name + "/branches/production",
+			ProjectId:                   nonZero(projectID),
+			DefaultBranch:               nonZero(name + "/branches/production"),
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    historyRetention,
-			EnablePgNativeLogin:         false,
+			EnablePgNativeLogin:         nonZero(false),
 			Owner:                       TestUser.UserName,
-			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
-			SyntheticStorageSizeBytes:   0,
+			BranchLogicalSizeLimitBytes: nonZero(8796093022208), // 8 TB (real API default)
+			SyntheticStorageSizeBytes:   nonZero(0),
 			ForceSendFields:             []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},
 		}
 
 		// The backend materializes default endpoint settings when the spec omits them.
 		project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{
-			AutoscalingLimitMinCu:  defaultAutoscalingLimitMinCu,
-			AutoscalingLimitMaxCu:  defaultAutoscalingLimitMaxCu,
-			SuspendTimeoutDuration: duration.New(defaultSuspendTimeout),
+			AutoscalingLimitMinCu:  nonZero(defaultAutoscalingLimitMinCu),
+			AutoscalingLimitMaxCu:  nonZero(defaultAutoscalingLimitMaxCu),
+			SuspendTimeoutDuration: types.NewFromDuration(defaultSuspendTimeout),
 		}
 		if project.Spec.DefaultEndpointSettings != nil {
-			if project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu != 0 {
+			if val(project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu) != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu = project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 			}
-			if project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
+			if val(project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu) != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 			}
 			if project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
@@ -171,7 +170,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	s.createDefaultBranchLocked(name)
 
 	return Response{
-		Body: s.createOperationLocked(project.Name, project),
+		Body: s.createOperationLocked(val(project.Name), project),
 	}
 }
 
@@ -233,7 +232,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		if project.Status == nil {
 			project.Status = &postgres.ProjectStatus{}
 		}
-		if updateProject.Spec.DisplayName != "" {
+		if val(updateProject.Spec.DisplayName) != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
 		// Verified against a real workspace: dropping the field from config sends a
@@ -246,10 +245,10 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 			if project.Status.DefaultEndpointSettings == nil {
 				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
 			}
-			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu != 0 {
+			if val(updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu) != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
 			}
-			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
+			if val(updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu) != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
 			}
 			if updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
@@ -276,7 +275,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 	}
 
 	return Response{
-		Body: s.createOperationLocked(project.Name, project),
+		Body: s.createOperationLocked(val(project.Name), project),
 	}
 }
 
@@ -350,7 +349,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	now := nowTime()
-	branch.BranchId = branchID
+	branch.BranchId = nonZero(branchID)
 	if exists {
 		// Preserve identifying / output-only fields; apply incoming spec to status.
 		branch.Name = existing.Name
@@ -360,27 +359,27 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 		branch.UpdateTime = now
 		branch.Status = existing.Status
 	} else {
-		branch.Name = name
-		branch.Parent = parent
-		branch.Uid = "br-" + nextUUID()[:20]
+		branch.Name = nonZero(name)
+		branch.Parent = nonZero(parent)
+		branch.Uid = nonZero("br-" + nextUUID()[:20])
 		branch.CreateTime = now
 		branch.UpdateTime = now
 		branch.Status = &postgres.BranchStatus{
-			BranchId:         branchID,
+			BranchId:         nonZero(branchID),
 			CurrentState:     postgres.BranchStatus_State_Ready,
 			StateChangeTime:  now,
-			Default:          false,
-			IsProtected:      false,
-			LogicalSizeBytes: 0,
+			Default:          nonZero(false),
+			IsProtected:      nonZero(false),
+			LogicalSizeBytes: nonZero(0),
 			ForceSendFields:  []string{"Default", "IsProtected", "LogicalSizeBytes"},
 		}
 
 		// Set source branch info if a default branch exists.
 		prefix := parent + "/branches/"
 		for brName, br := range s.PostgresBranches {
-			if strings.HasPrefix(brName, prefix) && br.Status != nil && br.Status.Default {
+			if strings.HasPrefix(brName, prefix) && br.Status != nil && val(br.Status.Default) {
 				branch.Status.SourceBranch = br.Name
-				branch.Status.SourceBranchLsn = "0/0"
+				branch.Status.SourceBranchLsn = nonZero("0/0")
 				branch.Status.SourceBranchTime = nowTime()
 				break
 			}
@@ -405,7 +404,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	return Response{
-		Body: s.createOperationLocked(branch.Name, branch),
+		Body: s.createOperationLocked(val(branch.Name), branch),
 	}
 }
 
@@ -494,7 +493,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 	s.PostgresBranches[name] = branch
 
 	return Response{
-		Body: s.createOperationLocked(branch.Name, branch),
+		Body: s.createOperationLocked(val(branch.Name), branch),
 	}
 }
 
@@ -510,7 +509,7 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 		return postgresNotFoundResponse("branch")
 	}
 
-	if branch.Status != nil && branch.Status.IsProtected {
+	if branch.Status != nil && val(branch.Status.IsProtected) {
 		return postgresErrorResponse(400, "BAD_REQUEST", "cannot delete protected branch")
 	}
 
@@ -555,7 +554,7 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
 
 	schedule, exists := s.PostgresSnapshotSchedules[name]
 	if !exists {
-		schedule = postgres.SnapshotSchedule{Name: name}
+		schedule = postgres.SnapshotSchedule{Name: nonZero(name)}
 	}
 
 	return Response{
@@ -596,7 +595,7 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string)
 	}
 
 	schedule := postgres.SnapshotSchedule{
-		Name:     name,
+		Name:     nonZero(name),
 		Schedule: updateSchedule.Schedule,
 	}
 	s.PostgresSnapshotSchedules[name] = schedule
@@ -644,7 +643,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	}
 
 	now := nowTime()
-	endpoint.EndpointId = endpointID
+	endpoint.EndpointId = nonZero(endpointID)
 	if exists {
 		endpoint.Name = existing.Name
 		endpoint.Parent = existing.Parent
@@ -653,38 +652,38 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		endpoint.UpdateTime = now
 		endpoint.Status = existing.Status
 	} else {
-		endpoint.Name = name
-		endpoint.Parent = parent
-		endpoint.Uid = "ep-" + nextUUID()[:20]
+		endpoint.Name = nonZero(name)
+		endpoint.Parent = nonZero(parent)
+		endpoint.Uid = nonZero("ep-" + nextUUID()[:20])
 		endpoint.CreateTime = now
 		endpoint.UpdateTime = now
 
 		// Inherit suspend timeout default from the project.
-		var defaultSuspendTimeout *duration.Duration
-		if project, ok := s.PostgresProjects[branch.Parent]; ok {
+		var defaultSuspendTimeout *types.Duration
+		if project, ok := s.PostgresProjects[val(branch.Parent)]; ok {
 			if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
 				defaultSuspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
 
 		endpoint.Status = &postgres.EndpointStatus{
-			EndpointId:             endpointID,
+			EndpointId:             nonZero(endpointID),
 			CurrentState:           postgres.EndpointStatus_State_Active,
-			Disabled:               false,
+			Disabled:               nonZero(false),
 			Settings:               &postgres.EndpointSettings{},
 			SuspendTimeoutDuration: defaultSuspendTimeout,
 			ForceSendFields:        []string{"Disabled"},
 		}
 
-		host := endpoint.Uid + ".database.us-east-1.cloud.databricks.com"
+		host := val(endpoint.Uid) + ".database.us-east-1.cloud.databricks.com"
 		endpoint.Status.Hosts = &postgres.EndpointHosts{
-			Host:         host,
-			ReadOnlyHost: host,
+			Host:         nonZero(host),
+			ReadOnlyHost: nonZero(host),
 		}
 		endpoint.Status.Group = &postgres.EndpointGroupStatus{
-			EnableReadableSecondaries: true,
-			Max:                       1,
-			Min:                       1,
+			EnableReadableSecondaries: nonZero(true),
+			Max:                       nonZero(1),
+			Min:                       nonZero(1),
 		}
 	}
 
@@ -705,7 +704,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	s.PostgresEndpoints[name] = endpoint
 
 	return Response{
-		Body: s.createOperationLocked(endpoint.Name, endpoint),
+		Body: s.createOperationLocked(val(endpoint.Name), endpoint),
 	}
 }
 
@@ -1014,7 +1013,7 @@ func isNonDefaultEndpointSettings(s *postgres.ProjectDefaultEndpointSettings) bo
 	if s == nil {
 		return false
 	}
-	if s.AutoscalingLimitMinCu != defaultAutoscalingLimitMinCu || s.AutoscalingLimitMaxCu != defaultAutoscalingLimitMaxCu {
+	if val(s.AutoscalingLimitMinCu) != defaultAutoscalingLimitMinCu || val(s.AutoscalingLimitMaxCu) != defaultAutoscalingLimitMaxCu {
 		return true
 	}
 	return s.SuspendTimeoutDuration != nil && s.SuspendTimeoutDuration.AsDuration() != defaultSuspendTimeout
@@ -1093,10 +1092,10 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		if endpoint.Status == nil {
 			endpoint.Status = &postgres.EndpointStatus{}
 		}
-		if updateEndpoint.Spec.AutoscalingLimitMinCu != 0 {
+		if val(updateEndpoint.Spec.AutoscalingLimitMinCu) != 0 {
 			endpoint.Status.AutoscalingLimitMinCu = updateEndpoint.Spec.AutoscalingLimitMinCu
 		}
-		if updateEndpoint.Spec.AutoscalingLimitMaxCu != 0 {
+		if val(updateEndpoint.Spec.AutoscalingLimitMaxCu) != 0 {
 			endpoint.Status.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
 		}
 		if updateEndpoint.Spec.SuspendTimeoutDuration != nil {
@@ -1109,7 +1108,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 	s.PostgresEndpoints[name] = endpoint
 
 	return Response{
-		Body: s.createOperationLocked(endpoint.Name, endpoint),
+		Body: s.createOperationLocked(val(endpoint.Name), endpoint),
 	}
 }
 
@@ -1167,7 +1166,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	// The real Lakebase API requires the owning role on create and rejects an empty
 	// one with this exact error (verified on aws-ucws 2026-07-13). The fake does
 	// not synthesize a default, matching that behavior.
-	if database.Spec == nil || database.Spec.Role == "" {
+	if database.Spec == nil || val(database.Spec.Role) == "" {
 		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database.spec.role' is required, expected non-default value (not "")!`)
 	}
 
@@ -1185,7 +1184,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	if exists {
 		// Preserve identifying / output-only fields; apply incoming spec to status.
 		status := &postgres.Database_DatabaseStatus{
-			DatabaseId:       databaseID,
+			DatabaseId:       nonZero(databaseID),
 			PostgresDatabase: database.Spec.PostgresDatabase,
 			Role:             database.Spec.Role,
 		}
@@ -1195,19 +1194,19 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 		s.PostgresDatabases[name] = existing
 
 		return Response{
-			Body: s.createOperationLocked(existing.Name, existing),
+			Body: s.createOperationLocked(val(existing.Name), existing),
 		}
 	}
 
-	database.Name = name
-	database.DatabaseId = databaseID
-	database.Parent = parent
+	database.Name = nonZero(name)
+	database.DatabaseId = nonZero(databaseID)
+	database.Parent = nonZero(parent)
 	database.CreateTime = now
 	database.UpdateTime = now
 
 	// Mirror spec onto status; the real API only echoes Status on GET.
 	status := &postgres.Database_DatabaseStatus{
-		DatabaseId:       databaseID,
+		DatabaseId:       nonZero(databaseID),
 		PostgresDatabase: database.Spec.PostgresDatabase,
 		Role:             database.Spec.Role,
 	}
@@ -1217,7 +1216,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	s.PostgresDatabases[name] = database
 
 	return Response{
-		Body: s.createOperationLocked(database.Name, database),
+		Body: s.createOperationLocked(val(database.Name), database),
 	}
 }
 
@@ -1298,21 +1297,21 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 		// Preserve database_id which is derived from the resource name.
 		databaseID := ""
 		if database.Status != nil {
-			databaseID = database.Status.DatabaseId
+			databaseID = val(database.Status.DatabaseId)
 		}
 		var paths []string
 		if mask := req.URL.Query().Get("update_mask"); mask != "" {
 			paths = strings.Split(mask, ",")
 		}
 		database.Status = applyDatabaseSpecMask(database.Status, databaseStatusFromSpec(updateDatabase.Spec), paths)
-		database.Status.DatabaseId = databaseID
+		database.Status.DatabaseId = nonZero(databaseID)
 	}
 
 	database.UpdateTime = nowTime()
 	s.PostgresDatabases[name] = database
 
 	return Response{
-		Body: s.createOperationLocked(database.Name, database),
+		Body: s.createOperationLocked(val(database.Name), database),
 	}
 }
 
@@ -1393,9 +1392,9 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	}
 
 	now := nowTime()
-	catalog.Name = name
-	catalog.CatalogId = catalogID
-	catalog.Uid = nextUUID()
+	catalog.Name = nonZero(name)
+	catalog.CatalogId = nonZero(catalogID)
+	catalog.Uid = nonZero(nextUUID())
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
 
@@ -1405,7 +1404,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 		status.PostgresDatabase = catalog.Spec.PostgresDatabase
 		// Project portion of the status is "projects/{project_id}", derived
 		// from the branch name "projects/{project_id}/branches/{branch_id}".
-		if idx := strings.Index(catalog.Spec.Branch, "/branches/"); idx > 0 {
+		if idx := strings.Index(val(catalog.Spec.Branch), "/branches/"); idx > 0 {
 			status.Project = catalog.Spec.Branch[:idx]
 		}
 	}
@@ -1535,29 +1534,29 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 		// Preserve identifying / output-only fields; apply incoming spec to status.
 		existing.UpdateTime = now
 		existing.Status = roleStatusFromSpec(role.Spec)
-		existing.Status.RoleId = roleID
+		existing.Status.RoleId = nonZero(roleID)
 		existing.Spec = nil
 		s.PostgresRoles[name] = existing
 
 		return Response{
-			Body: s.createOperationLocked(existing.Name, existing),
+			Body: s.createOperationLocked(val(existing.Name), existing),
 		}
 	}
 
-	role.Name = name
-	role.RoleId = roleID
-	role.Parent = parent
+	role.Name = nonZero(name)
+	role.RoleId = nonZero(roleID)
+	role.Parent = nonZero(parent)
 	role.CreateTime = now
 	role.UpdateTime = now
 
 	role.Status = roleStatusFromSpec(role.Spec)
-	role.Status.RoleId = roleID
+	role.Status.RoleId = nonZero(roleID)
 	role.Spec = nil
 
 	s.PostgresRoles[name] = role
 
 	return Response{
-		Body: s.createOperationLocked(role.Name, role),
+		Body: s.createOperationLocked(val(role.Name), role),
 	}
 }
 
@@ -1641,21 +1640,21 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		// Preserve role_id which is derived from the resource name.
 		roleID := ""
 		if role.Status != nil {
-			roleID = role.Status.RoleId
+			roleID = val(role.Status.RoleId)
 		}
 		var paths []string
 		if mask := req.URL.Query().Get("update_mask"); mask != "" {
 			paths = strings.Split(mask, ",")
 		}
 		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
-		role.Status.RoleId = roleID
+		role.Status.RoleId = nonZero(roleID)
 	}
 
 	role.UpdateTime = nowTime()
 	s.PostgresRoles[name] = role
 
 	return Response{
-		Body: s.createOperationLocked(role.Name, role),
+		Body: s.createOperationLocked(val(role.Name), role),
 	}
 }
 
@@ -1751,8 +1750,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	}
 
 	op := postgres.Operation{
-		Name:     operationName,
-		Done:     true,
+		Name:     nonZero(operationName),
+		Done:     nonZero(true),
 		Metadata: fmt.Appendf(nil, `{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType),
 	}
 	if response != nil {
@@ -1790,8 +1789,8 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 	if _, exists := s.PostgresSyncedTables[name]; exists {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "synced table with such id already exists")
 	}
-	table.Name = name
-	table.Uid = nextUUID()
+	table.Name = nonZero(name)
+	table.Uid = nonZero(nextUUID())
 	table.CreateTime = nowTime()
 
 	// GET on the real API returns only status; clear spec to match.
@@ -1854,19 +1853,19 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 	branchName := projectName + "/branches/production"
 
 	defaultBranch := postgres.Branch{
-		Name:       branchName,
-		BranchId:   "production",
-		Parent:     projectName,
-		Uid:        branchUID,
+		Name:       nonZero(branchName),
+		BranchId:   nonZero("production"),
+		Parent:     nonZero(projectName),
+		Uid:        nonZero(branchUID),
 		CreateTime: now,
 		UpdateTime: now,
 		Status: &postgres.BranchStatus{
-			BranchId:         "production",
+			BranchId:         nonZero("production"),
 			CurrentState:     postgres.BranchStatus_State_Ready,
 			StateChangeTime:  now,
-			Default:          true,
-			IsProtected:      false,
-			LogicalSizeBytes: 0,
+			Default:          nonZero(true),
+			IsProtected:      nonZero(false),
+			LogicalSizeBytes: nonZero(0),
 			ForceSendFields:  []string{"Default", "IsProtected", "LogicalSizeBytes"},
 		},
 	}
@@ -1888,13 +1887,13 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 	// Inherit default endpoint settings from the project where available.
 	var (
 		minCu, maxCu   float64
-		suspendTimeout *duration.Duration
+		suspendTimeout *types.Duration
 		projectName    = strings.Split(branchName, "/branches/")[0]
 	)
 	if project, ok := s.PostgresProjects[projectName]; ok {
 		if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
-			minCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu
-			maxCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu
+			minCu = val(project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu)
+			maxCu = val(project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu)
 			suspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
 		}
 	}
@@ -1903,27 +1902,27 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 	host := endpointUID + ".database.us-east-1.cloud.databricks.com"
 
 	s.PostgresEndpoints[endpointName] = postgres.Endpoint{
-		Name:       endpointName,
-		EndpointId: "primary",
-		Parent:     branchName,
-		Uid:        endpointUID,
+		Name:       nonZero(endpointName),
+		EndpointId: nonZero("primary"),
+		Parent:     nonZero(branchName),
+		Uid:        nonZero(endpointUID),
 		CreateTime: now,
 		UpdateTime: now,
 		Status: &postgres.EndpointStatus{
-			EndpointId:             "primary",
+			EndpointId:             nonZero("primary"),
 			EndpointType:           postgres.EndpointType_EndpointTypeReadWrite,
 			CurrentState:           postgres.EndpointStatus_State_Active,
-			Disabled:               false,
+			Disabled:               nonZero(false),
 			Settings:               &postgres.EndpointSettings{},
-			AutoscalingLimitMinCu:  minCu,
-			AutoscalingLimitMaxCu:  maxCu,
+			AutoscalingLimitMinCu:  nonZero(minCu),
+			AutoscalingLimitMaxCu:  nonZero(maxCu),
 			SuspendTimeoutDuration: suspendTimeout,
 			// Primary read-write endpoint exposes only the read-write host;
 			// read_only_host is set on read-only endpoints created later.
-			Hosts: &postgres.EndpointHosts{Host: host},
+			Hosts: &postgres.EndpointHosts{Host: nonZero(host)},
 			Group: &postgres.EndpointGroupStatus{
-				Max:             1,
-				Min:             1,
+				Max:             nonZero(1),
+				Min:             nonZero(1),
 				ForceSendFields: []string{"EnableReadableSecondaries"},
 			},
 			ForceSendFields: []string{"Disabled"},

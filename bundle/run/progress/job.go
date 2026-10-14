@@ -5,7 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type JobProgressEvent struct {
@@ -20,14 +21,14 @@ func (event *JobProgressEvent) String() string {
 	result := strings.Builder{}
 	result.WriteString(event.Timestamp.Format("2006-01-02 15:04:05") + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.RunName) + " ")
-	result.WriteString(event.State.LifeCycleState.String())
+	result.WriteString(string(event.State.LifeCycleState))
 
-	resultState := event.State.ResultState.String()
+	resultState := string(event.State.ResultState)
 	if resultState != "" {
 		result.WriteString(" " + resultState)
 	}
 
-	stateMessage := event.State.StateMessage
+	stateMessage := utils.Deref(event.State.StateMessage)
 	if stateMessage != "" {
 		result.WriteString(" " + stateMessage)
 	}

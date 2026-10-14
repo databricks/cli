@@ -12,16 +12,16 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 // Apply deploys every node in plan, respecting dependency order. When reportApplied
 // is set, each resource is reported as soon as it is applied, so a long deploy shows
 // what it has done and a failing one still reports the resources it did apply. Nodes
 // run in parallel, so the lines come out in completion order, which varies per run.
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, reportApplied bool) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *sdkclients.Clients, plan *deployplan.Plan, reportApplied bool) {
 	if plan == nil {
 		panic("Planning is not done")
 	}

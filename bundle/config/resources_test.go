@@ -7,26 +7,26 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
 
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -240,7 +240,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 			"my_model_serving_endpoint": {
-				CreateServingEndpoint: serving.CreateServingEndpoint{},
+				CreateServingEndpoint: modelserving.CreateServingEndpoint{},
 			},
 		},
 		ModelServices: map[string]*resources.ModelService{

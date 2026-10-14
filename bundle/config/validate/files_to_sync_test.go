@@ -8,10 +8,10 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -51,7 +51,7 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 			Workspace: config.Workspace{
 				FilePath: "/this/doesnt/matter",
 				CurrentUser: &config.User{
-					User: &iam.User{},
+					User: &scim.User{},
 				},
 			},
 			Sync: config.Sync{

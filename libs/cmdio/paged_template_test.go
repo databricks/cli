@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +48,7 @@ func stripANSI(s string) string {
 func pagedOutput(
 	t *testing.T,
 	ctx context.Context,
-	iter listing.Iterator[int],
+	iter pullIter[int],
 	headerTemplate, tmpl string,
 	pageSize int,
 ) string {
@@ -166,10 +165,10 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 	tmpl := "{{range .}}{{green \"%d\" .}}\t{{.}}\n{{end}}"
 
 	var expected bytes.Buffer
-	refIter := listing.Iterator[int](&numberIterator{n: rows})
+	refIter := pullIter[int](&numberIterator{n: rows})
 	require.NoError(t, renderWithTemplate(MockDiscard(t.Context()), newIteratorRenderer(refIter), flags.OutputText, &expected, "", tmpl))
 
-	pagedIter := listing.Iterator[int](&numberIterator{n: rows})
+	pagedIter := pullIter[int](&numberIterator{n: rows})
 	var actual bytes.Buffer
 	pr, pw := io.Pipe()
 	defer pw.Close()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"reflect"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
@@ -120,7 +120,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
 	})
-	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
+	if err != nil && !apierrs.IsMissing(err) && !isManagedByParent(err) {
 		if !d.deleteConfirmedGone(ctx, oldID) {
 			return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 		}
@@ -145,7 +145,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
 	// A NotFound means the resource is gone, which is the success the wait polls for.
 	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
-	if err != nil && !apierr.IsMissing(err) {
+	if err != nil && !apierrs.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -256,12 +256,12 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	err = d.Adapter.DoDelete(ctx, oldID, oldState)
-	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
+	if err != nil && !apierrs.IsMissing(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
 		// mean configuration error that user is trying to fix by removing resource from their bundle.
-		if errors.Is(err, apierr.ErrPermissionDenied) {
+		if apierrs.Is(err, apierrs.ErrPermissionDenied) {
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
@@ -287,7 +287,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		return struct{}{}, d.Adapter.WaitAfterDelete(ctx, oldID)
 	})
 	// A NotFound means the resource is gone, which is the success the wait polls for.
-	if err != nil && !apierr.IsMissing(err) {
+	if err != nil && !apierrs.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -304,7 +304,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 // apps/src/utils/AppsStatusUtils.scala) that carries no distinct SDK sentinel.
 func (d *DeploymentUnit) deleteConfirmedGone(ctx context.Context, id string) bool {
 	remote, err := d.Adapter.DoRead(ctx, id)
-	if apierr.IsMissing(err) {
+	if apierrs.IsMissing(err) {
 		return true
 	}
 	if err != nil {

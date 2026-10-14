@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -25,18 +26,18 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 	for k, job := range b.Config.Resources.Jobs {
 		jobClusterKeys := make(map[string]bool)
 		for _, cluster := range job.JobClusters {
-			if cluster.JobClusterKey != "" {
-				jobClusterKeys[cluster.JobClusterKey] = true
+			if utils.Deref(cluster.JobClusterKey) != "" {
+				jobClusterKeys[utils.Deref(cluster.JobClusterKey)] = true
 			}
 		}
 
 		for index, task := range job.Tasks {
-			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
+			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, utils.Deref(task.JobClusterKey),
 				structpath.NewPath(nil, "resources", "jobs", k, "tasks", index, "job_cluster_key")))
 
 			// The Jobs API rejects nested for_each_task, so one level is sufficient.
 			if task.ForEachTask != nil {
-				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
+				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, utils.Deref(task.ForEachTask.Task.JobClusterKey),
 					structpath.NewPath(nil, "resources", "jobs", k, "tasks", index, "for_each_task", "task", "job_cluster_key")))
 			}
 		}

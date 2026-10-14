@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // mlflowIdentifiers are the experiment and run IDs MLflow assigns to a run.
@@ -19,11 +20,11 @@ type mlflowIdentifiers struct {
 
 // mlflowIDs fetches the MLflow IDs for a run via its latest task. Returns nil if
 // they can't be obtained.
-func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
+func mlflowIDs(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse) *mlflowIdentifiers {
 	return mlflowIDsFromOutput(aiRuntimeTaskOutput(ctx, w, run))
 }
 
-func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *jobs.AiRuntimeTaskOutput {
+func aiRuntimeTaskOutput(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse) *jobs.AiRuntimeTaskOutput {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
@@ -34,16 +35,16 @@ func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run
 // runs/get-output, or nil if they can't be obtained. They drive a convenience
 // link, so any failure (endpoint error, run not yet started, no MLflow output)
 // is logged and treated as "no link" rather than failing the command.
-func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *mlflowIdentifiers {
+func mlflowIDsForTask(ctx context.Context, w *sdkclients.Clients, taskRunID int64) *mlflowIdentifiers {
 	return mlflowIDsFromOutput(aiRuntimeTaskOutputForTask(ctx, w, taskRunID))
 }
 
-func aiRuntimeTaskOutputForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *jobs.AiRuntimeTaskOutput {
+func aiRuntimeTaskOutputForTask(ctx context.Context, w *sdkclients.Clients, taskRunID int64) *jobs.AiRuntimeTaskOutput {
 	if taskRunID == 0 {
 		return nil
 	}
 
-	out, err := w.Jobs.GetRunOutputByRunId(ctx, taskRunID)
+	out, err := getRunOutput(ctx, w, taskRunID)
 	if err != nil {
 		log.Debugf(ctx, "air: could not fetch run output for MLflow link: %v", err)
 		return nil
@@ -53,10 +54,10 @@ func aiRuntimeTaskOutputForTask(ctx context.Context, w *databricks.WorkspaceClie
 }
 
 func mlflowIDsFromOutput(output *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
-	if output == nil || output.MlflowExperimentId == "" || output.MlflowRunId == "" {
+	if output == nil || utils.Deref(output.MlflowExperimentId) == "" || utils.Deref(output.MlflowRunId) == "" {
 		return nil
 	}
-	return &mlflowIdentifiers{ExperimentID: output.MlflowExperimentId, RunID: output.MlflowRunId}
+	return &mlflowIdentifiers{ExperimentID: utils.Deref(output.MlflowExperimentId), RunID: utils.Deref(output.MlflowRunId)}
 }
 
 // mlflowLogsURL is the deep link to a run's node-0 logs. It is the value of the
@@ -82,8 +83,8 @@ func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 // fetchMLflowRunName fetches a run's MLflow run_name via the MLflow REST API,
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
 // enrichment.
-func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
-	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
+func fetchMLflowRunName(ctx context.Context, w *sdkclients.Clients, mlflowRunID string) string {
+	resp, err := w.Experiments.GetRun(ctx, experiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air get: could not fetch MLflow run name: %v", err)
 		return ""
@@ -91,7 +92,7 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 	if resp.Run == nil || resp.Run.Info == nil {
 		return ""
 	}
-	return resp.Run.Info.RunName
+	return utils.Deref(resp.Run.Info.RunName)
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or

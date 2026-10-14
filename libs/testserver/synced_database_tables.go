@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"encoding/json"
 	"fmt"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 )
 
 func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
@@ -19,7 +19,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	}
 
 	// check that the database instance exists if specified:
-	if syncedDatabaseTable.DatabaseInstanceName != "" {
+	if val(syncedDatabaseTable.DatabaseInstanceName) != "" {
 		found := false
 		for _, instance := range s.DatabaseInstances {
 			if instance.Name == syncedDatabaseTable.DatabaseInstanceName {
@@ -35,7 +35,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 		}
 	}
 
-	s.SyncedDatabaseTables[syncedDatabaseTable.Name] = syncedDatabaseTable
+	s.SyncedDatabaseTables[val(syncedDatabaseTable.Name)] = syncedDatabaseTable
 
 	return Response{
 		Body: syncedDatabaseTable,

@@ -8,16 +8,16 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type ResourceVolume struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
+func (*ResourceVolume) New(client *sdkclients.Clients) *ResourceVolume {
 	return &ResourceVolume{client: client}
 }
 

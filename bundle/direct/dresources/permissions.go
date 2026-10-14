@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -33,7 +33,7 @@ var permissionResourceToObjectType = map[string]string{
 }
 
 type ResourcePermissions struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 
 	// objectType is the permissions API prefix of the parent resource, e.g. "/jobs/".
 	objectType string
@@ -74,7 +74,7 @@ var permissionIDFields = map[string]string{
 
 const defaultPermissionIDField = "id"
 
-func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
+func (*ResourcePermissions) New(client *sdkclients.Clients) *ResourcePermissions {
 	return &ResourcePermissions{client: client, objectType: "", idField: ""}
 }
 

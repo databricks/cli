@@ -15,9 +15,9 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,7 +79,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
 	assert.Equal(t, "exp", task.TaskKey)
-	assert.Equal(t, jobs.RunIfAllSuccess, task.RunIf)
+	assert.Equal(t, jobs.TaskDependencyType_AllSuccess, task.RunIf)
 	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
 	assert.Equal(t, 2, task.MaxRetries)
 	assert.True(t, task.RetryOnTimeout)
@@ -92,7 +92,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
 func TestBuildSubmitPayloadB300(t *testing.T) {
@@ -110,7 +110,7 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	require.Len(t, p.Tasks, 1)
 	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
 	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
 func TestSubmitRun(t *testing.T) {
@@ -339,7 +339,7 @@ func TestSubmitWorkload(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
-	var got jobs.SubmitRun
+	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
@@ -379,7 +379,7 @@ func TestSubmitWorkload(t *testing.T) {
 	d := at.Deployments[0]
 	assert.True(t, strings.HasSuffix(d.CommandPath, "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
-	assert.Equal(t, jobs.ComputeSpecAcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
+	assert.Equal(t, jobs.ComputeSpec_AcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
 }
@@ -483,7 +483,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 
 	// Register before AddDefaultHandlers: the router is first-wins, so this must
 	// claim the route ahead of the default jobs/runs/submit handler.
-	var got jobs.SubmitRun
+	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
@@ -543,7 +543,7 @@ environment:
 
 func TestInjectContainers(t *testing.T) {
 	cfg := baseRunConfig()
-	cfg.Containers = []containerConfig{{Name: "inference", Ranks: []int{0, 1}, UnityCatalogImage: "main.ml.inference:v1"}}
+	cfg.Containers = []containerConfig{{Name: "inference", Ranks: []int{0, 1}, UnityCatalogImage: "main.experiments.inference:v1"}}
 	payload := buildSubmitPayload(cfg, "/Workspace/run/command.sh", "6", "", snapshotResult{}, nil)
 	assert.Empty(t, payload.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
 	raw, err := json.Marshal(payload)
@@ -552,8 +552,8 @@ func TestInjectContainers(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &body))
 
 	err = injectContainers(body, []submittedContainer{
-		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.ml.inference:v1"},
-		{Name: "dataproc", CommandPath: "/Workspace/run/containers/dataproc/command.sh", Ranks: []int{2}, UnityCatalogImagePath: "main.ml.dataproc:v1"},
+		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.experiments.inference:v1"},
+		{Name: "dataproc", CommandPath: "/Workspace/run/containers/dataproc/command.sh", Ranks: []int{2}, UnityCatalogImagePath: "main.experiments.dataproc:v1"},
 	})
 	require.NoError(t, err)
 
@@ -566,7 +566,7 @@ func TestInjectContainers(t *testing.T) {
 	first := containers[0].(map[string]any)
 	assert.Equal(t, "inference", first["name"])
 	assert.Equal(t, "/Workspace/run/containers/inference/command.sh", first["command_path"])
-	assert.Equal(t, "main.ml.inference:v1", first["unity_catalog_image_path"])
+	assert.Equal(t, "main.experiments.inference:v1", first["unity_catalog_image_path"])
 	assert.Equal(t, []any{0, 1}, first["ranks"])
 	assert.NotContains(t, first, "environment_variables")
 }
@@ -592,11 +592,11 @@ compute:
 containers:
   - name: inference
     ranks: [0]
-    unity_catalog_image: main.ml.inference:v1
+    unity_catalog_image: main.experiments.inference:v1
     command: python infer.py
   - name: trainer
     ranks: [1]
-    unity_catalog_image: main.ml.trainer:v1
+    unity_catalog_image: main.experiments.trainer:v1
     command: python train.py
 `)
 	cfg, err := loadRunConfig(cfgPath)
@@ -626,7 +626,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	// Register before AddDefaultHandlers: the router is first-wins, so this must claim the route ahead of the default handler.
-	var got jobs.SubmitRun
+	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
@@ -674,7 +674,7 @@ func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
-	var got jobs.SubmitRun
+	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
@@ -712,7 +712,7 @@ code_source:
 
 // testSidecarStore builds a workspace filer + base path standing in for the run's
 // launch dir, where uploadSnapshot writes git provenance sidecars.
-func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer, string) {
+func testSidecarStore(t *testing.T, w *sdkclients.Clients) (filer.Filer, string) {
 	t.Helper()
 	base := "/Workspace/Users/tester@databricks.com/.air/cli_launch/test"
 	f, err := filer.NewWorkspaceFilesClient(w, base)
@@ -916,7 +916,7 @@ func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
-	var got jobs.SubmitRun
+	var got jobs.SubmitRunRequest
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
@@ -994,11 +994,11 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 	const policyID = "12345678-90ab-cdef-1234-567890abcdef"
 
-	setup := func(t *testing.T) (*databricks.WorkspaceClient, *jobs.SubmitRun) {
+	setup := func(t *testing.T) (*sdkclients.Clients, *jobs.SubmitRunRequest) {
 		server := testserver.New(t)
 		t.Cleanup(server.Close)
 
-		got := &jobs.SubmitRun{}
+		got := &jobs.SubmitRunRequest{}
 		server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 			require.NoError(t, json.Unmarshal(req.Body, got))
 			return jobs.SubmitRunResponse{RunId: 1}

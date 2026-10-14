@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 )
 
 type jupyterDatabricksMetadata struct {

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +22,7 @@ func TestCliLaunchDir(t *testing.T) {
 	assert.NotEqual(t, dir, cliLaunchDir("/Workspace/Users/me@example.com", "my-exp", ""))
 }
 
-func newFakeWorkspaceClient(t *testing.T) *databricks.WorkspaceClient {
+func newFakeWorkspaceClient(t *testing.T) *sdkclients.Clients {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	testserver.AddDefaultHandlers(server)

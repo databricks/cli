@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type ResourceSyncedDatabaseTable struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceSyncedDatabaseTable) New(client *databricks.WorkspaceClient) *ResourceSyncedDatabaseTable {
+func (*ResourceSyncedDatabaseTable) New(client *sdkclients.Clients) *ResourceSyncedDatabaseTable {
 	return &ResourceSyncedDatabaseTable{client: client}
 }
 

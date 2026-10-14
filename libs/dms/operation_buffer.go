@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/cli/libs/bundledeployments"
 )
 
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next

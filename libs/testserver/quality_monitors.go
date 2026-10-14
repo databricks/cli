@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 	"encoding/json"
 	"fmt"
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 	"net/http"
 )
 

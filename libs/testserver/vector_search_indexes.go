@@ -1,10 +1,10 @@
 package testserver
 
 import (
-	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"net/http"
 	"regexp"
 	"strings"
@@ -44,7 +44,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if !isValidIndexName(createReq.Name) {
+	if !isValidIndexName(val(createReq.Name)) {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -54,14 +54,14 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchIndexes[createReq.Name]; exists {
+	if _, exists := s.VectorSearchIndexes[val(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
 		}
 	}
-	if s.VectorSearchIndexesPendingDeletion[createReq.Name] > 0 {
-		s.VectorSearchIndexesPendingDeletion[createReq.Name]--
+	if s.VectorSearchIndexesPendingDeletion[val(createReq.Name)] > 0 {
+		s.VectorSearchIndexesPendingDeletion[val(createReq.Name)]--
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -70,7 +70,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 			},
 		}
 	}
-	endpoint, exists := s.VectorSearchEndpoints[createReq.EndpointName]
+	endpoint, exists := s.VectorSearchEndpoints[val(createReq.EndpointName)]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -92,7 +92,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	// returned in sorted key order rather than the user's original order.
 	// Mirror that here so the create -> get round-trip matches the real API.
 	if createReq.DirectAccessIndexSpec != nil {
-		createReq.DirectAccessIndexSpec.SchemaJson = normalizeSchemaJSON(createReq.DirectAccessIndexSpec.SchemaJson)
+		createReq.DirectAccessIndexSpec.SchemaJson = nonZero(normalizeSchemaJSON(val(createReq.DirectAccessIndexSpec.SchemaJson)))
 	}
 
 	index := fakeVectorSearchIndex{
@@ -105,12 +105,12 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
 		DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
 		Status: &vectorsearch.VectorIndexStatus{
-			Ready: true,
+			Ready: nonZero(true),
 		},
-		EndpointUuid: endpoint.Id,
+		EndpointUuid: val(endpoint.Id),
 	}
 
-	s.VectorSearchIndexes[createReq.Name] = index
+	s.VectorSearchIndexes[val(createReq.Name)] = index
 
 	return Response{
 		Body: index,

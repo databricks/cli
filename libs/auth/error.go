@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/auth/u2m"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // Auth type names returned by credential providers.
@@ -89,7 +89,7 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 	if !ok {
 		return err
 	}
-	if apiErr.StatusCode != http.StatusUnauthorized && apiErr.StatusCode != http.StatusForbidden {
+	if apiErr.HTTPStatusCode() != http.StatusUnauthorized && apiErr.HTTPStatusCode() != http.StatusForbidden {
 		return err
 	}
 
@@ -108,7 +108,7 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 
 	fmt.Fprint(&b, "\n\nNext steps:")
 
-	if apiErr.StatusCode == http.StatusUnauthorized {
+	if apiErr.HTTPStatusCode() == http.StatusUnauthorized {
 		writeReauthSteps(ctx, cfg, &b)
 	} else {
 		fmt.Fprint(&b, "\n  - Verify you have the required permissions for this operation")

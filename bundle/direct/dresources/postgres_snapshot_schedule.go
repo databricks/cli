@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -40,12 +40,12 @@ func (s PostgresSnapshotScheduleRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourcePostgresSnapshotSchedule struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresSnapshotScheduleState = resources.PostgresSnapshotScheduleConfig
 
-func (*ResourcePostgresSnapshotSchedule) New(client *databricks.WorkspaceClient) *ResourcePostgresSnapshotSchedule {
+func (*ResourcePostgresSnapshotSchedule) New(client *sdkclients.Clients) *ResourcePostgresSnapshotSchedule {
 	return &ResourcePostgresSnapshotSchedule{client: client}
 }
 

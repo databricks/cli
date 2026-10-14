@@ -10,8 +10,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"maps"
 	"strings"
 	"text/tabwriter"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -85,7 +85,7 @@ func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 }
 
 type iteratorRenderer[T any] struct {
-	t          listing.Iterator[T]
+	t          pullIter[T]
 	bufferSize int
 }
 
@@ -150,7 +150,7 @@ func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Te
 		if err != nil {
 			return err
 		}
-		buf = append(buf, n)
+		buf = append(buf, templateData(n))
 		if len(buf) == cap(buf) {
 			err = t.Execute(w, buf)
 			if err != nil {
@@ -194,7 +194,7 @@ func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
 }
 
 func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
-	return t.Execute(w, d.t)
+	return t.Execute(w, templateData(d.t))
 }
 
 // Returns something implementing one of the following interfaces:
@@ -208,7 +208,7 @@ func newRenderer(t any) any {
 	return defaultRenderer{t: t}
 }
 
-func newIteratorRenderer[T any](i listing.Iterator[T]) iteratorRenderer[T] {
+func newIteratorRenderer[T any](i pullIter[T]) iteratorRenderer[T] {
 	return iteratorRenderer[T]{t: i}
 }
 
@@ -279,7 +279,9 @@ func Render(ctx context.Context, v any) error {
 // pipeline (same colors, same alignment as the non-paged path; widths are
 // locked from the first batch so columns stay aligned across pages).
 // Piped output and JSON output keep the existing non-paged behavior.
-func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+func RenderIterator[T any](ctx context.Context, seq iter.Seq2[T, error]) error {
+	i := newPullIterator(seq)
+	defer i.Close()
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)

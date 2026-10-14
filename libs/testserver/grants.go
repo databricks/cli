@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"encoding/json"
 	"fmt"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"net/http"
 	"slices"
 	"strings"
@@ -12,10 +12,10 @@ import (
 // notImpliedByAllPrivileges are the privileges UC does not include in
 // ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
 var notImpliedByAllPrivileges = map[string]bool{
-	catalog.PrivilegeManage:              true,
-	catalog.PrivilegeReadMetadata:        true,
-	catalog.PrivilegeExternalUseSchema:   true,
-	catalog.PrivilegeExternalUseLocation: true,
+	"MANAGE":                true,
+	"READ_METADATA":         true,
+	"EXTERNAL_USE_SCHEMA":   true,
+	"EXTERNAL_USE_LOCATION": true,
 }
 
 func grantsKey(securableType, fullName string) string {
@@ -40,11 +40,11 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Load current grants
 	for _, assignment := range s.Grants[key] {
-		if principalPrivs[assignment.Principal] == nil {
-			principalPrivs[assignment.Principal] = make(map[string]bool)
+		if principalPrivs[val(assignment.Principal)] == nil {
+			principalPrivs[val(assignment.Principal)] = make(map[string]bool)
 		}
 		for _, privilege := range assignment.Privileges {
-			principalPrivs[assignment.Principal][privilege] = true
+			principalPrivs[val(assignment.Principal)][privilege] = true
 		}
 	}
 
@@ -69,34 +69,34 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Apply changes
 	for _, change := range request.Changes {
-		if change.Principal == "" {
+		if val(change.Principal) == "" {
 			continue
 		}
-		if principalPrivs[change.Principal] == nil {
-			principalPrivs[change.Principal] = make(map[string]bool)
+		if principalPrivs[val(change.Principal)] == nil {
+			principalPrivs[val(change.Principal)] = make(map[string]bool)
 		}
 
 		// Remove privileges
 		for _, privilege := range change.Remove {
-			if privilege == catalog.PrivilegeAllPrivileges {
+			if privilege == "ALL_PRIVILEGES" {
 				// Removing ALL_PRIVILEGES clears every privilege it implies, but NOT
 				// the ones UC does not include in ALL_PRIVILEGES (MANAGE,
 				// READ_METADATA, EXTERNAL_USE_SCHEMA, EXTERNAL_USE_LOCATION). Those
 				// are granted independently and survive. See
 				// https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
-				for p := range principalPrivs[change.Principal] {
+				for p := range principalPrivs[val(change.Principal)] {
 					if !notImpliedByAllPrivileges[p] {
-						delete(principalPrivs[change.Principal], p)
+						delete(principalPrivs[val(change.Principal)], p)
 					}
 				}
 			} else {
-				delete(principalPrivs[change.Principal], privilege)
+				delete(principalPrivs[val(change.Principal)], privilege)
 			}
 		}
 
 		// Add privileges
 		for _, privilege := range change.Add {
-			principalPrivs[change.Principal][privilege] = true
+			principalPrivs[val(change.Principal)][privilege] = true
 		}
 	}
 
@@ -120,7 +120,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		})
 
 		assignments = append(assignments, grants.PrivilegeAssignment{
-			Principal:  principal,
+			Principal:  nonZero(principal),
 			Privileges: privileges,
 		})
 	}
@@ -130,7 +130,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	if securableType == "schema" {
 		schema, ok := s.Schemas[fullName]
 		if ok {
-			schema.UpdatedAt = nowMilli()
+			schema.UpdatedAt = nonZero(nowMilli())
 			schema.UpdatedBy = s.CurrentUser().UserName
 			s.Schemas[fullName] = schema
 		}

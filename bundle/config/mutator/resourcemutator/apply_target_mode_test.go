@@ -5,25 +5,25 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +44,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					ShortName: "lennart",
-					User: &iam.User{
+					User: &scim.User{
 						UserName: "lennart@company.com",
 						Id:       "1",
 					},
@@ -106,7 +106,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"model1": {CreateModelRequest: ml.CreateModelRequest{Name: "model1"}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
+					"servingendpoint1": {CreateServingEndpoint: modelserving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
 				ModelServices: map[string]*resources.ModelService{
 					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},

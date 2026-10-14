@@ -5,10 +5,12 @@ import (
 	"reflect"
 	"slices"
 	"testing"
+	"time"
 
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,28 +69,37 @@ func TestValueTypesEmpty(t *testing.T) {
 
 	assert.Equal(t, expected, flatten(t, Types{}))
 	assert.Equal(t, expected, flatten(t, &Types{}))
+}
 
-	// Variant with ForceSendFields on some omitempty fields
-	forced := Types{
-		ForceSendFields: []string{"OmitStr", "OmitBool"},
+func TestValuePointerScalars(t *testing.T) {
+	type S struct {
+		Str    *string         `json:"str,omitempty"`
+		Bool   *bool           `json:"bool,omitempty"`
+		Int    *int            `json:"int,omitempty"`
+		NilStr *string         `json:"nil_str,omitempty"`
+		Time   *types.Time     `json:"time,omitempty"`
+		Dur    *types.Duration `json:"dur,omitempty"`
+		NilDur *types.Duration `json:"nil_dur,omitempty"`
 	}
 
-	forcedResults := flatten(t, forced)
-
-	// Ensure forced fields are present with zero values
-	assert.Empty(t, forcedResults["omit_str"])
-	assert.Equal(t, false, forcedResults["omit_bool"])
-
-	// Non-forced omitempty zero field should remain absent
-	_, ok := forcedResults["omit_int"]
-	assert.False(t, ok, "omit_int should be absent when not forced")
+	ts := types.NewFromTime(time.Unix(1000, 0))
+	dur := types.NewFromDuration(time.Minute)
+	// Non-nil pointers to zero values are present, nil pointers absent; sdk-go
+	// native types are leaves, not walked by their Go fields.
+	assert.Equal(t, map[string]any{
+		"str":  "",
+		"bool": false,
+		"int":  0,
+		"time": *ts,
+		"dur":  *dur,
+	}, flatten(t, S{Str: new(""), Bool: new(false), Int: new(0), Time: ts, Dur: dur}))
 }
 
 func TestValueJobSettings(t *testing.T) {
 	jobSettings := jobs.JobSettings{
-		Name:              "test-job",
-		MaxConcurrentRuns: 5,
-		TimeoutSeconds:    3600,
+		Name:              new("test-job"),
+		MaxConcurrentRuns: new(5),
+		TimeoutSeconds:    new(3600),
 		Tags:              map[string]string{"env": "test", "team": "data"},
 	}
 

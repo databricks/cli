@@ -5,8 +5,9 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestResolveWorkspaceID_FastPathReturnsConfiguredValue(t *testing.T) {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &config.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: "12345",
@@ -45,7 +46,7 @@ func TestResolveWorkspaceID_FastPathPassesThroughNonNumericValue(t *testing.T) {
 	testserver.AddDefaultHandlers(server)
 
 	const connID = "123e4567-e89b-12d3-a456-426614174000"
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &config.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: connID,
@@ -63,7 +64,7 @@ func TestResolveWorkspaceID_NoneSentinelFallsThroughToAPI(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &config.Config{
 		Host:        server.URL,
 		Token:       "testtoken",
 		WorkspaceID: profile.WorkspaceIDNone,
@@ -90,7 +91,7 @@ func TestResolveWorkspaceID_FallbackHitsMeAndStringifiesResponse(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})

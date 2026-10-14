@@ -2,20 +2,23 @@ package variable
 
 import (
 	"context"
-
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/warehouses/v1"
 )
 
 type resolveWarehouse struct {
 	name string
 }
 
-func (l resolveWarehouse) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	entity, err := w.Warehouses.GetByName(ctx, l.name)
+func (l resolveWarehouse) Resolve(ctx context.Context, w *sdkclients.Clients) (string, error) {
+	entity, err := findByName(w.Warehouses.ListWarehousesIter(ctx, warehouses.ListWarehousesRequest{}), l.name, "EndpointInfo", func(e *warehouses.EndpointInfo) string {
+		return utils.Deref(e.Name)
+	})
 	if err != nil {
 		return "", err
 	}
-	return entity.Id, nil
+	return utils.Deref(entity.Id), nil
 }
 
 func (l resolveWarehouse) String() string {

@@ -9,9 +9,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // Workspace defines configurables at the workspace level.
@@ -89,15 +88,7 @@ type User struct {
 	// Can be used as a prefix for resources that use their name as part of their URL (e.g. Apps, Database Instances)
 	DomainFriendlyName string `json:"domain_friendly_name,omitempty" bundle:"readonly"`
 
-	*iam.User
-}
-
-func (s *User) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s User) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	*scim.User
 }
 
 func (w *Workspace) Config(ctx context.Context) *config.Config {

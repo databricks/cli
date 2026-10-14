@@ -6,8 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -48,11 +48,11 @@ func (r SqlWarehouseRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceSqlWarehouse struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 // New initializes a ResourceSqlWarehouse with the given client.
-func (*ResourceSqlWarehouse) New(client *databricks.WorkspaceClient) *ResourceSqlWarehouse {
+func (*ResourceSqlWarehouse) New(client *sdkclients.Clients) *ResourceSqlWarehouse {
 	return &ResourceSqlWarehouse{client: client}
 }
 

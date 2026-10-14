@@ -2,28 +2,28 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	sdkcatalogs "github.com/databricks/sdk-go/uc/catalogs/v1"
 )
 
 type ResourceCatalog struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceCatalog) New(client *databricks.WorkspaceClient) *ResourceCatalog {
+func (*ResourceCatalog) New(client *sdkclients.Clients) *ResourceCatalog {
 	return &ResourceCatalog{client: client}
 }
 
-func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCatalog {
+func (*ResourceCatalog) PrepareState(input *resources.Catalog) *resources.CreateCatalog {
 	return &input.CreateCatalog
 }
 
-func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
-	return &catalog.CreateCatalog{
+func (*ResourceCatalog) RemapState(info *catalogs.CatalogInfo) *resources.CreateCatalog {
+	return &resources.CreateCatalog{
 		Comment:                   info.Comment,
 		ConnectionName:            info.ConnectionName,
 		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,
@@ -34,92 +34,82 @@ func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCat
 		ProviderName:              info.ProviderName,
 		ShareName:                 info.ShareName,
 		StorageRoot:               info.StorageRoot,
-		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
 	}
 }
 
-func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
-	return r.client.Catalogs.GetByName(ctx, id)
-}
-
-func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
-	response, err := r.client.Catalogs.Create(ctx, *config)
-	if err != nil || response == nil {
-		return "", nil, err
-	}
-	return response.Name, response, nil
-}
-
-// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
-//
-// CustomMaxRetentionHours is force-sent here even though schemaForceSend deliberately omits it:
-// that omission was for parity with the removed Terraform engine, which does not apply to catalogs
-// anyway. Verified against a real workspace: {"custom_max_retention_hours": 0} clears it (an empty PATCH is otherwise
-// rejected with "Nothing to update").
-var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
-
-// DoUpdate updates the catalog in place and returns remote state.
-func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                "", // Not supported by DABs
-		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
-		Name:                         id,
-		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
-	}
-
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalogs.CatalogInfo, error) {
+	info, err := r.client.Catalogs.GetCatalog(ctx, sdkcatalogs.GetCatalogRequest{NameArg: new(id)})
 	if err != nil {
 		return nil, err
 	}
-
-	return response, nil
+	return catalogs.CatalogInfoFromSDK(info)
 }
 
-// DoUpdateWithID updates the catalog and returns the new ID if the name changes.
-func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (string, *catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                "", // Not supported by DABs
-		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
-		Name:                         id,
-		NewName:                      "", // Initialized below if needed
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
-	}
-
-	if config.Name != id {
-		updateRequest.NewName = config.Name
-	}
-
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+func (r *ResourceCatalog) DoCreate(ctx context.Context, config *resources.CreateCatalog) (string, *catalogs.CatalogInfo, error) {
+	request, err := toSDK[sdkcatalogs.CreateCatalogRequest](config.AsRequest())
 	if err != nil {
 		return "", nil, err
 	}
-
-	// Return the new name as the ID if it changed, otherwise return the old ID
-	newID := id
-	if updateRequest.NewName != "" {
-		newID = updateRequest.NewName
+	response, err := r.client.Catalogs.CreateCatalog(ctx, request)
+	if err != nil || response == nil {
+		return "", nil, err
 	}
-
-	return newID, response, nil
+	info, err := catalogs.CatalogInfoFromSDK(response)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(info.Name), info, nil
 }
 
-func (r *ResourceCatalog) DoDelete(ctx context.Context, id string, _ *catalog.CreateCatalog) error {
-	return r.client.Catalogs.Delete(ctx, catalog.DeleteCatalogRequest{
-		Name:            id,
-		Force:           true,
-		ForceSendFields: nil,
+// DoUpdate updates the catalog in place and returns remote state.
+func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *resources.CreateCatalog, _ *PlanEntry) (*catalogs.CatalogInfo, error) {
+	return r.update(ctx, id, config, nil)
+}
+
+// DoUpdateWithID updates the catalog and returns the new ID if the name changes.
+func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *resources.CreateCatalog, _ *PlanEntry) (string, *catalogs.CatalogInfo, error) {
+	var newName *string
+	if name := utils.Deref(config.Name); name != id {
+		newName = new(name)
+	}
+	info, err := r.update(ctx, id, config, newName)
+	if err != nil {
+		return "", nil, err
+	}
+	if newName != nil {
+		return *newName, info, nil
+	}
+	return id, info, nil
+}
+
+func (r *ResourceCatalog) update(ctx context.Context, id string, config *resources.CreateCatalog, newName *string) (*catalogs.CatalogInfo, error) {
+	// Owner, isolation_mode and enable_predictive_optimization are not supported by DABs.
+	request, err := toSDK[sdkcatalogs.UpdateCatalogRequest](&catalogs.UpdateCatalogRequest{
+		NameArg: new(id),
+		NewName: newName,
+		// Always sent so that removing them from config clears them. Verified against a real
+		// workspace: {"comment": ""} and {"custom_max_retention_hours": 0} clear the values (an
+		// empty PATCH is otherwise rejected with "Nothing to update").
+		Comment:                   orZero(config.Comment),
+		CustomMaxRetentionHours:   orZero(config.CustomMaxRetentionHours),
+		ManagedEncryptionSettings: config.ManagedEncryptionSettings,
+		Options:                   config.Options,
+		Properties:                config.Properties,
 	})
+	if err != nil {
+		return nil, err
+	}
+	response, err := r.client.Catalogs.UpdateCatalog(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return catalogs.CatalogInfoFromSDK(response)
+}
+
+func (r *ResourceCatalog) DoDelete(ctx context.Context, id string, _ *resources.CreateCatalog) error {
+	_, err := r.client.Catalogs.DeleteCatalog(ctx, sdkcatalogs.DeleteCatalogRequest{
+		NameArg: new(id),
+		Force:   new(true),
+	})
+	return err
 }

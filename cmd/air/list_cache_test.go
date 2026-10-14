@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,7 +43,7 @@ func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
 	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}}
-	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.Run{7: indexRun(7, 1000_000)}, nil, nil)
+	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.GetRunResponse{7: indexRun(7, 1000_000)}, nil, nil)
 	host := srv.URL
 
 	// Pre-seed the cache for run 7 so hydration should skip runs/get entirely.
@@ -64,7 +64,7 @@ func TestIndexStrategyFiltersCachedRow(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
 	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}}
-	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.Run{7: indexRun(7, 1000_000)}, nil, nil)
+	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.GetRunResponse{7: indexRun(7, 1000_000)}, nil, nil)
 	host := srv.URL
 
 	// Cache hit under experiment "bar" must be filtered out by an experiment=foo query.
@@ -87,7 +87,7 @@ func TestIndexStrategyServesMatchingCachedRow(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
 	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}}
-	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.Run{7: indexRun(7, 1000_000)}, nil, nil)
+	srv, hits := indexAndGetServer(t, refs, map[int64]jobs.GetRunResponse{7: indexRun(7, 1000_000)}, nil, nil)
 	host := srv.URL
 
 	ctx := t.Context()
@@ -163,8 +163,8 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 }
 
 func TestIsTerminal(t *testing.T) {
-	assert.True(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}}))
-	assert.True(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError}}))
-	assert.False(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}))
-	assert.False(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}))
+	assert.True(t, isTerminal(&jobs.GetRunResponse{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated}}))
+	assert.True(t, isTerminal(&jobs.GetRunResponse{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_InternalError}}))
+	assert.False(t, isTerminal(&jobs.GetRunResponse{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}}))
+	assert.False(t, isTerminal(&jobs.GetRunResponse{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Pending}}))
 }

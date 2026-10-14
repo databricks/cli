@@ -1,9 +1,9 @@
 package testserver
 
 import (
-	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"encoding/json"
 	"fmt"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 )
 
 func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
@@ -13,7 +13,7 @@ func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 	principal := req.URL.Query().Get("principal")
 
 	for _, acl := range s.Acls[scope] {
-		if acl.Principal == principal {
+		if val(acl.Principal) == principal {
 			return Response{Body: acl}
 		}
 	}
@@ -32,10 +32,10 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// If the ACL already exists, update it in place
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.Acls[val(request.Scope)]
 	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			s.Acls[request.Scope][i] = secrets.AclItem{
+			s.Acls[val(request.Scope)][i] = secrets.AclItem{
 				Principal:  request.Principal,
 				Permission: request.Permission,
 			}
@@ -44,7 +44,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// Otherwise, add a new ACL
-	s.Acls[request.Scope] = append(s.Acls[request.Scope], secrets.AclItem{
+	s.Acls[val(request.Scope)] = append(s.Acls[val(request.Scope)], secrets.AclItem{
 		Principal:  request.Principal,
 		Permission: request.Permission,
 	})
@@ -62,10 +62,10 @@ func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 		}
 	}
 
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.Acls[val(request.Scope)]
 	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			s.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
+			s.Acls[val(request.Scope)] = append(scopeAcls[:i], scopeAcls[i+1:]...)
 			return Response{}
 		}
 	}

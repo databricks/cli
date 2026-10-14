@@ -124,8 +124,8 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 	// A guest without manage access cannot read a job's permissions, mirroring
 	// the backend's pre-existence permission check.
 	if requestObjectType == "jobs" && isGuestToken(req.Token) {
-		if jobId, err := strconv.ParseInt(objectId, 10, 64); err == nil && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
-			return jobManagePermissionDenied(userForToken(req.Token).UserName, jobId)
+		if jobId, err := strconv.ParseInt(objectId, 10, 64); err == nil && !s.guestHasJobAccess(jobId, val(userForToken(req.Token).UserName)) {
+			return jobManagePermissionDenied(val(userForToken(req.Token).UserName), jobId)
 		}
 	}
 
@@ -170,8 +170,8 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 	if !exists {
 		// Return empty permissions structure if not found
 		permissions = iam.PermissionsResponse{
-			ObjectId:          new(responseObjectID),
-			ObjectType:        new(objectType),
+			ObjectId:          nonZero(responseObjectID),
+			ObjectType:        nonZero(objectType),
 			AccessControlList: []iam.AccessControlResponse{},
 		}
 	}
@@ -260,8 +260,8 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	existingPermissions, exists := s.Permissions[responseObjectID]
 	if !exists {
 		existingPermissions = iam.PermissionsResponse{
-			ObjectId:          new(responseObjectID),
-			ObjectType:        new(objectType),
+			ObjectId:          nonZero(responseObjectID),
+			ObjectType:        nonZero(objectType),
 			AccessControlList: []iam.AccessControlResponse{},
 		}
 	}
@@ -296,12 +296,12 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           new(true),
+					Inherited:           nonZero(true),
 					InheritedFromObject: []string{"/jobs/"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			GroupName: new("admins"),
+			GroupName: nonZero("admins"),
 		})
 	}
 
@@ -310,22 +310,22 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           new(true),
+					Inherited:           nonZero(true),
 					InheritedFromObject: []string{"/directories/4454031293888593"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			UserName:    new("shreyas.goenka@databricks.com"),
-			DisplayName: new("shreyas.goenka@databricks.com"),
+			UserName:    nonZero("shreyas.goenka@databricks.com"),
+			DisplayName: nonZero("shreyas.goenka@databricks.com"),
 		}, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           new(true),
+					Inherited:           nonZero(true),
 					InheritedFromObject: []string{"/directories/"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			GroupName: new("admins"),
+			GroupName: nonZero("admins"),
 		})
 	}
 
@@ -366,8 +366,8 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		if owner := s.directoryHomeOwner(objectId); owner != "" {
 			response.AccessControlList = slices.Clone(existingPermissions.AccessControlList)
 			upsertACL(&response, iam.AccessControlResponse{
-				UserName:       new(owner),
-				AllPermissions: []iam.Permission{{PermissionLevel: "CAN_MANAGE", Inherited: new(true)}},
+				UserName:       nonZero(owner),
+				AllPermissions: []iam.Permission{{PermissionLevel: "CAN_MANAGE", Inherited: nonZero(true)}},
 			})
 		}
 	}

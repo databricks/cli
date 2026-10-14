@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"slices"
 	"strings"
 	"time"
@@ -11,11 +12,10 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -54,10 +54,10 @@ func (r AppRemote) MarshalJSON() ([]byte, error) {
 }
 
 type ResourceApp struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
+func (*ResourceApp) New(client *sdkclients.Clients) *ResourceApp {
 	return &ResourceApp{client: client}
 }
 
@@ -136,12 +136,12 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		waiter, err := r.client.Apps.Create(ctx, request)
 		if err != nil {
-			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+			if apierrs.Is(err, apierrs.ErrResourceAlreadyExists) {
 				// Check if the app is in DELETING state - only then should we retry
 				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
 				if getErr != nil {
 					// If we can't get the app (e.g., it was just deleted), retry the create
-					if apierr.IsMissing(getErr) {
+					if apierrs.IsMissing(getErr) {
 						return nil, retries.Continues("app was deleted, retrying create")
 					}
 					return nil, retries.Halt(err)
@@ -347,7 +347,7 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *Ap
 // We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
 // Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
 // so this would need to be addressed by Apps service team first in their proto.
-func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*AppRemote, error) {
+func (r *ResourceApp) waitForApp(ctx context.Context, w *sdkclients.Clients, name string) (*AppRemote, error) {
 	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
 	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		app, err := w.Apps.GetByName(ctx, name)

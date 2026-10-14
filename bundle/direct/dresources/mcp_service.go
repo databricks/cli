@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -22,10 +22,10 @@ import (
 const mcpServiceNamePrefix = "mcp-services/"
 
 type ResourceMcpService struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceMcpService) New(client *databricks.WorkspaceClient) *ResourceMcpService {
+func (*ResourceMcpService) New(client *sdkclients.Clients) *ResourceMcpService {
 	return &ResourceMcpService{client: client}
 }
 

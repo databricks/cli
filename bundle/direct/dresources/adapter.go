@@ -8,9 +8,9 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 type (
@@ -27,7 +27,7 @@ type IResource interface {
 	// Note, this is a class method, it will be called with nil receiver.
 	// The return value must be a pointer to a specific instance of the resource implementation, e.g. *ResourceJob.
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
-	New(client *databricks.WorkspaceClient) any
+	New(client *sdkclients.Clients) any
 
 	// [Optional] Configure passes the resource type this instance is registered under in SupportedResources
 	// (e.g. "jobs.permissions"). One instance is created per resource type, so type-level lookups belong here
@@ -147,7 +147,7 @@ type Adapter struct {
 	keyedSlices             map[string]any
 }
 
-func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
+func NewAdapter(typedNil any, resourceType string, client *sdkclients.Clients) (*Adapter, error) {
 	newCall, err := prepareCallRequired(typedNil, "New")
 	if err != nil {
 		return nil, err

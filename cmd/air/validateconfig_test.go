@@ -13,8 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -50,14 +51,14 @@ func validateServer(t *testing.T, status int, body string, gotReq *map[string]an
 	return srv
 }
 
-func validationTestWorkspaceClient(t *testing.T, host string) *databricks.WorkspaceClient {
+func validationTestWorkspaceClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
 	w := newTestWorkspaceClient(t, host)
 	w.Config.RetryTimeoutSeconds = 1
 	return w
 }
 
-func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *databricks.WorkspaceClient {
+func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *sdkclients.Clients {
 	t.Helper()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:          "https://example.test",
@@ -255,9 +256,9 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 		status  int
 		wantErr error
 	}{
-		{http.StatusBadRequest, apierr.ErrBadRequest},
-		{http.StatusUnauthorized, apierr.ErrUnauthenticated},
-		{http.StatusForbidden, apierr.ErrPermissionDenied},
+		{http.StatusBadRequest, apierrs.ErrBadRequest},
+		{http.StatusUnauthorized, apierrs.ErrUnauthenticated},
+		{http.StatusForbidden, apierrs.ErrPermissionDenied},
 	}
 
 	for _, tt := range tests {

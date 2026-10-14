@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type ResourceClusterPolicy struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceClusterPolicy) New(client *databricks.WorkspaceClient) *ResourceClusterPolicy {
+func (*ResourceClusterPolicy) New(client *sdkclients.Clients) *ResourceClusterPolicy {
 	return &ResourceClusterPolicy{client: client}
 }
 

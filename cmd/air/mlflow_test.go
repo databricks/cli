@@ -5,15 +5,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // newTestWorkspaceClient builds a WorkspaceClient pointed at a mock HTTP server,
 // so the SDK calls these tests exercise are served locally.
-func newTestWorkspaceClient(t *testing.T, host string) *databricks.WorkspaceClient {
+func newTestWorkspaceClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: host, Token: "token"})
 	require.NoError(t, err)
@@ -38,7 +38,7 @@ func runOutputServer(t *testing.T, body string, hit *bool) *httptest.Server {
 
 func TestMLflowIDs(t *testing.T) {
 	ctx := t.Context()
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}}}
 
 	t.Run("returns the identifiers on success", func(t *testing.T) {
 		var hit bool
@@ -58,7 +58,7 @@ func TestMLflowIDs(t *testing.T) {
 
 	t.Run("nil when the run has no tasks", func(t *testing.T) {
 		// Returns before any HTTP call, so the host is never contacted.
-		assert.Nil(t, mlflowIDs(ctx, newTestWorkspaceClient(t, "https://unused.invalid"), &jobs.Run{}))
+		assert.Nil(t, mlflowIDs(ctx, newTestWorkspaceClient(t, "https://unused.invalid"), &jobs.GetRunResponse{}))
 	})
 
 	t.Run("uses the latest attempt's task run", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestMLflowIDs(t *testing.T) {
 		}))
 		t.Cleanup(srv.Close)
 
-		retried := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}, {RunId: 100}}}
+		retried := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}, {RunId: 100}}}
 		mlflowIDs(ctx, newTestWorkspaceClient(t, srv.URL), retried)
 		assert.Equal(t, "100", gotRunID)
 	})
@@ -81,7 +81,7 @@ func TestMLflowIDs(t *testing.T) {
 func TestAiRuntimeTaskOutput(t *testing.T) {
 	var hit bool
 	srv := runOutputServer(t, `{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`, &hit)
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: 99}}}
 
 	got := aiRuntimeTaskOutput(t.Context(), newTestWorkspaceClient(t, srv.URL), run)
 	require.NotNil(t, got)

@@ -13,8 +13,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,7 +27,7 @@ const downloadConcurrency = 8
 var errNodeOutOfRange = errors.New("invalid --node")
 
 // resolveNodeCount returns how many nodes a run used.
-func resolveNodeCount(run *jobs.Run) (int, error) {
+func resolveNodeCount(run *jobs.GetRunResponse) (int, error) {
 	accelType, count := jobCompute(run)
 	if accelType == "" {
 		return 0, fmt.Errorf("run %d has no AI runtime compute config", run.RunId)
@@ -55,8 +55,8 @@ func resolveNodeCount(run *jobs.Run) (int, error) {
 // prints a summary. An explicit --node downloads only that node; otherwise all of
 // them. Logs come from MLflow artifacts, since Bricklens only streams. The
 // returned bool is the run's outcome, so the exit code matches the streaming path.
-func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
+func downloadLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	run, err := getRun(ctx, w, req.runID)
 	if err != nil {
 		return false, err
 	}
@@ -136,7 +136,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 // node->path map for the nodes that had logs and a node->reason map for those
 // that failed; a truncated node appears in both. The log-dir layout is run-wide,
 // so it is probed once here rather than by every worker.
-func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, dir string, nodes []int, attempt int) (map[int]string, map[int]string, error) {
+func downloadAllNodeLogs(ctx context.Context, w *sdkclients.Clients, mlflowRunID, dir string, nodes []int, attempt int) (map[int]string, map[int]string, error) {
 	// -1 (latest) maps to attempt 0's directory, as on the streaming path.
 	attemptDir := max(attempt, 0)
 	withAttempt, err := discoverAttemptPrefix(ctx, w, mlflowRunID, attemptDir)
@@ -189,7 +189,7 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 // error naming the gaps. The bytes are copied verbatim: a download should
 // reproduce the log exactly, so it must not round-trip through lines (which would
 // rewrite line endings and cap long lines).
-func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, node, attempt int, withAttempt bool, dir string) (string, error) {
+func downloadNodeLog(ctx context.Context, w *sdkclients.Clients, mlflowRunID string, node, attempt int, withAttempt bool, dir string) (string, error) {
 	logDir := constructLogPath(node, attempt, withAttempt)
 	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
 	if err != nil {
@@ -249,7 +249,7 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 
 // copyArtifactTo streams one artifact's bytes into dst and returns how many were
 // written.
-func copyArtifactTo(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string, dst io.Writer) (int64, error) {
+func copyArtifactTo(ctx context.Context, w *sdkclients.Clients, mlflowRunID, artifactPath string, dst io.Writer) (int64, error) {
 	local, err := downloadArtifact(ctx, w, mlflowRunID, artifactPath)
 	if err != nil {
 		return 0, err

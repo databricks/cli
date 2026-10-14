@@ -5,8 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 )
 
 type modelServingEndpointFixups struct{}
@@ -19,8 +18,8 @@ func (m *modelServingEndpointFixups) Name() string {
 	return "ModelServingEndpointFixups"
 }
 
-func servedModelToServedEntity(model serving.ServedModelInput) serving.ServedEntityInput {
-	return serving.ServedEntityInput{
+func servedModelToServedEntity(model modelserving.ServedModel) modelserving.ServedModel {
+	return modelserving.ServedModel{
 		// served_models does not support ExternalModel, so we set ExternalModel to nil
 		ExternalModel: nil,
 
@@ -34,10 +33,8 @@ func servedModelToServedEntity(model serving.ServedModelInput) serving.ServedEnt
 		ProvisionedModelUnits:     model.ProvisionedModelUnits,
 		ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
 		WorkloadSize:              model.WorkloadSize,
-		WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
 		MaxProvisionedConcurrency: model.MaxProvisionedConcurrency,
 		MinProvisionedConcurrency: model.MinProvisionedConcurrency,
-		ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](model.ForceSendFields),
 	}
 }
 
@@ -75,7 +72,7 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 				},
 			})
 
-			endpoint.Config.ServedEntities = make([]serving.ServedEntityInput, len(endpoint.Config.ServedModels))
+			endpoint.Config.ServedEntities = make([]modelserving.ServedModel, len(endpoint.Config.ServedModels))
 			for i, model := range endpoint.Config.ServedModels {
 				endpoint.Config.ServedEntities[i] = servedModelToServedEntity(model)
 			}

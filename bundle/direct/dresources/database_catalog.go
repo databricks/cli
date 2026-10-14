@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type ResourceDatabaseCatalog struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceDatabaseCatalog) New(client *databricks.WorkspaceClient) *ResourceDatabaseCatalog {
+func (*ResourceDatabaseCatalog) New(client *sdkclients.Clients) *ResourceDatabaseCatalog {
 	return &ResourceDatabaseCatalog{client: client}
 }
 

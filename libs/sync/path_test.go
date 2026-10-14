@@ -3,13 +3,13 @@ package sync
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPathToRepoPath(t *testing.T) {
-	me := iam.User{
-		UserName: "jane@doe.com",
+	me := scim.User{
+		UserName: new("jane@doe.com"),
 	}
 
 	assert.Equal(t, "/Repos/jane@doe.com/foo", repoPathForPath(&me, "/Repos/jane@doe.com/foo/bar/qux"))

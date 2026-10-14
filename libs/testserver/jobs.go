@@ -1,13 +1,13 @@
 package testserver
 
 import (
-	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
-	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"net/url"
 	"os"
 	"os/exec"
@@ -64,7 +64,7 @@ func venvPython(venvDir string) string {
 
 // validateJobGitSource mirrors Jobs API validation for git_source requests.
 func validateJobGitSource(gitSource *jobs.GitSource) *Response {
-	if gitSource == nil || gitSource.GitProvider != "" {
+	if gitSource == nil || val(gitSource.GitProvider) != "" {
 		return nil
 	}
 
@@ -98,7 +98,7 @@ func validateSparkPythonTasks(tasks []jobs.TaskSettings) *Response {
 }
 
 func validateSparkPythonTask(task *jobs.SparkPythonTask) *Response {
-	if task == nil || task.Source == jobs.Source_Git || !isRelativePythonFile(task.PythonFile) {
+	if task == nil || task.Source == jobs.Source_Git || !isRelativePythonFile(val(task.PythonFile)) {
 		return nil
 	}
 	return &Response{
@@ -166,13 +166,13 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
 	creator := userForToken(req.Token).UserName
 	s.Jobs[jobId] = jobs.GetJobResponse{
-		JobId:           jobId,
+		JobId:           nonZero(jobId),
 		Settings:        &jobSettings,
 		CreatorUserName: creator,
 		RunAsUserName:   creator,
-		CreatedTime:     nowMilli(),
+		CreatedTime:     nonZero(nowMilli()),
 	}
-	return Response{Body: jobs.CreateJobResponse{JobId: jobId}}
+	return Response{Body: jobs.CreateJobResponse{JobId: nonZero(jobId)}}
 }
 
 func (s *FakeWorkspace) JobsReset(req Request) Response {
@@ -204,7 +204,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 	jobFixUps(&request.NewSettings)
 
 	jobId := request.JobId
-	prevjob, ok := s.Jobs[jobId]
+	prevjob, ok := s.Jobs[val(jobId)]
 	if !ok {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
@@ -217,7 +217,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		request.NewSettings.RunAs = prevjob.Settings.RunAs
 	}
 
-	s.Jobs[jobId] = jobs.GetJobResponse{
+	s.Jobs[val(jobId)] = jobs.GetJobResponse{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
 		RunAsUserName:   prevjob.RunAsUserName,
@@ -261,7 +261,7 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 		// Set RunIf to ALL_SUCCESS (server-side default)
 		if task.RunIf == "" {
-			task.RunIf = jobs.RunIfAllSuccess
+			task.RunIf = jobs.TaskDependencyType_AllSuccess
 			task.ForceSendFields = append(task.ForceSendFields, "RunIf")
 		}
 
@@ -274,7 +274,7 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 			if task.NewCluster.AwsAttributes == nil {
 				task.NewCluster.AwsAttributes = &jobs.AwsAttributes{
 					Availability: clusters.AwsAvailability_SpotWithFallback,
-					ZoneId:       "us-east-1c",
+					ZoneId:       nonZero("us-east-1c"),
 				}
 				task.NewCluster.AwsAttributes.ForceSendFields = append(
 					task.NewCluster.AwsAttributes.ForceSendFields,
@@ -340,8 +340,8 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 
 	// The backend checks permissions before existence, so a guest without access
 	// gets a permission error rather than a 404, even after the job is deleted.
-	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobIdInt, userForToken(req.Token).UserName) {
-		return jobReadPermissionDenied(userForToken(req.Token).UserName, jobIdInt)
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobIdInt, val(userForToken(req.Token).UserName)) {
+		return jobReadPermissionDenied(val(userForToken(req.Token).UserName), jobIdInt)
 	}
 
 	job, ok := s.Jobs[jobIdInt]
@@ -377,8 +377,8 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 		job.Settings.Tasks = tasks[offset:end]
 
 		if end < len(tasks) {
-			job.HasMore = true
-			job.NextPageToken = strconv.Itoa(end)
+			job.HasMore = nonZero(true)
+			job.NextPageToken = nonZero(strconv.Itoa(end))
 		}
 
 		// On subsequent pages the real API returns empty arrays for properties
@@ -398,8 +398,8 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 func (s *FakeWorkspace) JobsDelete(req Request, jobId int64) Response {
 	defer s.LockUnlock()()
 
-	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobId, userForToken(req.Token).UserName) {
-		return jobDeletePermissionDenied(userForToken(req.Token).UserName, jobId)
+	if isGuestToken(req.Token) && !s.guestHasJobAccess(jobId, val(userForToken(req.Token).UserName)) {
+		return jobDeletePermissionDenied(val(userForToken(req.Token).UserName), jobId)
 	}
 
 	if _, ok := s.Jobs[jobId]; !ok {
@@ -457,16 +457,16 @@ func (s *FakeWorkspace) JobsList() Response {
 // Cluster-status then reports them, matching cloud (where they are cluster-wide, so other jobs and
 // interactive sessions see them too). Callers must hold the workspace lock.
 func (s *FakeWorkspace) installTaskLibrariesOnCluster(task jobs.TaskSettings) {
-	if task.ExistingClusterId == "" || len(task.Libraries) == 0 {
+	if val(task.ExistingClusterId) == "" || len(task.Libraries) == 0 {
 		return
 	}
-	installed := s.ClusterLibraries[task.ExistingClusterId]
+	installed := s.ClusterLibraries[val(task.ExistingClusterId)]
 	for _, lib := range task.Libraries {
 		if !containsLibrary(installed, lib) {
 			installed = append(installed, lib)
 		}
 	}
-	s.ClusterLibraries[task.ExistingClusterId] = installed
+	s.ClusterLibraries[val(task.ExistingClusterId)] = installed
 }
 
 func (s *FakeWorkspace) JobsRunNow(req Request) Response {
@@ -480,22 +480,22 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	job, ok := s.Jobs[request.JobId]
+	job, ok := s.Jobs[val(request.JobId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	// A resent request with the same non-empty token returns the run that token started.
-	if request.IdempotencyToken != "" {
-		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
-			return Response{Body: jobs.RunNowResponse{RunId: runId}}
+	if val(request.IdempotencyToken) != "" {
+		if runId, ok := s.JobRunIdempotency[val(request.IdempotencyToken)]; ok {
+			return Response{Body: jobs.RunNowResponse{RunId: nonZero(runId)}}
 		}
 	}
 
 	runId := nextID()
 	runName := "run-name"
-	if job.Settings != nil && job.Settings.Name != "" {
-		runName = job.Settings.Name
+	if job.Settings != nil && val(job.Settings.Name) != "" {
+		runName = val(job.Settings.Name)
 	}
 
 	// Build task list with individual RunIds, mirroring cloud behavior.
@@ -509,7 +509,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 			taskRunId := nextID()
 			taskRun := jobs.RunTask{
-				RunId:   taskRunId,
+				RunId:   nonZero(taskRunId),
 				TaskKey: t.TaskKey,
 				State: &jobs.RunState{
 					LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
@@ -539,39 +539,39 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				// Nothing ran, so the task keeps its SUCCESS state.
 			case err != nil:
 				taskRun.State.ResultState = jobs.RunResultState_RunResultState_Failed
-				taskRun.State.StateMessage = taskFailureMessage
-				runOutput := jobs.GetRunOutputResponse{Error: err.Error()}
+				taskRun.State.StateMessage = nonZero(taskFailureMessage)
+				runOutput := jobs.GetRunOutputResponse{Error: nonZero(err.Error())}
 				// A task this server could not even start (e.g. uv failed) has no
 				// traceback to report.
 				if failure, ok := errors.AsType[*taskFailure](err); ok {
-					runOutput.ErrorTrace = failure.trace
+					runOutput.ErrorTrace = nonZero(failure.trace)
 				}
 				s.JobRunOutputs[taskRunId] = runOutput
 			case logs != "":
 				s.JobRunOutputs[taskRunId] = jobs.GetRunOutputResponse{
-					Logs: logs,
+					Logs: nonZero(logs),
 				}
 			}
 		}
 	}
 
 	s.JobRuns[runId] = jobs.Run{
-		RunId:                runId,
+		RunId:                nonZero(runId),
 		JobId:                request.JobId,
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
-		RunPageUrl:           fmt.Sprintf("%s/?o=%d#job/%d/run/%d", s.url, TestWorkspaceID, request.JobId, runId),
+		RunPageUrl:           nonZero(fmt.Sprintf("%s/?o=%d#job/%d/run/%d", s.url, TestWorkspaceID, request.JobId, runId)),
 		RunType:              jobs.RunType_JobRun,
-		RunName:              runName,
+		RunName:              nonZero(runName),
 		Tasks:                tasks,
 		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
 	}
 
-	if request.IdempotencyToken != "" {
-		s.JobRunIdempotency[request.IdempotencyToken] = runId
+	if val(request.IdempotencyToken) != "" {
+		s.JobRunIdempotency[val(request.IdempotencyToken)] = runId
 	}
 
-	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+	return Response{Body: jobs.RunNowResponse{RunId: nonZero(runId)}}
 }
 
 // runJobParameters mirrors how GetRun resolves job-level parameters: every
@@ -581,13 +581,13 @@ func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) [
 	resolved := map[string]jobs.Run_JobLevelParameters{}
 	if settings != nil {
 		for _, p := range settings.Parameters {
-			resolved[p.Name] = jobs.Run_JobLevelParameters{Name: p.Name, Default: p.Default, Value: p.Default}
+			resolved[val(p.Name)] = jobs.Run_JobLevelParameters{Name: p.Name, Default: p.Default, Value: p.Default}
 		}
 	}
 	for name, value := range overrides {
 		p := resolved[name]
-		p.Name = name
-		p.Value = value
+		p.Name = nonZero(name)
+		p.Value = nonZero(value)
 		resolved[name] = p
 	}
 	if len(resolved) == 0 {
@@ -650,7 +650,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	runId := nextID()
 
 	// The default run name for one-time runs is "Untitled" (Jobs API behavior).
-	runName := cmp.Or(request.RunName, "Untitled")
+	runName := cmp.Or(request.RunName, nonZero("Untitled"))
 
 	// Report each task as RUNNING in both the V1 (state) and V2 (status) shapes.
 	// The generic `jobs submit` waiter polls the V1 run-level state, which
@@ -659,7 +659,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	var tasks []jobs.RunTask
 	for _, t := range request.Tasks {
 		tasks = append(tasks, jobs.RunTask{
-			RunId:   nextID(),
+			RunId:   nonZero(nextID()),
 			TaskKey: t.TaskKey,
 			State: &jobs.RunState{
 				LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running,
@@ -671,9 +671,9 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	}
 
 	s.JobRuns[runId] = jobs.Run{
-		RunId:      runId,
+		RunId:      nonZero(runId),
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
-		RunPageUrl: fmt.Sprintf("%s/?o=%d#job/run/%d", s.url, TestWorkspaceID, runId),
+		RunPageUrl: nonZero(fmt.Sprintf("%s/?o=%d#job/run/%d", s.url, TestWorkspaceID, runId)),
 		RunType:    jobs.RunType_SubmitRun,
 		RunName:    runName,
 		Tasks:      tasks,
@@ -681,11 +681,11 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 
 	// No tunnel server runs locally, so synthesize the metadata.json it would
 	// publish; `ssh connect` polls for it before connecting.
-	if strings.HasPrefix(runName, sshTunnelBootstrapRunPrefix) {
+	if strings.HasPrefix(val(runName), sshTunnelBootstrapRunPrefix) {
 		s.writeSSHTunnelMetadata(request)
 	}
 
-	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+	return Response{Body: jobs.SubmitRunResponse{RunId: nonZero(runId)}}
 }
 
 const (
@@ -703,7 +703,7 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRunRequest) {
 		if t.NotebookTask == nil {
 			continue
 		}
-		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
+		metadataPath := strings.TrimSuffix(val(t.NotebookTask.NotebookPath), sshTunnelBootstrapNotebook) + "metadata.json"
 		metadata, err := json.Marshal(map[string]any{
 			"port":       sshTunnelServerPort,
 			"cluster_id": sshTunnelClusterID,
@@ -753,11 +753,11 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	if len(task.Libraries) > 0 {
 		// Cluster-based task with libraries
 		for _, lib := range task.Libraries {
-			if lib.Whl != "" {
-				whlPaths = append(whlPaths, lib.Whl)
+			if val(lib.Whl) != "" {
+				whlPaths = append(whlPaths, val(lib.Whl))
 			}
 		}
-	} else if task.EnvironmentKey != "" && jobSettings != nil {
+	} else if val(task.EnvironmentKey) != "" && jobSettings != nil {
 		// Serverless task with environment_key
 		for _, envItem := range jobSettings.Environments {
 			if envItem.EnvironmentKey == task.EnvironmentKey && envItem.Spec != nil {
@@ -836,14 +836,14 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.TaskSettings, notebookPara
 
 	// Read notebook file from workspace (lock already held by caller)
 	notebookPath := task.NotebookTask.NotebookPath
-	if !strings.HasPrefix(notebookPath, "/") {
-		notebookPath = "/" + notebookPath
+	if !strings.HasPrefix(val(notebookPath), "/") {
+		notebookPath = nonZero("/" + val(notebookPath))
 	}
 
 	// Try both with and without .py extension (notebooks are stored with .py but referenced without)
-	notebookData := s.files[notebookPath].Data
+	notebookData := s.files[val(notebookPath)].Data
 	if len(notebookData) == 0 {
-		notebookData = s.files[notebookPath+".py"].Data
+		notebookData = s.files[val(notebookPath)+".py"].Data
 	}
 	if len(notebookData) == 0 {
 		return "", fmt.Errorf("%w: notebook not found in workspace: %s (also tried .py)", errNoCodeInWorkspace, notebookPath)
@@ -926,11 +926,11 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.TaskSettings) (string, 
 
 	// Read python file from workspace (lock already held by caller)
 	pythonPath := task.SparkPythonTask.PythonFile
-	if !strings.HasPrefix(pythonPath, "/") {
-		pythonPath = "/" + pythonPath
+	if !strings.HasPrefix(val(pythonPath), "/") {
+		pythonPath = nonZero("/" + val(pythonPath))
 	}
 
-	pythonData := s.files[pythonPath].Data
+	pythonData := s.files[val(pythonPath)].Data
 	if len(pythonData) == 0 {
 		return "", fmt.Errorf("%w: python file not found in workspace: %s", errNoCodeInWorkspace, pythonPath)
 	}
@@ -944,7 +944,7 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.TaskSettings) (string, 
 	}
 
 	// Write python file into the cluster env so it can be executed by the venv.
-	pythonFile := filepath.Join(env.dir, filepath.Base(pythonPath))
+	pythonFile := filepath.Join(env.dir, filepath.Base(val(pythonPath)))
 	if err := os.WriteFile(pythonFile, pythonData, 0o644); err != nil {
 		return "", fmt.Errorf("failed to write python file: %w", err)
 	}
@@ -967,8 +967,8 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.TaskSettings) (string, 
 func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.TaskSettings) (*clusterEnv, func(), error) {
 	clusterID := task.ExistingClusterId
 
-	if clusterID != "" {
-		if env, ok := s.clusterVenvs[clusterID]; ok {
+	if val(clusterID) != "" {
+		if env, ok := s.clusterVenvs[val(clusterID)]; ok {
 			return env, nil, nil
 		}
 	}
@@ -994,8 +994,8 @@ func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.TaskSettings) (*clusterE
 	}
 
 	// Cache venv for existing clusters; use cleanup for new clusters.
-	if clusterID != "" {
-		s.clusterVenvs[clusterID] = env
+	if val(clusterID) != "" {
+		s.clusterVenvs[val(clusterID)] = env
 		return env, nil, nil
 	}
 
@@ -1006,7 +1006,7 @@ func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.TaskSettings) (*clusterE
 func sparkVersionToPython(task jobs.TaskSettings) string {
 	sv := ""
 	if task.NewCluster != nil {
-		sv = task.NewCluster.SparkVersion
+		sv = val(task.NewCluster.SparkVersion)
 	}
 
 	// Extract major version from strings like "13.3.x-snapshot-scala2.12" or "15.4.x-scala2.12".
@@ -1051,7 +1051,7 @@ func terminateRun(run *jobs.Run) {
 		if task.State.ResultState != jobs.RunResultState_RunResultState_Success {
 			run.State.LifeCycleState = jobs.RunLifeCycleState_RunLifeCycleState_InternalError
 			run.State.ResultState = task.State.ResultState
-			run.State.StateMessage = fmt.Sprintf("Task %s failed with message: %s.", task.TaskKey, taskFailureMessage)
+			run.State.StateMessage = nonZero(fmt.Sprintf("Task %s failed with message: %s.", task.TaskKey, taskFailureMessage))
 			return
 		}
 	}
@@ -1104,7 +1104,7 @@ func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	run, ok := s.JobRuns[request.RunId]
+	run, ok := s.JobRuns[val(request.RunId)]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -1115,7 +1115,7 @@ func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
 			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
 			ResultState:    jobs.RunResultState_RunResultState_Canceled,
 		}
-		s.JobRuns[request.RunId] = run
+		s.JobRuns[val(request.RunId)] = run
 	}
 
 	return Response{}
@@ -1129,7 +1129,7 @@ func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	return MapDelete(s, s.JobRuns, request.RunId)
+	return MapDelete(s, s.JobRuns, val(request.RunId))
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
@@ -1155,7 +1155,7 @@ func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
 	if ok && len(jobRun.Tasks) > 0 {
 		// For single-task jobs, return the task's output
 		taskRunId := jobRun.Tasks[0].RunId
-		if taskOutput, ok := s.JobRunOutputs[taskRunId]; ok {
+		if taskOutput, ok := s.JobRunOutputs[val(taskRunId)]; ok {
 			return Response{Body: taskOutput}
 		}
 	}

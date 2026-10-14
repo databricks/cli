@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 )
 
 type applyDefaultTaskSource struct{}
@@ -86,7 +86,7 @@ func setGitTaskSource(task dyn.Value) (dyn.Value, error) {
 			continue
 		}
 		if _, err := dyn.Get(t, "source"); err != nil {
-			return dyn.Set(task, taskType+".source", dyn.V(string(jobs.SourceGit)))
+			return dyn.Set(task, taskType+".source", dyn.V(string(jobs.Source_Git)))
 		}
 	}
 	return task, nil

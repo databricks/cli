@@ -15,14 +15,17 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/options/lro"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 	"github.com/spf13/cobra"
 )
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
 	var result []pipelines.PipelineEvent
 	for i := range events {
-		if events[i].Origin.UpdateId == updateId {
+		if events[i].Origin != nil && utils.Deref(events[i].Origin.UpdateId) == updateId {
 			result = append(result, events[i])
 		}
 	}
@@ -31,18 +34,18 @@ func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) [
 
 func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineEvent) {
 	var sb strings.Builder
-	if event.Message != "" {
-		fmt.Fprintf(&sb, " %s\n", event.Message)
+	if message := utils.Deref(event.Message); message != "" {
+		fmt.Fprintf(&sb, " %s\n", message)
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
 		sb.WriteString("trace for most recent exception: \n")
 		for _, exc := range event.Error.Exceptions {
-			sb.WriteString(exc.Message)
+			sb.WriteString(utils.Deref(exc.Message))
 			sb.WriteByte('\n')
 		}
 	}
 	if sb.Len() > 0 {
-		log.Errorf(ctx, "[%s] %s", event.EventType, sb.String())
+		log.Errorf(ctx, "[%s] %s", utils.Deref(event.EventType), sb.String())
 	}
 }
 
@@ -58,10 +61,10 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 	// Otherwise for long lived pipelines, there can be a lot of unnecessary
 	// latency due to multiple pagination API calls needed underneath the hood for
 	// ListPipelineEventsAll
-	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		Filter:     `level='ERROR'`,
-		MaxResults: 100,
-		PipelineId: pipelineId,
+	events, err := progress.ListEvents(ctx, w, sdkpipelines.ListPipelineEventsRequest{
+		Filter:     new(`level='ERROR'`),
+		MaxResults: new(100),
+		PipelineId: new(pipelineId),
 	})
 	if err != nil {
 		return err
@@ -85,7 +88,7 @@ func (r *pipelineRunner) Name() string {
 	if r.pipeline == nil {
 		return ""
 	}
-	return r.pipeline.Name
+	return utils.Deref(r.pipeline.Name)
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
@@ -103,12 +106,12 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		return nil, err
 	}
 
-	res, err := w.Pipelines.StartUpdate(ctx, *req)
+	res, err := w.Pipelines.Start(ctx, *req)
 	if err != nil {
 		return nil, err
 	}
 
-	updateID := res.UpdateId
+	updateID := utils.Deref(res.UpdateId)
 
 	// setup progress logger and tracker to query events
 	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
@@ -124,7 +127,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
-	var prevState *pipelines.UpdateInfoState
+	var prevState *pipelines.UpdateState
 	for {
 		events, err := updateTracker.Events(ctx)
 		if err != nil {
@@ -135,23 +138,29 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			log.Info(ctx, event.String())
 		}
 
-		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		update, err := w.Pipelines.GetUpdate(ctx, sdkpipelines.GetUpdateRequest{
+			PipelineId: new(pipelineID),
+			UpdateId:   new(updateID),
+		})
 		if err != nil {
 			return nil, err
 		}
 
 		// Log only if the current state is different from the previous state.
-		state := update.Update.State
+		var state pipelines.UpdateState
+		if update.Update != nil {
+			state = update.Update.State
+		}
 		if prevState == nil || *prevState != state {
 			log.Infof(ctx, "Update status: %s", state)
 			prevState = &state
 		}
 
-		if state == pipelines.UpdateInfoStateCanceled {
+		if state == pipelines.UpdateState_Canceled {
 			log.Infof(ctx, "Update was cancelled!")
 			return nil, errors.New("update cancelled")
 		}
-		if state == pipelines.UpdateInfoStateFailed {
+		if state == pipelines.UpdateState_Failed {
 			log.Infof(ctx, "Update has failed!")
 			err := r.logErrorEvent(ctx, pipelineID, updateID)
 			if err != nil {
@@ -159,7 +168,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			}
 			return nil, errors.New("update failed")
 		}
-		if state == pipelines.UpdateInfoStateCompleted {
+		if state == pipelines.UpdateState_Completed {
 			log.Infof(ctx, "Update has completed successfully!")
 			return &output.PipelineOutput{
 				UpdateId: updateID,
@@ -172,15 +181,15 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 func (r *pipelineRunner) Cancel(ctx context.Context) error {
 	w := r.bundle.WorkspaceClient(ctx)
-	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
-		PipelineId: r.pipeline.ID,
+	wait, err := w.Pipelines.Stop(ctx, sdkpipelines.StopPipelineRequest{
+		PipelineId: new(r.pipeline.ID),
 	})
 	if err != nil {
 		return err
 	}
 
 	// Waits for the Idle state of the pipeline
-	_, err = wait.GetWithTimeout(jobRunTimeout)
+	_, err = wait.Wait(ctx, lro.WithTimeout(jobRunTimeout))
 	return err
 }
 

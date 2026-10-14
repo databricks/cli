@@ -3,9 +3,9 @@ package variable
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -15,13 +15,13 @@ func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
 	api := m.GetMockServicePrincipalsV2API()
-	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{
+	iterator := listing.SliceIterator[scim.ServicePrincipal]([]scim.ServicePrincipal{
 		{
 			ApplicationId: "5678",
 		},
 	})
 	api.EXPECT().
-		List(mock.Anything, iam.ListServicePrincipalsRequest{
+		List(mock.Anything, scim.ListServicePrincipalsRequest{
 			Filter: "displayName eq 'service-principal'",
 		}).
 		Return(&iterator)
@@ -37,9 +37,9 @@ func TestResolveServicePrincipal_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
 	api := m.GetMockServicePrincipalsV2API()
-	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{})
+	iterator := listing.SliceIterator[scim.ServicePrincipal]([]scim.ServicePrincipal{})
 	api.EXPECT().
-		List(mock.Anything, iam.ListServicePrincipalsRequest{
+		List(mock.Anything, scim.ListServicePrincipalsRequest{
 			Filter: "displayName eq 'service-principal'",
 		}).
 		Return(&iterator)

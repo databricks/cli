@@ -12,9 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/apierr"
+	files "github.com/databricks/sdk-go/files/v2"
 )
 
 // Type that implements fs.DirEntry for DBFS.
@@ -36,27 +38,27 @@ type dbfsFileInfo struct {
 }
 
 func (info dbfsFileInfo) Name() string {
-	return path.Base(info.fi.Path)
+	return path.Base(utils.Deref(info.fi.Path))
 }
 
 func (info dbfsFileInfo) Size() int64 {
-	return info.fi.FileSize
+	return utils.Deref(info.fi.FileSize)
 }
 
 func (info dbfsFileInfo) Mode() fs.FileMode {
 	mode := fs.ModePerm
-	if info.fi.IsDir {
+	if utils.Deref(info.fi.IsDir) {
 		mode |= fs.ModeDir
 	}
 	return mode
 }
 
 func (info dbfsFileInfo) ModTime() time.Time {
-	return time.UnixMilli(info.fi.ModificationTime)
+	return time.UnixMilli(utils.Deref(info.fi.ModificationTime))
 }
 
 func (info dbfsFileInfo) IsDir() bool {
-	return info.fi.IsDir
+	return utils.Deref(info.fi.IsDir)
 }
 
 func (info dbfsFileInfo) Sys() any {
@@ -65,13 +67,13 @@ func (info dbfsFileInfo) Sys() any {
 
 // DbfsClient implements the [Filer] interface for the DBFS backend.
 type DbfsClient struct {
-	workspaceClient *databricks.WorkspaceClient
+	workspaceClient *sdkclients.Clients
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
 }
 
-func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+func NewDbfsClient(w *sdkclients.Clients, root string) (Filer, error) {
 	return &DbfsClient{
 		workspaceClient: w,
 
@@ -85,10 +87,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		return err
 	}
 
-	fileMode := files.FileModeWrite
-	if slices.Contains(mode, OverwriteIfExists) {
-		fileMode |= files.FileModeOverwrite
-	}
+	overwrite := slices.Contains(mode, OverwriteIfExists)
 
 	// Issue info call before write because it automatically creates parent directories.
 	//
@@ -96,7 +95,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	// and apply the same semantics for the WSFS filer.
 	//
 	if !slices.Contains(mode, CreateParentDirectories) {
-		_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, path.Dir(absPath))
+		_, err = w.workspaceClient.Files.GetStatus(ctx, files.GetStatusRequest{Path: new(path.Dir(absPath))})
 		if err != nil {
 			aerr, ok := errors.AsType[*apierr.APIError](err)
 			if !ok {
@@ -104,8 +103,8 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 			}
 
 			// This API returns a 404 if the file doesn't exist.
-			if aerr.StatusCode == http.StatusNotFound {
-				if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+			if aerr.HTTPStatusCode() == http.StatusNotFound {
+				if apierrs.ErrorCode(aerr) == "RESOURCE_DOES_NOT_EXIST" {
 					return noSuchDirectoryError{path.Dir(absPath)}
 				}
 			}
@@ -114,7 +113,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		}
 	}
 
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
+	handle, err := openDbfsWriter(ctx, w.workspaceClient.Files, absPath, overwrite)
 	if err != nil {
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
@@ -122,8 +121,8 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		}
 
 		// This API returns a 400 if the file already exists.
-		if aerr.StatusCode == http.StatusBadRequest {
-			if aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+		if aerr.HTTPStatusCode() == http.StatusBadRequest {
+			if apierrs.ErrorCode(aerr) == "RESOURCE_ALREADY_EXISTS" {
 				return fileAlreadyExistsError{absPath}
 			}
 		}
@@ -146,10 +145,10 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		return nil, err
 	}
 
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
+	handle, err := openDbfsReader(ctx, w.workspaceClient.Files, absPath)
 	if err != nil {
 		// Return error if file is a directory
-		if strings.Contains(err.Error(), "cannot open directory for reading") {
+		if errors.Is(err, errDbfsOpenDirectory) {
 			return nil, notAFile{absPath}
 		}
 
@@ -159,8 +158,8 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		}
 
 		// This API returns a 404 if the file doesn't exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
+			if apierrs.ErrorCode(aerr) == "RESOURCE_DOES_NOT_EXIST" {
 				return nil, fileDoesNotExistError{absPath}
 			}
 		}
@@ -168,7 +167,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		return nil, err
 	}
 
-	// A DBFS handle open for reading does not need to be closed.
+	// A DBFS reader does not hold a server-side handle, so there is nothing to close.
 	return io.NopCloser(handle), nil
 }
 
@@ -188,7 +187,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 	// For discussion: we could decide this is actually convenient, remove the call below,
 	// and apply the same semantics for the WSFS filer.
 	//
-	_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
+	_, err = w.workspaceClient.Files.GetStatus(ctx, files.GetStatusRequest{Path: new(absPath)})
 	if err != nil {
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
@@ -196,8 +195,8 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		}
 
 		// This API returns a 404 if the file doesn't exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
+			if apierrs.ErrorCode(aerr) == "RESOURCE_DOES_NOT_EXIST" {
 				return fileDoesNotExistError{absPath}
 			}
 		}
@@ -207,9 +206,9 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 
 	recursive := slices.Contains(mode, DeleteRecursively)
 
-	err = w.workspaceClient.Dbfs.Delete(ctx, files.Delete{
-		Path:      absPath,
-		Recursive: recursive,
+	_, err = w.workspaceClient.Files.Delete(ctx, files.DeleteRequest{
+		Path:      new(absPath),
+		Recursive: new(recursive),
 	})
 
 	// Return early on success.
@@ -223,16 +222,16 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		return err
 	}
 
-	switch aerr.StatusCode {
+	switch aerr.HTTPStatusCode() {
 	case http.StatusBadRequest:
 		// Anecdotally, this error is returned when attempting to delete a non-empty directory.
-		if aerr.ErrorCode == "IO_ERROR" {
+		if apierrs.ErrorCode(aerr) == "IO_ERROR" {
 			return directoryNotEmptyError{absPath}
 		}
 
 		// Since 17th december we are observing the backend return an error_code of BAD_REQUEST
 		// instead of IO_ERROR. Doing direct comparison on the error string instead.
-		if strings.Contains(aerr.Message, "Directory is not empty. Use recursive delete or remove contents first.") {
+		if strings.Contains(aerr.Message(), "Directory is not empty. Use recursive delete or remove contents first.") {
 			return directoryNotEmptyError{absPath}
 		}
 	}
@@ -246,7 +245,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		return nil, err
 	}
 
-	res, err := w.workspaceClient.Dbfs.ListByPath(ctx, absPath)
+	res, err := w.workspaceClient.Files.List(ctx, files.ListStatusRequest{Path: new(absPath)})
 	if err != nil {
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
@@ -254,8 +253,8 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		}
 
 		// This API returns a 404 if the file doesn't exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
+			if apierrs.ErrorCode(aerr) == "RESOURCE_DOES_NOT_EXIST" {
 				return nil, noSuchDirectoryError{absPath}
 			}
 		}
@@ -263,7 +262,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		return nil, err
 	}
 
-	if len(res.Files) == 1 && res.Files[0].Path == absPath {
+	if len(res.Files) == 1 && utils.Deref(res.Files[0].Path) == absPath {
 		return nil, notADirectory{absPath}
 	}
 
@@ -283,7 +282,8 @@ func (w *DbfsClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	return w.workspaceClient.Dbfs.MkdirsByPath(ctx, dirPath)
+	_, err = w.workspaceClient.Files.Mkdirs(ctx, files.MkDirsRequest{Path: new(dirPath)})
+	return err
 }
 
 func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
@@ -292,7 +292,7 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 		return nil, err
 	}
 
-	info, err := w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
+	info, err := w.workspaceClient.Files.GetStatus(ctx, files.GetStatusRequest{Path: new(absPath)})
 	if err != nil {
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
@@ -300,8 +300,8 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 		}
 
 		// This API returns a 404 if the file doesn't exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		if aerr.HTTPStatusCode() == http.StatusNotFound {
+			if apierrs.ErrorCode(aerr) == "RESOURCE_DOES_NOT_EXIST" {
 				return nil, fileDoesNotExistError{absPath}
 			}
 		}
@@ -309,5 +309,5 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 		return nil, err
 	}
 
-	return dbfsFileInfo{*info}, nil
+	return dbfsFileInfo{files.FileInfo{Path: info.Path, IsDir: info.IsDir, FileSize: info.FileSize, ModificationTime: info.ModificationTime}}, nil
 }

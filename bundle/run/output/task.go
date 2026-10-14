@@ -3,14 +3,26 @@ package output
 import (
 	"encoding/json"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type (
-	NotebookOutput jobs.NotebookOutput
-	DbtOutput      jobs.DbtOutput
-	SqlOutput      jobs.SqlOutput
-	LogsOutput     struct {
+	NotebookOutput struct {
+		// The value passed to dbutils.notebook.exit().
+		Result string `json:"result,omitempty"`
+		// Whether or not the result was truncated.
+		Truncated bool `json:"truncated,omitempty"`
+	}
+	DbtOutput struct {
+		// An optional map of headers to send when retrieving the artifact from
+		// the `artifacts_link`.
+		ArtifactsHeaders map[string]string `json:"artifacts_headers,omitempty"`
+		// A pre-signed URL to download the (compressed) dbt artifacts.
+		ArtifactsLink string `json:"artifacts_link,omitempty"`
+	}
+	SqlOutput  jobs.SqlTask_SqlOutput
+	LogsOutput struct {
 		Logs          string `json:"logs"`
 		LogsTruncated bool   `json:"logs_truncated"`
 	}
@@ -64,32 +76,37 @@ func (out *LogsOutput) String() (string, error) {
 	return out.Logs, nil
 }
 
-func toRunOutput(output *jobs.RunOutput) RunOutput {
+func toRunOutput(output *jobs.GetRunOutputResponse) RunOutput {
+	logs := utils.Deref(output.Logs)
+	logsTruncated := utils.Deref(output.LogsTruncated)
 	switch {
 	case output.NotebookOutput != nil:
-		if output.NotebookOutput.Result == "" && !output.NotebookOutput.Truncated && output.Logs != "" {
-			result := LogsOutput{
-				Logs:          output.Logs,
-				LogsTruncated: output.LogsTruncated,
-			}
-			return &result
+		result := NotebookOutput{
+			Result:    utils.Deref(output.NotebookOutput.Result),
+			Truncated: utils.Deref(output.NotebookOutput.Truncated),
 		}
-		result := NotebookOutput(*output.NotebookOutput)
+		if result.Result == "" && !result.Truncated && logs != "" {
+			return &LogsOutput{
+				Logs:          logs,
+				LogsTruncated: logsTruncated,
+			}
+		}
 		return &result
 	case output.DbtOutput != nil:
-		result := DbtOutput(*output.DbtOutput)
-		return &result
+		return &DbtOutput{
+			ArtifactsHeaders: output.DbtOutput.ArtifactsHeaders,
+			ArtifactsLink:    utils.Deref(output.DbtOutput.ArtifactsLink),
+		}
 
 	case output.SqlOutput != nil:
 		result := SqlOutput(*output.SqlOutput)
 		return &result
 	// Corresponds to JAR, python script and python wheel tasks
-	case output.Logs != "":
-		result := LogsOutput{
-			Logs:          output.Logs,
-			LogsTruncated: output.LogsTruncated,
+	case logs != "":
+		return &LogsOutput{
+			Logs:          logs,
+			LogsTruncated: logsTruncated,
 		}
-		return &result
 	default:
 		return nil
 	}

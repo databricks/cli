@@ -13,9 +13,9 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +88,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	config := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
+				User: &scim.User{
 					UserName: "alice",
 				},
 			},
@@ -288,7 +288,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
+				User: &scim.User{
 					UserName: "alice",
 				},
 			},
@@ -342,7 +342,7 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
+				User: &scim.User{
 					UserName: "alice",
 				},
 			},

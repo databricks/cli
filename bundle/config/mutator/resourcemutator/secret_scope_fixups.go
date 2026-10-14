@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strings"
 
@@ -10,8 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type secretScopeFixups struct{}
@@ -24,10 +25,11 @@ func (m *secretScopeFixups) Name() string {
 	return "SecretScopeFixups"
 }
 
-func addManageForCurrentUser(scope *resources.SecretScope, currentUser *iam.User) {
+func addManageForCurrentUser(scope *resources.SecretScope, currentUser *scim.User) {
 	// Check if current user already has a permission configured
+	userName := utils.Deref(currentUser.UserName)
 	for _, perm := range scope.Permissions {
-		if (perm.UserName == currentUser.UserName || perm.ServicePrincipalName == currentUser.UserName) && perm.Level == resources.SecretScopePermissionLevelManage {
+		if (perm.UserName == userName || perm.ServicePrincipalName == userName) && perm.Level == resources.SecretScopePermissionLevelManage {
 			return
 		}
 	}
@@ -36,9 +38,9 @@ func addManageForCurrentUser(scope *resources.SecretScope, currentUser *iam.User
 		Level: resources.SecretScopePermissionLevelManage,
 	}
 	if iamutil.IsServicePrincipal(currentUser) {
-		acl.ServicePrincipalName = currentUser.UserName
+		acl.ServicePrincipalName = userName
 	} else {
-		acl.UserName = currentUser.UserName
+		acl.UserName = userName
 	}
 	scope.Permissions = append(scope.Permissions, acl)
 }
