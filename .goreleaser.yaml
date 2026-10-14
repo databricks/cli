@@ -17,6 +17,30 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
+      # Skip inlining in code that is generated, waits on the network, or only
+      # drives the TUI: it shrinks the binary by ~2.2 MB without measurable
+      # cost. Hot paths (bundle/, libs/dyn, stdlib, ...) keep the default.
+      # Measure before adding a package: some grow without inlining (e.g.
+      # go.opentelemetry.io/otel/semconv init code grows by 300 KB).
+      - -gcflags=github.com/databricks/cli/cmd/...=-l
+      - -gcflags=github.com/databricks/cli/experimental/...=-l
+      - -gcflags=github.com/databricks/cli/libs/apps/...=-l
+      - -gcflags=github.com/databricks/cli/libs/aitools/...=-l
+      - -gcflags=github.com/databricks/cli/libs/auth/...=-l
+      - -gcflags=github.com/databricks/databricks-sdk-go/...=-l
+      - -gcflags=github.com/databricks/sdk-go/...=-l
+      - -gcflags=google.golang.org/...=-l
+      - -gcflags=cloud.google.com/...=-l
+      - -gcflags=github.com/googleapis/...=-l
+      - -gcflags=github.com/google/s2a-go/...=-l
+      - -gcflags=github.com/charmbracelet/...=-l
+      - -gcflags=github.com/spf13/...=-l
+      - -gcflags=github.com/godbus/...=-l
+      - -gcflags=github.com/zalando/...=-l
+      - -gcflags=github.com/jackc/...=-l
+      - -gcflags=github.com/BurntSushi/...=-l
+      - -gcflags=github.com/tailscale/...=-l
+      - -gcflags=golang.org/x/...=-l
     ldflags:
       - '-s -w'
       - -X github.com/databricks/cli/internal/build.buildProjectName={{ .ProjectName }}
