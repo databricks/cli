@@ -1,4 +1,4 @@
-package filer
+package sdkclients
 
 import (
 	"context"
@@ -9,27 +9,27 @@ import (
 )
 
 // configCredentials adapts the CLI's resolved SDK config into the credentials
-// interface expected by the files/v2 client. It signs a throwaway
+// interface expected by the sdk-go clients. It signs a throwaway
 // request with config.Authenticate and hands the resulting headers to the
-// client, so the files/v2 client reuses the exact auth the rest of the CLI
+// client, so the sdk-go clients reuses the exact auth the rest of the CLI
 // already resolved instead of re-reading a profile.
-type configCredentials struct {
+type credentials struct {
 	cfg *config.Config
 }
 
 // Name reports the resolved auth mechanism (e.g. "pat", "oauth-m2m"), which the
-// files/v2 client folds into its User-Agent. The CLI resolves auth when it
+// sdk-go clients folds into its User-Agent. The CLI resolves auth when it
 // builds the workspace client, so AuthType is normally set before the filer is
-// created; fall back to "unk" when it is empty because the files/v2 client
+// created; fall back to "unk" when it is empty because the sdk-go clients
 // rejects an empty auth name with an "invalid value" error at construction.
-func (c configCredentials) Name() string {
+func (c credentials) Name() string {
 	if c.cfg.AuthType == "" {
 		return "unk"
 	}
 	return c.cfg.AuthType
 }
 
-func (c configCredentials) AuthHeaders(ctx context.Context) ([]sdkauth.Header, error) {
+func (c credentials) AuthHeaders(ctx context.Context) ([]sdkauth.Header, error) {
 	// The URL is irrelevant: config.Authenticate only reads it to pick the auth
 	// scheme, and every files/v2 request targets the same workspace host.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.cfg.Host, nil)
@@ -47,4 +47,9 @@ func (c configCredentials) AuthHeaders(ctx context.Context) ([]sdkauth.Header, e
 		}
 	}
 	return headers, nil
+}
+
+// NewCredentials returns sdk-go credentials that sign requests with cfg.
+func NewCredentials(cfg *config.Config) sdkauth.Credentials {
+	return credentials{cfg: cfg}
 }

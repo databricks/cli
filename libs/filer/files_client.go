@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
@@ -192,7 +193,7 @@ func newTransferClient(n int) *http.Client {
 func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
-		client.WithCredentials(configCredentials{cfg: cfg}),
+		client.WithCredentials(sdkclients.NewCredentials(cfg)),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
 	}
