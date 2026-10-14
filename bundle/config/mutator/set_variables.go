@@ -115,6 +115,8 @@ func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 
 	val, err := jsonloader.LoadJSON(f, filepath.Join(b.BundleRootPath, variableOverridesLocation))
 	if err != nil {
+		// Report the parse error at the real file.
+		_, err = jsonloader.LoadJSON(f, filePath)
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
 	}
 
