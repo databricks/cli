@@ -1070,6 +1070,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
+	server.Handle("GET", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingGet(req)
+	})
+
 	server.Handle("PATCH", "/api/2.1/settings/{name}", func(req Request) any {
 		return req.Workspace.WorkspaceSettingPatch(req)
 	})

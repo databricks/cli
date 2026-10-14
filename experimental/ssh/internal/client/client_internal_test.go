@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -855,6 +856,45 @@ func TestMetadataResponseError(t *testing.T) {
 			assert.Equal(t, tc.forbidden, errors.Is(err, errDriverProxyForbidden))
 			assert.Equal(t, !tc.forbidden, errors.Is(err, errServerMetadata))
 			assert.EqualError(t, err, tc.message)
+		})
+	}
+}
+
+func TestCheckPortForwardingToServerless(t *testing.T) {
+	tests := []struct {
+		name    string
+		setting *settingsv2.Setting
+		readErr error
+		wantErr error
+	}{
+		{
+			name:    "disabled",
+			setting: &settingsv2.Setting{EffectiveBooleanVal: &settingsv2.BooleanMessage{Value: false}},
+			wantErr: errPortForwardingDisabled,
+		},
+		{
+			name:    "enabled",
+			setting: &settingsv2.Setting{EffectiveBooleanVal: &settingsv2.BooleanMessage{Value: true}},
+		},
+		{
+			name:    "no effective value",
+			setting: &settingsv2.Setting{},
+		},
+		{
+			// Production does not serve the setting through the public API yet.
+			name:    "read fails",
+			readErr: errors.New("Setting port_fwd_serverless_enabled is not enabled for public API"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			m := mocks.NewMockWorkspaceClient(t)
+			m.GetMockWorkspaceSettingsV2API().EXPECT().
+				GetPublicWorkspaceSetting(mock.Anything, settingsv2.GetPublicWorkspaceSettingRequest{Name: portFwdServerlessSetting}).
+				Return(tc.setting, tc.readErr)
+
+			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, m.WorkspaceClient))
 		})
 	}
 }
