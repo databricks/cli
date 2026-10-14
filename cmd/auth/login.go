@@ -19,7 +19,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/spf13/cobra"
@@ -388,7 +389,7 @@ a new profile is created.
 			// Create a workspace client to list clusters for interactive selection.
 			// We use a custom CredentialsStrategy that wraps the token we just minted,
 			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			w, err := sdkclients.New(ctx, &config.Config{
 				Host:        authArguments.Host,
 				AccountID:   authArguments.AccountID,
 				WorkspaceID: authArguments.WorkspaceID,
@@ -863,7 +864,7 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", nil
 	}
 
-	a, err := databricks.NewAccountClient(&databricks.Config{
+	a, err := sdkclients.New(ctx, &config.Config{
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
 		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
@@ -872,7 +873,7 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", err
 	}
 
-	workspaces, err := a.Workspaces.List(ctx)
+	workspaces, err := listWorkspaces(ctx, a)
 	if err != nil {
 		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
 		return promptForWorkspaceID(ctx)
@@ -889,16 +890,16 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 	}
 
 	if len(workspaces) == 1 {
-		wsID := strconv.FormatInt(workspaces[0].WorkspaceId, 10)
-		cmdio.LogString(ctx, fmt.Sprintf("Auto-selected workspace %q (%s)", workspaces[0].WorkspaceName, wsID))
+		wsID := strconv.FormatInt(utils.Deref(workspaces[0].WorkspaceId), 10)
+		cmdio.LogString(ctx, fmt.Sprintf("Auto-selected workspace %q (%s)", utils.Deref(workspaces[0].WorkspaceName), wsID))
 		return wsID, nil
 	}
 
 	items := make([]cmdio.Tuple, 0, len(workspaces)+1)
 	for _, ws := range workspaces {
 		items = append(items, cmdio.Tuple{
-			Name: ws.WorkspaceName,
-			Id:   strconv.FormatInt(ws.WorkspaceId, 10),
+			Name: utils.Deref(ws.WorkspaceName),
+			Id:   strconv.FormatInt(utils.Deref(ws.WorkspaceId), 10),
 		})
 	}
 	// Allow skipping workspace selection for account-level access.

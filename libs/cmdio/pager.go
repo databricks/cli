@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/listing"
 	"io"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ const pagerLoadingText = "loading..."
 // fetch produces a batchMsg, Update prints it via tea.Println, and
 // View shows the prompt between pages.
 type pagerModel[T any] struct {
-	iter    pullIter[T]
+	iter    listing.Iterator[T]
 	pager   *templatePager
 	spinner bubblespinner.Model
 	// fetch is bound at construction with the caller's context captured
@@ -63,7 +64,7 @@ type pagerModel[T any] struct {
 func newPagerModel[T any](
 	ctx context.Context,
 	out io.Writer,
-	iter pullIter[T],
+	iter listing.Iterator[T],
 	pager *templatePager,
 	pageSize, limit int,
 ) *pagerModel[T] {

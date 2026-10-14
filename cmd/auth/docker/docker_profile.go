@@ -10,7 +10,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // dockerWorkspace holds the selected profile and its resolved workspace ID.
@@ -18,7 +19,7 @@ type dockerWorkspace struct {
 	profile    profile.Profile
 	id         string
 	executable string
-	client     *databricks.WorkspaceClient
+	client     *sdkclients.Clients
 }
 
 type dockerTarget struct {
@@ -60,9 +61,9 @@ func loadDockerWorkspace(ctx context.Context, name string, region *string) (*doc
 	if err != nil {
 		return nil, fmt.Errorf("locate databricks executable: %w", err)
 	}
-	var client *databricks.WorkspaceClient
+	var client *sdkclients.Clients
 	if region == nil || p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
-		client, err = databricks.NewWorkspaceClient(&databricks.Config{
+		client, err = sdkclients.New(ctx, &config.Config{
 			Profile:           p.Name,
 			Host:              p.Host,
 			AccountID:         p.AccountID,

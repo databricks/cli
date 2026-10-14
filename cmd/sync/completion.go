@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -13,7 +13,7 @@ import (
 
 // List directories or repos under the specified path.
 // Returns a channel such that we can list multiple paths in parallel.
-func fetchDirs(ctx context.Context, wsc *databricks.WorkspaceClient, path string) <-chan []string {
+func fetchDirs(ctx context.Context, wsc *sdkclients.Clients, path string) <-chan []string {
 	ch := make(chan []string, 1)
 	go func() {
 		defer close(ch)
@@ -42,7 +42,7 @@ func fetchDirs(ctx context.Context, wsc *databricks.WorkspaceClient, path string
 
 func completeRemotePath(
 	ctx context.Context,
-	wsc *databricks.WorkspaceClient,
+	wsc *sdkclients.Clients,
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
 	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})

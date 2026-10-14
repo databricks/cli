@@ -1,27 +1,31 @@
 package run
 
 import (
-	"errors"
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"encoding/json"
+	"slices"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		Tasks: []jobs.TaskSettings{
-			{PythonWheelTask: &jobs.PythonWheelTask{
-				PackageName: new("my_test_code"),
-				EntryPoint:  new("run"),
-			}},
+		JobSettings: jobs.JobSettings{
+			Tasks: []jobs.TaskSettings{
+				{PythonWheelTask: &jobs.PythonWheelTask{
+					PackageName: new("my_test_code"),
+					EntryPoint:  new("run"),
+				}},
+			},
 		},
 	}
 	b := &bundle.Bundle{
@@ -53,9 +57,24 @@ func TestConvertPythonParams(t *testing.T) {
 	require.Equal(t, `["param1","param2","param3"]`, opts.Job.notebookParams["__python_params"])
 }
 
-func TestJobRunnerCancel(t *testing.T) {
+// fakeJobs serves the jobs API calls made by jobRunner and records them.
+type fakeJobs struct {
+	mu sync.Mutex
+
+	// activeRuns is returned by runs/list.
+	activeRuns []int64
+	// getRunError, if set, is returned by runs/get.
+	getRunError *testserver.Response
+
+	listCalls  int
+	cancelled  []int64
+	runNowJobs []int64
+}
+
+func newJobRunner(t *testing.T, settings jobs.JobSettings) (jobRunner, *fakeJobs) {
 	job := &resources.Job{
-		ID: "123",
+		ID:          "123",
+		JobSettings: settings,
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -67,65 +86,79 @@ func TestJobRunnerCancel(t *testing.T) {
 		},
 	}
 
-	runner := jobRunner{key: "test", bundle: b, job: job}
+	w, server := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	f := &fakeJobs{}
+	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req testserver.Request) any {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		assert.Equal(t, "123", req.URL.Query().Get("job_id"))
+		assert.Equal(t, "true", req.URL.Query().Get("active_only"))
+		f.listCalls++
+		var runs []map[string]any
+		for _, id := range f.activeRuns {
+			runs = append(runs, map[string]any{"run_id": id})
+		}
+		return map[string]any{"runs": runs}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		var body struct {
+			RunId int64 `json:"run_id"`
+		}
+		assert.NoError(t, json.Unmarshal(req.Body, &body))
+		f.cancelled = append(f.cancelled, body.RunId)
+		return map[string]any{}
+	})
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		var body struct {
+			JobId int64 `json:"job_id"`
+		}
+		assert.NoError(t, json.Unmarshal(req.Body, &body))
+		f.runNowJobs = append(f.runNowJobs, body.JobId)
+		return map[string]any{"run_id": 456}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		if f.getRunError != nil {
+			return *f.getRunError
+		}
+		return map[string]any{
+			"run_id": req.URL.Query().Get("run_id"),
+			"state":  map[string]any{"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+		}
+	})
 
-	jobApi := m.GetMockJobsAPI()
-	jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		ActiveOnly: new(true),
-		JobId:      new(int64(123)),
-	}).Return([]jobs.BaseRun{
-		{RunId: new(int64(1))},
-		{RunId: new(int64(2))},
-	}, nil)
+	return jobRunner{key: "test", bundle: b, job: job}, f
+}
 
-	mockWait := &jobs.WaitGetRunJobTerminatedOrSkipped[struct{}]{
-		Poll: func(time time.Duration, f func(j *jobs.Run)) (*jobs.Run, error) {
-			return nil, nil
-		},
-	}
-	jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-		RunId: 1,
-	}).Return(mockWait, nil)
-	jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-		RunId: 2,
-	}).Return(mockWait, nil)
+func (f *fakeJobs) cancelledRuns() []int64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Sorted(slices.Values(f.cancelled))
+}
+
+func TestJobRunnerCancel(t *testing.T) {
+	runner, f := newJobRunner(t, jobs.JobSettings{})
+	f.activeRuns = []int64{1, 2}
 
 	err := runner.Cancel(t.Context())
 	require.NoError(t, err)
+	assert.Equal(t, []int64{1, 2}, f.cancelledRuns())
 }
 
 func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
-	job := &resources.Job{
-		ID: "123",
-	}
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"test_job": job,
-				},
-			},
-		},
-	}
-
-	runner := jobRunner{key: "test", bundle: b, job: job}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	jobApi := m.GetMockJobsAPI()
-	jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		ActiveOnly: new(true),
-		JobId:      new(int64(123)),
-	}).Return([]jobs.BaseRun{}, nil)
-
-	jobApi.AssertNotCalled(t, "CancelRun")
+	runner, f := newJobRunner(t, jobs.JobSettings{})
 
 	err := runner.Cancel(t.Context())
 	require.NoError(t, err)
+	assert.Equal(t, 1, f.listCalls)
+	assert.Empty(t, f.cancelledRuns())
 }
 
 func TestJobRunnerRestart(t *testing.T) {
@@ -137,153 +170,44 @@ func TestJobRunnerRestart(t *testing.T) {
 			},
 		},
 	} {
-		job := &resources.Job{
-			ID:          "123",
-			JobSettings: jobSettings,
-		}
-		b := &bundle.Bundle{
-			Config: config.Root{
-				Resources: config.Resources{
-					Jobs: map[string]*resources.Job{
-						"test_job": job,
-					},
-				},
-			},
-		}
-
-		runner := jobRunner{key: "test", bundle: b, job: job}
-
-		m := mocks.NewMockWorkspaceClient(t)
-		b.SetWorkpaceClient(m.WorkspaceClient)
+		runner, f := newJobRunner(t, jobSettings)
+		f.activeRuns = []int64{1, 2}
 
 		ctx := cmdio.MockDiscard(t.Context())
-
-		jobApi := m.GetMockJobsAPI()
-		jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-			ActiveOnly: new(true),
-			JobId:      new(int64(123)),
-		}).Return([]jobs.BaseRun{
-			{RunId: new(int64(1))},
-			{RunId: new(int64(2))},
-		}, nil)
-
-		// Mock the runner cancelling existing job runs.
-		mockWait := &jobs.WaitGetRunJobTerminatedOrSkipped[struct{}]{
-			Poll: func(time time.Duration, f func(j *jobs.Run)) (*jobs.Run, error) {
-				return nil, nil
-			},
-		}
-		jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-			RunId: 1,
-		}).Return(mockWait, nil)
-		jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-			RunId: 2,
-		}).Return(mockWait, nil)
-
-		// Mock the runner triggering a job run
-		mockWaitForRun := &jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{
-			Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
-				return &jobs.Run{
-					State: &jobs.RunState{
-						ResultState: jobs.RunResultState_RunResultState_Success,
-					},
-				}, nil
-			},
-		}
-		jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
-			JobId: 123,
-		}).Return(mockWaitForRun, nil)
-
-		// Mock the runner getting the job output
-		jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{}).Return(&jobs.Run{}, nil)
-
 		_, err := runner.Restart(ctx, &Options{})
 		require.NoError(t, err)
+		assert.Equal(t, []int64{1, 2}, f.cancelledRuns())
+		assert.Equal(t, []int64{123}, f.runNowJobs)
 	}
 }
 
 func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
-	job := &resources.Job{
-		ID: "123",
+	runner, f := newJobRunner(t, jobs.JobSettings{})
+	f.getRunError = &testserver.Response{
+		StatusCode: 400,
+		Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "transient error"},
 	}
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"test_job": job,
-				},
-			},
-		},
-	}
-
-	runner := jobRunner{key: "test", bundle: b, job: job}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	ctx := cmdio.MockDiscard(t.Context())
 
-	jobApi := m.GetMockJobsAPI()
-	jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
-		JobId: 123,
-	}).Return(&jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{RunId: 456}, nil)
-
 	// Run must surface the error instead of dereferencing the nil run details.
-	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{
-		RunId: new(int64(456)),
-	}).Return(nil, errors.New("transient error"))
-
 	_, err := runner.Run(ctx, &Options{NoWait: true})
 	require.ErrorContains(t, err, "transient error")
 }
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
-	job := &resources.Job{
-		ID: "123",
+	runner, f := newJobRunner(t, jobs.JobSettings{
 		Continuous: &jobs.ContinuousSettings{
-			PauseStatus: jobs.PauseStatusUnpaused,
+			PauseStatus: "UNPAUSED",
 		},
-	}
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"test_job": job,
-				},
-			},
-		},
-	}
-
-	runner := jobRunner{key: "test", bundle: b, job: job}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	})
 
 	ctx := cmdio.MockDiscard(t.Context())
-
-	jobApi := m.GetMockJobsAPI()
-
-	// The runner should not try and cancel existing job runs for unpaused continuous jobs.
-	jobApi.AssertNotCalled(t, "ListRunsAll")
-	jobApi.AssertNotCalled(t, "CancelRun")
-
-	// Mock the runner triggering a job run
-	mockWaitForRun := &jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{
-		Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
-			return &jobs.Run{
-				State: &jobs.RunState{
-					ResultState: jobs.RunResultState_RunResultState_Success,
-				},
-			}, nil
-		},
-	}
-	jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
-		JobId: 123,
-	}).Return(mockWaitForRun, nil)
-
-	// Mock the runner getting the job output
-	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{}).Return(&jobs.Run{}, nil)
-
 	_, err := runner.Restart(ctx, &Options{})
 	require.NoError(t, err)
+
+	// The runner should not try and cancel existing job runs for unpaused continuous jobs.
+	assert.Equal(t, 0, f.listCalls)
+	assert.Empty(t, f.cancelledRuns())
+	assert.Equal(t, []int64{123}, f.runNowJobs)
 }

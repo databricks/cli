@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"io"
+	"net/http"
 	"strings"
 	"testing"
 

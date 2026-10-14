@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -48,7 +48,7 @@ type testOutput struct {
 }
 
 type testFiles struct {
-	w               *databricks.WorkspaceClient
+	w               *sdkclients.Clients
 	pyNotebookPath  string
 	sparkPythonPath string
 	wheelPath       string

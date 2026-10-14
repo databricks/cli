@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	dashboards "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
 	"github.com/stretchr/testify/assert"
 )
 

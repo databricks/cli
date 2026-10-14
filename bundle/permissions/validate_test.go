@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,8 +30,8 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Empty(t, diags)
@@ -55,8 +55,8 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Len(t, diags, 1)

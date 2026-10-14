@@ -17,16 +17,16 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -117,7 +117,7 @@ func agentByName(name string) (agentSpec, bool) {
 	return agentSpec{}, false
 }
 
-func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+func RunAgentShim(ctx context.Context, client *sdkclients.Clients, agentName string, agentArgs []string) (retErr error) {
 	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
 	// from here too. Each failing step sets outcome.errorCategory; the returned error is
 	// picked up via the named return.
@@ -296,7 +296,7 @@ type gatewayProbe struct {
 	resourceAvailable bool
 }
 
-func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) error {
+func probeAIGateway(ctx context.Context, wsclient *sdkclients.Clients) error {
 	host := strings.TrimRight(wsclient.Config.Host, "/")
 
 	// build a client with retries disabled so a transient 429/503 fails fast
@@ -344,11 +344,11 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 		return categorize(protos.SshAgentShimErrorCategoryGatewayTransientError, versionNeutralGatewayError(
 			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
 		))
-	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
+	case apierrs.Is(modelSvc.err, apierrs.ErrPermissionDenied):
 		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
 		))
-	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
+	case apierrs.Is(legacy.err, apierrs.ErrPermissionDenied):
 		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
 		))
@@ -364,7 +364,7 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 // TransientErrors makes a retriable status (429, 503, ...) surface on the first
 // attempt rather than looping until the retry budget expires; it mirrors
 // client.New, which builds the retrying client the rest of the CLI uses.
-func newProbeAPIClient(cfg *config.Config) (*client.DatabricksClient, error) {
+func newProbeAPIClient(cfg *config.Config) (*apiclient.Client, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -374,7 +374,7 @@ func newProbeAPIClient(cfg *config.Config) (*client.DatabricksClient, error) {
 	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
 }
 
-func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
+func probeModelServices(ctx context.Context, apiClient *apiclient.Client) gatewayProbe {
 	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
 	_, err := it.Next(ctx)
 	if err != nil {
@@ -391,7 +391,7 @@ type legacyEndpointsResponse struct {
 	Endpoints []any `json:"endpoints"`
 }
 
-func probeLegacyEndpoints(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
+func probeLegacyEndpoints(ctx context.Context, apiClient *apiclient.Client) gatewayProbe {
 	var resp legacyEndpointsResponse
 	err := apiClient.Do(ctx, http.MethodGet, legacyEndpointsPath, auth.WorkspaceIDHeaders(apiClient.Config), map[string]any{
 		"page_size": "1",
@@ -422,25 +422,25 @@ func versionNeutralGatewayError(reason string) error {
 // preflight still tries the fallback before giving up.
 func looksLikeDefinitiveAuthFailure(err error) bool {
 	// HTTP 401
-	if errors.Is(err, apierr.ErrUnauthenticated) {
+	if apierrs.Is(err, apierrs.ErrUnauthenticated) {
 		return true
 	}
-	return errors.Is(err, apierr.ErrBadRequest) && strings.Contains(strings.ToLower(err.Error()), "invalid token")
+	return apierrs.Is(err, apierrs.ErrBadRequest) && strings.Contains(strings.ToLower(err.Error()), "invalid token")
 }
 
 // matches a 403 that reports the OAuth token is missing a required scope (which
 // re-login can fix), as opposed to a plain permission 403.
 func looksLikeScopeFailure(err error) bool {
 	reason := strings.ToLower(err.Error())
-	return errors.Is(err, apierr.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
+	return apierrs.Is(err, apierrs.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
 }
 
 func looksLikeTransient(err error) bool {
 	return strings.HasPrefix(err.Error(), "network error") ||
-		errors.Is(err, apierr.ErrTooManyRequests) || // HTTP 429
-		errors.Is(err, apierr.ErrInternalError) || // HTTP 500
-		errors.Is(err, apierr.ErrTemporarilyUnavailable) || // HTTP 503
-		errors.Is(err, apierr.ErrDeadlineExceeded) // HTTP 504
+		apierrs.Is(err, apierrs.ErrTooManyRequests) || // HTTP 429
+		apierrs.Is(err, apierrs.ErrInternalError) || // HTTP 500
+		apierrs.Is(err, apierrs.ErrTemporarilyUnavailable) || // HTTP 503
+		apierrs.Is(err, apierrs.ErrDeadlineExceeded) // HTTP 504
 }
 
 func aiGatewayAuthError(host, reason string) error {

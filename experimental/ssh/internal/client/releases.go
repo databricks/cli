@@ -19,15 +19,15 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"golang.org/x/net/http2"
 )
 
 type releaseProvider func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error)
 
-func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClient, version, releasesDir string) error {
+func UploadTunnelReleases(ctx context.Context, client *sdkclients.Clients, version, releasesDir string) error {
 	versionedDir, err := workspace.GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
 		return fmt.Errorf("failed to get versioned directory: %w", err)
@@ -37,7 +37,7 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 	// buys us nothing, and some corporate proxies reset large HTTP/2 request bodies
 	// with RST_STREAM(NO_ERROR), which aborts the upload. Forcing HTTP/1.1 only for
 	// this client keeps the rest of the connect flow on HTTP/2.
-	uploadClient, err := newHTTP11WorkspaceClient(client.Config)
+	uploadClient, err := newHTTP11WorkspaceClient(ctx, client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create upload client: %w", err)
 	}
@@ -58,7 +58,7 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 // on its config. config.Config embeds a sync.Mutex and cannot be copied by value,
 // so we reconstruct a fresh config from src's public attributes rather than clone
 // the struct; the client then re-resolves auth from those attributes.
-func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, error) {
+func newHTTP11WorkspaceClient(ctx context.Context, src *config.Config) (*sdkclients.Clients, error) {
 	cfg := &config.Config{}
 	for _, attr := range config.ConfigAttributes {
 		if attr.IsZero(src) {
@@ -69,7 +69,7 @@ func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, 
 		}
 	}
 	cfg.HTTPTransport = newHTTP11Transport(src)
-	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	return sdkclients.New(ctx, cfg)
 }
 
 // newHTTP11Transport builds a fresh HTTP/1.1-only transport, mirroring the SDK's
@@ -159,7 +159,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 // as a string that still preserves the "stream error ... stream ID" shape.
 func isProxyUploadError(err error) bool {
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
-		return aerr.StatusCode == http.StatusRequestEntityTooLarge
+		return aerr.HTTPStatusCode() == http.StatusRequestEntityTooLarge
 	}
 	if errors.Is(err, syscall.ECONNRESET) {
 		return true

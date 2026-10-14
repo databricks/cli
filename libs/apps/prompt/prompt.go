@@ -17,9 +17,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/apps/v1"
+	"github.com/databricks/sdk-go/postgres/v1"
 )
 
 // DefaultAppDescription is the default description for new apps.
@@ -989,10 +989,10 @@ func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName,
 		return nil, fmt.Errorf("resolving endpoint details: %w", err)
 	}
 	for _, ep := range endpoints {
-		if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
-			endpointPath = ep.Name
-			if ep.Status.Hosts != nil && ep.Status.Hosts.Host != "" {
-				host = ep.Status.Hosts.Host
+		if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointType_EndpointTypeReadWrite {
+			endpointPath = utils.Deref(ep.Name)
+			if ep.Status.Hosts != nil && utils.Deref(ep.Status.Hosts.Host) != "" {
+				host = *ep.Status.Hosts.Host
 			}
 			break
 		}
@@ -1124,14 +1124,13 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 }
 
 // ListAllApps fetches all apps the user has access to from the workspace.
-func ListAllApps(ctx context.Context) ([]apps.App, error) {
+func ListAllApps(ctx context.Context) ([]*apps.App, error) {
 	w := cmdctx.WorkspaceClient(ctx)
 	if w == nil {
 		return nil, errors.New("no workspace client available")
 	}
 
-	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
-	return listing.ToSlice(ctx, iter)
+	return collectAll(w.Apps.ListAppsIter(ctx, apps.ListAppsRequest{}))
 }
 
 // PromptForAppSelection shows a picker to select an existing app.
@@ -1142,7 +1141,7 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 	}
 
 	// Fetch all apps the user has access to
-	var existingApps []apps.App
+	var existingApps []*apps.App
 	err := RunWithSpinnerCtx(ctx, "Fetching apps...", func() error {
 		var fetchErr error
 		existingApps, fetchErr = ListAllApps(ctx)
@@ -1161,15 +1160,15 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 	// Build options
 	options := make([]huh.Option[string], 0, len(existingApps))
 	for _, app := range existingApps {
-		label := app.Name
-		if app.Description != "" {
-			desc := app.Description
+		label := utils.Deref(app.Name)
+		if utils.Deref(app.Description) != "" {
+			desc := *app.Description
 			if len(desc) > 40 {
 				desc = desc[:37] + "..."
 			}
 			label += " — " + desc
 		}
-		options = append(options, huh.NewOption(label, app.Name))
+		options = append(options, huh.NewOption(label, utils.Deref(app.Name)))
 	}
 
 	var selected string

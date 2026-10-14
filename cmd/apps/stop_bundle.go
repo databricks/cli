@@ -7,14 +7,14 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
 // BundleStopOverrideWithWrapper creates a stop override function that uses
 // the provided error wrapper for API fallback errors.
-func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.StopAppRequest) {
-	return func(stopCmd *cobra.Command, stopReq *apps.StopAppRequest) {
+func BundleStopOverrideWithWrapper[R any](wrapError ErrorWrapper) func(*cobra.Command, *R) {
+	return func(stopCmd *cobra.Command, _ *R) {
 		makeArgsOptionalWithBundle(stopCmd, "stop [NAME]")
 
 		originalRunE := stopCmd.RunE
@@ -28,13 +28,11 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 					return err
 				}
 				if fromBundle {
-					stopReq.Name = appName
-
 					if outputFormat == flags.OutputText {
 						cmdio.LogString(ctx, fmt.Sprintf("Stopping app '%s' from project configuration", appName))
 
 						w := cmdctx.WorkspaceClient(ctx)
-						wait, err := w.Apps.Stop(ctx, *stopReq)
+						_, err := w.Apps.StopApp(ctx, sdkapps.StopAppRequest{Name: new(appName)})
 						if err != nil {
 							handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appName, []string{"STOPPED state", "already"}, "stopped", wrapError)
 							if handled {
@@ -43,16 +41,16 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 							return wrapError(cmd, appName, err)
 						}
 
-						var appInfo *apps.App
+						var appInfo *sdkapps.App
 						if shouldWaitForCompletion(cmd) {
 							spinner := cmdio.NewSpinner(ctx)
-							appInfo, err = wait.OnProgress(createAppProgressCallback(spinner)).GetWithTimeout(getWaitTimeout(cmd))
+							appInfo, err = waitForAppCompute(ctx, w, appName, sdkapps.ComputeStatus_ComputeState_Stopped, getWaitTimeout(cmd), createAppProgressCallback(spinner))
 							spinner.Close()
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
 						} else {
-							appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+							appInfo, err = w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
@@ -69,12 +67,12 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 
 			err := originalRunE(cmd, args)
 			if err != nil {
-				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, stopReq.Name, []string{"STOPPED state", "already"}, "stopped", wrapError)
+				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appNameArg(args), []string{"STOPPED state", "already"}, "stopped", wrapError)
 				if handled {
 					return handledErr
 				}
 			}
-			return wrapError(cmd, stopReq.Name, err)
+			return wrapError(cmd, appNameArg(args), err)
 		}
 
 		updateCommandHelp(stopCmd, "Stop", "stop")

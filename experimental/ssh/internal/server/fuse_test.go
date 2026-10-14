@@ -14,7 +14,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/server"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func (c testCredentials) Configure(context.Context, *config.Config) (credentials
 func TestWorkspaceToken(t *testing.T) {
 	for _, header := range []string{"Bearer token-one", "Basic private-credential", "Bearer ", ""} {
 		t.Run(header, func(t *testing.T) {
-			c, err := databricks.NewWorkspaceClient(&databricks.Config{
+			c, err := sdkclients.New(t.Context(), &config.Config{
 				Host: "https://workspace.test", HostMetadataResolver: noHostMetadata, Token: "stale-config-token",
 				Credentials: testCredentials{authenticate: func(r *http.Request) error {
 					r.Header.Set("Authorization", header)
@@ -56,7 +56,7 @@ func TestWorkspaceToken(t *testing.T) {
 func TestWorkspaceTokenRefreshAndFailure(t *testing.T) {
 	value := "first"
 	var authErr error
-	c, err := databricks.NewWorkspaceClient(&databricks.Config{
+	c, err := sdkclients.New(t.Context(), &config.Config{
 		Host: "https://workspace.test", HostMetadataResolver: noHostMetadata,
 		Credentials: testCredentials{authenticate: func(r *http.Request) error {
 			r.Header.Set("Authorization", "Bearer "+value)
@@ -95,7 +95,7 @@ func TestFuseUserInfo(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
-				c, err := databricks.NewWorkspaceClient(&databricks.Config{
+				c, err := sdkclients.New(t.Context(), &config.Config{
 					Host: "https://workspace.test", HostMetadataResolver: noHostMetadata, Token: "test-token",
 					HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 						assert.Equal(t, "/api/2.0/preview/scim/v2/Me", r.URL.Path)
@@ -118,7 +118,7 @@ func TestFuseUserInfo(t *testing.T) {
 }
 
 func TestStartFuseRegistrationSkipsServerless(t *testing.T) {
-	c, err := databricks.NewWorkspaceClient(&databricks.Config{
+	c, err := sdkclients.New(t.Context(), &config.Config{
 		Host: "https://workspace.test", HostMetadataResolver: noHostMetadata, Token: "test-token",
 		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL)

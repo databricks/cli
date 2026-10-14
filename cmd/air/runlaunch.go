@@ -2,7 +2,6 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"strings"

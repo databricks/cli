@@ -17,12 +17,12 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
@@ -63,7 +63,7 @@ func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string
 		SpaceId: g.existingID,
 	})
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("genie space with ID %s not found", g.existingID))
 			return ""
 		}

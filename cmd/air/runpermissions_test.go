@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +24,7 @@ func TestGrantJobPermissions(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	err = grantJobPermissions(t.Context(), w, "123", []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
@@ -43,13 +45,13 @@ func TestGrantJobPermissions(t *testing.T) {
 func TestExperimentPermissionLevel(t *testing.T) {
 	cases := []struct {
 		job  string
-		want experiments.ExperimentPermissionLevel
+		want accessmanagement.PermissionLevel
 		ok   bool
 	}{
-		{"CAN_VIEW", experiments.ExperimentPermissionLevelCanRead, true},
-		{"CAN_MANAGE_RUN", experiments.ExperimentPermissionLevelCanEdit, true},
-		{"CAN_MANAGE", experiments.ExperimentPermissionLevelCanManage, true},
-		{"IS_OWNER", experiments.ExperimentPermissionLevelCanManage, true},
+		{"CAN_VIEW", accessmanagement.PermissionLevel_CanRead, true},
+		{"CAN_MANAGE_RUN", accessmanagement.PermissionLevel_CanEdit, true},
+		{"CAN_MANAGE", permissionLevelCanManage, true},
+		{"IS_OWNER", permissionLevelCanManage, true},
 		{"CAN_ATTACH_TO", "", false},
 	}
 	for _, tc := range cases {
@@ -75,7 +77,7 @@ func TestGrantExperimentPermissions(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(456)), AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("submit-smoke")}}}}
 	err = grantExperimentPermissions(t.Context(), w, run, []permission{
@@ -104,7 +106,7 @@ func TestResolveSubmittedExperimentIDTimesOut(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// An already-expired context gives up on the first miss without polling.
@@ -144,7 +146,7 @@ func TestApplySubmittedPermissionsAiRuntimeTask(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	applySubmittedPermissions(t.Context(), w, 555, []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},

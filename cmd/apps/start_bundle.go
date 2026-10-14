@@ -7,14 +7,14 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
 // BundleStartOverrideWithWrapper creates a start override function that uses
 // the provided error wrapper for API fallback errors.
-func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.StartAppRequest) {
-	return func(startCmd *cobra.Command, startReq *apps.StartAppRequest) {
+func BundleStartOverrideWithWrapper[R any](wrapError ErrorWrapper) func(*cobra.Command, *R) {
+	return func(startCmd *cobra.Command, _ *R) {
 		makeArgsOptionalWithBundle(startCmd, "start [NAME]")
 
 		originalRunE := startCmd.RunE
@@ -28,13 +28,11 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 					return err
 				}
 				if fromBundle {
-					startReq.Name = appName
-
 					if outputFormat == flags.OutputText {
 						cmdio.LogString(ctx, fmt.Sprintf("Starting app '%s' from project configuration", appName))
 
 						w := cmdctx.WorkspaceClient(ctx)
-						wait, err := w.Apps.Start(ctx, *startReq)
+						_, err := w.Apps.StartApp(ctx, sdkapps.StartAppRequest{Name: new(appName)})
 						if err != nil {
 							handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appName, []string{"ACTIVE state", "already"}, "is deployed", wrapError)
 							if handled {
@@ -43,16 +41,16 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 							return wrapError(cmd, appName, err)
 						}
 
-						var appInfo *apps.App
+						var appInfo *sdkapps.App
 						if shouldWaitForCompletion(cmd) {
 							spinner := cmdio.NewSpinner(ctx)
-							appInfo, err = wait.OnProgress(createAppProgressCallback(spinner)).GetWithTimeout(getWaitTimeout(cmd))
+							appInfo, err = waitForAppCompute(ctx, w, appName, sdkapps.ComputeStatus_ComputeState_Active, getWaitTimeout(cmd), createAppProgressCallback(spinner))
 							spinner.Close()
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
 						} else {
-							appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+							appInfo, err = w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
@@ -70,12 +68,12 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 			err := originalRunE(cmd, args)
 			if err != nil {
-				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, startReq.Name, []string{"ACTIVE state", "already"}, "is deployed", wrapError)
+				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appNameArg(args), []string{"ACTIVE state", "already"}, "is deployed", wrapError)
 				if handled {
 					return handledErr
 				}
 			}
-			return wrapError(cmd, startReq.Name, err)
+			return wrapError(cmd, appNameArg(args), err)
 		}
 
 		updateCommandHelp(startCmd, "Start", "start")

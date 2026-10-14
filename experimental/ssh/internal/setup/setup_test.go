@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -362,7 +362,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 	origPrompt := clusterSelectionPrompt
 	t.Cleanup(func() { clusterSelectionPrompt = origPrompt })
 	promptCalled := false
-	clusterSelectionPrompt = func(_ context.Context, _ *databricks.WorkspaceClient) (string, error) {
+	clusterSelectionPrompt = func(_ context.Context, _ *sdkclients.Clients) (string, error) {
 		promptCalled = true
 		return "picked-cluster", nil
 	}

@@ -2,21 +2,24 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	sdkclusterlibraries "github.com/databricks/sdk-go/clusterlibraries/v2"
+	sdkclusters "github.com/databricks/sdk-go/clusters/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,31 +33,21 @@ const librariesWaitTimeout = 15 * time.Minute
 // 30 minutes before giving up. Terminal states still halt immediately.
 const clusterWaitTimeout = 30 * time.Minute
 
-// ClusterState is the state type for Cluster resources. It extends compute.ClusterSpec with
+// ClusterState is the state type for Cluster resources. It extends clusters.CreateClusterRequest with
 // lifecycle settings and the cluster ID.
 // ClusterId is written to state by DoCreate/DoUpdate for informational purposes; it is not
 // used in diff computation (neither PrepareState nor RemapState set it).
 type ClusterState struct {
-	compute.ClusterSpec
+	clusters.CreateClusterRequest
 
 	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
 
 	// Libraries are installed via the Libraries API, not the cluster spec, and managed as
 	// part of the cluster (see reconcileLibraries and the install in WaitAfterCreate).
-	Libraries []compute.Library `json:"libraries,omitempty"`
+	Libraries []clusterlibraries.Library `json:"libraries,omitempty"`
 }
 
-// Custom marshalers needed because embedded compute.ClusterSpec has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *ClusterState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s ClusterState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-// ClusterRemote extends compute.ClusterDetails with a synthetic Lifecycle field so that
+// ClusterRemote extends clusters.ClusterInfo with a synthetic Lifecycle field so that
 // RemoteType satisfies TestRemoteSuperset (every field in ClusterState exists in ClusterRemote).
 // Lifecycle.Started is populated by DoRead from the cluster's running state.
 //
@@ -63,21 +56,13 @@ func (s ClusterState) MarshalJSON() ([]byte, error) {
 // copies it up so RemapState stays a dumb copy and the field participates in normal drift
 // detection instead of being suppressed as missing_in_remote.
 type ClusterRemote struct {
-	compute.ClusterDetails
-	ApplyPolicyDefaultValues bool            `json:"apply_policy_default_values,omitempty"`
+	clusters.ClusterInfo
+	ApplyPolicyDefaultValues *bool           `json:"apply_policy_default_values,omitempty"`
 	Lifecycle                *StateLifecycle `json:"lifecycle,omitempty"`
 
 	// Libraries is populated by DoRead from the Libraries cluster-status API (the cluster
 	// GET does not return installed libraries), so it participates in drift detection.
-	Libraries []compute.Library `json:"libraries,omitempty"`
-}
-
-func (r *ClusterRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r ClusterRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
+	Libraries []clusterlibraries.Library `json:"libraries,omitempty"`
 }
 
 type ResourceCluster struct {
@@ -92,9 +77,9 @@ func (r *ResourceCluster) New(client *sdkclients.Clients) any {
 
 func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 	s := &ClusterState{
-		ClusterSpec: input.ClusterSpec,
-		Lifecycle:   nil,
-		Libraries:   input.Libraries,
+		CreateClusterRequest: input.CreateClusterRequest,
+		Lifecycle:            nil,
+		Libraries:            input.Libraries,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
@@ -106,57 +91,58 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 // Started is derived from cluster state so the planner can detect start/stop changes.
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	spec := &ClusterState{
-		ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
-		Autoscale:                  input.Autoscale,
-		AutoterminationMinutes:     input.AutoterminationMinutes,
-		AwsAttributes:              input.AwsAttributes,
-		AzureAttributes:            input.AzureAttributes,
-		ClusterLogConf:             input.ClusterLogConf,
-		ClusterName:                input.ClusterName,
-		CustomTags:                 input.CustomTags,
-		DataSecurityMode:           input.DataSecurityMode,
-		DependencyMode:             input.DependencyMode,
-		DockerImage:                input.DockerImage,
-		DriverInstancePoolId:       input.DriverInstancePoolId,
-		DriverNodeTypeId:           input.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          input.EnableElasticDisk,
-		EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
-		GcpAttributes:              input.GcpAttributes,
-		InitScripts:                input.InitScripts,
-		InstancePoolId:             input.InstancePoolId,
-		IsSingleNode:               input.IsSingleNode,
-		Kind:                       input.Kind,
-		NodeTypeId:                 input.NodeTypeId,
-		NumWorkers:                 input.NumWorkers,
-		PolicyId:                   input.PolicyId,
-		RemoteDiskThroughput:       input.RemoteDiskThroughput,
-		RuntimeEngine:              input.RuntimeEngine,
-		SingleUserName:             input.SingleUserName,
-		SparkConf:                  input.SparkConf,
-		SparkEnvVars:               input.SparkEnvVars,
-		SparkVersion:               input.SparkVersion,
-		SshPublicKeys:              input.SshPublicKeys,
-		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               input.UseMlRuntime,
-		WorkloadType:               input.WorkloadType,
-		WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
-		Lifecycle:                  input.Lifecycle,
-		Libraries:                  input.Libraries,
+		CreateClusterRequest: clusters.CreateClusterRequest{
+			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
+			Autoscale:                  input.Autoscale,
+			AutoterminationMinutes:     input.AutoterminationMinutes,
+			AwsAttributes:              input.AwsAttributes,
+			AzureAttributes:            input.AzureAttributes,
+			ClusterLogConf:             input.ClusterLogConf,
+			ClusterName:                input.ClusterName,
+			CustomTags:                 input.CustomTags,
+			DataSecurityMode:           input.DataSecurityMode,
+			DependencyMode:             input.DependencyMode,
+			DockerImage:                input.DockerImage,
+			DriverInstancePoolId:       input.DriverInstancePoolId,
+			DriverNodeTypeId:           input.DriverNodeTypeId,
+			DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
+			EnableElasticDisk:          input.EnableElasticDisk,
+			EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
+			GcpAttributes:              input.GcpAttributes,
+			InitScripts:                input.InitScripts,
+			InstancePoolId:             input.InstancePoolId,
+			IsSingleNode:               input.IsSingleNode,
+			Kind:                       input.Kind,
+			NodeTypeId:                 input.NodeTypeId,
+			NumWorkers:                 input.NumWorkers,
+			PolicyId:                   input.PolicyId,
+			RemoteDiskThroughput:       input.RemoteDiskThroughput,
+			RuntimeEngine:              input.RuntimeEngine,
+			SingleUserName:             input.SingleUserName,
+			SparkConf:                  input.SparkConf,
+			SparkEnvVars:               input.SparkEnvVars,
+			SparkVersion:               input.SparkVersion,
+			SshPublicKeys:              input.SshPublicKeys,
+			TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
+			UseMlRuntime:               input.UseMlRuntime,
+			WorkloadType:               input.WorkloadType,
+			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
+		},
+		Lifecycle: input.Lifecycle,
+		Libraries: input.Libraries,
 	}
 	return spec
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
-	var details *compute.ClusterDetails
-	var libraries []compute.Library
+	var details *clusters.ClusterInfo
+	var libraries []clusterlibraries.Library
 
 	// The cluster GET and the library-status GET are independent, so run them concurrently.
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		var err error
-		details, err = r.client.Clusters.GetByClusterId(ctx, id)
+		details, err = r.getCluster(ctx, id)
 		return err
 	})
 	g.Go(func() error {
@@ -169,8 +155,8 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	}
 
 	remote := &ClusterRemote{
-		ClusterDetails:           *details,
-		ApplyPolicyDefaultValues: false,
+		ClusterInfo:              *details,
+		ApplyPolicyDefaultValues: nil,
 		Lifecycle:                nil,
 		Libraries:                libraries,
 	}
@@ -181,12 +167,10 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	}
 
 	switch details.State {
-	case compute.StateRunning:
-		started := true
-		remote.Lifecycle = &StateLifecycle{Started: &started}
-	case compute.StateTerminated:
-		started := false
-		remote.Lifecycle = &StateLifecycle{Started: &started}
+	case clusters.ClusterState_ClusterState_Running:
+		remote.Lifecycle = &StateLifecycle{Started: new(true)}
+	case clusters.ClusterState_ClusterState_Terminated:
+		remote.Lifecycle = &StateLifecycle{Started: new(false)}
 	default:
 		remote.Lifecycle = nil
 	}
@@ -194,18 +178,63 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	return remote, nil
 }
 
-// readLibraries returns the bundle-managed libraries installed on the cluster.
-// https://docs.databricks.com/api/workspace/libraries/clusterstatus
-func (r *ResourceCluster) readLibraries(ctx context.Context, id string) ([]compute.Library, error) {
-	statuses, err := r.client.Libraries.ClusterStatusByClusterId(ctx, id)
+func (r *ResourceCluster) getCluster(ctx context.Context, id string) (*clusters.ClusterInfo, error) {
+	info, err := r.client.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	var libraries []compute.Library
+	return clusters.ClusterInfoFromSDK(info)
+}
+
+// waitClusterState polls until the cluster reaches target. Reaching one of the
+// failure states first is an error.
+func (r *ResourceCluster) waitClusterState(ctx context.Context, id string, target clusters.ClusterState_ClusterState, failure ...clusters.ClusterState_ClusterState) error {
+	_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*clusters.ClusterInfo, *retries.Err) {
+		details, err := r.getCluster(ctx, id)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		status := details.State
+		statusMessage := utils.Deref(details.StateMessage)
+		if status == target {
+			return details, nil
+		}
+		if slices.Contains(failure, status) {
+			return nil, retries.Halt(fmt.Errorf("failed to reach %s, got %s: %s", target, status, statusMessage))
+		}
+		return nil, retries.Continues(statusMessage)
+	})
+	return err
+}
+
+func (r *ResourceCluster) waitRunning(ctx context.Context, id string) error {
+	return r.waitClusterState(ctx, id, clusters.ClusterState_ClusterState_Running, clusters.ClusterState_ClusterState_Error, clusters.ClusterState_ClusterState_Terminated)
+}
+
+func (r *ResourceCluster) waitTerminated(ctx context.Context, id string) error {
+	return r.waitClusterState(ctx, id, clusters.ClusterState_ClusterState_Terminated, clusters.ClusterState_ClusterState_Error)
+}
+
+func (r *ResourceCluster) clusterStatus(ctx context.Context, id string) (*clusterlibraries.ClusterLibraryStatuses, error) {
+	resp, err := r.client.Libraries.ClusterStatus(ctx, sdkclusterlibraries.ClusterStatusRequest{ClusterId: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	return clusterlibraries.ClusterLibraryStatusesFromSDK(resp)
+}
+
+// readLibraries returns the bundle-managed libraries installed on the cluster.
+// https://docs.databricks.com/api/workspace/libraries/clusterstatus
+func (r *ResourceCluster) readLibraries(ctx context.Context, id string) ([]clusterlibraries.Library, error) {
+	statuses, err := r.clusterStatus(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var libraries []clusterlibraries.Library
 	for _, s := range statuses.LibraryStatuses {
 		// Libraries set for all clusters via the UI are not managed by the bundle; a library
 		// pending uninstall on restart is on its way out. Skip both.
-		if s.Library == nil || s.IsLibraryForAllClusters || s.Status == compute.LibraryInstallStatusUninstallOnRestart {
+		if s.Library == nil || utils.Deref(s.IsLibraryForAllClusters) || s.Status == clusterlibraries.LibraryInstallStatus_UninstallOnRestart {
 			continue
 		}
 		libraries = append(libraries, *s.Library)
@@ -214,11 +243,15 @@ func (r *ResourceCluster) readLibraries(ctx context.Context, id string) ([]compu
 }
 
 func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (string, *ClusterRemote, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
+	request, err := makeCreateCluster(&config.CreateClusterRequest)
 	if err != nil {
 		return "", nil, err
 	}
-	return wait.ClusterId, nil, nil
+	wait, err := r.client.Clusters.CreateCluster(ctx, request)
+	if err != nil {
+		return "", nil, err
+	}
+	return wait.GetClusterId(), nil, nil
 }
 
 // hasClusterSpecChanges reports whether the plan entry changes a Cluster Edit API field —
@@ -244,16 +277,20 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	if hasClusterSpecChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
-		_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-			wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
+		request, err := makeEditCluster(id, &config.CreateClusterRequest)
+		if err != nil {
+			return nil, err
+		}
+		_, err = retries.Poll(ctx, clusterWaitTimeout, func() (*sdkclusters.EditClusterWaiter, *retries.Err) {
+			wait, err := r.client.Clusters.EditCluster(ctx, request)
 			if err == nil {
 				return wait, nil
 			}
 
 			// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
 			// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
-			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "INVALID_STATE" {
-				return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
+			if apierrs.ErrorCode(err) == "INVALID_STATE" {
+				return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apierrs.Message(err)))
 			}
 			return nil, retries.Halt(err)
 		})
@@ -284,12 +321,12 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	alreadyRunning := remoteClusterIsRunning(entry)
 	if desiredStarted && !alreadyRunning {
 		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
-		_, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
+		_, err := r.client.Clusters.StartCluster(ctx, sdkclusters.StartClusterRequest{ClusterId: new(id)})
 		return nil, err
 	} else if !desiredStarted && alreadyRunning {
 		// lifecycle.started=false: fire Delete; WaitAfterUpdate polls for TERMINATED.
 		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
-		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		_, err := r.client.Clusters.DeleteCluster(ctx, sdkclusters.DeleteClusterRequest{ClusterId: new(id)})
 		return nil, err
 	}
 
@@ -303,19 +340,16 @@ func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config
 	}
 
 	if *config.Lifecycle.Started {
-		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
-		return nil, err
+		return nil, r.waitRunning(ctx, id)
 	}
-
-	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, clusterWaitTimeout, nil)
-	return nil, err
+	return nil, r.waitTerminated(ctx, id)
 }
 
 // WaitAfterCreate waits for the cluster to reach RUNNING state (clusters always start on creation).
 // When lifecycle.started=false, it then terminates the cluster.
 func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
-	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
+	err := r.waitRunning(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +359,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 	// the create will cause a wait for libraries to be installed befor the cluster is installed.
 	// this increases the risk of losing the cluster. This is a limitation
 	if len(config.Libraries) > 0 {
-		err = r.client.Libraries.Install(ctx, compute.InstallLibraries{ClusterId: id, Libraries: config.Libraries})
+		err = r.installLibraries(ctx, id, config.Libraries)
 		if err != nil {
 			return nil, err
 		}
@@ -337,30 +371,31 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
 		// started=false: terminate the cluster after it reaches RUNNING.
 		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
-		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		_, err := r.client.Clusters.DeleteCluster(ctx, sdkclusters.DeleteClusterRequest{ClusterId: new(id)})
 		if err != nil {
 			return nil, err
 		}
-		_, err = deleteWaiter.GetWithTimeout(clusterWaitTimeout)
-		return nil, err
+		return nil, r.waitTerminated(ctx, id)
 	}
 
 	return nil, nil
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) error {
-	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
-		ClusterId:       id,
-		NumWorkers:      config.NumWorkers,
-		Autoscale:       config.Autoscale,
-		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
+	request, err := clusters.ResizeClusterRequestToSDK(&clusters.ResizeClusterRequest{
+		ClusterId:  new(id),
+		NumWorkers: config.NumWorkers,
+		Autoscale:  config.Autoscale,
 	})
+	if err != nil {
+		return err
+	}
+	_, err = r.client.Clusters.ResizeCluster(ctx, *request)
 	if err == nil {
 		return nil
 	}
 
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok || apiErr.ErrorCode != "INVALID_STATE" {
+	if apierrs.ErrorCode(err) != "INVALID_STATE" {
 		return err
 	}
 
@@ -371,7 +406,8 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 }
 
 func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *ClusterState) error {
-	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
+	_, err := r.client.Clusters.PermanentDeleteCluster(ctx, sdkclusters.PermanentDeleteClusterRequest{ClusterId: new(id)})
+	return err
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
@@ -386,19 +422,19 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	case "data_security_mode":
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
 		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
-		if change.New == compute.DataSecurityModeDataSecurityModeStandard && change.Remote == compute.DataSecurityModeUserIsolation && change.New == change.Old {
+		if change.New == clusters.DataSecurityMode_DataSecurityModeStandard && change.Remote == clusters.DataSecurityMode_UserIsolation && change.New == change.Old {
 			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
-		} else if change.New == compute.DataSecurityModeDataSecurityModeDedicated && change.Remote == compute.DataSecurityModeSingleUser && change.New == change.Old {
+		} else if change.New == clusters.DataSecurityMode_DataSecurityModeDedicated && change.Remote == clusters.DataSecurityMode_SingleUser && change.New == change.Old {
 			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
-		} else if change.New == compute.DataSecurityModeDataSecurityModeAuto && (change.Remote == compute.DataSecurityModeSingleUser || change.Remote == compute.DataSecurityModeUserIsolation) && change.New == change.Old {
+		} else if change.New == clusters.DataSecurityMode_DataSecurityModeAuto && (change.Remote == clusters.DataSecurityMode_SingleUser || change.Remote == clusters.DataSecurityMode_UserIsolation) && change.New == change.Old {
 			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
 		}
 
 	case "num_workers", "autoscale":
-		if remoteState != nil && remoteState.State == compute.StateRunning {
+		if remoteState != nil && remoteState.State == clusters.ClusterState_ClusterState_Running {
 			change.Action = deployplan.Resize
 		}
 
@@ -424,107 +460,41 @@ func remoteClusterIsRunning(entry *PlanEntry) bool {
 	if !ok {
 		return false
 	}
-	return remote.State == compute.StateRunning
+	return remote.State == clusters.ClusterState_ClusterState_Running
 }
 
-func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	create := compute.CreateCluster{
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CloneFrom:                  nil, // Not supported by DABs
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DependencyMode:             config.DependencyMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
-	}
+func makeCreateCluster(config *clusters.CreateClusterRequest) (sdkclusters.CreateClusterRequest, error) {
+	create := *config
+	create.CloneFrom = nil // Not supported by DABs
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
-	if config.Autoscale == nil && config.NumWorkers == 0 {
-		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
+	if create.Autoscale == nil && create.NumWorkers == nil {
+		create.NumWorkers = new(0)
 	}
 
-	return create
+	request, err := clusters.CreateClusterRequestToSDK(&create)
+	if err != nil {
+		return sdkclusters.CreateClusterRequest{}, err
+	}
+	return *request, nil
 }
 
-func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	edit := compute.EditCluster{
-		ClusterId:                  id,
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DependencyMode:             config.DependencyMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
-	}
+func makeEditCluster(id string, config *clusters.CreateClusterRequest) (sdkclusters.EditClusterRequest, error) {
+	create := *config
+	create.CloneFrom = nil // Not supported by the edit API
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
-	if config.Autoscale == nil && config.NumWorkers == 0 {
-		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
+	if create.Autoscale == nil && create.NumWorkers == nil {
+		create.NumWorkers = new(0)
 	}
 
-	return edit
+	// EditClusterRequest is CreateClusterRequest without clone_from plus the cluster id.
+	request, err := sdkconv.ToSDK[sdkclusters.EditClusterRequest](&create)
+	if err != nil {
+		return sdkclusters.EditClusterRequest{}, err
+	}
+	request.ClusterId = new(id)
+	return *request, nil
 }
 
 // librariesPath is the ClusterState path of the libraries slice, used to detect library changes.
@@ -538,22 +508,34 @@ func (*ResourceCluster) KeyedSlices() map[string]any {
 
 // reconcileLibraries uninstalls libraries dropped from config and installs the desired set.
 // The Libraries API exposes install and uninstall as separate endpoints, so this is two calls.
-func (r *ResourceCluster) reconcileLibraries(ctx context.Context, id string, desired []compute.Library, entry *PlanEntry) error {
+func (r *ResourceCluster) reconcileLibraries(ctx context.Context, id string, desired []clusterlibraries.Library, entry *PlanEntry) error {
 	removed := removedLibraries(desired, entry)
 	if len(removed) > 0 {
-		err := r.client.Libraries.Uninstall(ctx, compute.UninstallLibraries{ClusterId: id, Libraries: removed})
+		request, err := clusterlibraries.UninstallLibrariesRequestToSDK(&clusterlibraries.UninstallLibrariesRequest{ClusterId: new(id), Libraries: removed})
 		if err != nil {
+			return err
+		}
+		if _, err := r.client.Libraries.UninstallLibraries(ctx, *request); err != nil {
 			return err
 		}
 	}
 	if len(desired) > 0 {
-		return r.client.Libraries.Install(ctx, compute.InstallLibraries{ClusterId: id, Libraries: desired})
+		return r.installLibraries(ctx, id, desired)
 	}
 	return nil
 }
 
+func (r *ResourceCluster) installLibraries(ctx context.Context, id string, libraries []clusterlibraries.Library) error {
+	request, err := clusterlibraries.InstallLibrariesRequestToSDK(&clusterlibraries.InstallLibrariesRequest{ClusterId: new(id), Libraries: libraries})
+	if err != nil {
+		return err
+	}
+	_, err = r.client.Libraries.InstallLibraries(ctx, *request)
+	return err
+}
+
 // removedLibraries returns libraries present in the remote state but absent from the desired set.
-func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Library {
+func removedLibraries(desired []clusterlibraries.Library, entry *PlanEntry) []clusterlibraries.Library {
 	remote, ok := entry.RemoteState.(*ClusterRemote)
 	if !ok || remote == nil {
 		return nil
@@ -562,7 +544,7 @@ func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Lib
 	for _, l := range desired {
 		desiredKeys[libraryMapKey(l)] = struct{}{}
 	}
-	var result []compute.Library
+	var result []clusterlibraries.Library
 	for _, l := range remote.Libraries {
 		if _, ok := desiredKeys[libraryMapKey(l)]; !ok {
 			result = append(result, l)
@@ -574,15 +556,15 @@ func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Lib
 // waitForInstall polls until every desired library reaches a terminal installed state. It returns
 // early without waiting when the cluster is not running: installs only progress on a running
 // cluster and are queued until it next starts.
-func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired []compute.Library) error {
+func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired []clusterlibraries.Library) error {
 	if len(desired) == 0 {
 		return nil
 	}
-	details, err := r.client.Clusters.GetByClusterId(ctx, id)
+	details, err := r.getCluster(ctx, id)
 	if err != nil {
 		return err
 	}
-	if details.State != compute.StateRunning {
+	if details.State != clusters.ClusterState_ClusterState_Running {
 		log.Debugf(ctx, "cluster %s is not running (%s); skipping wait for library installation", id, details.State)
 		return nil
 	}
@@ -598,7 +580,7 @@ func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired
 	}
 
 	_, err = retries.Poll(ctx, librariesWaitTimeout, func() (*struct{}, *retries.Err) {
-		statuses, err := r.client.Libraries.ClusterStatusByClusterId(ctx, id)
+		statuses, err := r.clusterStatus(ctx, id)
 		if err != nil {
 			return nil, retries.Halt(err)
 		}
@@ -611,11 +593,11 @@ func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired
 				continue
 			}
 			switch s.Status {
-			case compute.LibraryInstallStatusFailed:
+			case clusterlibraries.LibraryInstallStatus_Failed:
 				return nil, retries.Halt(fmt.Errorf("library %s failed to install: %s", libraryWaitMapKey(*s.Library), strings.Join(s.Messages, "; ")))
-			case compute.LibraryInstallStatusInstalled, compute.LibraryInstallStatusSkipped, compute.LibraryInstallStatusRestored:
+			case clusterlibraries.LibraryInstallStatus_Installed, clusterlibraries.LibraryInstallStatus_Skipped, clusterlibraries.LibraryInstallStatus_Restored:
 				pending--
-			case compute.LibraryInstallStatusPending, compute.LibraryInstallStatusResolving, compute.LibraryInstallStatusInstalling, compute.LibraryInstallStatusUninstallOnRestart:
+			case clusterlibraries.LibraryInstallStatus_Resolving, clusterlibraries.LibraryInstallStatus_Installing, clusterlibraries.LibraryInstallStatus_UninstallOnRestart:
 				// Still in progress (or being removed); keep polling.
 			}
 		}
@@ -628,48 +610,48 @@ func (r *ResourceCluster) waitForInstall(ctx context.Context, id string, desired
 }
 
 // libraryWaitKey identifies a library by its primary field only, used to match install-status reports.
-func libraryWaitKey(l compute.Library) (string, string) {
+func libraryWaitKey(l clusterlibraries.Library) (string, string) {
 	switch {
-	case l.Whl != "":
-		return "whl", l.Whl
-	case l.Jar != "":
-		return "jar", l.Jar
-	case l.Egg != "":
-		return "egg", l.Egg
-	case l.Requirements != "":
-		return "requirements", l.Requirements
+	case utils.Deref(l.Whl) != "":
+		return "whl", *l.Whl
+	case utils.Deref(l.Jar) != "":
+		return "jar", *l.Jar
+	case utils.Deref(l.Egg) != "":
+		return "egg", *l.Egg
+	case utils.Deref(l.Requirements) != "":
+		return "requirements", *l.Requirements
 	case l.Pypi != nil:
-		return "pypi", l.Pypi.Package
+		return "pypi", utils.Deref(l.Pypi.Package)
 	case l.Maven != nil:
-		return "maven", l.Maven.Coordinates
+		return "maven", utils.Deref(l.Maven.Coordinates)
 	case l.Cran != nil:
-		return "cran", l.Cran.Package
+		return "cran", utils.Deref(l.Cran.Package)
 	}
 	return "", ""
 }
 
 // libraryKey extends libraryWaitKey with repo/exclusions so a repo-only change is detected.
-func libraryKey(l compute.Library) (string, string) {
+func libraryKey(l clusterlibraries.Library) (string, string) {
 	typ, id := libraryWaitKey(l)
 	switch {
 	case l.Pypi != nil:
-		return typ, id + ";" + l.Pypi.Repo
+		return typ, id + ";" + utils.Deref(l.Pypi.Repo)
 	case l.Maven != nil:
-		return typ, id + ";" + l.Maven.Repo + ";" + strings.Join(l.Maven.Exclusions, ",")
+		return typ, id + ";" + utils.Deref(l.Maven.Repo) + ";" + strings.Join(l.Maven.Exclusions, ",")
 	case l.Cran != nil:
-		return typ, id + ";" + l.Cran.Repo
+		return typ, id + ";" + utils.Deref(l.Cran.Repo)
 	}
 	return typ, id
 }
 
 // libraryMapKey flattens libraryKey into a single string for map lookups.
-func libraryMapKey(l compute.Library) string {
+func libraryMapKey(l clusterlibraries.Library) string {
 	f, v := libraryKey(l)
 	return f + "=" + v
 }
 
 // libraryWaitMapKey flattens libraryWaitKey into a single string for map lookups.
-func libraryWaitMapKey(l compute.Library) string {
+func libraryWaitMapKey(l clusterlibraries.Library) string {
 	f, v := libraryWaitKey(l)
 	return f + "=" + v
 }

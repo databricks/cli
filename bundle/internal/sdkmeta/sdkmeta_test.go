@@ -2,11 +2,13 @@ package sdkmeta
 
 import (
 	"reflect"
-	"strings"
+	"slices"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal/clijson"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,44 +57,18 @@ type testRoot struct {
 func TestBuild(t *testing.T) {
 	doc, err := clijson.Parse("../../../.codegen/cli.json")
 	require.NoError(t, err)
-	_, err = Build(reflect.TypeFor[testRoot](), doc.Schemas)
+	m, err := Build(reflect.TypeFor[config.Root](), doc.Schemas)
 	require.NoError(t, err)
-}
 
-func TestDump(t *testing.T) {
-	doc, _ := clijson.Parse("../../../.codegen/cli.json")
-	m, _ := Build(reflect.TypeFor[testRoot](), doc.Schemas)
-	byOld := map[string][]string{}
-	for typ, n := range m.Types() {
-		byOld[n] = append(byOld[n], typeName(typ))
-	}
-	for n, ts := range byOld {
-		if len(ts) > 1 {
-			t.Logf("SHARED %s <- %v", n, ts)
+	var missing []string
+	for typ, name := range m.Types() {
+		if _, ok := nativeDefinitionNames[name]; ok {
+			continue
 		}
-		if _, ok := doc.Schemas[n]; !ok {
-			t.Logf("NOSCHEMA %s <- %v", n, ts)
+		if _, ok := doc.Schemas[name]; !ok {
+			missing = append(missing, typeName(typ)+" -> "+name)
 		}
 	}
-	t.Logf("mapped %d", len(m.Types()))
-}
-
-func TestEnvVar(t *testing.T) {
-	doc, _ := clijson.Parse("../../../.codegen/cli.json")
-	m, _ := Build(reflect.TypeFor[testRoot](), doc.Schemas)
-	for typ, n := range m.Types() {
-		if typ.Name() == "EnvVar" {
-			t.Logf("%s %s", typeName(typ), n)
-		}
-	}
-}
-
-func TestPipelinesStorage(t *testing.T) {
-	doc, _ := clijson.Parse("../../../.codegen/cli.json")
-	m, _ := Build(reflect.TypeFor[testRoot](), doc.Schemas)
-	for typ, n := range m.Types() {
-		if strings.Contains(typeName(typ), "pipelines/v2") && strings.Contains(typ.Name(), "Info") {
-			t.Logf("%s %s %v", typeName(typ), n, m.Required(typ))
-		}
-	}
+	slices.Sort(missing)
+	assert.Empty(t, missing, "mapped to schemas not in cli.json")
 }

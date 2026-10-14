@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func TestServerSupportsResume(t *testing.T) {
 			})
 			server := httptest.NewServer(mux)
 			defer server.Close()
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
+			client, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, serverSupportsResume(t.Context(), client, "cluster", 7772, ""))
 		})
@@ -65,7 +66,7 @@ func TestCreateWebsocketConnectionReattachRejected(t *testing.T) {
 			})
 			server := httptest.NewServer(mux)
 			defer server.Close()
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
+			client, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
 			require.NoError(t, err)
 			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 			defer cancel()
@@ -105,7 +106,7 @@ func TestCreateWebsocketConnectionRetriesRequestTimeout(t *testing.T) {
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
+	client, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()

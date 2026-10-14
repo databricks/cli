@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/shellquote"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -113,7 +113,7 @@ Examples:
 					sandboxID = def
 					sandboxGatewayHost = sb.GatewayHost
 					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
+				case apierrs.Is(err, apierrs.ErrNotFound):
 					_ = clearDefault(ctx, profile)
 					return fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", def)
 				default:
@@ -133,7 +133,7 @@ Examples:
 				case err == nil:
 					sandboxGatewayHost = sb.GatewayHost
 					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
+				case apierrs.Is(err, apierrs.ErrNotFound):
 					return fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
 				default:
 					warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))

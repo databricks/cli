@@ -1,13 +1,12 @@
 package aircmd
 
 import (
+	"net/http"
 	"testing"
 
-	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +20,7 @@ func TestFindForEachTask(t *testing.T) {
 	// The foreach task is found even when it isn't first.
 	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{
 		{TaskKey: new("a")},
-		{TaskKey: new("sweep"), ForEachTask: &jobs.RunForEachTask{}},
+		{TaskKey: new("sweep"), ForEachTask: &jobs.ForEachTask{}},
 	}}
 	got := findForEachTask(run)
 	require.NotNil(t, got)
@@ -30,33 +29,45 @@ func TestFindForEachTask(t *testing.T) {
 
 func sweepTaskFixture() *jobs.RunTask {
 	return &jobs.RunTask{
-		RunId: new(int64(99)),
-		ForEachTask: &jobs.RunForEachTask{
-			Stats: &jobs.ForEachStats{TaskRunStats: &jobs.ForEachTaskTaskRunStats{
-				TotalIterations:     4,
-				SucceededIterations: 1,
-				FailedIterations:    1,
-				ActiveIterations:    2,
-				CompletedIterations: 2,
-			}},
-		},
+		TaskKey:     new("sweep"),
+		RunId:       new(int64(99)),
+		ForEachTask: &jobs.ForEachTask{},
 	}
+}
+
+// sweepServer serves runs/get for the parent run 1 (with the foreach task's
+// stats) and for the foreach task run 99 (with iterationsBody, or an error when
+// it is empty).
+func sweepServer(t *testing.T, iterationsBody string) *sdkclients.Clients {
+	t.Helper()
+	return fakeWorkspace(t, map[string]http.HandlerFunc{
+		"GET /api/2.2/jobs/runs/get": func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Query().Get("run_id") {
+			case "1":
+				_, _ = w.Write([]byte(`{"run_id":1,"tasks":[{"task_key":"sweep","run_id":99,"for_each_task":{"stats":{"task_run_stats":{
+					"total_iterations":4,"succeeded_iterations":1,"failed_iterations":1,"active_iterations":2,"completed_iterations":2}}}}]}`))
+			case "99":
+				if iterationsBody == "" {
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte(`{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"Run 99 does not exist."}`))
+					return
+				}
+				_, _ = w.Write([]byte(iterationsBody))
+			default:
+				t.Errorf("unexpected runs/get for run %s", r.URL.Query().Get("run_id"))
+			}
+		},
+	})
 }
 
 func TestBuildSweepInfo(t *testing.T) {
 	ctx := t.Context()
 
 	t.Run("counts and iteration rows", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: new(int64(99))}).Return(
-			&jobs.GetRunResponse{Iterations: []jobs.RunTask{{
-				TaskKey:          new("iter_0"),
-				RunId:            new(int64(100)),
-				State:            &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success},
-				GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: new("/Users/me@example.com/exp")},
-			}}}, nil)
+		w := sweepServer(t, `{"iterations":[{"task_key":"iter_0","run_id":100,"state":{"result_state":"SUCCESS"},
+			"gen_ai_compute_task":{"mlflow_experiment_name":"/Users/me@example.com/exp"}}]}`)
 
-		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())
+		info := buildSweepInfo(ctx, w, 1, sweepTaskFixture())
 		assert.Equal(t, 4, info.Total)
 		assert.Equal(t, 2, info.Completed)
 		assert.Equal(t, 1, info.Succeeded)
@@ -70,11 +81,9 @@ func TestBuildSweepInfo(t *testing.T) {
 	})
 
 	t.Run("iteration lookup failure still returns counts", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: new(int64(99))}).Return(
-			nil, apierrs.ErrResourceDoesNotExist)
+		w := sweepServer(t, "")
 
-		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())
+		info := buildSweepInfo(ctx, w, 1, sweepTaskFixture())
 		assert.Equal(t, 4, info.Total)
 		assert.Empty(t, info.Tasks)
 	})

@@ -261,7 +261,7 @@ func TestEnrichFromAiRuntimeTask(t *testing.T) {
 				Experiment: new("/Users/me@example.com/my-exp"),
 				Deployments: []jobs.DeploymentSpec{{
 					CommandPath: new("/Workspace/run/command.sh"),
-					Compute:     jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorTypeGpu1xA10, AcceleratorCount: new(1)},
+					Compute:     &jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu1xA10, AcceleratorCount: new(1)},
 				}},
 			},
 		}}}

@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -71,7 +71,7 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 // clusterSelectionPrompt is a package-level var so tests can replace it with a mock.
 var clusterSelectionPrompt = defaultClusterSelectionPrompt
 
-func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+func defaultClusterSelectionPrompt(ctx context.Context, client *sdkclients.Clients) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading clusters.")
 	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
@@ -90,7 +90,7 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 	return id, nil
 }
 
-func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+func Setup(ctx context.Context, client *sdkclients.Clients, opts SetupOptions) error {
 	// Reject invalid server-lifecycle flag values before the cluster picker and
 	// cluster-access check: these values don't depend on cluster details.
 	if opts.MaxClients < 1 {

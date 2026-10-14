@@ -17,11 +17,12 @@ import (
 
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +65,7 @@ func detectAppNameFromBundle(cmd *cobra.Command) string {
 	// If there's exactly one app, return its name
 	if len(bundleApps) == 1 {
 		for _, app := range bundleApps {
-			return app.Name
+			return utils.Deref(app.Name)
 		}
 	}
 
@@ -185,7 +186,7 @@ Examples:
 			})
 			if err != nil {
 				// The Apps API reports both a never-created and a deleted app with a 404.
-				if errors.Is(err, apierr.ErrNotFound) {
+				if apierrs.Is(err, apierrs.ErrNotFound) {
 					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)

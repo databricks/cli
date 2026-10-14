@@ -1,20 +1,28 @@
 package statemgmt
 
 import (
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
 	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/instancepools/v2"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -189,8 +197,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			JobRuns: map[string]*resources.JobRun{
 				"test_job_run": {
-					RunNow: jobs.RunNow{
-						JobId: 1234,
+					RunNowRequest: jobs.RunNowRequest{
+						JobId: new(int64(1234)),
 					},
 				},
 			},
@@ -203,8 +211,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					CreateModelRequest: ml.CreateModelRequest{
-						Name: "test_mlflow_model",
+					CreateRegisteredModelRequest: modelregistry.CreateRegisteredModelRequest{
+						Name: new("test_mlflow_model"),
 					},
 				},
 			},
@@ -224,22 +232,22 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-						Name: "test_registered_model",
+					CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{
+						Name: new("test_registered_model"),
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: catalog.CreateMonitor{
+					CreateMonitor: qualitymonitors.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 			},
 			Catalogs: map[string]*resources.Catalog{
 				"test_catalog": {
-					CreateCatalog: catalog.CreateCatalog{
-						Name: "test_catalog",
+					CreateCatalog: resources.CreateCatalog{
+						Name: new("test_catalog"),
 					},
 				},
 			},
@@ -252,22 +260,22 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			ExternalLocations: map[string]*resources.ExternalLocation{
 				"test_external_location": {
-					CreateExternalLocation: catalog.CreateExternalLocation{
-						Name: "test_external_location",
-						Url:  "s3://test-bucket/path",
+					CreateExternalLocation: resources.CreateExternalLocation{
+						Name: new("test_external_location"),
+						Url:  new("s3://test-bucket/path"),
 					},
 				},
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-						Name: "test_volume",
+					CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+						Name: new("test_volume"),
 					},
 				},
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: jobs.ClusterSpec_NewCluster{
+					CreateClusterRequest: clusters.CreateClusterRequest{
 						ClusterName: new("test_cluster"),
 					},
 				},
@@ -300,45 +308,45 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Secrets: map[string]*resources.Secret{
 				"test_secret": {
-					Secret: catalog.Secret{
-						CatalogName: "main",
-						SchemaName:  "default",
-						Name:        "test_secret",
+					Secret: secrets.Secret{
+						CatalogName: new("main"),
+						SchemaName:  new("default"),
+						Name:        new("test_secret"),
 					},
 				},
 			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{
 				"test_sql_warehouse": {
-					CreateWarehouseRequest: sql.CreateWarehouseRequest{
-						Name: "test_sql_warehouse",
+					CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
+						Name: new("test_sql_warehouse"),
 					},
 				},
 			},
 			DatabaseInstances: map[string]*resources.DatabaseInstance{
 				"test_database_instance": {
 					DatabaseInstance: database.DatabaseInstance{
-						Name: "test_database_instance",
+						Name: new("test_database_instance"),
 					},
 				},
 			},
 			DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
 				"test_database_catalog": {
 					DatabaseCatalog: database.DatabaseCatalog{
-						Name: "test_database_catalog",
+						Name: new("test_database_catalog"),
 					},
 				},
 			},
 			SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
 				"test_synced_database_table": {
 					SyncedDatabaseTable: database.SyncedDatabaseTable{
-						Name: "test_synced_database_table",
+						Name: new("test_synced_database_table"),
 					},
 				},
 			},
 			Alerts: map[string]*resources.Alert{
 				"test_alert": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert",
+					Alert: alerts.Alert{
+						DisplayName: new("test_alert"),
 					},
 				},
 			},
@@ -347,7 +355,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					PostgresProjectConfig: resources.PostgresProjectConfig{
 						ProjectId: "test-project",
 						ProjectSpec: postgres.ProjectSpec{
-							DisplayName: "test_postgres_project",
+							DisplayName: new("test_postgres_project"),
 						},
 					},
 				},
@@ -407,29 +415,29 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
-					CreateEndpoint: vectorsearch.CreateEndpoint{
-						Name: "test_vector_search_endpoint",
+					CreateEndpointRequest: vectorsearch.CreateEndpointRequest{
+						Name: new("test_vector_search_endpoint"),
 					},
 				},
 			},
 			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 				"test_vector_search_index": {
 					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-						Name: "test_vector_search_index",
+						Name: new("test_vector_search_index"),
 					},
 				},
 			},
 			InstancePools: map[string]*resources.InstancePool{
 				"test_instance_pool": {
-					CreateInstancePool: compute.CreateInstancePool{
-						InstancePoolName: "test_instance_pool",
+					CreateInstancePoolRequest: instancepools.CreateInstancePoolRequest{
+						InstancePoolName: new("test_instance_pool"),
 					},
 				},
 			},
 			ClusterPolicies: map[string]*resources.ClusterPolicy{
 				"test_cluster_policy": {
-					CreatePolicy: compute.CreatePolicy{
-						Name: "test_cluster_policy",
+					CreatePolicyRequest: clusterpolicies.CreatePolicyRequest{
+						Name: new("test_cluster_policy"),
 					},
 				},
 			},
@@ -596,13 +604,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			JobRuns: map[string]*resources.JobRun{
 				"test_job_run": {
-					RunNow: jobs.RunNow{
-						JobId: 1234,
+					RunNowRequest: jobs.RunNowRequest{
+						JobId: new(int64(1234)),
 					},
 				},
 				"test_job_run_new": {
-					RunNow: jobs.RunNow{
-						JobId: 5678,
+					RunNowRequest: jobs.RunNowRequest{
+						JobId: new(int64(5678)),
 					},
 				},
 			},
@@ -620,13 +628,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Models: map[string]*resources.MlflowModel{
 				"test_mlflow_model": {
-					CreateModelRequest: ml.CreateModelRequest{
-						Name: "test_mlflow_model",
+					CreateRegisteredModelRequest: modelregistry.CreateRegisteredModelRequest{
+						Name: new("test_mlflow_model"),
 					},
 				},
 				"test_mlflow_model_new": {
-					CreateModelRequest: ml.CreateModelRequest{
-						Name: "test_mlflow_model_new",
+					CreateRegisteredModelRequest: modelregistry.CreateRegisteredModelRequest{
+						Name: new("test_mlflow_model_new"),
 					},
 				},
 			},
@@ -656,37 +664,37 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			RegisteredModels: map[string]*resources.RegisteredModel{
 				"test_registered_model": {
-					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-						Name: "test_registered_model",
+					CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{
+						Name: new("test_registered_model"),
 					},
 				},
 				"test_registered_model_new": {
-					CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-						Name: "test_registered_model_new",
+					CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{
+						Name: new("test_registered_model_new"),
 					},
 				},
 			},
 			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
-					CreateMonitor: catalog.CreateMonitor{
+					CreateMonitor: qualitymonitors.CreateMonitor{
 						TableName: "test_monitor",
 					},
 				},
 				"test_monitor_new": {
-					CreateMonitor: catalog.CreateMonitor{
+					CreateMonitor: qualitymonitors.CreateMonitor{
 						TableName: "test_monitor_new",
 					},
 				},
 			},
 			Catalogs: map[string]*resources.Catalog{
 				"test_catalog": {
-					CreateCatalog: catalog.CreateCatalog{
-						Name: "test_catalog",
+					CreateCatalog: resources.CreateCatalog{
+						Name: new("test_catalog"),
 					},
 				},
 				"test_catalog_new": {
-					CreateCatalog: catalog.CreateCatalog{
-						Name: "test_catalog_new",
+					CreateCatalog: resources.CreateCatalog{
+						Name: new("test_catalog_new"),
 					},
 				},
 			},
@@ -704,32 +712,32 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			ExternalLocations: map[string]*resources.ExternalLocation{
 				"test_external_location": {
-					CreateExternalLocation: catalog.CreateExternalLocation{
-						Name: "test_external_location",
-						Url:  "s3://test-bucket/path",
+					CreateExternalLocation: resources.CreateExternalLocation{
+						Name: new("test_external_location"),
+						Url:  new("s3://test-bucket/path"),
 					},
 				},
 			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
-					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-						Name: "test_volume",
+					CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+						Name: new("test_volume"),
 					},
 				},
 				"test_volume_new": {
-					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-						Name: "test_volume_new",
+					CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+						Name: new("test_volume_new"),
 					},
 				},
 			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
-					ClusterSpec: jobs.ClusterSpec_NewCluster{
+					CreateClusterRequest: clusters.CreateClusterRequest{
 						ClusterName: new("test_cluster"),
 					},
 				},
 				"test_cluster_new": {
-					ClusterSpec: jobs.ClusterSpec_NewCluster{
+					CreateClusterRequest: clusters.CreateClusterRequest{
 						ClusterName: new("test_cluster_new"),
 					},
 				},
@@ -780,77 +788,77 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Secrets: map[string]*resources.Secret{
 				"test_secret": {
-					Secret: catalog.Secret{
-						CatalogName: "main",
-						SchemaName:  "default",
-						Name:        "test_secret",
+					Secret: secrets.Secret{
+						CatalogName: new("main"),
+						SchemaName:  new("default"),
+						Name:        new("test_secret"),
 					},
 				},
 				"test_secret_new": {
-					Secret: catalog.Secret{
-						CatalogName: "main",
-						SchemaName:  "default",
-						Name:        "test_secret_new",
+					Secret: secrets.Secret{
+						CatalogName: new("main"),
+						SchemaName:  new("default"),
+						Name:        new("test_secret_new"),
 					},
 				},
 			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{
 				"test_sql_warehouse": {
-					CreateWarehouseRequest: sql.CreateWarehouseRequest{
-						Name: "test_sql_warehouse",
+					CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
+						Name: new("test_sql_warehouse"),
 					},
 				},
 				"test_sql_warehouse_new": {
-					CreateWarehouseRequest: sql.CreateWarehouseRequest{
-						Name: "test_sql_warehouse_new",
+					CreateWarehouseRequest: warehouses.CreateWarehouseRequest{
+						Name: new("test_sql_warehouse_new"),
 					},
 				},
 			},
 			DatabaseInstances: map[string]*resources.DatabaseInstance{
 				"test_database_instance": {
 					DatabaseInstance: database.DatabaseInstance{
-						Name: "test_database_instance",
+						Name: new("test_database_instance"),
 					},
 				},
 				"test_database_instance_new": {
 					DatabaseInstance: database.DatabaseInstance{
-						Name: "test_database_instance_new",
+						Name: new("test_database_instance_new"),
 					},
 				},
 			},
 			DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
 				"test_database_catalog": {
 					DatabaseCatalog: database.DatabaseCatalog{
-						Name: "test_database_catalog",
+						Name: new("test_database_catalog"),
 					},
 				},
 				"test_database_catalog_new": {
 					DatabaseCatalog: database.DatabaseCatalog{
-						Name: "test_database_catalog_new",
+						Name: new("test_database_catalog_new"),
 					},
 				},
 			},
 			SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
 				"test_synced_database_table": {
 					SyncedDatabaseTable: database.SyncedDatabaseTable{
-						Name: "test_synced_database_table",
+						Name: new("test_synced_database_table"),
 					},
 				},
 				"test_synced_database_table_new": {
 					SyncedDatabaseTable: database.SyncedDatabaseTable{
-						Name: "test_synced_database_table_new",
+						Name: new("test_synced_database_table_new"),
 					},
 				},
 			},
 			Alerts: map[string]*resources.Alert{
 				"test_alert": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert",
+					Alert: alerts.Alert{
+						DisplayName: new("test_alert"),
 					},
 				},
 				"test_alert_new": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert_new",
+					Alert: alerts.Alert{
+						DisplayName: new("test_alert_new"),
 					},
 				},
 			},
@@ -859,7 +867,7 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					PostgresProjectConfig: resources.PostgresProjectConfig{
 						ProjectId: "test-project",
 						ProjectSpec: postgres.ProjectSpec{
-							DisplayName: "test_postgres_project",
+							DisplayName: new("test_postgres_project"),
 						},
 					},
 				},
@@ -867,7 +875,7 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					PostgresProjectConfig: resources.PostgresProjectConfig{
 						ProjectId: "test-project-new",
 						ProjectSpec: postgres.ProjectSpec{
-							DisplayName: "test_postgres_project_new",
+							DisplayName: new("test_postgres_project_new"),
 						},
 					},
 				},
@@ -956,49 +964,49 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
-					CreateEndpoint: vectorsearch.CreateEndpoint{
-						Name: "test_vector_search_endpoint",
+					CreateEndpointRequest: vectorsearch.CreateEndpointRequest{
+						Name: new("test_vector_search_endpoint"),
 					},
 				},
 				"test_vector_search_endpoint_new": {
-					CreateEndpoint: vectorsearch.CreateEndpoint{
-						Name: "test_vector_search_endpoint_new",
+					CreateEndpointRequest: vectorsearch.CreateEndpointRequest{
+						Name: new("test_vector_search_endpoint_new"),
 					},
 				},
 			},
 			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 				"test_vector_search_index": {
 					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-						Name: "test_vector_search_index",
+						Name: new("test_vector_search_index"),
 					},
 				},
 				"test_vector_search_index_new": {
 					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-						Name: "test_vector_search_index_new",
+						Name: new("test_vector_search_index_new"),
 					},
 				},
 			},
 			InstancePools: map[string]*resources.InstancePool{
 				"test_instance_pool": {
-					CreateInstancePool: compute.CreateInstancePool{
-						InstancePoolName: "test_instance_pool",
+					CreateInstancePoolRequest: instancepools.CreateInstancePoolRequest{
+						InstancePoolName: new("test_instance_pool"),
 					},
 				},
 				"test_instance_pool_new": {
-					CreateInstancePool: compute.CreateInstancePool{
-						InstancePoolName: "test_instance_pool_new",
+					CreateInstancePoolRequest: instancepools.CreateInstancePoolRequest{
+						InstancePoolName: new("test_instance_pool_new"),
 					},
 				},
 			},
 			ClusterPolicies: map[string]*resources.ClusterPolicy{
 				"test_cluster_policy": {
-					CreatePolicy: compute.CreatePolicy{
-						Name: "test_cluster_policy",
+					CreatePolicyRequest: clusterpolicies.CreatePolicyRequest{
+						Name: new("test_cluster_policy"),
 					},
 				},
 				"test_cluster_policy_new": {
-					CreatePolicy: compute.CreatePolicy{
-						Name: "test_cluster_policy_new",
+					CreatePolicyRequest: clusterpolicies.CreatePolicyRequest{
+						Name: new("test_cluster_policy_new"),
 					},
 				},
 			},

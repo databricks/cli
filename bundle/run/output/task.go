@@ -28,8 +28,18 @@ type (
 	}
 )
 
+// structToString renders val as indented JSON with keys sorted, so the output
+// does not depend on the field order of the API types.
 func structToString(val any) (string, error) {
-	b, err := json.MarshalIndent(val, "", "  ")
+	data, err := json.Marshal(val)
+	if err != nil {
+		return "", err
+	}
+	var generic any
+	if err := json.Unmarshal(data, &generic); err != nil {
+		return "", err
+	}
+	b, err := json.MarshalIndent(generic, "", "  ")
 	if err != nil {
 		return "", err
 	}

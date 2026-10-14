@@ -4,11 +4,10 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"testing"
 
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/workspaceapi"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -144,6 +143,28 @@ func TestFolderACLCanWriteRealisticACLs(t *testing.T) {
 	assert.False(t, aclFor(t, sharedDirACL).CanWrite(other))
 }
 
+// workspaceWithACL serves get-status for the given directories (path -> object id)
+// and returns getPerms for the permissions read of any of them.
+func workspaceWithACL(t *testing.T, ids map[string]int64, getPerms func() any) *workspaceapi.Client {
+	w, server := bundletest.NewClients(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		path := req.URL.Query().Get("path")
+		id, ok := ids[path]
+		if !ok {
+			return testserver.Response{StatusCode: 404, Body: map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": path}}
+		}
+		return workspaceapi.ObjectInfo{ObjectId: id, ObjectType: workspaceapi.ObjectTypeDirectory, Path: path}
+	})
+	server.Handle("GET", "/api/2.0/permissions/directories/{id}", func(req testserver.Request) any {
+		return getPerms()
+	})
+	return w.Workspace
+}
+
+func apiError(status int, code string) testserver.Response {
+	return testserver.Response{StatusCode: status, Body: map[string]string{"error_code": code, "message": code}}
+}
+
 func TestCheckWritable(t *testing.T) {
 	const folder = "/Workspace/f"
 	me := user("me@example.com")
@@ -171,72 +192,55 @@ func TestCheckWritable(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		getPerms func() (*workspaceapi.WorkspaceObjectPermissions, error)
+		getPerms func() any
 		want     Writability
 	}{
 		{
 			"writable",
-			func() (*workspaceapi.WorkspaceObjectPermissions, error) { return writableACL, nil },
+			func() any { return writableACL },
 			WritabilityWritable,
 		},
 		{
 			// Reading the ACL is denied because it requires manage access, so the
 			// user definitely cannot write. This is the common real-world case.
 			"permission denied on ACL read means not writable",
-			func() (*workspaceapi.WorkspaceObjectPermissions, error) {
-				return nil, &apierr.APIError{StatusCode: 403, ErrorCode: "PERMISSION_DENIED"}
-			},
+			func() any { return apiError(403, "PERMISSION_DENIED") },
 			WritabilityNotWritable,
 		},
 		{
 			"readable ACL without a write grant means not writable",
-			func() (*workspaceapi.WorkspaceObjectPermissions, error) { return readOnlyACL, nil },
+			func() any { return readOnlyACL },
 			WritabilityNotWritable,
 		},
 		{
 			"other errors are unknown",
-			func() (*workspaceapi.WorkspaceObjectPermissions, error) {
-				return nil, &apierr.APIError{StatusCode: 500}
-			},
+			func() any { return apiError(500, "INTERNAL_ERROR") },
 			WritabilityUnknown,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := mocks.NewMockWorkspaceClient(t)
-			w := m.GetMockWorkspaceAPI()
-			w.EXPECT().GetStatusByPath(mock.Anything, folder).
-				Return(&workspaceapi.ObjectInfo{ObjectId: 7, Path: folder}, nil)
-			w.EXPECT().GetPermissions(mock.Anything, mock.Anything).Return(new(tc.getPerms()))
-
+			w := workspaceWithACL(t, map[string]int64{folder: 7}, tc.getPerms)
 			assert.Equal(t, tc.want, CheckWritable(t.Context(), w, folder, me))
 		})
 	}
 }
 
 func TestResolveFolderACLWalksUpToClosestExistingAncestor(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	w := m.GetMockWorkspaceAPI()
-
 	// The requested folder does not exist yet; its parent does.
-	w.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/root/files").
-		Return(nil, &apierr.APIError{StatusCode: 404})
-	w.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/root").
-		Return(&workspaceapi.ObjectInfo{ObjectId: 42, Path: "/Workspace/root"}, nil)
-	w.EXPECT().GetPermissions(mock.Anything, workspaceapi.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   "42",
-		WorkspaceObjectType: "directories",
-	}).Return(&workspaceapi.WorkspaceObjectPermissions{
-		AccessControlList: []workspaceapi.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "me@example.com",
-				AllPermissions: []workspaceapi.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
+	w := workspaceWithACL(t, map[string]int64{"/Workspace/root": 42}, func() any {
+		return &workspaceapi.WorkspaceObjectPermissions{
+			AccessControlList: []workspaceapi.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "me@example.com",
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
 				},
 			},
-		},
-	}, nil)
+		}
+	})
 
 	acl, err := ResolveFolderACL(t.Context(), w, "/Workspace/root/files")
 	require.NoError(t, err)

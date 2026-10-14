@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,7 +77,7 @@ func TestAirRunTelemetry(t *testing.T) {
 				return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 			})
 			stubValidateConfig(server)
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 			require.NoError(t, err)
 			ctx, events := captureAirTelemetry(t, server, w)
 			testserver.AddDefaultHandlers(server)
@@ -141,7 +142,7 @@ func TestAirRunTelemetry(t *testing.T) {
 func TestAirRunTelemetryConfig(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	ctx, events := captureAirTelemetry(t, server, w)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -176,7 +177,7 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	// The commit is no longer available when git archive attempts to package it.
 	result, err := uploadSnapshotTarball(t.Context(), w, newTestRepo(t), snapshotPlan{
@@ -194,7 +195,7 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 func TestAirRunTelemetryContainersHaveDockerImage(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	ctx, events := captureAirTelemetry(t, server, w)
 	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", minimalConfig))

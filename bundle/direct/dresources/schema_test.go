@@ -43,9 +43,9 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	result, err := adapter.DoRead(ctx, id)
 	require.NoError(t, err)
 
-	result.CreatedAt = 0
-	result.UpdatedAt = 0
-	result.SchemaId = ""
+	result.CreatedAt = new(0)
+	result.UpdatedAt = new(0)
+	result.SchemaId = new("")
 
 	resultJSON, err := json.Marshal(result)
 	require.NoError(t, err)

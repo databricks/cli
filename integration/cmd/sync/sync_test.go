@@ -18,11 +18,11 @@ import (
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +36,7 @@ var (
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
-func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
+func setupRepo(t *testing.T, wsc *sdkclients.Clients, ctx context.Context) (localRoot, remoteRoot string) {
 	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
@@ -67,7 +67,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 type syncTest struct {
 	t          *testing.T
 	c          *testcli.Runner
-	w          *databricks.WorkspaceClient
+	w          *sdkclients.Clients
 	f          filer.Filer
 	localRoot  string
 	remoteRoot string
@@ -154,7 +154,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expected
 	// Remove leading "/" so we can use it in the URL.
 	urlPath := "/api/2.0/workspace-files/" + strings.TrimLeft(filePath, "/")
 
-	apiClient, err := client.New(a.w.Config)
+	apiClient, err := apiclient.New(a.w.Config)
 	require.NoError(a.t, err)
 
 	var res []byte

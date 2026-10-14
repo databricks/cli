@@ -30,9 +30,9 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
@@ -303,7 +303,7 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	return proxyCommand, nil
 }
 
-func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) (retErr error) {
+func Run(ctx context.Context, client *sdkclients.Clients, opts ClientOptions) (retErr error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -524,7 +524,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 // here replaces whatever was recorded for this session name before, so a key left by an
 // earlier instance - or by the same name in another workspace, since a name is unique only
 // within one - can no longer fail an otherwise valid connection.
-func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
+func pinServerHostKey(ctx context.Context, client *sdkclients.Clients, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
 	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, sessionID, opts.KnownHostsDir)
 	if err != nil {
 		return "", err
@@ -543,7 +543,7 @@ func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, s
 	return knownHostsPath, nil
 }
 
-func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func runIDE(ctx context.Context, client *sdkclients.Clients, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	connectionName := opts.SessionIdentifier()
 	if connectionName == "" {
 		return errors.New("connection name is required for IDE integration")
@@ -616,7 +616,7 @@ type serverMetadata struct {
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 // For dedicated clusters, clusterID should be the same as sessionID.
 // For serverless, clusterID is read from the workspace metadata.
-func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, liteswap string) (serverMetadata, error) {
+func getServerMetadata(ctx context.Context, client *sdkclients.Clients, sessionID, clusterID, version, liteswap string) (serverMetadata, error) {
 	wsMetadata, err := sshWorkspace.GetWorkspaceMetadata(ctx, client, version, sessionID)
 	if err != nil {
 		return serverMetadata{}, errors.Join(errServerMetadata, err)
@@ -667,7 +667,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
 // HTTP endpoints behind the workspace driver proxy.
-func newDriverProxyRequest(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, port int, endpoint, liteswap string) (*http.Request, error) {
+func newDriverProxyRequest(ctx context.Context, client *sdkclients.Clients, clusterID string, port int, endpoint, liteswap string) (*http.Request, error) {
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return nil, err
@@ -689,7 +689,7 @@ func newDriverProxyRequest(ctx context.Context, client *databricks.WorkspaceClie
 // fetchServerErrorLogs fetches recent warning/error log lines from the running SSH
 // server's /logs endpoint. It is best-effort: any failure (including older server
 // versions that don't serve /logs) yields an empty string.
-func fetchServerErrorLogs(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) string {
+func fetchServerErrorLogs(ctx context.Context, client *sdkclients.Clients, clusterID string, serverPort int, liteswap string) string {
 	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "logs", liteswap)
 	if err != nil {
 		log.Debugf(ctx, "Failed to build server logs request: %v", err)
@@ -785,7 +785,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 // submitSSHTunnelJob submits the bootstrap job and waits for the SSH server task to start.
 // It returns the job run ID (when known) so callers can fetch and surface the run's error
 // details if the server never comes up.
-func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (int64, error) {
+func submitSSHTunnelJob(ctx context.Context, client *sdkclients.Clients, version, secretScopeName string, opts ClientOptions) (int64, error) {
 	sessionID := opts.SessionIdentifier()
 	contentDir, err := sshWorkspace.GetWorkspaceContentDir(ctx, client, version, sessionID)
 	if err != nil {
@@ -843,7 +843,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 // "workspace-base-environments/" prefix is a resource ID; both are passed through
 // verbatim. Anything else is treated as a display name and resolved to its resource ID
 // via the workspace base environments listing.
-func resolveBaseEnvironment(ctx context.Context, client *databricks.WorkspaceClient, input string) (string, error) {
+func resolveBaseEnvironment(ctx context.Context, client *sdkclients.Clients, input string) (string, error) {
 	if strings.HasPrefix(input, "/") || strings.HasPrefix(input, "workspace-base-environments/") {
 		return input, nil
 	}
@@ -986,7 +986,7 @@ func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostNa
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, version string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *sdkclients.Clients, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, version string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -1043,7 +1043,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	return err
 }
 
-func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
+func runSSHProxy(ctx context.Context, client *sdkclients.Clients, serverPort int, clusterID string, opts ClientOptions) error {
 	resumable := serverSupportsResume(ctx, client, clusterID, serverPort, opts.Liteswap)
 	if !resumable {
 		log.Infof(ctx, "The SSH server does not support session resume, a dropped connection will end the session")
@@ -1064,7 +1064,7 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 var capabilitiesProbeTimeout = 10 * time.Second
 
 // serverSupportsResume reports whether the running SSH server speaks the resume protocol.
-func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
+func serverSupportsResume(ctx context.Context, client *sdkclients.Clients, clusterID string, serverPort int, liteswap string) bool {
 	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
 	if err != nil {
 		log.Debugf(ctx, "Failed to build the server capabilities request: %v", err)
@@ -1120,7 +1120,7 @@ func accessModeUILabel(mode compute.DataSecurityMode, singleUserName string) str
 // The SSH tunnel runs as a job that attaches as a single user, so the cluster must be in
 // Dedicated access mode and assigned to one user (single_user_name set), not a group. We fail
 // early with an actionable message rather than letting the connection fail later.
-func ValidateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
+func ValidateClusterAccess(ctx context.Context, client *sdkclients.Clients, clusterID string) error {
 	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
 	if err != nil {
 		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
@@ -1135,7 +1135,7 @@ func ValidateClusterAccess(ctx context.Context, client *databricks.WorkspaceClie
 	return nil
 }
 
-func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, autoStart bool) error {
+func checkClusterState(ctx context.Context, client *sdkclients.Clients, clusterID string, autoStart bool) error {
 	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
 	if autoStart {
@@ -1159,7 +1159,7 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 
 // waitForJobToStart polls the task status until the SSH server task is in RUNNING state or terminates.
 // Returns an error if the task fails to start or if polling times out.
-func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, opts ClientOptions) error {
+func waitForJobToStart(ctx context.Context, client *sdkclients.Clients, runID int64, opts ClientOptions) error {
 	waitingMessage := "Waiting for compute to start..."
 	if opts.Accelerator != "" {
 		// GPU capacity is acquired on demand and the wait varies a lot by accelerator
@@ -1237,7 +1237,7 @@ const maxRunFailureTraceBytes = 2000
 // describeRunFailure fetches a failed bootstrap run's error details and formats them for the
 // terminal. It is best-effort: any API error is folded into the returned text rather than
 // propagated, so callers can always embed the result in their own error.
-func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient, runID int64) string {
+func describeRunFailure(ctx context.Context, client *sdkclients.Clients, runID int64) string {
 	if runID == 0 {
 		return "  (no job run ID available)"
 	}
@@ -1294,7 +1294,7 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
-func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
+func runFailureIfTerminated(ctx context.Context, client *sdkclients.Clients, runID int64) (string, bool) {
 	if runID == 0 {
 		return "", false
 	}
@@ -1375,7 +1375,7 @@ func keepDetachedMatches(stored, requested bool) bool {
 	return !requested || stored
 }
 
-func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
+func ensureSSHServerIsRunning(ctx context.Context, client *sdkclients.Clients, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
 	sessionID := opts.SessionIdentifier()
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
 	clusterID := opts.ClusterID

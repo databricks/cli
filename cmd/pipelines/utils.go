@@ -12,12 +12,12 @@ import (
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
-	databricks "github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -156,13 +156,13 @@ type PipelineEventsQueryParams struct {
 // fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
 // Retrieves only one page of results, so the number of results is bound by the API's limit of results per page.
-func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
+func fetchAllPipelineEvents(ctx context.Context, w *sdkclients.Clients, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
 	maxResultsPerPage := 250
 	if params.MaxResults > maxResultsPerPage {
 		return nil, fmt.Errorf("number of results must be %d or less", maxResultsPerPage)
 	}
 
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -201,7 +201,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 
 // getMostRecentUpdateId fetches one page of updates for a given pipeline and returns the first update ID.
 // Expects to receive updates in decreasing timestamp order, so the first update is the most recent.
-func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
+func getMostRecentUpdateId(ctx context.Context, w *sdkclients.Clients, pipelineID string) (string, error) {
 	request := pipelines.ListUpdatesRequest{
 		PipelineId: pipelineID,
 	}
@@ -308,7 +308,7 @@ func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime *int64) ([
 
 // fetchPipelineUpdates fetches pipeline updates with optional filtering by time.
 // Time is in milliseconds since epoch. If time is nil, it is ignored.
-func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, startTime, endTime *int64, pipelineId string) ([]pipelines.UpdateInfo, error) {
+func fetchPipelineUpdates(ctx context.Context, w *sdkclients.Clients, startTime, endTime *int64, pipelineId string) ([]pipelines.UpdateInfo, error) {
 	var updates []pipelines.UpdateInfo
 	var pageToken string
 

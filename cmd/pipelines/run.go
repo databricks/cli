@@ -23,7 +23,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -157,7 +157,7 @@ func displayProgressEventsDurations(ctx context.Context, events []pipelines.Pipe
 }
 
 // fetchAndDisplayPipelineUpdate fetches the update and the update's associated update_progress events' durations.
-func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineId, updateId string) error {
+func fetchAndDisplayPipelineUpdate(ctx context.Context, w *sdkclients.Clients, pipelineId, updateId string) error {
 	if pipelineId == "" {
 		return errors.New("no pipeline ID provided")
 	}

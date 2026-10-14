@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // sandboxPath returns the URL path for a single sandbox resource. The ID is
@@ -71,7 +71,7 @@ const sandboxDocsURL = "https://docs.databricks.com/compute/serverless/sandbox"
 // translateError replaces a 503 with a user-facing message; the gateway
 // body adds nothing, so it is dropped rather than wrapped.
 func translateError(err error) error {
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() == http.StatusServiceUnavailable {
 		return fmt.Errorf("the Databricks Sandbox feature is not available in your region. See %s", sandboxDocsURL)
 	}
 	return err
@@ -97,7 +97,7 @@ func validateName(name string) error {
 
 // sandboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type sandboxAPI struct {
-	c *client.DatabricksClient
+	c *apiclient.Client
 }
 
 // sandboxCreateBody is the inner `Sandbox` message in the create payload.
@@ -216,14 +216,14 @@ type registerKeyRequest struct {
 }
 
 // newSandboxAPI returns a sandboxAPI bound to the workspace client's config.
-func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
+func newSandboxAPI(w *sdkclients.Clients) (*sandboxAPI, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
 	defaultRetriable := clientCfg.ErrorRetriable
 	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() == http.StatusServiceUnavailable {
 			return allow503Retry(ctx)
 		}
 		return defaultRetriable(ctx, err)

@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"errors"
+	"github.com/databricks/cli/libs/listing"
 	"io"
 	"reflect"
 	"testing"
@@ -12,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestPager(t *testing.T, iter pullIter[int], pageSize int) *pagerModel[int] {
+func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pagerModel[int] {
 	t.Helper()
 	ctx := MockDiscard(t.Context())
 	fm := renderFuncMap(ctx)

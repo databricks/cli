@@ -8,9 +8,10 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/direct/internal/retries"
 	"github.com/databricks/cli/libs/sdkclients"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // deleteSyncedTableTimeout caps the post-delete poll so a stuck teardown does not
@@ -19,28 +20,18 @@ import (
 const deleteSyncedTableTimeout = 5 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
-// SyncedTableSyncedTableSpec so that all paths in StateType are valid paths in
+// SyncedTable_SyncedTableSpec so that all paths in StateType are valid paths in
 // RemoteType, enabling drift detection for spec fields once the backend echoes
 // spec on GET.
 type PostgresSyncedTableRemote struct {
-	postgres.SyncedTableSyncedTableSpec
+	postgres.SyncedTable_SyncedTableSpec
 
 	SyncedTableId string `json:"synced_table_id,omitempty"`
 
-	Name       string                                 `json:"name,omitempty"`
-	Status     *postgres.SyncedTableSyncedTableStatus `json:"status,omitempty"`
-	Uid        string                                 `json:"uid,omitempty"`
-	CreateTime *sdktime.Time                          `json:"create_time,omitempty"`
-}
-
-// Custom marshaler needed because embedded SyncedTableSyncedTableSpec has its own
-// MarshalJSON which would otherwise take over and ignore the additional fields.
-func (s *PostgresSyncedTableRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresSyncedTableRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	Name       string                                  `json:"name,omitempty"`
+	Status     *postgres.SyncedTable_SyncedTableStatus `json:"status,omitempty"`
+	Uid        string                                  `json:"uid,omitempty"`
+	CreateTime *types.Time                             `json:"create_time,omitempty"`
 }
 
 type ResourcePostgresSyncedTable struct {
@@ -55,15 +46,15 @@ func (*ResourcePostgresSyncedTable) New(client *sdkclients.Clients) *ResourcePos
 
 func (*ResourcePostgresSyncedTable) PrepareState(input *resources.PostgresSyncedTable) *PostgresSyncedTableState {
 	return &PostgresSyncedTableState{
-		SyncedTableId:              input.SyncedTableId,
-		SyncedTableSyncedTableSpec: input.SyncedTableSyncedTableSpec,
+		SyncedTableId:               input.SyncedTableId,
+		SyncedTable_SyncedTableSpec: input.SyncedTable_SyncedTableSpec,
 	}
 }
 
 func (*ResourcePostgresSyncedTable) RemapState(remote *PostgresSyncedTableRemote) *PostgresSyncedTableState {
 	return &PostgresSyncedTableState{
-		SyncedTableId:              remote.SyncedTableId,
-		SyncedTableSyncedTableSpec: remote.SyncedTableSyncedTableSpec,
+		SyncedTableId:               remote.SyncedTableId,
+		SyncedTable_SyncedTableSpec: remote.SyncedTable_SyncedTableSpec,
 	}
 }
 
@@ -75,44 +66,42 @@ func (*ResourcePostgresSyncedTable) RemapState(remote *PostgresSyncedTableRemote
 // The synced-table API doesn't expose the user-facing id as a named field. It
 // only appears as the trailing component of remote.Name, so we strip the
 // constant "synced_tables/" prefix.
-func makePostgresSyncedTableRemote(syncedTable *postgres.SyncedTable) *PostgresSyncedTableRemote {
-	var spec postgres.SyncedTableSyncedTableSpec
+func makePostgresSyncedTableRemote(resp *sdkpostgres.SyncedTable) (*PostgresSyncedTableRemote, error) {
+	syncedTable, err := postgres.SyncedTableFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	var spec postgres.SyncedTable_SyncedTableSpec
 	if syncedTable.Spec != nil {
 		spec = *syncedTable.Spec
 	}
 	return &PostgresSyncedTableRemote{
-		SyncedTableSyncedTableSpec: spec,
-		SyncedTableId:              strings.TrimPrefix(syncedTable.Name, "synced_tables/"),
-		Name:                       syncedTable.Name,
-		Status:                     syncedTable.Status,
-		Uid:                        syncedTable.Uid,
-		CreateTime:                 syncedTable.CreateTime,
-	}
+		SyncedTable_SyncedTableSpec: spec,
+		SyncedTableId:               strings.TrimPrefix(utils.Deref(syncedTable.Name), "synced_tables/"),
+		Name:                        utils.Deref(syncedTable.Name),
+		Status:                      syncedTable.Status,
+		Uid:                         utils.Deref(syncedTable.Uid),
+		CreateTime:                  syncedTable.CreateTime,
+	}, nil
 }
 
 func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*PostgresSyncedTableRemote, error) {
-	syncedTable, err := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
+	syncedTable, err := r.client.Postgres.GetSyncedTable(ctx, sdkpostgres.GetSyncedTableRequest{Name: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresSyncedTableRemote(syncedTable), nil
+	return makePostgresSyncedTableRemote(syncedTable)
 }
 
 func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
-	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, postgres.CreateSyncedTableRequest{
-		SyncedTableId: config.SyncedTableId,
-		SyncedTable: postgres.SyncedTable{
-			Spec: &config.SyncedTableSyncedTableSpec,
-
-			// Output-only fields.
-			SyncedTableId:   "",
-			CreateTime:      nil,
-			Name:            "",
-			Status:          nil,
-			Uid:             "",
-			ForceSendFields: nil,
-		},
+	request, err := postgres.CreateSyncedTableRequestToSDK(&postgres.CreateSyncedTableRequest{
+		SyncedTableId: new(config.SyncedTableId),
+		SyncedTable:   &postgres.SyncedTable{Spec: &config.SyncedTable_SyncedTableSpec},
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -121,14 +110,15 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresSyncedTableRemote(result)
+	remote, err := makePostgresSyncedTableRemote(result)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 
 func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _ *PostgresSyncedTableState) error {
-	waiter, err := r.client.Postgres.DeleteSyncedTable(ctx, postgres.DeleteSyncedTableRequest{
-		Name: id,
-	})
+	waiter, err := r.client.Postgres.DeleteSyncedTable(ctx, sdkpostgres.DeleteSyncedTableRequest{Name: new(id)})
 	if err != nil {
 		return err
 	}
@@ -161,7 +151,7 @@ func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id st
 	}
 
 	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
-		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
+		_, getErr := r.client.Postgres.GetSyncedTable(ctx, sdkpostgres.GetSyncedTableRequest{Name: new(id)})
 		if getErr != nil {
 			return nil, retries.Halt(getErr)
 		}

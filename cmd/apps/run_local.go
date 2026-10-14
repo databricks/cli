@@ -17,8 +17,8 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdkclients"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -111,13 +111,13 @@ func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.A
 	return appCmd, nil
 }
 
-func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config, w *databricks.WorkspaceClient, port int, debug bool) error {
+func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config, w *sdkclients.Clients, port int, debug bool) error {
 	proxy, err := appproxy.New(ctx, config.AppURL)
 	if err != nil {
 		return err
 	}
 
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return err
 	}

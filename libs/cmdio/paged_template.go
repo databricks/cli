@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bytes"
 	"context"
+	"github.com/databricks/cli/libs/listing"
 	"io"
 	"regexp"
 	"strings"
@@ -22,7 +23,7 @@ var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
 // drains the rest, q/esc/Ctrl+C quit.
 func renderIteratorPagedTemplate[T any](
 	ctx context.Context,
-	iter pullIter[T],
+	iter listing.Iterator[T],
 	in io.Reader,
 	out io.Writer,
 	headerTemplate, tmpl string,
@@ -79,7 +80,7 @@ func (p *templatePager) flushLines(buf []any) ([]string, error) {
 
 func renderIteratorPagedTemplateCore[T any](
 	ctx context.Context,
-	iter pullIter[T],
+	iter listing.Iterator[T],
 	in io.Reader,
 	out io.Writer,
 	headerTemplate, tmpl string,

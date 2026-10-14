@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/databricks/cli/libs/sdktypes/scim/v1"
-	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,21 +14,22 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestClient(t *testing.T) *databricks.WorkspaceClient {
+func setupTestClient(t *testing.T) *sdkclients.Clients {
 	t.Helper()
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:               server.URL,
-		Token:              "testtoken",
-		RateLimitPerSecond: math.MaxInt,
+	client, err := sdkclients.New(t.Context(), &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
 	})
 	require.NoError(t, err)
 	return client

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -33,7 +33,7 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 			Path:      basePath,
 			Recursive: true,
 		})
-		if err == nil || apierr.IsMissing(err) {
+		if err == nil || apierrs.IsMissing(err) {
 			return
 		}
 		t.Logf("Unable to remove temporary workspace directory %s: %#v", basePath, err)
@@ -59,7 +59,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 			Path:      path,
 			Recursive: true,
 		})
-		if err == nil || apierr.IsMissing(err) {
+		if err == nil || apierrs.IsMissing(err) {
 			return
 		}
 		t.Logf("Unable to remove temporary DBFS directory %s: %#v", path, err)
@@ -89,7 +89,7 @@ func TemporaryRepo(t *WorkspaceT, url string) string {
 		err := t.W.Repos.Delete(context.WithoutCancel(ctx), workspace.DeleteRepoRequest{
 			RepoId: resp.Id,
 		})
-		if err == nil || apierr.IsMissing(err) {
+		if err == nil || apierrs.IsMissing(err) {
 			return
 		}
 		t.Logf("Unable to remove repo %s: %#v", path, err)

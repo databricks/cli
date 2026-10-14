@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -183,7 +183,7 @@ func TestWorkspaceOpenCommandOpensBrowserByDefault(t *testing.T) {
 	}
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{
 		Config: &config.Config{
 			Host: "https://myworkspace.databricks.com",
 		},
@@ -222,7 +222,7 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 	}
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{
 		Config: &config.Config{
 			Host: "https://myworkspace.databricks.com",
 		},
@@ -264,7 +264,7 @@ func TestWorkspaceOpenCommandWarnsWhenWorkspaceIDLookupFails(t *testing.T) {
 	ctx = log.NewContext(ctx, slog.New(handler.NewFriendlyHandler(stderr, &handler.Options{
 		Level: log.LevelWarn,
 	})))
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{
 		Config: &config.Config{
 			Host: "https://myworkspace.databricks.com",
 		},

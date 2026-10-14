@@ -6,34 +6,25 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/sdkclients"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
-// PostgresCatalogRemote is the return type for DoRead. It embeds CatalogCatalogSpec so
+// PostgresCatalogRemote is the return type for DoRead. It embeds Catalog_CatalogSpec so
 // that all paths in StateType are valid paths in RemoteType, enabling drift detection
 // for spec fields once the backend echoes spec on GET.
 type PostgresCatalogRemote struct {
-	postgres.CatalogCatalogSpec
+	postgres.Catalog_CatalogSpec
 
 	CatalogId string `json:"catalog_id,omitempty"`
 
-	Name       string                         `json:"name,omitempty"`
-	Status     *postgres.CatalogCatalogStatus `json:"status,omitempty"`
-	Uid        string                         `json:"uid,omitempty"`
-	CreateTime *sdktime.Time                  `json:"create_time,omitempty"`
-	UpdateTime *sdktime.Time                  `json:"update_time,omitempty"`
-}
-
-// Custom marshaler needed because embedded CatalogCatalogSpec has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *PostgresCatalogRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresCatalogRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	Name       string                          `json:"name,omitempty"`
+	Status     *postgres.Catalog_CatalogStatus `json:"status,omitempty"`
+	Uid        string                          `json:"uid,omitempty"`
+	CreateTime *types.Time                     `json:"create_time,omitempty"`
+	UpdateTime *types.Time                     `json:"update_time,omitempty"`
 }
 
 type ResourcePostgresCatalog struct {
@@ -48,15 +39,15 @@ func (*ResourcePostgresCatalog) New(client *sdkclients.Clients) *ResourcePostgre
 
 func (*ResourcePostgresCatalog) PrepareState(input *resources.PostgresCatalog) *PostgresCatalogState {
 	return &PostgresCatalogState{
-		CatalogId:          input.CatalogId,
-		CatalogCatalogSpec: input.CatalogCatalogSpec,
+		CatalogId:           input.CatalogId,
+		Catalog_CatalogSpec: input.Catalog_CatalogSpec,
 	}
 }
 
 func (*ResourcePostgresCatalog) RemapState(remote *PostgresCatalogRemote) *PostgresCatalogState {
 	return &PostgresCatalogState{
-		CatalogId:          remote.CatalogId,
-		CatalogCatalogSpec: remote.CatalogCatalogSpec,
+		CatalogId:           remote.CatalogId,
+		Catalog_CatalogSpec: remote.Catalog_CatalogSpec,
 	}
 }
 
@@ -67,46 +58,43 @@ func (*ResourcePostgresCatalog) RemapState(remote *PostgresCatalogRemote) *Postg
 //
 // The user-facing catalog id only appears as the trailing component of
 // remote.Name, so we strip the constant "catalogs/" prefix.
-func makePostgresCatalogRemote(catalog *postgres.Catalog) *PostgresCatalogRemote {
-	var spec postgres.CatalogCatalogSpec
+func makePostgresCatalogRemote(resp *sdkpostgres.Catalog) (*PostgresCatalogRemote, error) {
+	catalog, err := postgres.CatalogFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	var spec postgres.Catalog_CatalogSpec
 	if catalog.Spec != nil {
 		spec = *catalog.Spec
 	}
 	return &PostgresCatalogRemote{
-		CatalogCatalogSpec: spec,
-		CatalogId:          strings.TrimPrefix(catalog.Name, "catalogs/"),
-		Name:               catalog.Name,
-		Status:             catalog.Status,
-		Uid:                catalog.Uid,
-		CreateTime:         catalog.CreateTime,
-		UpdateTime:         catalog.UpdateTime,
-	}
+		Catalog_CatalogSpec: spec,
+		CatalogId:           strings.TrimPrefix(utils.Deref(catalog.Name), "catalogs/"),
+		Name:                utils.Deref(catalog.Name),
+		Status:              catalog.Status,
+		Uid:                 utils.Deref(catalog.Uid),
+		CreateTime:          catalog.CreateTime,
+		UpdateTime:          catalog.UpdateTime,
+	}, nil
 }
 
 func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*PostgresCatalogRemote, error) {
-	catalog, err := r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: id})
+	catalog, err := r.client.Postgres.GetCatalog(ctx, sdkpostgres.GetCatalogRequest{Name: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresCatalogRemote(catalog), nil
+	return makePostgresCatalogRemote(catalog)
 }
 
 func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
-	waiter, err := r.client.Postgres.CreateCatalog(ctx, postgres.CreateCatalogRequest{
-		CatalogId: config.CatalogId,
-		Catalog: postgres.Catalog{
-			Spec: &config.CatalogCatalogSpec,
-
-			// Output-only fields.
-			CatalogId:       "",
-			CreateTime:      nil,
-			Name:            "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
-		},
+	request, err := postgres.CreateCatalogRequestToSDK(&postgres.CreateCatalogRequest{
+		CatalogId: new(config.CatalogId),
+		Catalog:   &postgres.Catalog{Spec: &config.Catalog_CatalogSpec},
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.Postgres.CreateCatalog(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -115,14 +103,15 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *Postgres
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresCatalogRemote(result)
+	remote, err := makePostgresCatalogRemote(result)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 
 func (r *ResourcePostgresCatalog) DoDelete(ctx context.Context, id string, _ *PostgresCatalogState) error {
-	waiter, err := r.client.Postgres.DeleteCatalog(ctx, postgres.DeleteCatalogRequest{
-		Name: id,
-	})
+	waiter, err := r.client.Postgres.DeleteCatalog(ctx, sdkpostgres.DeleteCatalogRequest{Name: new(id)})
 	if err != nil {
 		return err
 	}

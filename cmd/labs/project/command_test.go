@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/python"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

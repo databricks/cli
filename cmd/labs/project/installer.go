@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -96,7 +96,7 @@ func (i *installer) Install(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		w, err = sdkclients.New(ctx, cfg)
 		if err != nil {
 			return fmt.Errorf("no ~/.databrickscfg: %w", err)
 		}
@@ -168,7 +168,7 @@ func (i *installer) recordVersion(ctx context.Context) error {
 	return i.writeVersionFile(ctx, i.version)
 }
 
-func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func (i *installer) login(ctx context.Context) (*sdkclients.Clients, error) {
 	cfg, err := i.metaEntrypoint(ctx).validLogin(i.cmd)
 	if errors.Is(err, ErrNoLoginConfig) {
 		cfg, err = i.Installer.envAwareConfig(ctx)
@@ -220,7 +220,7 @@ func (i *installer) downloadAndUnpackZipball(ctx context.Context, libTarget stri
 	return zipball.UnpackTo(libTarget)
 }
 
-func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databricks.WorkspaceClient) error {
+func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *sdkclients.Clients) error {
 	if !i.HasPython() {
 		return nil
 	}

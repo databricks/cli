@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -151,7 +151,7 @@ func TestBridgeMessageSerialization(t *testing.T) {
 func TestBridgeHandleMessage(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
@@ -220,7 +220,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 
 	t.Run("successful file read", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
-		w := &databricks.WorkspaceClient{}
+		w := &sdkclients.Clients{}
 
 		// Create a mock tunnel connection using httptest
 		received := make(chan []byte, 1)
@@ -277,7 +277,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 
 	t.Run("file not found", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
-		w := &databricks.WorkspaceClient{}
+		w := &sdkclients.Clients{}
 
 		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
@@ -330,7 +330,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 
 func TestBridgeStop(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
@@ -350,7 +350,7 @@ func TestBridgeStop(t *testing.T) {
 
 func TestNewBridge(t *testing.T) {
 	ctx := t.Context()
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 	appName := "test-app"
 
 	vb := NewBridge(ctx, w, appName, 5173, false)
@@ -366,7 +366,7 @@ func TestNewBridge(t *testing.T) {
 
 func TestNewBridge_AutoApprove(t *testing.T) {
 	ctx := t.Context()
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	vb := NewBridge(ctx, w, "test-app", 5173, true)
 
@@ -401,7 +401,7 @@ func newWSConn(t *testing.T) *websocket.Conn {
 
 func TestBridgeSetTunnelConnSwapDuringWrites(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	conn1 := newWSConn(t)
 	conn2 := newWSConn(t)
@@ -441,7 +441,7 @@ func TestBridgeSetTunnelConnSwapDuringWrites(t *testing.T) {
 
 func TestBridgeConnectionRequestSendDoesNotBlockAfterStop(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
@@ -467,7 +467,7 @@ func TestBridgeConnectionRequestSendDoesNotBlockAfterStop(t *testing.T) {
 
 func TestBridgeConnectionRequestSequentialPrompts(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	vb := NewBridge(ctx, w, "test-app", 5173, false)
 	go vb.readStdinLines(strings.NewReader("y\nn\n"))
@@ -494,7 +494,7 @@ func TestBridgeConnectionRequestSequentialPrompts(t *testing.T) {
 
 func TestBridgeHandleConnectionRequest_AutoApproveSkipsStdin(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{}
+	w := &sdkclients.Clients{}
 
 	received := make(chan []byte, 1)
 	upgrader := websocket.Upgrader{}

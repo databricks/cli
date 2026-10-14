@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
@@ -36,14 +37,12 @@ func (l resolveCluster) Resolve(ctx context.Context, w *sdkclients.Clients) (str
 	var result []listedCluster
 	pageToken := ""
 	for {
-		query := map[string]any{
-			"filter_by.cluster_sources": []string{"API", "UI"},
-		}
+		query := url.Values{"filter_by.cluster_sources": {"API", "UI"}}
 		if pageToken != "" {
-			query["page_token"] = pageToken
+			query.Set("page_token", pageToken)
 		}
 		var resp listClustersResponse
-		err := api.Do(ctx, http.MethodGet, "/api/2.1/clusters/list", auth.WorkspaceIDHeaders(w.Config), query, nil, &resp)
+		err := api.Do(ctx, http.MethodGet, "/api/2.1/clusters/list", auth.WorkspaceIDHeaders(w.Config), nil, query, &resp)
 		if err != nil {
 			return "", err
 		}

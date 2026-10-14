@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -17,7 +17,7 @@ import (
 
 func TestResolveWarehouseIDFlagWins(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{Config: &config.Config{WarehouseID: "from-config"}}
+	w := &sdkclients.Clients{Config: &config.Config{WarehouseID: "from-config"}}
 	id, err := resolveWarehouseID(ctx, w, "from-flag")
 	require.NoError(t, err)
 	assert.Equal(t, "from-flag", id)
@@ -25,7 +25,7 @@ func TestResolveWarehouseIDFlagWins(t *testing.T) {
 
 func TestResolveWarehouseIDFallsBackToConfig(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	w := &databricks.WorkspaceClient{Config: &config.Config{WarehouseID: "from-config"}}
+	w := &sdkclients.Clients{Config: &config.Config{WarehouseID: "from-config"}}
 	id, err := resolveWarehouseID(ctx, w, "")
 	require.NoError(t, err)
 	assert.Equal(t, "from-config", id)
@@ -37,7 +37,7 @@ func TestResolveWarehouseIDUsesDefaultWarehouse(t *testing.T) {
 	mockWH.EXPECT().Get(mock.Anything, sql.GetWarehouseRequest{Id: "default"}).
 		Return(&sql.GetWarehouseResponse{Id: "wh-default"}, nil)
 
-	w := &databricks.WorkspaceClient{Config: &config.Config{}, Warehouses: mockWH}
+	w := &sdkclients.Clients{Config: &config.Config{}, Warehouses: mockWH}
 	id, err := resolveWarehouseID(ctx, w, "")
 	require.NoError(t, err)
 	assert.Equal(t, "wh-default", id)

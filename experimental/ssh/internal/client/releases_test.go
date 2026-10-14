@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
@@ -82,7 +82,7 @@ func TestNewHTTP11WorkspaceClient(t *testing.T) {
 		InsecureSkipVerify: true,
 	}
 
-	w, err := newHTTP11WorkspaceClient(src)
+	w, err := newHTTP11WorkspaceClient(t.Context(), src)
 	require.NoError(t, err)
 
 	// Auth-relevant attributes are carried over to the reconstructed config.

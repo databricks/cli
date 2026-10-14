@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -137,15 +137,10 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clustersApi := m.GetMockClustersAPI()
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-1").Return(&compute.ClusterDetails{
-		SparkVersion: "12.2.x-scala2.12",
-	}, nil)
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
-		SparkVersion: "12.2.x-scala2.12",
-	}, nil)
+	setClusters(t, b, map[string]string{
+		"test-key-1": "12.2.x-scala2.12",
+		"test-key-2": "12.2.x-scala2.12",
+	})
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.NotEmpty(t, diags)
@@ -247,12 +242,9 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clustersApi := m.GetMockClustersAPI()
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
-		SparkVersion: "13.2.x-scala2.12",
-	}, nil)
+	setClusters(t, b, map[string]string{
+		"test-key-2": "13.2.x-scala2.12",
+	})
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
@@ -292,8 +284,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	setClusters(t, b, nil)
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
@@ -364,4 +355,18 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		result := lowerThanExpectedVersion(k)
 		require.Equal(t, v, result, k)
 	}
+}
+
+// setClusters serves clusters/get for the given clusters (id -> spark version).
+func setClusters(t *testing.T, b *bundle.Bundle, sparkVersions map[string]string) {
+	w, server := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
+	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
+		id := req.URL.Query().Get("cluster_id")
+		version, ok := sparkVersions[id]
+		if !ok {
+			t.Errorf("unexpected cluster id %q", id)
+		}
+		return map[string]string{"cluster_id": id, "spark_version": version}
+	})
 }

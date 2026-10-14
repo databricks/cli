@@ -7,10 +7,11 @@ import (
 
 	"github.com/databricks/cli/experimental/postgres/cmd/internal/target"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	database "github.com/databricks/sdk-go/database/v1"
+	postgres "github.com/databricks/sdk-go/postgres/v1"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 // resolvedTarget carries everything the query command needs to dial Postgres:
@@ -104,32 +105,32 @@ func resolveTarget(ctx context.Context, f targetingFlags) (*resolvedTarget, erro
 // resolveProvisioned looks up a provisioned instance and issues a token. The
 // instance must be in the AVAILABLE state; transitional states return an
 // error pointing the user at the lifecycle they are waiting on.
-func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, instanceName string) (*resolvedTarget, error) {
+func resolveProvisioned(ctx context.Context, w *sdkclients.Clients, instanceName string) (*resolvedTarget, error) {
 	instance, err := target.GetProvisioned(ctx, w, instanceName)
 	if err != nil {
 		return nil, err
 	}
 
-	if instance.State != database.DatabaseInstanceStateAvailable {
+	if instance.State != database.DatabaseInstance_State_Available {
 		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
 	}
 
-	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	token, err := target.ProvisionedCredential(ctx, w, instance.Name)
+	token, err := target.ProvisionedCredential(ctx, w, utils.Deref(instance.Name))
 	if err != nil {
 		return nil, err
 	}
 
 	return &resolvedTarget{
 		Kind:        kindProvisioned,
-		Host:        instance.ReadWriteDns,
-		Username:    user.UserName,
+		Host:        utils.Deref(instance.ReadWriteDns),
+		Username:    utils.Deref(user.UserName),
 		Token:       token,
-		DisplayName: instance.Name,
+		DisplayName: utils.Deref(instance.Name),
 	}, nil
 }
 
@@ -137,7 +138,7 @@ func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, inst
 // issues a short-lived OAuth token. Missing branch/endpoint IDs are
 // auto-selected when exactly one candidate exists; ambiguity propagates as an
 // AmbiguousError with the list of choices.
-func resolveAutoscaling(ctx context.Context, w *databricks.WorkspaceClient, spec target.AutoscalingSpec) (*resolvedTarget, error) {
+func resolveAutoscaling(ctx context.Context, w *sdkclients.Clients, spec target.AutoscalingSpec) (*resolvedTarget, error) {
 	if spec.ProjectID == "" {
 		var err error
 		spec.ProjectID, err = target.AutoSelectProject(ctx, w)
@@ -152,14 +153,14 @@ func resolveAutoscaling(ctx context.Context, w *databricks.WorkspaceClient, spec
 	}
 
 	if spec.BranchID == "" {
-		spec.BranchID, err = target.AutoSelectBranch(ctx, w, project.Name)
+		spec.BranchID, err = target.AutoSelectBranch(ctx, w, utils.Deref(project.Name))
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if spec.EndpointID == "" {
-		branchName := project.Name + "/branches/" + spec.BranchID
+		branchName := utils.Deref(project.Name) + "/branches/" + spec.BranchID
 		spec.EndpointID, err = target.AutoSelectEndpoint(ctx, w, branchName)
 		if err != nil {
 			return nil, err
@@ -175,22 +176,22 @@ func resolveAutoscaling(ctx context.Context, w *databricks.WorkspaceClient, spec
 		return nil, err
 	}
 
-	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	token, err := target.AutoscalingCredential(ctx, w, endpoint.Name)
+	token, err := target.AutoscalingCredential(ctx, w, utils.Deref(endpoint.Name))
 	if err != nil {
 		return nil, err
 	}
 
 	return &resolvedTarget{
 		Kind:        kindAutoscaling,
-		Host:        endpoint.Status.Hosts.Host,
-		Username:    user.UserName,
+		Host:        utils.Deref(endpoint.Status.Hosts.Host),
+		Username:    utils.Deref(user.UserName),
 		Token:       token,
-		DisplayName: endpoint.Name,
+		DisplayName: utils.Deref(endpoint.Name),
 	}, nil
 }
 
@@ -201,11 +202,11 @@ func checkEndpointReady(endpoint *postgres.Endpoint) error {
 	if endpoint.Status == nil {
 		return errors.New("endpoint status is not available")
 	}
-	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
+	if endpoint.Status.Hosts == nil || utils.Deref(endpoint.Status.Hosts.Host) == "" {
 		return errors.New("endpoint host information is not available")
 	}
 	switch endpoint.Status.CurrentState {
-	case postgres.EndpointStatusStateActive, postgres.EndpointStatusStateIdle:
+	case postgres.EndpointStatus_State_Active, postgres.EndpointStatus_State_Idle:
 		return nil
 	default:
 		return fmt.Errorf("endpoint is not ready for accepting connections (state: %s)", endpoint.Status.CurrentState)

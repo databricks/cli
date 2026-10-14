@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It
@@ -30,7 +30,7 @@ import (
 // client has gone away after ~90s instead of holding it open until the server's shutdown delay.
 const clientAliveIntervalSeconds = 30
 
-func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
+func prepareSSHDConfig(ctx context.Context, client *sdkclients.Clients, opts ServerOptions) (string, error) {
 	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get client public key: %w", err)

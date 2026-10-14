@@ -36,7 +36,7 @@ func TestClusterPolicyPrepareState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			input := &resources.ClusterPolicy{Definition: tt.definition}
-			input.Name = "my_policy"
+			input.Name = new("my_policy")
 
 			got := (*ResourceClusterPolicy)(nil).PrepareState(input)
 

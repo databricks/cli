@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/listing"
 	"io"
 	"regexp"
 	"strconv"
@@ -48,7 +49,7 @@ func stripANSI(s string) string {
 func pagedOutput(
 	t *testing.T,
 	ctx context.Context,
-	iter pullIter[int],
+	iter listing.Iterator[int],
 	headerTemplate, tmpl string,
 	pageSize int,
 ) string {
@@ -165,10 +166,10 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 	tmpl := "{{range .}}{{green \"%d\" .}}\t{{.}}\n{{end}}"
 
 	var expected bytes.Buffer
-	refIter := pullIter[int](&numberIterator{n: rows})
+	refIter := listing.Iterator[int](&numberIterator{n: rows})
 	require.NoError(t, renderWithTemplate(MockDiscard(t.Context()), newIteratorRenderer(refIter), flags.OutputText, &expected, "", tmpl))
 
-	pagedIter := pullIter[int](&numberIterator{n: rows})
+	pagedIter := listing.Iterator[int](&numberIterator{n: rows})
 	var actual bytes.Buffer
 	pr, pw := io.Pipe()
 	defer pw.Close()

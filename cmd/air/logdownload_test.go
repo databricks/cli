@@ -25,7 +25,7 @@ func airRunWithCompute(accelType string, count int) *jobs.GetRunResponse {
 			RunId: new(int64(456)),
 			AiRuntimeTask: &jobs.AiRuntimeTask{
 				Deployments: []jobs.DeploymentSpec{{
-					Compute: jobs.ComputeSpec{
+					Compute: &jobs.ComputeSpec{
 						AcceleratorType:  jobs.ComputeSpec_AcceleratorType(accelType),
 						AcceleratorCount: new(count),
 					},

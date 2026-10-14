@@ -3,7 +3,6 @@ package aircmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/apierrs"

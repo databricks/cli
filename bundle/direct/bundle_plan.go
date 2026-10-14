@@ -22,11 +22,12 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/sdkclients"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -139,13 +140,13 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 		var stamped bool
 		switch v := sv.Value.(type) {
 		case *jobs.JobSettings:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
+			if utils.Deref(v.Deployment.DeploymentId) == "" {
+				v.Deployment.DeploymentId = new(deploymentID)
 				stamped = true
 			}
 		case *dresources.PipelineState:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
+			if utils.Deref(v.Deployment.DeploymentId) == "" {
+				v.Deployment.DeploymentId = new(deploymentID)
 				stamped = true
 			}
 		}

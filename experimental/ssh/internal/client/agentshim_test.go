@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -393,9 +393,9 @@ func TestAgentSystemContext(t *testing.T) {
 	assert.Contains(t, agentSystemContext(""), "working directory is the user's Databricks workspace home directory")
 }
 
-func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
+func newProbeClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+	w, err := sdkclients.New(t.Context(), (&config.Config{
 		Host:  host,
 		Token: "test-token",
 		// The fake gateway server has no /.well-known/databricks-config, so skip

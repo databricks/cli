@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 const (
@@ -25,7 +25,7 @@ func GetAvailableProfiles(ctx context.Context) profile.Profiles {
 	return profiles
 }
 
-func GetDatabricksClient(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func GetDatabricksClient(ctx context.Context) (*sdkclients.Clients, error) {
 	sess, err := session.GetSession(ctx)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func GetDatabricksClient(ctx context.Context) (*databricks.WorkspaceClient, erro
 	if !ok {
 		return nil, newAuthError(ctx)
 	}
-	return w.(*databricks.WorkspaceClient), nil
+	return w.(*sdkclients.Clients), nil
 }
 
 func newAuthError(ctx context.Context) error {

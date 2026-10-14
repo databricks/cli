@@ -19,8 +19,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -49,7 +49,7 @@ func newSQLGate(limit int) *sqlGate {
 // when polling completes (or the caller's context is cancelled). On success it
 // returns the assembled result; a terminal non-success state is surfaced as the
 // CLI-facing query error.
-func (g *sqlGate) run(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, statement string) (*sqlexec.Result, error) {
+func (g *sqlGate) run(ctx context.Context, w *sdkclients.Clients, warehouseID, statement string) (*sqlexec.Result, error) {
 	// If the caller cancelled before we even tried, don't enter the select:
 	// when the gate has free slots both cases are ready and Go picks one
 	// pseudo-randomly. Without this early-out we'd occasionally submit a
@@ -188,7 +188,7 @@ CancelExecution before the command exits.`,
 // runDiscoverSchemas discovers schemas for tables concurrently and returns the
 // rendered output. The bool is true if any table failed; per-table errors are
 // inlined into the output so one bad table doesn't abort the others.
-func runDiscoverSchemas(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceClient, warehouseID string, tables []string) (string, bool) {
+func runDiscoverSchemas(ctx context.Context, gate *sqlGate, w *sdkclients.Clients, warehouseID string, tables []string) (string, bool) {
 	results := make([]string, len(tables))
 	var anyFailed atomic.Bool
 	g := new(errgroup.Group)
@@ -247,7 +247,7 @@ func cancelDiscoverInFlight(ctx context.Context, api dbsql.StatementExecutionInt
 	cmdio.LogString(ctx, fmt.Sprintf("discover-schema cancelled; sent CancelExecution for %d statement(s).", len(ids)))
 }
 
-func discoverTable(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceClient, warehouseID, table string) (string, error) {
+func discoverTable(ctx context.Context, gate *sqlGate, w *sdkclients.Clients, warehouseID, table string) (string, error) {
 	quoted, err := quoteTableName(table)
 	if err != nil {
 		return "", err

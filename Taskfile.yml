@@ -962,6 +962,7 @@ tasks:
       - "**/*.go"
       - .codegen/cli.json
       - bundle/internal/schema/annotations.yml
+      - bundle/internal/sdkmeta/legacy.json
       - exclude: "**/*_test.go"
       - go.mod
       - go.sum
@@ -976,6 +977,8 @@ tasks:
     desc: Generate enum and required field validation code
     sources:
       - "**/*.go"
+      - .codegen/cli.json
+      - bundle/internal/sdkmeta/legacy.json
       - exclude: "**/*_test.go"
       - go.mod
       - go.sum

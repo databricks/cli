@@ -12,8 +12,6 @@ import (
 	"slices"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
@@ -31,12 +29,15 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 func newImportCommand() *cobra.Command {
@@ -90,28 +91,29 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+			me, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 			if err != nil {
 				return fmt.Errorf("failed to get current user: %w", err)
 			}
-			currentUserEmail := strings.ToLower(me.UserName)
+			currentUserEmail := strings.ToLower(utils.Deref(me.UserName))
 
 			// If no app name provided, list apps and let user select
 			if name == "" {
 				// List all apps
 				spinner := cmdio.NewSpinner(ctx)
 				spinner.Update("Loading available apps...")
-				allApps := w.Apps.List(ctx, apps.ListAppsRequest{})
-
 				// Collect all apps
 				var appList []apps.App
-				for allApps.HasNext(ctx) {
-					app, err := allApps.Next(ctx)
+				for sdkApp, err := range w.Apps.ListAppsIter(ctx, sdkapps.ListAppsRequest{}) {
+					var app *apps.App
+					if err == nil {
+						app, err = apps.AppFromSDK(sdkApp)
+					}
 					if err != nil {
 						spinner.Close()
 						return fmt.Errorf("failed to iterate apps: %w", err)
 					}
-					appList = append(appList, app)
+					appList = append(appList, *app)
 				}
 				spinner.Close()
 
@@ -121,21 +123,21 @@ Examples:
 
 				// Sort apps: owned by current user first
 				slices.SortFunc(appList, func(a, b apps.App) int {
-					aOwned := strings.ToLower(a.Creator) == currentUserEmail
-					bOwned := strings.ToLower(b.Creator) == currentUserEmail
+					aOwned := strings.ToLower(utils.Deref(a.Creator)) == currentUserEmail
+					bOwned := strings.ToLower(utils.Deref(b.Creator)) == currentUserEmail
 					if aOwned != bOwned {
 						if aOwned {
 							return -1
 						}
 						return 1
 					}
-					return cmp.Compare(a.Name, b.Name)
+					return cmp.Compare(utils.Deref(a.Name), utils.Deref(b.Name))
 				})
 
 				// Build selection map
 				names := make(map[string]string)
 				for _, app := range appList {
-					owner := app.Creator
+					owner := utils.Deref(app.Creator)
 					if owner == "" {
 						owner = "unknown"
 					}
@@ -143,8 +145,8 @@ Examples:
 					if idx := strings.Index(owner, "@"); idx > 0 {
 						owner = owner[:idx]
 					}
-					label := fmt.Sprintf("%s (owner: %s)", app.Name, owner)
-					names[label] = app.Name
+					label := fmt.Sprintf("%s (owner: %s)", utils.Deref(app.Name), owner)
+					names[label] = utils.Deref(app.Name)
 				}
 
 				// Prompt user to select
@@ -197,7 +199,7 @@ Examples:
 					cmdio.LogString(ctx, "Cleaning up previous app folder")
 				}
 
-				err = w.Workspace.Delete(ctx, workspace.Delete{
+				err = w.Workspace.Delete(ctx, workspaceapi.Delete{
 					Path:      oldSourceCodePath,
 					Recursive: true,
 				})
@@ -231,28 +233,32 @@ Examples:
 	return cmd
 }
 
-func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
+func runImport(ctx context.Context, w *sdkclients.Clients, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
 	// Step 1: Load the app from workspace
 	if !quiet {
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
 	}
-	app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+	sdkApp, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
+	if err != nil {
+		return fmt.Errorf("failed to get app: %w", err)
+	}
+	app, err := apps.AppFromSDK(sdkApp)
 	if err != nil {
 		return fmt.Errorf("failed to get app: %w", err)
 	}
 
 	// Save the old source code path for cleanup
-	*oldSourceCodePath = app.DefaultSourceCodePath
+	*oldSourceCodePath = utils.Deref(app.DefaultSourceCodePath)
 
 	// Check if the app's source code path is inside a .bundle folder (indicating it was already imported)
-	alreadyImported := app.DefaultSourceCodePath != "" && strings.Contains(app.DefaultSourceCodePath, "/.bundle/")
+	alreadyImported := utils.Deref(app.DefaultSourceCodePath) != "" && strings.Contains(utils.Deref(app.DefaultSourceCodePath), "/.bundle/")
 	if alreadyImported {
 		if !forceImport {
 			return fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
 		}
 
 		// Check if the app is owned by the current user
-		appOwner := strings.ToLower(app.Creator)
+		appOwner := strings.ToLower(utils.Deref(app.Creator))
 		if appOwner != currentUserEmail {
 			return fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
 		}
@@ -322,7 +328,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Verify the app exists
-		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), app.Name)
+		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), utils.Deref(app.Name))
 		if err != nil {
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}
@@ -335,7 +341,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			AutoApprove: true,
 			Group:       resource.ResourceDescription().PluralName,
 			ResourceKey: appKey,
-			ResourceId:  app.Name,
+			ResourceId:  utils.Deref(app.Name),
 		}, stateDesc)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
@@ -416,7 +422,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	return nil
 }
 
-func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App, quiet bool) (string, error) {
+func generateAppBundle(ctx context.Context, w *sdkclients.Clients, app *apps.App, quiet bool) (string, error) {
 	// Use constant "app" as the resource key
 	appKey := "app"
 
@@ -425,9 +431,8 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	downloader := generate.NewDownloader(w, sourceDir, ".")
 
 	// Download app source code if it exists
-	sourceCodePath := app.DefaultSourceCodePath
-	if sourceCodePath != "" {
-		err := downloader.MarkDirectoryForDownload(ctx, &sourceCodePath)
+	if utils.Deref(app.DefaultSourceCodePath) != "" {
+		err := downloader.MarkDirectoryForDownload(ctx, app.DefaultSourceCodePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to mark directory for download: %w", err)
 		}
@@ -458,7 +463,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 
 	// Create the bundle configuration with explicit line numbers to control ordering
 	// Use the app name for the bundle name
-	bundleName := textutil.NormalizeString(app.Name)
+	bundleName := textutil.NormalizeString(utils.Deref(app.Name))
 	bundleConfig := map[string]dyn.Value{
 		"bundle": dyn.NewValue(map[string]dyn.Value{
 			"name": dyn.NewValue(bundleName, []diag.Location{{Line: 1}}),

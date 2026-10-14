@@ -150,7 +150,7 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 		"A common practice is to use a username or principal name in this path, i.e. use\n"+
 			"\n"+
 			"  root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
-		b.Config.Workspace.CurrentUser.UserName,
+		utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 	)
 	if !isExplicitRootSet(b) {
 		if isRunAsSet(r) || isPrincipalUsed {

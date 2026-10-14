@@ -11,7 +11,6 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"

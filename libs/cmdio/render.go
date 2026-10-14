@@ -86,7 +86,7 @@ func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 }
 
 type iteratorRenderer[T any] struct {
-	t          pullIter[T]
+	t          listing.Iterator[T]
 	bufferSize int
 }
 
@@ -209,7 +209,7 @@ func newRenderer(t any) any {
 	return defaultRenderer{t: t}
 }
 
-func newIteratorRenderer[T any](i pullIter[T]) iteratorRenderer[T] {
+func newIteratorRenderer[T any](i listing.Iterator[T]) iteratorRenderer[T] {
 	return iteratorRenderer[T]{t: i}
 }
 
@@ -281,7 +281,7 @@ func Render(ctx context.Context, v any) error {
 // locked from the first batch so columns stay aligned across pages).
 // Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, seq iter.Seq2[T, error]) error {
-	i := newPullIterator(seq)
+	i := listing.FromSeq(seq)
 	defer i.Close()
 	return renderPullIterator(ctx, i)
 }
@@ -292,7 +292,7 @@ func RenderListing[T any](ctx context.Context, i listing.Iterator[T]) error {
 	return renderPullIterator[T](ctx, i)
 }
 
-func renderPullIterator[T any](ctx context.Context, i pullIter[T]) error {
+func renderPullIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)

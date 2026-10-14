@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,7 @@ func newImagePushTestCommand(t *testing.T, profile string) (*cobra.Command, *byt
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), stdout, stderr, "", ""))
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{Config: &config.Config{Profile: profile}})
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{Config: &config.Config{Profile: profile}})
 	cmd := &cobra.Command{Use: "push"}
 	cmd.SetContext(ctx)
 	cmd.SetIn(strings.NewReader(""))

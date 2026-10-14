@@ -2,19 +2,25 @@ package prompt_test
 
 import (
 	"context"
-	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	testBranch          = "projects/p1/branches/main"
+	endpointsResource   = "/api/2.0/postgres/" + testBranch + "/endpoints"
+	databasesResource   = "/api/2.0/postgres/" + testBranch + "/databases"
+	readWriteEndpoint   = `{"endpoints":[{"name":"projects/p1/branches/main/endpoints/ep1","status":{"endpoint_type":"ENDPOINT_TYPE_READ_WRITE","hosts":{"host":"my-host.example.com"}}}]}`
+	unavailableResponse = `{"error_code":"TEMPORARILY_UNAVAILABLE","message":"API unavailable"}`
 )
 
 func newPostgresResource() manifest.Resource {
@@ -30,40 +36,22 @@ func newPostgresResource() manifest.Resource {
 	}
 }
 
+// postgresContext serves the fixtures and returns a context with a workspace
+// client pointing at them. Unexpected requests fail the test.
+func postgresContext(t *testing.T, fixtures httpfixtures.Fixtures) context.Context {
+	cfg, _ := fixtures.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
+	return cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), w)
+}
+
 func TestResolvePostgresValuesHappyPath(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Response: readWriteEndpoint},
+		{Method: "GET", Resource: databasesResource, Response: `{"databases":[{"name":"projects/p1/branches/main/databases/mydb","status":{"postgres_database":"my_pg_db"}}]}`},
+	})
 
-	branchName := "projects/p1/branches/main"
-	dbName := "projects/p1/branches/main/databases/mydb"
-
-	// Mock ListEndpoints
-	endpoints := listing.SliceIterator[postgres.Endpoint]{
-		{
-			Name: "projects/p1/branches/main/endpoints/ep1",
-			Status: &postgres.EndpointStatus{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
-			},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		Return(&endpoints).Once()
-
-	// Mock ListDatabases
-	databases := listing.SliceIterator[postgres.Database]{
-		{
-			Name:   dbName,
-			Status: &postgres.DatabaseDatabaseStatus{PostgresDatabase: "my_pg_db"},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListDatabases(mock.Anything, postgres.ListDatabasesRequest{Parent: branchName}).
-		Return(&databases).Once()
-
-	r := newPostgresResource()
-	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, testBranch+"/databases/mydb", "")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
@@ -74,37 +62,12 @@ func TestResolvePostgresValuesHappyPath(t *testing.T) {
 }
 
 func TestResolvePostgresValuesNoReadWriteEndpoint(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Response: `{"endpoints":[{"name":"projects/p1/branches/main/endpoints/ep1","status":{"endpoint_type":"ENDPOINT_TYPE_READ_ONLY"}}]}`},
+		{Method: "GET", Resource: databasesResource, Response: `{"databases":[{"name":"projects/p1/branches/main/databases/mydb","status":{"postgres_database":"my_pg_db"}}]}`},
+	})
 
-	branchName := "projects/p1/branches/main"
-	dbName := "projects/p1/branches/main/databases/mydb"
-
-	// Return only a read-only endpoint.
-	endpoints := listing.SliceIterator[postgres.Endpoint]{
-		{
-			Name: "projects/p1/branches/main/endpoints/ep1",
-			Status: &postgres.EndpointStatus{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadOnly,
-			},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		Return(&endpoints).Once()
-
-	databases := listing.SliceIterator[postgres.Database]{
-		{
-			Name:   dbName,
-			Status: &postgres.DatabaseDatabaseStatus{PostgresDatabase: "my_pg_db"},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListDatabases(mock.Anything, postgres.ListDatabasesRequest{Parent: branchName}).
-		Return(&databases).Once()
-
-	r := newPostgresResource()
-	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, testBranch+"/databases/mydb", "")
 	require.NoError(t, err)
 
 	// host and endpointPath should be empty since no ReadWrite endpoint found.
@@ -116,38 +79,12 @@ func TestResolvePostgresValuesNoReadWriteEndpoint(t *testing.T) {
 }
 
 func TestResolvePostgresValuesDatabaseNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Response: readWriteEndpoint},
+		{Method: "GET", Resource: databasesResource, Response: `{"databases":[{"name":"projects/p1/branches/main/databases/other","status":{"postgres_database":"other_db"}}]}`},
+	})
 
-	branchName := "projects/p1/branches/main"
-	dbName := "projects/p1/branches/main/databases/nonexistent"
-
-	endpoints := listing.SliceIterator[postgres.Endpoint]{
-		{
-			Name: "projects/p1/branches/main/endpoints/ep1",
-			Status: &postgres.EndpointStatus{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
-			},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		Return(&endpoints).Once()
-
-	// Return databases that don't match dbName.
-	databases := listing.SliceIterator[postgres.Database]{
-		{
-			Name:   "projects/p1/branches/main/databases/other",
-			Status: &postgres.DatabaseDatabaseStatus{PostgresDatabase: "other_db"},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListDatabases(mock.Anything, postgres.ListDatabasesRequest{Parent: branchName}).
-		Return(&databases).Once()
-
-	r := newPostgresResource()
-	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, testBranch+"/databases/nonexistent", "")
 	require.NoError(t, err)
 
 	// databaseName should be empty since no match.
@@ -159,29 +96,12 @@ func TestResolvePostgresValuesDatabaseNotFound(t *testing.T) {
 }
 
 func TestResolvePostgresValuesSkipsDatabaseListWhenNameProvided(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	// No databases fixture: listing databases would fail the test.
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Response: readWriteEndpoint},
+	})
 
-	branchName := "projects/p1/branches/main"
-	dbName := "projects/p1/branches/main/databases/mydb"
-
-	endpoints := listing.SliceIterator[postgres.Endpoint]{
-		{
-			Name: "projects/p1/branches/main/endpoints/ep1",
-			Status: &postgres.EndpointStatus{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
-			},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		Return(&endpoints).Once()
-
-	// ListDatabases should NOT be called since pgDatabaseName is pre-provided.
-
-	r := newPostgresResource()
-	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "my_pg_db")
+	result, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, testBranch+"/databases/mydb", "my_pg_db")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
@@ -192,65 +112,22 @@ func TestResolvePostgresValuesSkipsDatabaseListWhenNameProvided(t *testing.T) {
 }
 
 func TestResolvePostgresValuesEndpointAPIError(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Status: http.StatusBadRequest, Response: unavailableResponse},
+	})
 
-	branchName := "projects/p1/branches/main"
-
-	// Return an iterator that yields an error.
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		RunAndReturn(func(_ context.Context, _ postgres.ListEndpointsRequest) listing.Iterator[postgres.Endpoint] {
-			return &errorIterator[postgres.Endpoint]{err: errors.New("API unavailable")}
-		}).Once()
-
-	r := newPostgresResource()
-	_, err := prompt.ResolvePostgresValues(ctx, r, branchName, "some-db", "")
+	_, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, "some-db", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resolving endpoint details")
 }
 
 func TestResolvePostgresValuesDatabaseAPIError(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := postgresContext(t, httpfixtures.Fixtures{
+		{Method: "GET", Resource: endpointsResource, Response: readWriteEndpoint},
+		{Method: "GET", Resource: databasesResource, Status: http.StatusBadRequest, Response: unavailableResponse},
+	})
 
-	branchName := "projects/p1/branches/main"
-
-	// Endpoints succeed.
-	endpoints := listing.SliceIterator[postgres.Endpoint]{
-		{
-			Name: "projects/p1/branches/main/endpoints/ep1",
-			Status: &postgres.EndpointStatus{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
-			},
-		},
-	}
-	m.GetMockPostgresAPI().EXPECT().
-		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
-		Return(&endpoints).Once()
-
-	// ListDatabases returns an error.
-	m.GetMockPostgresAPI().EXPECT().
-		ListDatabases(mock.Anything, postgres.ListDatabasesRequest{Parent: branchName}).
-		RunAndReturn(func(_ context.Context, _ postgres.ListDatabasesRequest) listing.Iterator[postgres.Database] {
-			return &errorIterator[postgres.Database]{err: errors.New("API unavailable")}
-		}).Once()
-
-	r := newPostgresResource()
-	_, err := prompt.ResolvePostgresValues(ctx, r, branchName, "some-db", "")
+	_, err := prompt.ResolvePostgresValues(ctx, newPostgresResource(), testBranch, "some-db", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resolving database name")
-}
-
-// errorIterator is a test helper that always returns an error.
-type errorIterator[T any] struct {
-	err error
-}
-
-func (e *errorIterator[T]) HasNext(_ context.Context) bool { return true }
-
-func (e *errorIterator[T]) Next(_ context.Context) (T, error) {
-	var zero T
-	return zero, e.err
 }

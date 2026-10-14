@@ -786,7 +786,7 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
 	require.NoError(t, err)
 
-	newState := &dresources.ClusterState{PolicyId: "p1"}
+	newState := &dresources.ClusterState{PolicyId: new("p1")}
 	changes := deployplan.Changes{
 		// config-absent (Old==New==nil), present in remote: matches both rules.
 		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},

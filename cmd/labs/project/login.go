@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -22,7 +22,7 @@ type loginConfig struct {
 	WarehouseID      string `json:"warehouse_id,omitempty"`
 }
 
-func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*databricks.WorkspaceClient, error) {
+func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*sdkclients.Clients, error) {
 	if cfg.ConfigType() == config.AccountConfig {
 		return nil, nil
 	}
@@ -30,7 +30,7 @@ func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*d
 	if err != nil {
 		return nil, fmt.Errorf("profile: %w", err)
 	}
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	w, err := sdkclients.New(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("client: %w", err)
 	}
@@ -64,7 +64,7 @@ func (lc *loginConfig) askWorkspaceProfile(ctx context.Context, cfg *config.Conf
 	return err
 }
 
-func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceClient) (err error) {
+func (lc *loginConfig) askCluster(ctx context.Context, w *sdkclients.Clients) (err error) {
 	if !lc.NeedsCluster() {
 		return err
 	}
@@ -85,7 +85,7 @@ func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceCl
 	return err
 }
 
-func (lc *loginConfig) askWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (err error) {
+func (lc *loginConfig) askWarehouse(ctx context.Context, w *sdkclients.Clients) (err error) {
 	if !lc.NeedsWarehouse() {
 		return err
 	}

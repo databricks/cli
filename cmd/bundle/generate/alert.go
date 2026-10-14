@@ -16,9 +16,9 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -76,7 +76,7 @@ After generation, you can deploy this alert to other targets using:
 		alert, err := w.AlertsV2.GetAlert(ctx, sql.GetAlertV2Request{Id: alertID})
 		if err != nil {
 			// Check if it's a not found error to provide a better message
-			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() == http.StatusNotFound {
 				return fmt.Errorf("alert with ID %s not found", alertID)
 			}
 			return err

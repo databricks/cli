@@ -17,9 +17,8 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"go.yaml.in/yaml/v3"
-
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 const ownerRW = 0o600

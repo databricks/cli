@@ -16,10 +16,11 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sdkclients"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/google/uuid"
 )
 
@@ -33,48 +34,30 @@ type JobRunLifecycleState struct {
 
 // JobRunState is the RunNow request plus the outcome required for planning.
 type JobRunState struct {
-	jobs.RunNow
+	jobs.RunNowRequest
 
 	// Always SUCCESS during planning and cleared before persistence.
-	ResultState jobs.RunResultState `json:"result_state,omitempty"`
+	ResultState jobs.RunResultState_RunResultState `json:"result_state,omitempty"`
 
 	// Local-only fingerprint. Nested under lifecycle to avoid colliding with a
 	// future Jobs API field; nil when no trigger is armed so the key is omitted.
 	Lifecycle *JobRunLifecycleState `json:"lifecycle,omitempty"`
 }
 
-func (s *JobRunState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s JobRunState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
 // JobRunRemote is the RunNow request plus the run's output-only fields. It has no
 // lifecycle: GetRun never returns the fingerprints (see knownMissingInRemoteType).
 type JobRunRemote struct {
-	jobs.RunNow
+	jobs.RunNowRequest
 
 	// Repeats state.result_state at the path JobRunState uses, so the planner can
 	// compare the two. See "RemapState is a dumb copy" in README.md.
-	ResultState jobs.RunResultState `json:"result_state,omitempty"`
+	ResultState jobs.RunResultState_RunResultState `json:"result_state,omitempty"`
 
 	RunId      int64          `json:"run_id,omitempty"`
 	RunName    string         `json:"run_name,omitempty"`
 	State      *jobs.RunState `json:"state,omitempty"`
 	RunPageUrl string         `json:"run_page_url,omitempty"`
 	RunType    jobs.RunType   `json:"run_type,omitempty"`
-}
-
-// Custom marshaler needed because embedded RunNow's MarshalJSON would otherwise
-// take over and drop the additional fields.
-func (s *JobRunRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s JobRunRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
 }
 
 type ResourceJobRun struct {
@@ -89,9 +72,9 @@ func (*ResourceJobRun) New(client *sdkclients.Clients) *ResourceJobRun {
 
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
-		RunNow:      input.RunNow,
-		ResultState: jobs.RunResultStateSuccess,
-		Lifecycle:   nil,
+		RunNowRequest: input.RunNowRequest,
+		ResultState:   jobs.RunResultState_RunResultState_Success,
+		Lifecycle:     nil,
 	}
 	var ts resources.JobRunTriggersState
 	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
@@ -109,7 +92,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
 // nests the params under overriding_parameters and returns job_parameters as a
 // list, so both are flattened back into RunNow.
-func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
+func makeJobRunRemote(run *jobs.GetRunResponse) *JobRunRemote {
 	var overriding jobs.RunParameters
 	if run.OverridingParameters != nil {
 		overriding = *run.OverridingParameters
@@ -118,44 +101,57 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 	if len(run.JobParameters) > 0 {
 		jobParameters = make(map[string]string, len(run.JobParameters))
 		for _, p := range run.JobParameters {
-			jobParameters[p.Name] = p.Value
+			jobParameters[utils.Deref(p.Name)] = utils.Deref(p.Value)
 		}
 	}
+	state := runState(run)
 	return &JobRunRemote{
-		JobId:             run.JobId,
-		JobParameters:     jobParameters,
-		DbtCommands:       overriding.DbtCommands,
-		JarParams:         overriding.JarParams,
-		NotebookParams:    overriding.NotebookParams,
-		PipelineParams:    overriding.PipelineParams,
-		PythonNamedParams: overriding.PythonNamedParams,
-		PythonParams:      overriding.PythonParams,
-		SparkSubmitParams: overriding.SparkSubmitParams,
-		SqlParams:         overriding.SqlParams,
-		// Request-only fields GetRun never reports; listed so exhaustruct
-		// flags any new SDK field.
-		IdempotencyToken:  "",
-		Only:              nil,
-		PerformanceTarget: "",
-		Queue:             nil,
-		ForceSendFields:   nil,
-		ResultState:       run.State.ResultState,
-		RunId:             run.RunId,
-		RunName:           run.RunName,
-		// Rebuilt, not copied: the SDK records explicitly-sent fields in
-		// ForceSendFields, which makes zero values workspace-dependent.
-		State: &jobs.RunState{
-			LifeCycleState: run.State.LifeCycleState,
-			ResultState:    run.State.ResultState,
-			StateMessage:   run.State.StateMessage,
-			// Nothing reads these; listed so exhaustruct flags any new SDK field.
-			QueueReason:             "",
-			UserCancelledOrTimedout: false,
-			ForceSendFields:         nil,
+		RunNowRequest: jobs.RunNowRequest{
+			JobId:             run.JobId,
+			JobParameters:     jobParameters,
+			DbtCommands:       overriding.DbtCommands,
+			JarParams:         overriding.JarParams,
+			NotebookParams:    overriding.NotebookParams,
+			PipelineParams:    overriding.PipelineParams,
+			PythonNamedParams: overriding.PythonNamedParams,
+			PythonParams:      overriding.PythonParams,
+			SparkSubmitParams: overriding.SparkSubmitParams,
+			SqlParams:         overriding.SqlParams,
+			// Request-only fields GetRun never reports.
+			IdempotencyToken:  nil,
+			Only:              nil,
+			PerformanceTarget: "",
+			Queue:             nil,
 		},
-		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
+		ResultState: state.ResultState,
+		RunId:       utils.Deref(run.RunId),
+		RunName:     utils.Deref(run.RunName),
+		// Only the fields planning reads; queue_reason and user_cancelled_or_timedout
+		// are left out so the remote does not depend on what the workspace reports.
+		State: &jobs.RunState{
+			LifeCycleState: state.LifeCycleState,
+			ResultState:    state.ResultState,
+			StateMessage:   state.StateMessage,
+		},
+		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(utils.Deref(run.RunPageUrl)),
 		RunType:    run.RunType,
 	}
+}
+
+// runState returns the run's state, or an empty one if the run has none.
+func runState(run *jobs.GetRunResponse) jobs.RunState {
+	if run.State == nil {
+		return jobs.RunState{}
+	}
+	return *run.State
+}
+
+func (r *ResourceJobRun) getRun(ctx context.Context, runID int64) (*jobs.GetRunResponse, error) {
+	run, err := r.client.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(runID)})
+	if err != nil {
+		return nil, err
+	}
+	return jobs.GetRunResponseFromSDK(run)
 }
 
 // DoRead returns the run as GetRun reports it; a 404 lets the planner re-trigger.
@@ -164,10 +160,7 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	if err != nil {
 		return nil, err
 	}
-	// var + field set (not a literal) avoids listing GetRunRequest's other fields.
-	var req jobs.GetRunRequest
-	req.RunId = runID
-	run, err := r.client.Jobs.GetRun(ctx, req)
+	run, err := r.getRun(ctx, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,25 +171,29 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 // outcome the run reached. Lifecycle has no remote counterpart.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
-		RunNow:      remote.RunNow,
-		ResultState: remote.ResultState,
-		Lifecycle:   nil,
+		RunNowRequest: remote.RunNowRequest,
+		ResultState:   remote.ResultState,
+		Lifecycle:     nil,
 	}
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
 	// Mint a token so an SDK retry of a lost response returns the same run. Set it
 	// on a copy: recording it in state would drift from the empty config and recreate.
-	req := config.RunNow
-	req.IdempotencyToken = uuid.NewString()
+	req := config.RunNowRequest
+	req.IdempotencyToken = new(uuid.NewString())
+	request, err := jobs.RunNowRequestToSDK(&req)
+	if err != nil {
+		return "", nil, err
+	}
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.
-	wait, err := r.client.Jobs.RunNow(ctx, req)
+	wait, err := r.client.Jobs.RunNow(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
 	config.ResultState = ""
-	return strconv.FormatInt(wait.RunId, 10), nil, nil
+	return strconv.FormatInt(wait.GetRunId(), 10), nil, nil
 }
 
 // WaitAfterCreate blocks until the run finishes, so a resource referencing its
@@ -222,23 +219,22 @@ func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemo
 	// INTERNAL_ERROR, the state a run whose task failed lands in, leaving
 	// runFailedError nothing to name the failing task from. This poll returns the
 	// run in whatever state it settles in.
-	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.Run, *retries.Err) {
-		var req jobs.GetRunRequest
-		req.RunId = runID
-		run, err := r.client.Jobs.GetRun(ctx, req)
+	run, err := retries.Poll(ctx, jobRunTimeout, func() (*jobs.GetRunResponse, *retries.Err) {
+		run, err := r.getRun(ctx, runID)
 		if err != nil {
 			return nil, retries.Halt(err)
 		}
-		if pageURL == "" && run.RunPageUrl != "" {
-			pageURL = run.RunPageUrl
+		if pageURL == "" && utils.Deref(run.RunPageUrl) != "" {
+			pageURL = *run.RunPageUrl
 			reportRunLine(ctx, runID, "Run URL: "+workspaceurls.ModernizeJobRunPageURL(pageURL))
 		}
-		if run.State.LifeCycleState != logged.LifeCycleState || run.State.ResultState != logged.ResultState {
-			logged = *run.State
+		state := runState(run)
+		if state.LifeCycleState != logged.LifeCycleState || state.ResultState != logged.ResultState {
+			logged = state
 			log.Info(ctx, strings.TrimSpace(fmt.Sprintf("job run %d: %s %s", runID, logged.LifeCycleState, logged.ResultState)))
 		}
-		if !runIsTerminal(run.State.LifeCycleState) {
-			return nil, retries.Continues(run.State.StateMessage)
+		if !runIsTerminal(state.LifeCycleState) {
+			return nil, retries.Continues(utils.Deref(state.StateMessage))
 		}
 		return run, nil
 	})
@@ -251,29 +247,30 @@ func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemo
 		}
 		return nil, fmt.Errorf("%w%s", err, runPageLine(pageURL))
 	}
-	if run.State.ResultState != jobs.RunResultStateSuccess {
+	if runState(run).ResultState != jobs.RunResultState_RunResultState_Success {
 		// The error names the outcome.
 		return nil, r.runFailedError(ctx, run)
 	}
-	reportRunLine(ctx, runID, string(run.State.ResultState))
+	reportRunLine(ctx, runID, string(runState(run).ResultState))
 	return makeJobRunRemote(run), nil
 }
 
 // runFailedError reports why the run did not succeed, naming each failed task
 // and the error it reported.
-func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.Run) error {
+func (r *ResourceJobRun) runFailedError(ctx context.Context, run *jobs.GetRunResponse) error {
+	state := runState(run)
 	// A skipped run has no result_state; report the lifecycle state.
-	outcome := cmp.Or(string(run.State.ResultState), string(run.State.LifeCycleState))
+	outcome := cmp.Or(string(state.ResultState), string(state.LifeCycleState))
 	var msg strings.Builder
 	// The framework already prefixes the resource key and the run id.
 	fmt.Fprintf(&msg, "run did not succeed: %s", outcome)
-	if run.State.StateMessage != "" {
-		fmt.Fprintf(&msg, ": %s", run.State.StateMessage)
+	if message := utils.Deref(state.StateMessage); message != "" {
+		fmt.Fprintf(&msg, ": %s", message)
 	}
 	for _, task := range lastFailedAttempts(run.Tasks) {
-		fmt.Fprintf(&msg, "\ntask %q: %s", task.TaskKey, r.taskError(ctx, task))
+		fmt.Fprintf(&msg, "\ntask %q: %s", utils.Deref(task.TaskKey), r.taskError(ctx, task))
 	}
-	msg.WriteString(runPageLine(run.RunPageUrl))
+	msg.WriteString(runPageLine(utils.Deref(run.RunPageUrl)))
 	return errors.New(msg.String())
 }
 
@@ -286,11 +283,11 @@ func lastFailedAttempts(tasks []jobs.RunTask) []jobs.RunTask {
 		if !taskFailed(task) {
 			continue
 		}
-		i := slices.IndexFunc(result, func(seen jobs.RunTask) bool { return seen.TaskKey == task.TaskKey })
+		i := slices.IndexFunc(result, func(seen jobs.RunTask) bool { return utils.Deref(seen.TaskKey) == utils.Deref(task.TaskKey) })
 		switch {
 		case i < 0:
 			result = append(result, task)
-		case task.AttemptNumber > result[i].AttemptNumber:
+		case utils.Deref(task.AttemptNumber) > utils.Deref(result[i].AttemptNumber):
 			result[i] = task
 		}
 	}
@@ -301,9 +298,9 @@ func lastFailedAttempts(tasks []jobs.RunTask) []jobs.RunTask {
 // SKIPPED or UPSTREAM_FAILED never ran, so it has no error to report.
 func taskFailed(task jobs.RunTask) bool {
 	if task.State != nil {
-		return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
-			task.State.ResultState == jobs.RunResultStateFailed ||
-			task.State.ResultState == jobs.RunResultStateTimedout
+		return task.State.LifeCycleState == jobs.RunLifeCycleState_RunLifeCycleState_InternalError ||
+			task.State.ResultState == jobs.RunResultState_RunResultState_Failed ||
+			task.State.ResultState == jobs.RunResultState_RunResultState_Timedout
 	}
 	// State is deprecated in favour of Status, so a workspace may stop setting it.
 	if task.Status == nil || task.Status.TerminationDetails == nil {
@@ -311,19 +308,19 @@ func taskFailed(task jobs.RunTask) bool {
 	}
 	details := task.Status.TerminationDetails
 	// SKIPPED is also the code for a task an upstream failure skipped.
-	return details.Type != jobs.TerminationTypeTypeSuccess &&
-		details.Code != jobs.TerminationCodeCodeSkipped
+	return details.Type != jobs.TerminationType_Type_Success &&
+		details.Code != jobs.TerminationCode_Code_Skipped
 }
 
 // taskError returns the message the task reported, from the same place `bundle
 // run` reads it.
 func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) string {
 	var reported string
-	output, err := r.client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: task.RunId})
+	output, err := r.client.Jobs.GetRunOutput(ctx, sdkjobs.GetRunOutputRequest{RunId: task.RunId})
 	if err != nil {
-		log.Debugf(ctx, "could not read output of task %s: %v", task.TaskKey, err)
+		log.Debugf(ctx, "could not read output of task %s: %v", utils.Deref(task.TaskKey), err)
 	} else {
-		reported = output.Error
+		reported = utils.Deref(output.Error)
 	}
 	// Not every task type reports an error through GetRunOutput.
 	return cmp.Or(reported, taskMessage(task))
@@ -333,9 +330,9 @@ func (r *ResourceJobRun) taskError(ctx context.Context, task jobs.RunTask) strin
 // on, so the field it reads is always set.
 func taskMessage(task jobs.RunTask) string {
 	if task.State != nil {
-		return task.State.StateMessage
+		return utils.Deref(task.State.StateMessage)
 	}
-	return task.Status.TerminationDetails.Message
+	return utils.Deref(task.Status.TerminationDetails.Message)
 }
 
 func runPageLine(rawURL string) string {
@@ -346,10 +343,10 @@ func runPageLine(rawURL string) string {
 }
 
 // runIsTerminal reports whether a run has stopped, whatever it stopped as.
-func runIsTerminal(state jobs.RunLifeCycleState) bool {
-	return state == jobs.RunLifeCycleStateTerminated ||
-		state == jobs.RunLifeCycleStateSkipped ||
-		state == jobs.RunLifeCycleStateInternalError
+func runIsTerminal(state jobs.RunLifeCycleState_RunLifeCycleState) bool {
+	return state == jobs.RunLifeCycleState_RunLifeCycleState_Terminated ||
+		state == jobs.RunLifeCycleState_RunLifeCycleState_Skipped ||
+		state == jobs.RunLifeCycleState_RunLifeCycleState_InternalError
 }
 
 // reportRunLine names the resource and run id so concurrent deploys stay readable.

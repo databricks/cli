@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -84,7 +84,7 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 // 1. DATABRICKS_WAREHOUSE_ID env var
 // 2. User's default warehouse override (CUSTOM type only)
 // 3. Server-side default / first usable warehouse by state
-func resolveWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*sql.EndpointInfo, error) {
+func resolveWarehouse(ctx context.Context, w *sdkclients.Clients) (*sql.EndpointInfo, error) {
 	// first resolve DATABRICKS_WAREHOUSE_ID env variable
 	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
 	if warehouseID != "" {

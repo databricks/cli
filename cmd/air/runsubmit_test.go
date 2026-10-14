@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,7 +94,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorTypeGpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
 }
 
 func TestBuildSubmitPayloadB300(t *testing.T) {
@@ -167,7 +168,7 @@ func TestSubmitRun(t *testing.T) {
 				return jobs.SubmitRunResponse{RunId: new(int64(42))}
 			})
 
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
 			require.NoError(t, err)
 			payload := buildSubmitPayload(&runConfig{
 				ExperimentName: "exp",
@@ -355,7 +356,7 @@ func TestSubmitWorkload(t *testing.T) {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -380,7 +381,7 @@ func TestSubmitWorkload(t *testing.T) {
 	d := at.Deployments[0]
 	assert.True(t, strings.HasSuffix(utils.Deref(d.CommandPath), "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
-	assert.Equal(t, jobs.ComputeSpec_AcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
+	assert.Equal(t, jobs.ComputeSpec_AcceleratorType_Gpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
 }
@@ -424,7 +425,7 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			})
 			testserver.AddDefaultHandlers(server)
 
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", RetryTimeoutSeconds: 1})
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token", RetryTimeoutSeconds: 1})
 			require.NoError(t, err)
 			cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
 			cfg, err := loadRunConfig(cfgPath)
@@ -462,7 +463,7 @@ func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
 	cfg, err := loadRunConfig(cfgPath)
@@ -491,7 +492,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -519,7 +520,7 @@ func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
@@ -583,7 +584,7 @@ func TestSubmitWorkloadSendsContainerCommandsWithoutDeploymentCommand(t *testing
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	cfgPath := writeConfigFile(t, "run.yaml", `experiment_name: container-run
@@ -639,7 +640,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// A plain working-tree directory: packaging is plain-tar.
@@ -682,7 +683,7 @@ func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// A git repo committed at HEAD, referenced by commit so packaging is git_archive.
@@ -749,7 +750,7 @@ func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// A plain working-tree directory named "src": the old code named the tarball
@@ -822,7 +823,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	repo := newTestRepo(t)
@@ -876,7 +877,7 @@ func TestSubmitWorkloadSkipsProvenanceSidecars(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// Commit, then dirty the tree to cover the previously active sidecar path.
@@ -930,7 +931,7 @@ func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	repo := filepath.Join(t.TempDir(), "src")
@@ -978,7 +979,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		})
 		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
-		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		pw, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
 
 		cfg := *base
@@ -1009,7 +1010,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		})
 		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
 		return w, got
 	}

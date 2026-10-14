@@ -14,9 +14,11 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
+	sdkworkspaces "github.com/databricks/sdk-go/workspaces/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -130,7 +132,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		a := cmdctx.AccountClient(ctx)
 
 		// Doing a simple API call to check if the auth is valid
-		_, err := a.Workspaces.List(ctx)
+		_, err := listWorkspaces(ctx, a)
 		if err == nil {
 			return successAuthStatus(ctx, cmd, a.Config, showSensitive, a.Config.Username, a.Config.AccountID), nil
 		}
@@ -140,15 +142,15 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		// endpoint with the same resolved config before reporting failure.
 		me, meErr := verifyWorkspaceAuth(ctx, a.Config)
 		if meErr == nil {
-			return successAuthStatus(ctx, cmd, a.Config, showSensitive, me.UserName, ""), nil
+			return successAuthStatus(ctx, cmd, a.Config, showSensitive, utils.Deref(me.UserName), ""), nil
 		}
 		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err == nil {
-		return successAuthStatus(ctx, cmd, w.Config, showSensitive, me.UserName, ""), nil
+		return successAuthStatus(ctx, cmd, w.Config, showSensitive, utils.Deref(me.UserName), ""), nil
 	}
 
 	// Account console profiles that also carry a workspace_id resolve to a
@@ -169,12 +171,12 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 // workspace endpoint. The client is built over the same resolved config
 // pointer (config.Config must not be copied by value), without any profile
 // prompting.
-func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*iam.User, error) {
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*sdkscim.User, error) {
+	w, err := sdkclients.New(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	return w.CurrentUser.Me(ctx, iam.MeRequest{})
+	return w.Scim.Me(ctx, sdkscim.MeRequest{})
 }
 
 // verifyAccountAuth checks whether cfg's credentials are accepted by the
@@ -182,12 +184,22 @@ func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*iam.User, er
 // the same resolved config pointer (config.Config must not be copied by
 // value), without any profile prompting.
 func verifyAccountAuth(ctx context.Context, cfg *config.Config) error {
-	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+	a, err := sdkclients.New(ctx, cfg)
 	if err != nil {
 		return err
 	}
-	_, err = a.Workspaces.List(ctx)
+	_, err = listWorkspaces(ctx, a)
 	return err
+}
+
+// listWorkspaces lists the workspaces of the account the clients are
+// configured for.
+func listWorkspaces(ctx context.Context, a *sdkclients.Clients) ([]sdkworkspaces.Workspace, error) {
+	resp, err := a.Workspaces.ListWorkspacesPublic(ctx, sdkworkspaces.ListWorkspacesRequest{AccountId: new(a.Config.AccountID)})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Workspaces, nil
 }
 
 // successAuthStatus reports verified credentials, with details derived from cfg.

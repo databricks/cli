@@ -7,14 +7,14 @@ import (
 	"strings"
 
 	localenv "github.com/databricks/cli/libs/localenv"
-	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // sdkCompute adapts the Databricks SDK to the localenv.ComputeClient interface.
 type sdkCompute struct {
-	w *databricks.WorkspaceClient
+	w *sdkclients.Clients
 }
 
 // GetClusterSparkVersion returns the Spark version string for a running cluster.

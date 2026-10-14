@@ -6,14 +6,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // CreateKeysSecretScope creates or retrieves the secret scope for SSH keys.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID string) (string, error) {
+func CreateKeysSecretScope(ctx context.Context, client *sdkclients.Clients, sessionID string) (string, error) {
 	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
@@ -41,7 +41,7 @@ func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClie
 	return secretScopeName, nil
 }
 
-func GetSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key string) ([]byte, error) {
+func GetSecret(ctx context.Context, client *sdkclients.Clients, scope, key string) ([]byte, error) {
 	resp, err := client.Secrets.GetSecret(ctx, workspace.GetSecretRequest{
 		Scope: scope,
 		Key:   key,
@@ -57,7 +57,7 @@ func GetSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 	return value, nil
 }
 
-func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key, value string) error {
+func putSecret(ctx context.Context, client *sdkclients.Clients, scope, key, value string) error {
 	err := client.Secrets.PutSecret(ctx, workspace.PutSecret{
 		Scope:       scope,
 		Key:         key,

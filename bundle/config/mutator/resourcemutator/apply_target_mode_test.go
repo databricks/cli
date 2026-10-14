@@ -439,7 +439,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Alert 3: no schedule - pause status should remain empty
 	assert.Equal(t, "[dev lennart] alert3", utils.Deref(b.Config.Resources.Alerts["alert3"].DisplayName))
-	assert.Empty(t, b.Config.Resources.Alerts["alert3"].Schedule.PauseStatus)
+	assert.Nil(t, b.Config.Resources.Alerts["alert3"].Schedule)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {

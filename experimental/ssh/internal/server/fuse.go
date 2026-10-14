@@ -10,11 +10,11 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/fuse"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-func startFuseRegistration(ctx context.Context, client *databricks.WorkspaceClient, serverless bool) {
+func startFuseRegistration(ctx context.Context, client *sdkclients.Clients, serverless bool) {
 	// Serverless rejects non-root UIDs on the daemon ports; the bootstrap REPL's own registration already covers the server's descendants.
 	if serverless {
 		log.Info(ctx, "Skipping SSH filesystem registration on serverless; /Workspace and /Volumes access depends on the bootstrap notebook")
@@ -27,7 +27,7 @@ func startFuseRegistration(ctx context.Context, client *databricks.WorkspaceClie
 	}
 }
 
-func registerFuseCredentials(ctx context.Context, client *databricks.WorkspaceClient) error {
+func registerFuseCredentials(ctx context.Context, client *sdkclients.Clients) error {
 	self, err := fuse.Self()
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func registerFuseCredentials(ctx context.Context, client *databricks.WorkspaceCl
 	return fuse.KeepRegistered(ctx, fuseClient, workspaceToken(client), userID, notebookDir)
 }
 
-func fuseUserInfo(ctx context.Context, client *databricks.WorkspaceClient) (userID, notebookDir string) {
+func fuseUserInfo(ctx context.Context, client *sdkclients.Clients) (userID, notebookDir string) {
 	// User metadata is optional. Limit its lookup before publishing the server port.
 	userCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -52,7 +52,7 @@ func fuseUserInfo(ctx context.Context, client *databricks.WorkspaceClient) (user
 	return me.Id, "/Users/" + me.UserName
 }
 
-func workspaceToken(client *databricks.WorkspaceClient) fuse.TokenFunc {
+func workspaceToken(client *sdkclients.Clients) fuse.TokenFunc {
 	return func(ctx context.Context) (string, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, client.Config.Host, nil)
 		if err != nil {

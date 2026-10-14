@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -105,7 +105,7 @@ func makeCommand(method string) *cobra.Command {
 			// Skips the default profile when DATABRICKS_HOST is set (#5616).
 			root.ResolveDefaultProfile(cmd.Context(), cfg)
 
-			api, err := client.New(cfg)
+			api, err := apiclient.New(cfg)
 			if err != nil {
 				return err
 			}

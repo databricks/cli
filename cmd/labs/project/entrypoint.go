@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
@@ -124,7 +124,7 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 func (e *Entrypoint) ensureRunningCluster(ctx context.Context, cfg *config.Config) error {
 	sp := cmdio.NewSpinner(ctx)
 	defer sp.Close()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	w, err := sdkclients.New(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("workspace client: %w", err)
 	}

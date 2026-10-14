@@ -20,14 +20,14 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -82,13 +82,13 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 	w := b.WorkspaceClient(ctx)
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
 			return ""
 		}
 
 		// Emit a more descriptive error message for legacy dashboards.
-		if errors.Is(err, apierr.ErrBadRequest) && strings.HasPrefix(err.Error(), "dbsqlDashboard ") {
+		if apierrs.Is(err, apierrs.ErrBadRequest) && strings.HasPrefix(err.Error(), "dbsqlDashboard ") {
 			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
@@ -129,7 +129,7 @@ func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string 
 	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard with ID %s not found", d.existingID))
 			return ""
 		}
@@ -251,7 +251,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) {
+func waitForChanges(ctx context.Context, w *sdkclients.Clients, dashboard *dashboards.Dashboard) {
 	// Compute [time.Time] for the most recent update.
 	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
 	if err != nil {

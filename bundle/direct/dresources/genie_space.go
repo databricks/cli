@@ -2,11 +2,9 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/databricks/cli/libs/apierrs"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -14,8 +12,7 @@ import (
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	sdkgenie "github.com/databricks/sdk-go/genie/v1"
 )
 
 // ResourceGenieSpace mirrors the dashboard resource pattern (see dashboard.go),
@@ -46,15 +43,14 @@ func (*ResourceGenieSpace) PrepareState(input *resources.GenieSpace) *resources.
 }
 
 func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.GenieSpaceConfig, error) {
-	space, err := r.client.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-		SpaceId:                id,
-		IncludeSerializedSpace: true, // otherwise etag isn't returned
-		ForceSendFields:        nil,
+	space, err := r.client.Genie.GenieGetSpace(ctx, sdkgenie.GenieGetSpaceRequest{
+		SpaceId:                new(id),
+		IncludeSerializedSpace: new(true), // otherwise etag isn't returned
 	})
 	if err != nil {
 		return nil, err
 	}
-	return responseToGenieSpaceConfig(space, space.SerializedSpace), nil
+	return responseToGenieSpaceConfig(space, utils.Deref(space.SerializedSpace)), nil
 }
 
 // prepareGenieSpaceRequest returns the serialized_space body to send to the API.
@@ -72,21 +68,14 @@ func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error
 	}
 }
 
-func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
-	// SerializedSpace is excluded so it is never force-sent as an empty value; it is always
-	// populated from the bundle config on write. Done here (rather than in a RemapState) so
-	// every remote-producing path (DoRead/DoCreate/DoUpdate) yields the same force-send set.
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "SerializedSpace")
-
+func responseToGenieSpaceConfig(space *sdkgenie.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
 	return &resources.GenieSpaceConfig{
-		Description:     space.Description,
-		Etag:            space.Etag,
-		Title:           space.Title,
-		WarehouseId:     space.WarehouseId,
-		ParentPath:      ensureWorkspacePrefix(space.ParentPath),
+		Description:     utils.Deref(space.Description),
+		Etag:            utils.Deref(space.Etag),
+		Title:           utils.Deref(space.Title),
+		WarehouseId:     utils.Deref(space.WarehouseId),
+		ParentPath:      ensureWorkspacePrefix(utils.Deref(space.ParentPath)),
 		SerializedSpace: serializedSpace,
-
-		ForceSendFields: forceSendFields,
 	}
 }
 
@@ -114,15 +103,15 @@ func isMissingGenieParentPathError(err error) bool {
 		return true
 	}
 
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok {
+	if _, ok := apierrs.Get(err); !ok {
 		return false
 	}
 
-	return apiErr.StatusCode == http.StatusBadRequest &&
-		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
-		strings.Contains(apiErr.Message, "Tree node with path") &&
-		strings.Contains(apiErr.Message, "does not exist")
+	message := apierrs.Message(err)
+	return apierrs.StatusCode(err) == http.StatusBadRequest &&
+		apierrs.ErrorCode(err) == "INVALID_PARAMETER_VALUE" &&
+		strings.Contains(message, "Tree node with path") &&
+		strings.Contains(message, "does not exist")
 }
 
 func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
@@ -131,14 +120,12 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 		return "", nil, err
 	}
 
-	req := dashboards.GenieCreateSpaceRequest{
-		Description:     config.Description,
-		Title:           config.Title,
-		WarehouseId:     config.WarehouseId,
-		ParentPath:      config.ParentPath,
-		SerializedSpace: serializedSpace,
-
-		ForceSendFields: utils.FilterFields[dashboards.GenieCreateSpaceRequest](config.ForceSendFields),
+	req := sdkgenie.GenieCreateSpaceRequest{
+		Description:     nonEmpty(config.Description),
+		Title:           nonEmpty(config.Title),
+		WarehouseId:     nonEmpty(config.WarehouseId),
+		ParentPath:      nonEmpty(config.ParentPath),
+		SerializedSpace: nonEmpty(serializedSpace),
 	}
 
 	createResp, err := r.client.Genie.CreateSpace(ctx, req)
@@ -162,15 +149,10 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	// to DoCreate) as the state record, so mutating it here is what gets the
 	// backend-returned etag onto disk for the next plan's drift check.
 	// Matches the dashboard pattern (dashboard.go DoCreate).
-	config.Etag = createResp.Etag
+	config.Etag = utils.Deref(createResp.Etag)
 
-	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
+	return utils.Deref(createResp.SpaceId), responseToGenieSpaceConfig(createResp, serializedSpace), nil
 }
-
-// description is force-sent on update so that clearing it in config clears it on the space.
-// Without this the omitempty field is dropped from the request and the old value drifts back on
-// every plan. Verified against a real workspace: UpdateSpace accepts {"description": ""} as a clear.
-var genieSpaceForceSend = []string{"Description"}
 
 func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, _ *PlanEntry) (*resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
@@ -184,16 +166,16 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 	// migrates serialized_space to a newer schema version, so a stale etag would
 	// 409 a legitimate update after a migration. Etag is therefore left empty;
 	// out-of-band drift is surfaced on read via OverrideChangeDesc instead.
-	updateResp, err := r.client.Genie.UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-		SpaceId:         id,
-		Description:     config.Description,
-		Title:           config.Title,
-		WarehouseId:     config.WarehouseId,
-		ParentPath:      config.ParentPath,
-		SerializedSpace: serializedSpace,
-		Etag:            "",
-
-		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](append(slices.Clone(genieSpaceForceSend), config.ForceSendFields...)),
+	//
+	// description is always sent so that clearing it in config clears it on the space.
+	// Verified against a real workspace: UpdateSpace accepts {"description": ""} as a clear.
+	updateResp, err := r.client.Genie.UpdateSpace(ctx, sdkgenie.GenieUpdateSpaceRequest{
+		SpaceId:         new(id),
+		Description:     new(config.Description),
+		Title:           nonEmpty(config.Title),
+		WarehouseId:     nonEmpty(config.WarehouseId),
+		ParentPath:      nonEmpty(config.ParentPath),
+		SerializedSpace: nonEmpty(serializedSpace),
 	})
 	if err != nil {
 		return nil, err
@@ -201,7 +183,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 
 	// Persist the new etag in state (see DoCreate for the rationale). Record the
 	// body we sent, mirroring DoCreate, so config-side and state-side match.
-	config.Etag = updateResp.Etag
+	config.Etag = utils.Deref(updateResp.Etag)
 
 	return responseToGenieSpaceConfig(updateResp, serializedSpace), nil
 }
@@ -225,7 +207,7 @@ func (r *ResourceGenieSpace) OverrideChangeDesc(_ context.Context, path *structp
 }
 
 func (r *ResourceGenieSpace) DoDelete(ctx context.Context, id string, _ *resources.GenieSpaceConfig) error {
-	return r.client.Genie.TrashSpace(ctx, dashboards.GenieTrashSpaceRequest{
-		SpaceId: id,
+	return r.client.Genie.GenieTrashSpace(ctx, sdkgenie.GenieTrashSpaceRequest{
+		SpaceId: new(id),
 	})
 }

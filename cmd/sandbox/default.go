@@ -1,12 +1,11 @@
 package sandbox
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -45,7 +44,7 @@ Example:
 			}
 			entry, err := api.get(ctx, sandboxID)
 			if err != nil {
-				if errors.Is(err, apierr.ErrNotFound) {
+				if apierrs.Is(err, apierrs.ErrNotFound) {
 					return fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
 				}
 				return fmt.Errorf("failed to validate sandbox %s: %w", sandboxID, err)

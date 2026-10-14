@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,7 @@ import (
 type WorkspaceT struct {
 	testutil.TestingT
 
-	W *databricks.WorkspaceClient
+	W *sdkclients.Clients
 
 	ctx context.Context
 
@@ -25,7 +26,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	w, err := databricks.NewWorkspaceClient()
+	w, err := sdkclients.New(t.Context(), &config.Config{})
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
