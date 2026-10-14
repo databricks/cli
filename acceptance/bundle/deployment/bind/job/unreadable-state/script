@@ -1,0 +1,14 @@
+title "Deploy job_1"
+trace $CLI bundle deploy
+
+title "Leave behind a WAL from a different lineage, as a crashed deploy would"
+cp resources.json.wal .databricks/bundle/default/
+
+title "Bind must refuse: the state cannot be read, so we cannot tell if job_1 is already managed\n"
+job_id=$($CLI jobs create --json '{"name": "External Job"}' | jq -r '.job_id')
+add_repl "$job_id" EXTERNAL_JOB_ID
+trace errcode $CLI bundle deployment bind job_1 "$job_id" --auto-approve
+
+title "Nothing was bound: the WAL is untouched and no bind state was written"
+trace diff.py resources.json.wal .databricks/bundle/default/resources.json.wal
+trace assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
