@@ -12,9 +12,12 @@ API message: Internal error
 Files: 1 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
+Warning: Recovering deployment history state with a new lineage; existing saved plans are no longer valid
+
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
   "features": {
     "deployment_history": {}
   }

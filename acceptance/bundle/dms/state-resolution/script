@@ -7,31 +7,31 @@ title "Setup (LOG.setup)\nCurrent: DMS enabled; remote reference snapshot saved.
     trace cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
 } &> LOG.setup
 
-title "1. Stale cache\nExpect: remote beats serial 999/wrong lineage; cache matches remote.\n"
+title "1. Stale local copy\nExpect: remote beats serial 999/wrong lineage; local copy matches remote.\n"
 {
     trace update_file.py .databricks/bundle/default/resources.json '"serial": 1,' '"serial": 999,'
     trace update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
-} &> LOG.stale-cache
+} &> LOG.stale-copy
 trace jq '{serial, lineage}' .databricks/bundle/default/resources.json
 trace $CLI bundle debug states --force-pull 2>&1 | contains.py 'remote direct state' '!local ' '!stale-' '!serial=999'
 trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
-echo "PASS: stale cache replaced"
+echo "PASS: stale local copy replaced"
 
-title "2. Invalid cache\nInput: YAML in JSON cache paths.\nExpect: use remote state; overwrite broken JSON; remove Terraform cache; no resource changes.\n"
+title "2. Invalid local copies\nInput: YAML in JSON state paths.\nExpect: use remote state; overwrite broken JSON; remove Terraform copy; no resource changes.\n"
 trace cp databricks.yml .databricks/bundle/default/resources.json
 trace mkdir -p .databricks/bundle/default/terraform
 trace cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
 trace $CLI bundle plan | contains.py 'Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged'
 trace test ! -e .databricks/bundle/default/terraform/terraform.tfstate
 trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
-echo "PASS: invalid caches handled"
+echo "PASS: invalid local copies handled"
 
-title "3. Missing remote\nExpect: bad JSON fails; local cache bytes remain unchanged.\n"
+title "3. Missing remote checkpoint and invalid local copy\nExpect: recover confirmed DMS state with a new lineage and invalidate old plans.\n"
 trace MSYS_NO_PATHCONV=1 $CLI workspace delete "$state_path/resources.json"
 trace cp databricks.yml .databricks/bundle/default/resources.json
-trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'invalid character'
-trace cmp databricks.yml .databricks/bundle/default/resources.json
-echo "PASS: failure preserved cache"
+trace $CLI bundle plan 2>&1 | contains.py 'Recovering deployment history state with a new lineage; existing saved plans are no longer valid' 'Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged'
+trace jq -e --slurpfile original .databricks/resources.remote.json '.lineage != $original[0].lineage and (.features | has("deployment_history")) and .state == {}' .databricks/bundle/default/resources.json
+echo "PASS: DMS recovery replaced the invalid local copy"
 
 {
     trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.remote.json --format AUTO --overwrite

@@ -2,8 +2,8 @@
 === Setup (LOG.setup)
 Current: DMS enabled; remote reference snapshot saved.
 
-=== 1. Stale cache
-Expect: remote beats serial 999/wrong lineage; cache matches remote.
+=== 1. Stale local copy
+Expect: remote beats serial 999/wrong lineage; local copy matches remote.
 
 >>> jq {serial, lineage} .databricks/bundle/default/resources.json
 {
@@ -15,11 +15,11 @@ Expect: remote beats serial 999/wrong lineage; cache matches remote.
 resources.json: remote direct state serial=1 lineage="[UUID]"
 
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
-PASS: stale cache replaced
+PASS: stale local copy replaced
 
-=== 2. Invalid cache
-Input: YAML in JSON cache paths.
-Expect: use remote state; overwrite broken JSON; remove Terraform cache; no resource changes.
+=== 2. Invalid local copies
+Input: YAML in JSON state paths.
+Expect: use remote state; overwrite broken JSON; remove Terraform copy; no resource changes.
 
 >>> cp databricks.yml .databricks/bundle/default/resources.json
 
@@ -33,18 +33,20 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> test ! -e .databricks/bundle/default/terraform/terraform.tfstate
 
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
-PASS: invalid caches handled
+PASS: invalid local copies handled
 
-=== 3. Missing remote
-Expect: bad JSON fails; local cache bytes remain unchanged.
+=== 3. Missing remote checkpoint and invalid local copy
+Expect: recover confirmed DMS state with a new lineage and invalidate old plans.
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json
 
 >>> cp databricks.yml .databricks/bundle/default/resources.json
 
->>> musterr [CLI] bundle plan
-Error: invalid character 'b' looking for beginning of value
+>>> [CLI] bundle plan
+Warning: Recovering deployment history state with a new lineage; existing saved plans are no longer valid
 
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> cmp databricks.yml .databricks/bundle/default/resources.json
-PASS: failure preserved cache
+>>> jq -e --slurpfile original .databricks/resources.remote.json .lineage != $original[0].lineage and (.features | has("deployment_history")) and .state == {} .databricks/bundle/default/resources.json
+true
+PASS: DMS recovery replaced the invalid local copy

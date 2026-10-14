@@ -29,5 +29,21 @@ trace $CLI bundle deploy 2>&1 | contains.py 'Resources: 0 created, 0 changed, 0 
 trace resources_json_writes 0
 trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
 
+title "4. Corrupt remote marker: repair once, preserve ID, continue at version 3"
+MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file databricks.yml --format RAW --overwrite &> LOG.corrupt
+rm -f "$OUT_REQUESTS"
+update_file.py databricks.yml 'name: updated' 'name: repaired'
+trace $CLI bundle deploy 2>&1 | contains.py 'Updated jobs.foo' '!Created ' '!Recovering deployment history state with a new lineage'
+trace resources_json_writes 1
+trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
+
+title "5. Missing remote marker: repair once, preserve ID, continue at version 4"
+MSYS_NO_PATHCONV=1 $CLI workspace delete "$state_path/resources.json" &> LOG.missing
+rm -f "$OUT_REQUESTS"
+update_file.py databricks.yml 'name: repaired' 'name: restored'
+trace $CLI bundle deploy 2>&1 | contains.py 'Updated jobs.foo' '!Created ' '!Recovering deployment history state with a new lineage'
+trace resources_json_writes 1
+trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
+
 $CLI bundle destroy --auto-approve &> LOG.cleanup
 rm -f "$OUT_REQUESTS"
