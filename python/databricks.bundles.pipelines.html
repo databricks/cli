@@ -604,6 +604,12 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.smartsheet_options">
+<span class="sig-name descname"><span class="pre">smartsheet_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.SmartsheetOptions" title="databricks.bundles.pipelines._models.smartsheet_options.SmartsheetOptions"><span class="pre">SmartsheetOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.smartsheet_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Smartsheet specific options for ingestion</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.zendesk_support_options">
 <span class="sig-name descname"><span class="pre">zendesk_support_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ZendeskSupportOptions" title="databricks.bundles.pipelines._models.zendesk_support_options.ZendeskSupportOptions"><span class="pre">ZendeskSupportOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.zendesk_support_options" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] Zendesk Support specific options for ingestion</p>
@@ -1867,7 +1873,8 @@ If not specified, UTC will be used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.clusters">
 <span class="sig-name descname"><span class="pre">clusters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.pipelines.PipelineCluster" title="databricks.bundles.pipelines._models.pipeline_cluster.PipelineCluster"><span class="pre">PipelineCluster</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.clusters" title="Link to this definition">¶</a></dt>
-<dd><p>Cluster settings for this pipeline deployment.</p>
+<dd><p>Cluster settings for this pipeline deployment. Applies to classic
+(non-serverless) pipelines. Omit this field when <cite>serverless</cite> is <cite>true</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1988,7 +1995,11 @@ added to sys.path when executing Python sources during pipeline execution.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.serverless">
 <span class="sig-name descname"><span class="pre">serverless</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.serverless" title="Link to this definition">¶</a></dt>
-<dd><p>Whether serverless compute is enabled for this pipeline.</p>
+<dd><p>Whether serverless compute is enabled for this pipeline. Serverless is the
+recommended compute for new pipelines; set this to <cite>true</cite> to run the pipeline
+on serverless. For notebook/file pipelines, omitting this field uses classic
+compute configured through the <cite>clusters</cite> field. When <cite>true</cite>, omit <cite>clusters</cite>;
+Photon is always enabled.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2864,6 +2875,16 @@ Clients that assume it is always present should handle its absence.</p>
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SmartsheetOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SmartsheetOptions" title="Link to this definition">¶</a></dt>
 <dd><p>Smartsheet specific options for ingestion</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions.enforce_schema">
+<span class="sig-name descname"><span class="pre">enforce_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SmartsheetOptions.enforce_schema" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
+Checkbox/etc.). Cells that do not conform to the declared type are set to NULL.
+When false, all columns land as STRING. Use false for sheets with irregular data or columns
+that frequently violate their own declared type.
+If not specified, defaults to true.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SmartsheetOptions.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>

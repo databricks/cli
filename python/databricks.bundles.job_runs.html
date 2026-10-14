@@ -310,6 +310,31 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dd><p>If true, triggers a full refresh on the spark declarative pipeline.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.job_runs.PipelineParams.full_refresh_selection">
+<span class="sig-name descname"><span class="pre">full_refresh_selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.job_runs.PipelineParams.full_refresh_selection" title="Link to this definition">¶</a></dt>
+<dd><p>A list of tables to update with fullRefresh.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.job_runs.PipelineParams.refresh_flow_selection">
+<span class="sig-name descname"><span class="pre">refresh_flow_selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.job_runs.PipelineParams.refresh_flow_selection" title="Link to this definition">¶</a></dt>
+<dd><p>Flow names to selectively refresh. These are unioned with other selective refresh
+options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.job_runs.PipelineParams.refresh_selection">
+<span class="sig-name descname"><span class="pre">refresh_selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.job_runs.PipelineParams.refresh_selection" title="Link to this definition">¶</a></dt>
+<dd><p>A list of tables to update without fullRefresh.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.job_runs.PipelineParams.reset_checkpoint_selection">
+<span class="sig-name descname"><span class="pre">reset_checkpoint_selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.job_runs.PipelineParams.reset_checkpoint_selection" title="Link to this definition">¶</a></dt>
+<dd><p>A list of streaming flows to reset checkpoints without clearing data.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.job_runs.PipelineParams.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>

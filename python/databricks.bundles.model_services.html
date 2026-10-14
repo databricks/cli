@@ -212,7 +212,8 @@ inference table is created, this field cannot be changed.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigModelTargetConfig</span></span><a class="headerlink" href="#databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig" title="Link to this definition">¶</a></dt>
-<dd><p>Model target configuration for an external model destination.</p>
+<dd><p>Model target configuration shared by model provider service targets and
+external model destinations on model services.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig.model">
 <span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig.model" title="Link to this definition">¶</a></dt>
@@ -225,9 +226,11 @@ Catalog model resource.</p>
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig.native_api_types">
 <span class="sig-name descname"><span class="pre">native_api_types</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.model_services.ModelProviderServiceConfigModelTargetConfig.native_api_types" title="Link to this definition">¶</a></dt>
 <dd><p>Provider-native API types supported by this model, such as
-<cite>openai/v1/chat/completions</cite>. At least one value is required. AI Gateway
-uses these values to translate requests and responses. At most 64 entries
-of 256 characters each are allowed.</p>
+<cite>openai/v1/chat/completions</cite>. A model provider service target requires at
+least one value. A model service destination may omit the list to use the
+matching provider service target’s types when available. AI Gateway uses
+the selected types for translation. At most 64 entries of 256 characters
+each are allowed.</p>
 </dd></dl>
 
 <dl class="py method">

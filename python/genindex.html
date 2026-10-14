@@ -2587,11 +2587,13 @@
 </li>
       <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.EndpointTagPair">EndpointTagPair (class in databricks.bundles.sql_warehouses)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.EndpointTags">EndpointTags (class in databricks.bundles.sql_warehouses)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="databricks.bundles.vector_search_endpoints.html#databricks.bundles.vector_search_endpoints.EndpointType">EndpointType (class in databricks.bundles.vector_search_endpoints)</a>
+</li>
+      <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SmartsheetOptions.enforce_schema">enforce_schema (SmartsheetOptions attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PipelineClusterAutoscaleMode.ENHANCED">ENHANCED (PipelineClusterAutoscaleMode attribute)</a>
 </li>
@@ -2704,6 +2706,8 @@
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigExternalModelProviderType.EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC">EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC (ModelProviderServiceConfigExternalModelProviderType attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigExternalModelProviderType.EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI">EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI (ModelProviderServiceConfigExternalModelProviderType attribute)</a>
+</li>
+      <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigExternalModelProviderType.EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE">EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE (ModelProviderServiceConfigExternalModelProviderType attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigExternalModelProviderType.EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM">EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM (ModelProviderServiceConfigExternalModelProviderType attribute)</a>
 </li>
@@ -3409,6 +3413,12 @@
 
       <ul>
         <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineTask.full_refresh">(PipelineTask attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.PipelineParams.full_refresh_selection">full_refresh_selection (PipelineParams attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineParams.full_refresh_selection">[1]</a>
+
+      <ul>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineTask.full_refresh_selection">(PipelineTask attribute)</a>
 </li>
       </ul></li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.IngestionPipelineDefinition.full_refresh_window">full_refresh_window (IngestionPipelineDefinition attribute)</a>
@@ -4435,6 +4445,8 @@
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderService.model_provider_service_id">model_provider_service_id (ModelProviderService attribute)</a>
 </li>
+      <li><a href="databricks.bundles.apps.html#databricks.bundles.apps.AppResourceUcSecurableUcSecurableType.MODEL_SERVICE">MODEL_SERVICE (AppResourceUcSecurableUcSecurableType attribute)</a>
+</li>
       <li><a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelService.model_service_id">model_service_id (ModelService attribute)</a>
 </li>
       <li><a href="databricks.bundles.model_services.html#databricks.bundles.model_services.ModelServiceConfigProvisionedThroughputConfig.model_serving_endpoint">model_serving_endpoint (ModelServiceConfigProvisionedThroughputConfig attribute)</a>
@@ -4443,10 +4455,10 @@
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderService">ModelProviderService (class in databricks.bundles.model_provider_services)</a>
 </li>
-      <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfig">ModelProviderServiceConfig (class in databricks.bundles.model_provider_services)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfig">ModelProviderServiceConfig (class in databricks.bundles.model_provider_services)</a>
+</li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigAmazonBedrockProviderConfig">ModelProviderServiceConfigAmazonBedrockProviderConfig (class in databricks.bundles.model_provider_services)</a>
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig">ModelProviderServiceConfigAmazonBedrockProviderDirectConfig (class in databricks.bundles.model_provider_services)</a>
@@ -5572,6 +5584,18 @@
 </li>
       <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PowerBiTask.refresh_after_update">refresh_after_update (PowerBiTask attribute)</a>
 </li>
+      <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.PipelineParams.refresh_flow_selection">refresh_flow_selection (PipelineParams attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineParams.refresh_flow_selection">[1]</a>
+
+      <ul>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineTask.refresh_flow_selection">(PipelineTask attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.PipelineParams.refresh_selection">refresh_selection (PipelineParams attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineParams.refresh_selection">[1]</a>
+
+      <ul>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineTask.refresh_selection">(PipelineTask attribute)</a>
+</li>
+      </ul></li>
       <li><a href="databricks.bundles.model_serving_endpoints.html#databricks.bundles.model_serving_endpoints.GoogleCloudVertexAiConfig.region">region (GoogleCloudVertexAiConfig attribute)</a>
 
       <ul>
@@ -5590,10 +5614,10 @@
 </li>
       <li><a href="databricks.bundles.model_provider_services.html#databricks.bundles.model_provider_services.ModelProviderServiceConfigAnthropicProviderConfig.relayed">relayed (ModelProviderServiceConfigAnthropicProviderConfig attribute)</a>
 </li>
-      <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.SpotInstancePolicy.RELIABILITY_OPTIMIZED">RELIABILITY_OPTIMIZED (SpotInstancePolicy attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="databricks.bundles.sql_warehouses.html#databricks.bundles.sql_warehouses.SpotInstancePolicy.RELIABILITY_OPTIMIZED">RELIABILITY_OPTIMIZED (SpotInstancePolicy attribute)</a>
+</li>
       <li><a href="databricks.bundles.clusters.html#databricks.bundles.clusters.Cluster.remote_disk_throughput">remote_disk_throughput (Cluster attribute)</a>
 
       <ul>
@@ -5626,6 +5650,12 @@
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.RESCUE">RESCUE (FileIngestionOptionsSchemaEvolutionMode attribute)</a>
 </li>
+      <li><a href="databricks.bundles.job_runs.html#databricks.bundles.job_runs.PipelineParams.reset_checkpoint_selection">reset_checkpoint_selection (PipelineParams attribute)</a>, <a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineParams.reset_checkpoint_selection">[1]</a>
+
+      <ul>
+        <li><a href="databricks.bundles.jobs.html#databricks.bundles.jobs.PipelineTask.reset_checkpoint_selection">(PipelineTask attribute)</a>
+</li>
+      </ul></li>
       <li><a href="databricks.bundles.core.html#databricks.bundles.core.Bundle.resolve_variable">resolve_variable() (Bundle method)</a>
 </li>
       <li><a href="databricks.bundles.core.html#databricks.bundles.core.Bundle.resolve_variable_list">resolve_variable_list() (Bundle method)</a>
@@ -5921,6 +5951,8 @@
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PostgresCatalogConfig.slot_config">slot_config (PostgresCatalogConfig attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.PostgresSlotConfig.slot_name">slot_name (PostgresSlotConfig attribute)</a>
+</li>
+      <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.ConnectorOptions.smartsheet_options">smartsheet_options (ConnectorOptions attribute)</a>
 </li>
       <li><a href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.SmartsheetOptions">SmartsheetOptions (class in databricks.bundles.pipelines)</a>
 </li>
