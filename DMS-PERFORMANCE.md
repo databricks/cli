@@ -8,6 +8,13 @@ skip CLI operations, or change the invariant's assertions to improve timing.
 
 ## Reproduction
 
+From the Universe root on the experimental `dms-fast-acceptance` branch:
+
+```sh
+DMS_CLI_FAST=1 USE_DBEXEC=0 bin/lite up \
+  //bundle/metadata-service/test:cli-testenv-bin --name cli-testenv-bin
+```
+
 From the CLI root, with a running local DMS fixture whose connection settings are in
 the enclosing Universe checkout's `bundle/metadata-service/test/.lite/cli-endpoints.json`:
 
@@ -29,7 +36,7 @@ verifies convergence, and destroys the bundle. All those operations remain enabl
 
 ## Measurements (2026-10-14, same Arclet, Go 1.27.2)
 
-| Setup | Three leaf subtest durations |
+| Setup | Leaf subtest durations |
 | --- | --- |
 | Testserver baseline | 0.42s, 0.42s, 0.47s |
 | Real DMS + original LITE workspace fake, warm | 7.90s, 6.90s, 9.68s |
@@ -138,3 +145,30 @@ outbound workspace calls. It does not cache DMS responses or permission decision
 
 These are incremental measurements on an increasingly warm JVM, not randomized
 A/B samples. The startup-configured result must be measured again after restart.
+
+## Experiment 5: fewer workspace RPCs and co-located permission clients
+
+Workspace `get-status` now runs the existing permission validator inside the shared
+workspace fake. The gateway no longer repeats the tree lookup and ACL RPC. Other
+gateway path lookups use `getTreeNodeByPath` instead of `get-status` followed by a
+second tree lookup. All checks still execute; the DMS API suite verifies grants,
+revocations, user isolation, and that a read-only user cannot create a version.
+
+Restarting the normal Simulation backend with all fast-mode settings applied at
+startup gave a 6.92s cold leaf, then 2.24, 1.83, 1.73, 1.64, 1.52, 1.51, 1.44,
+1.38, 1.38s. Another ten-run batch ended at 1.21s. A new JFR showed that RSA signing
+was no longer prominent, but DMS still waited on workspace RPCs.
+
+The first co-location experiment gave the workspace fake and gateway the ACL fake's
+own in-memory client. This shares the live permission store, not a cache. It helped
+little: after restart the cold leaf was 6.62s; the second ten-run batch ended at
+1.22s. Inspection showed that the workspace permission validator actually uses its
+RBAC client for these reads, so they still made an RPC to the co-located ACL fake.
+
+The next experiment uses the existing in-process RBAC test client with the ACL fake's
+same legacy RBAC handler. This runs backend validation hooks and shares ACL state
+with RPC clients. The full DMS API suite passes all 14 cases, including read-only
+write denial, grants and revocations. The normal, non-fast fixture keeps RPC clients.
+Transport/service-identity conformance between dependency fakes is not covered by
+this co-location mode; real DMS HTTP/mTLS transport and user authorization remain
+covered.
