@@ -2,7 +2,8 @@
 # every request to the tunnel server. The CLI must report the proxy's reason as soon as it gets
 # the 403 instead of polling until the server start timeout, and cancel the run it submitted
 # since nothing can ever connect to that server.
-trace $CLI workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json '{"boolean_val": {"value": false}}' >/dev/null
+# The body repeats the name: with only {"value": false} in it, the API sees an empty message.
+trace $CLI workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json '{"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}' >/dev/null
 
 # No release artifacts locally and they're never executed; stand in empty archives.
 mkdir -p releases

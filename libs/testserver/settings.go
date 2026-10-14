@@ -20,6 +20,18 @@ func (s *FakeWorkspace) WorkspaceSettingPatch(req Request) Response {
 		}
 	}
 
+	// The backend decodes the body as a protobuf message, in which false is the default value, so a
+	// body that carries only {"boolean_val": {"value": false}} arrives empty and is rejected.
+	if setting.Name == "" && (setting.BooleanVal == nil || !setting.BooleanVal.Value) {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Field 'setting' is required and must contain at least one subfield with a non-default value!",
+			},
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	setting.Name = req.Vars["name"]

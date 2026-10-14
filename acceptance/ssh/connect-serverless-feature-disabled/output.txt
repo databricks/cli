@@ -1,5 +1,5 @@
 
->>> [CLI] workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json {"boolean_val": {"value": false}}
+>>> [CLI] workspace-settings-v2 patch-public-workspace-setting port_fwd_serverless_enabled --json {"name": "port_fwd_serverless_enabled", "boolean_val": {"value": false}}
 
 === CLI ssh connect
 
