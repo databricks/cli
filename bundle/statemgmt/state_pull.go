@@ -135,7 +135,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState selects the newest Terraform or direct state.
-// Deployment history selects only remote state and caches it locally when present.
+// Deployment history selects only remote state and writes a local copy when present.
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
