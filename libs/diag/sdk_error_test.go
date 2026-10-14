@@ -30,19 +30,19 @@ func TestFormatAPIError(t *testing.T) {
 		{
 			name:            "apierr without request",
 			err:             apierr.FromHTTPError(400, nil, body),
-			expectedSummary: "databricks-api error: api error message (400 TEST_ERROR)",
+			expectedSummary: "api error message (400 TEST_ERROR)",
 			expectedDetails: "Endpoint: n/a\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 		{
 			name:            "apierr with request",
 			err:             apierr.FromHTTPError(400, withRequest, body),
-			expectedSummary: "databricks-api error: api error message (400 TEST_ERROR)",
+			expectedSummary: "api error message (400 TEST_ERROR)",
 			expectedDetails: "Endpoint: POST https://example.test/api/2.0/foo\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 		{
 			name:            "wrapped apierr",
 			err:             fmt.Errorf("wrapped: %w", apierr.FromHTTPError(500, nil, body)),
-			expectedSummary: "wrapped: databricks-api error: api error message (500 TEST_ERROR)",
+			expectedSummary: "wrapped: api error message (500 TEST_ERROR)",
 			expectedDetails: "Endpoint: n/a\nHTTP Status: 500 Internal Server Error\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 	}

@@ -3,7 +3,6 @@ package validate
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/utils"
 	"slices"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/utils"
 	sdkvolumes "github.com/databricks/sdk-go/uc/volumes/v1"
 )
 
@@ -101,7 +101,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 	_, err = w.Volumes.GetVolume(ctx, sdkvolumes.GetVolumeRequest{FullNameArg: new(volumeFullName)})
 
 	if apierrs.Is(err, apierrs.ErrPermissionDenied) {
-		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
+		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, apierrs.ErrorString(err)))
 	}
 	if apierrs.Is(err, apierrs.ErrNotFound) {
 		path, locations, ok := findVolumeInBundle(b.Config, catalogName, schemaName, volumeName)
@@ -124,7 +124,7 @@ the artifact_path.`,
 
 	}
 	if err != nil {
-		return wrapErrorMsg(fmt.Sprintf("cannot read volume %s: %s", volumeFullName, err))
+		return wrapErrorMsg(fmt.Sprintf("cannot read volume %s: %s", volumeFullName, apierrs.ErrorString(err)))
 	}
 	return nil
 }

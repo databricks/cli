@@ -254,13 +254,13 @@ func runImport(ctx context.Context, w *sdkclients.Clients, appName, outputDir st
 	alreadyImported := utils.Deref(app.DefaultSourceCodePath) != "" && strings.Contains(utils.Deref(app.DefaultSourceCodePath), "/.bundle/")
 	if alreadyImported {
 		if !forceImport {
-			return fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
+			return fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, utils.Deref(app.DefaultSourceCodePath))
 		}
 
 		// Check if the app is owned by the current user
 		appOwner := strings.ToLower(utils.Deref(app.Creator))
 		if appOwner != currentUserEmail {
-			return fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
+			return fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, utils.Deref(app.Creator))
 		}
 
 		if !quiet {
@@ -333,7 +333,7 @@ func runImport(ctx context.Context, w *sdkclients.Clients, appName, outputDir st
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}
 		if !exists {
-			return fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
+			return fmt.Errorf("app '%s' no longer exists in workspace", utils.Deref(app.Name))
 		}
 
 		// Bind the resource
@@ -348,7 +348,7 @@ func runImport(ctx context.Context, w *sdkclients.Clients, appName, outputDir st
 		}
 
 		if !quiet {
-			cmdio.LogString(ctx, fmt.Sprintf("Successfully bound to app '%s'", app.Name))
+			cmdio.LogString(ctx, fmt.Sprintf("Successfully bound to app '%s'", utils.Deref(app.Name)))
 		}
 	} else if !quiet {
 		cmdio.LogString(ctx, "Skipping bind step (app already imported)")

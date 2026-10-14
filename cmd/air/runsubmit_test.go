@@ -66,34 +66,34 @@ func TestBuildSubmitPayload(t *testing.T) {
 
 	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
 
-	assert.Equal(t, "exp", p.RunName)
-	assert.Equal(t, 1800, p.TimeoutSeconds)
+	assert.Equal(t, "exp", utils.Deref(p.RunName))
+	assert.Equal(t, 1800, utils.Deref(p.TimeoutSeconds))
 	// No policy configured: the field stays empty and is omitted from the wire form.
 	assert.Empty(t, p.BudgetPolicyId)
 	require.Len(t, p.Environments, 1)
-	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
+	assert.Equal(t, aiRuntimeEnvironmentKey, utils.Deref(p.Environments[0].EnvironmentKey))
 	require.NotNil(t, p.Environments[0].Spec)
-	assert.Equal(t, "5", p.Environments[0].Spec.EnvironmentVersion)
+	assert.Equal(t, "5", utils.Deref(p.Environments[0].Spec.EnvironmentVersion))
 	environmentJSON, err := json.Marshal(p.Environments[0].Spec)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"environment_version":"5"}`, string(environmentJSON))
 
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
-	assert.Equal(t, "exp", task.TaskKey)
+	assert.Equal(t, "exp", utils.Deref(task.TaskKey))
 	assert.Equal(t, jobs.TaskDependencyType_AllSuccess, task.RunIf)
-	assert.Equal(t, aiRuntimeEnvironmentKey, task.EnvironmentKey)
-	assert.Equal(t, 2, task.MaxRetries)
+	assert.Equal(t, aiRuntimeEnvironmentKey, utils.Deref(task.EnvironmentKey))
+	assert.Equal(t, 2, utils.Deref(task.MaxRetries))
 	assert.True(t, utils.Deref(task.RetryOnTimeout))
 
 	at := task.AiRuntimeTask
 	require.NotNil(t, at)
-	assert.Equal(t, "exp", at.Experiment)
-	assert.Equal(t, "run-v2", at.MlflowRun)
-	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
-	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
+	assert.Equal(t, "exp", utils.Deref(at.Experiment))
+	assert.Equal(t, "run-v2", utils.Deref(at.MlflowRun))
+	assert.Equal(t, "/Workspace/Users/me/exp", utils.Deref(at.MlflowExperimentDirectory))
+	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", utils.Deref(at.MlflowArtifactLocation))
 	require.Len(t, at.Deployments, 1)
-	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
+	assert.Equal(t, "/d/command.sh", utils.Deref(at.Deployments[0].CommandPath))
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
 }
 
@@ -107,7 +107,7 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	p := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v6", "", snapshotResult{}, nil)
 	require.Len(t, p.Environments, 1)
 	require.NotNil(t, p.Environments[0].Spec)
-	assert.Equal(t, "workspace-base-environments/databricks_ai_v6", p.Environments[0].Spec.BaseEnvironment)
+	assert.Equal(t, "workspace-base-environments/databricks_ai_v6", utils.Deref(p.Environments[0].Spec.BaseEnvironment))
 	assert.Empty(t, p.Environments[0].Spec.EnvironmentVersion)
 	require.Len(t, p.Tasks, 1)
 	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
@@ -194,7 +194,7 @@ func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}
 	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
-	assert.Equal(t, defaultMaxRetries, task.MaxRetries)
+	assert.Equal(t, defaultMaxRetries, utils.Deref(task.MaxRetries))
 	assert.True(t, utils.Deref(task.RetryOnTimeout))
 }
 
@@ -209,7 +209,7 @@ func TestBuildSubmitPayloadNoRetries(t *testing.T) {
 		MaxRetries:     new(0),
 	}
 	task := buildSubmitPayload(cfg, "/d/command.sh", "4", "", snapshotResult{}, nil).Tasks[0]
-	assert.Equal(t, 0, task.MaxRetries)
+	assert.Equal(t, 0, utils.Deref(task.MaxRetries))
 	assert.False(t, utils.Deref(task.RetryOnTimeout))
 
 	b, err := json.Marshal(task)
@@ -231,7 +231,7 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	deps := []string{"torch==2.3.0", "--extra-index-url https://internal/pypi", "numpy"}
 	spec := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, deps).Environments[0].Spec
 	assert.Equal(t, deps, spec.Dependencies)
-	assert.Equal(t, "5", spec.EnvironmentVersion)
+	assert.Equal(t, "5", utils.Deref(spec.EnvironmentVersion))
 
 	// The SDK marshaler drops empty/nil slices, so no "dependencies" key is emitted.
 	for _, empty := range [][]string{{}, nil} {
@@ -371,8 +371,8 @@ func TestSubmitWorkload(t *testing.T) {
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
 	// command.sh under the run's launch directory.
-	assert.Equal(t, "my-run", got.RunName)
-	assert.Equal(t, "idem-key", got.IdempotencyToken)
+	assert.Equal(t, "my-run", utils.Deref(got.RunName))
+	assert.Equal(t, "idem-key", utils.Deref(got.IdempotencyToken))
 	require.Len(t, got.Environments, 1)
 	require.Len(t, got.Tasks, 1)
 	at := got.Tasks[0].AiRuntimeTask
@@ -382,7 +382,7 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.True(t, strings.HasSuffix(utils.Deref(d.CommandPath), "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
 	assert.Equal(t, jobs.ComputeSpec_AcceleratorType_Gpu1xH100, d.Compute.AcceleratorType)
-	assert.Equal(t, 1, d.Compute.AcceleratorCount)
+	assert.Equal(t, 1, utils.Deref(d.Compute.AcceleratorCount))
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
 }
 
@@ -506,7 +506,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	at := got.Tasks[0].AiRuntimeTask
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
-	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
+	assert.Equal(t, 4, utils.Deref(at.Deployments[0].Compute.AcceleratorCount))
 }
 
 func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
@@ -1023,7 +1023,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 
 		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
-		assert.Equal(t, policyID, got.BudgetPolicyId)
+		assert.Equal(t, policyID, utils.Deref(got.BudgetPolicyId))
 	})
 
 	t.Run("resolved from name", func(t *testing.T) {
@@ -1034,6 +1034,6 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 
 		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
-		assert.Equal(t, policyID, got.BudgetPolicyId)
+		assert.Equal(t, policyID, utils.Deref(got.BudgetPolicyId))
 	})
 }

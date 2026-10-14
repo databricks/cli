@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -127,11 +126,11 @@ func TestAuthError(t *testing.T) {
 	assert.Contains(t, noProfile.Error(), "no default profile is set")
 
 	// A 401 / 403 (via the SDK sentinels) is a real auth failure.
-	unauth := authError(ctx, cmd, apierrs.ErrUnauthenticated)
+	unauth := authError(ctx, cmd, newAPIError(401, "UNAUTHENTICATED", "invalid token"))
 	require.Error(t, unauth)
 	assert.Contains(t, unauth.Error(), "authentication was not successful")
 
-	denied := authError(ctx, cmd, apierrs.ErrPermissionDenied)
+	denied := authError(ctx, cmd, newAPIError(403, "PERMISSION_DENIED", "denied"))
 	require.Error(t, denied)
 	assert.Contains(t, denied.Error(), "authentication was not successful")
 

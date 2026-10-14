@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apiclient"
-	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var runDoesNotExist = newAPIError(400, "RESOURCE_DOES_NOT_EXIST", "Run 7 does not exist.")
 
 func TestClassifyLogError(t *testing.T) {
 	tests := []struct {
@@ -44,8 +45,8 @@ func TestClassifyLogError(t *testing.T) {
 		},
 		{
 			name: "genuine resource-does-not-exist surfaces",
-			err:  apierrs.ErrResourceDoesNotExist,
-			want: apierrs.ErrResourceDoesNotExist,
+			err:  runDoesNotExist,
+			want: runDoesNotExist,
 		},
 		{
 			name: "transient 500 is retried",

@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/libs/workspaceapi"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,22 +31,24 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 
 	dir := acc.TemporaryWorkspaceDir(wt, "dashboard-assumptions-")
 
-	dashboard, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard: dashboards.Dashboard{
-			DisplayName:         dashboardName,
-			ParentPath:          dir,
-			SerializedDashboard: string(dashboardPayload),
-			WarehouseId:         warehouseId,
+	created, err := wt.W.Lakeview.CreateDashboard(ctx, sdklakeview.CreateDashboardRequest{
+		Dashboard: &sdklakeview.DashboardCreate{
+			DisplayName:         new(dashboardName),
+			ParentPath:          new(dir),
+			SerializedDashboard: new(string(dashboardPayload)),
+			WarehouseId:         new(warehouseId),
 		},
 	})
 	require.NoError(t, err)
-	t.Logf("Dashboard ID (per Lakeview API): %s", dashboard.DashboardId)
+	dashboard, err := lakeview.DashboardFromSDK(created)
+	require.NoError(t, err)
+	t.Logf("Dashboard ID (per Lakeview API): %s", utils.Deref(dashboard.DashboardId))
 
 	// Overwrite the dashboard via the workspace API.
 	{
 		err := wt.W.Workspace.Import(ctx, workspaceapi.Import{
 			Format:    workspaceapi.ImportFormatAuto,
-			Path:      dashboard.Path,
+			Path:      utils.Deref(dashboard.Path),
 			Content:   base64.StdEncoding.EncodeToString(dashboardPayload),
 			Overwrite: true,
 		})
@@ -53,36 +57,38 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 
 	// Cross-check consistency with the workspace object.
 	{
-		obj, err := wt.W.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		obj, err := wt.W.Workspace.GetStatusByPath(ctx, utils.Deref(dashboard.Path))
 		require.NoError(t, err)
 
 		// Confirm that the resource ID included in the response is equal to the dashboard ID.
-		require.Equal(t, dashboard.DashboardId, obj.ResourceId)
+		require.Equal(t, utils.Deref(dashboard.DashboardId), obj.ResourceId)
 		t.Logf("Dashboard ID (per workspace object status): %s", obj.ResourceId)
 	}
 
 	// Try to overwrite the dashboard via the Lakeview API (and expect failure).
 	{
-		_, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard: dashboards.Dashboard{
-				DisplayName:         dashboardName,
-				ParentPath:          dir,
-				SerializedDashboard: string(dashboardPayload),
+		_, err := wt.W.Lakeview.CreateDashboard(ctx, sdklakeview.CreateDashboardRequest{
+			Dashboard: &sdklakeview.DashboardCreate{
+				DisplayName:         new(dashboardName),
+				ParentPath:          new(dir),
+				SerializedDashboard: new(string(dashboardPayload)),
 			},
 		})
 		// Lakeview returns the generic gRPC error_code ALREADY_EXISTS, not
 		// Databricks' RESOURCE_ALREADY_EXISTS, so the SDK unwraps to
 		// ErrAlreadyExists rather than ErrResourceAlreadyExists. Assert the
 		// common 409 parent to stay resilient to either code.
-		require.ErrorIs(t, err, apierrs.ErrResourceConflict)
+		require.True(t, apierrs.Is(err, apierrs.ErrResourceConflict), "unexpected error: %v", err)
 	}
 
 	// Retrieve the dashboard object and confirm that only select fields were updated by the import.
 	{
 		previousDashboard := dashboard
-		currentDashboard, err := wt.W.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
+		got, err := wt.W.Lakeview.GetDashboard(ctx, sdklakeview.GetDashboardRequest{
 			DashboardId: dashboard.DashboardId,
 		})
+		require.NoError(t, err)
+		currentDashboard, err := lakeview.DashboardFromSDK(got)
 		require.NoError(t, err)
 
 		// Convert the dashboard object to a [dyn.Value] to make comparison easier.

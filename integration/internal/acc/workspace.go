@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,8 +15,6 @@ type WorkspaceT struct {
 	W *sdkclients.Clients
 
 	ctx context.Context
-
-	exec *compute.CommandExecutorV2
 }
 
 func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
@@ -46,27 +43,4 @@ func (t *WorkspaceT) TestClusterID() string {
 	err := t.W.EnsureClusterIsRunning(t.ctx, clusterID)
 	require.NoError(t, err, "Unexpected error from EnsureClusterIsRunning for clusterID=%s", clusterID)
 	return clusterID
-}
-
-func (t *WorkspaceT) RunPython(code string) (string, error) {
-	t.Helper()
-	var err error
-
-	// Create command executor only once per test.
-	if t.exec == nil {
-		t.exec, err = t.W.CommandExecution.Start(t.ctx, t.TestClusterID(), compute.LanguagePython)
-		require.NoError(t, err, "Unexpected error from CommandExecution.Start(clusterID=%v)", t.TestClusterID())
-
-		t.Cleanup(func() {
-			err := t.exec.Destroy(context.WithoutCancel(t.ctx))
-			require.NoError(t, err)
-		})
-	}
-
-	results, err := t.exec.Execute(t.ctx, code)
-	require.NoError(t, err, "Unexpected error from Execute(%v)", code)
-	require.NotEqual(t, compute.ResultTypeError, results.ResultType, results.Cause)
-	output, ok := results.Data.(string)
-	require.True(t, ok, "unexpected type %T", results.Data)
-	return output, nil
 }

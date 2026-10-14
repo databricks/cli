@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestFindForEachTask(t *testing.T) {
 	}}
 	got := findForEachTask(run)
 	require.NotNil(t, got)
-	assert.Equal(t, "sweep", got.TaskKey)
+	assert.Equal(t, "sweep", utils.Deref(got.TaskKey))
 }
 
 func sweepTaskFixture() *jobs.RunTask {

@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,7 +92,7 @@ func TestValidateArtifactPath(t *testing.T) {
 		{
 			statusCode:      403,
 			message:         "User does not have USE SCHEMA on Schema 'catalogN.schemaN'",
-			expectedSummary: "cannot access volume catalogN.schemaN.volumeN: " + apiErrorText("User does not have USE SCHEMA on Schema 'catalogN.schemaN'"),
+			expectedSummary: "cannot access volume catalogN.schemaN.volumeN: User does not have USE SCHEMA on Schema 'catalogN.schemaN'",
 		},
 		{
 			statusCode:      404,
@@ -102,7 +101,7 @@ func TestValidateArtifactPath(t *testing.T) {
 		{
 			statusCode:      500,
 			message:         "Internal Server Error",
-			expectedSummary: "cannot read volume catalogN.schemaN.volumeN: " + apiErrorText("Internal Server Error"),
+			expectedSummary: "cannot read volume catalogN.schemaN.volumeN: Internal Server Error",
 		},
 	}
 
@@ -131,11 +130,6 @@ func volumeClients(t *testing.T, statusCode int, message string) *sdkclients.Cli
 	})
 	require.NoError(t, err)
 	return w
-}
-
-// apiErrorText is how an API error with the given message renders.
-func apiErrorText(message string) string {
-	return apierr.FromHTTPError(500, nil, []byte(`{"message":"`+message+`"}`)).Error()
 }
 
 func invalidVolumePaths() []string {

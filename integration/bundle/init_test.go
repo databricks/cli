@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/utils"
-	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +26,7 @@ func TestBundleInitHelpers(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	me, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, w)
 	require.NoError(t, err)
 
 	var smallestNode string

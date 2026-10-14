@@ -150,12 +150,12 @@ func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSe
 			if e.EnvironmentKey == task.EnvironmentKey {
 				v := environmentVersion(e)
 				if v == "" {
-					return "", false, "", fmt.Errorf("task %q of job %s binds environment %q, which records no environment version", taskKey, jobID, task.EnvironmentKey)
+					return "", false, "", fmt.Errorf("task %q of job %s binds environment %q, which records no environment version", taskKey, jobID, utils.Deref(task.EnvironmentKey))
 				}
 				return "", true, v, nil
 			}
 		}
-		return "", false, "", fmt.Errorf("task %q of job %s references environment %q, which the job does not define", taskKey, jobID, task.EnvironmentKey)
+		return "", false, "", fmt.Errorf("task %q of job %s references environment %q, which the job does not define", taskKey, jobID, utils.Deref(task.EnvironmentKey))
 	}
 
 	// Classic task with an inline cluster spec.
@@ -169,19 +169,19 @@ func (c sdkCompute) resolveTaskCompute(ctx context.Context, settings *jobs.JobSe
 		for _, jc := range settings.JobClusters {
 			if jc.JobClusterKey == task.JobClusterKey {
 				if jc.NewCluster == nil || utils.Deref(jc.NewCluster.SparkVersion) == "" {
-					return "", false, "", fmt.Errorf("task %q of job %s uses job cluster %q, which has no spark_version", taskKey, jobID, task.JobClusterKey)
+					return "", false, "", fmt.Errorf("task %q of job %s uses job cluster %q, which has no spark_version", taskKey, jobID, utils.Deref(task.JobClusterKey))
 				}
 				return utils.Deref(jc.NewCluster.SparkVersion), false, utils.Deref(jc.NewCluster.SparkVersion), nil
 			}
 		}
-		return "", false, "", fmt.Errorf("task %q of job %s references job cluster %q, which the job does not define", taskKey, jobID, task.JobClusterKey)
+		return "", false, "", fmt.Errorf("task %q of job %s references job cluster %q, which the job does not define", taskKey, jobID, utils.Deref(task.JobClusterKey))
 	}
 
 	// Classic task pinned to an existing cluster: resolve its Spark version.
 	if utils.Deref(task.ExistingClusterId) != "" {
 		sv, cerr := c.GetClusterSparkVersion(ctx, utils.Deref(task.ExistingClusterId))
 		if cerr != nil {
-			return "", false, "", fmt.Errorf("resolving existing cluster %s for task %q of job %s: %w", task.ExistingClusterId, taskKey, jobID, cerr)
+			return "", false, "", fmt.Errorf("resolving existing cluster %s for task %q of job %s: %w", utils.Deref(task.ExistingClusterId), taskKey, jobID, cerr)
 		}
 		return sv, false, sv, nil
 	}

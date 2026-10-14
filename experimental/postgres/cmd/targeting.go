@@ -112,7 +112,7 @@ func resolveProvisioned(ctx context.Context, w *sdkclients.Clients, instanceName
 	}
 
 	if instance.State != database.DatabaseInstance_State_Available {
-		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
+		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", utils.Deref(instance.Name), instance.State)
 	}
 
 	user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})

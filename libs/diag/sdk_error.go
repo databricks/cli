@@ -14,10 +14,10 @@ import (
 func FormatAPIErrorSummary(e error) string {
 	apiErr, ok := errors.AsType[*apierr.APIError](e)
 	if !ok {
-		return e.Error()
+		return apierrs.ErrorString(e)
 	}
 	extra := strings.TrimSpace(fmt.Sprintf("%d %s", apiErr.HTTPStatusCode(), apierrs.ErrorCode(apiErr)))
-	return e.Error() + " (" + extra + ")"
+	return apierrs.ErrorString(e) + " (" + extra + ")"
 }
 
 func FormatAPIErrorDetails(e error) string {

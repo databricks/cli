@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,7 +88,7 @@ func TestAiRuntimeTaskOutput(t *testing.T) {
 	got := aiRuntimeTaskOutput(t.Context(), newTestWorkspaceClient(t, srv.URL), run)
 	require.NotNil(t, got)
 	assert.True(t, hit)
-	assert.Equal(t, "STATUS: Waiting for GPU capacity", got.StatusMessage)
+	assert.Equal(t, "STATUS: Waiting for GPU capacity", utils.Deref(got.StatusMessage))
 }
 
 func TestMLflowIDsForTask(t *testing.T) {

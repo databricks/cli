@@ -20,11 +20,13 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/libs/workspaceapi"
-	sdkscim "github.com/databricks/sdk-go/scim/v1"
+	"github.com/databricks/sdk-go/repos/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,19 +39,19 @@ var (
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *sdkclients.Clients, ctx context.Context) (localRoot, remoteRoot string) {
-	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
-	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
+	repoPath := fmt.Sprintf("/Repos/%s/%s", utils.Deref(me.UserName), testutil.RandomName("empty-repo-sync-integration-"))
 
-	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
-		Path:     repoPath,
-		Url:      repoUrl,
-		Provider: "gitHub",
+	repoInfo, err := wsc.Repos.CreateRepo(ctx, repos.CreateRepoRequest{
+		Path:     new(repoPath),
+		Url:      new(repoUrl),
+		Provider: new("gitHub"),
 	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := wsc.Repos.DeleteByRepoId(context.WithoutCancel(ctx), repoInfo.Id)
+		_, err := wsc.Repos.DeleteRepo(context.WithoutCancel(ctx), repos.DeleteRepoRequest{Id: repoInfo.Id})
 		assert.NoError(t, err)
 	})
 
@@ -488,11 +490,11 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
-	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("doesnt-exist-"))
+	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", utils.Deref(me.UserName), testutil.RandomName("doesnt-exist-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 
@@ -527,10 +529,10 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.Scim.Me(ctx, sdkscim.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
 
-	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
+	remotePath := fmt.Sprintf("/Users/%s/%s", utils.Deref(me.UserName), testutil.RandomName("ensure-path-exists-test-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me, false)
 	assert.NoError(t, err)
 

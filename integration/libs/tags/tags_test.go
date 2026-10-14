@@ -7,34 +7,36 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/stretchr/testify/require"
 )
 
 func testTags(t *testing.T, tags map[string]string) error {
 	ctx, wt := acc.WorkspaceTest(t)
-	resp, err := wt.W.Jobs.Create(ctx, jobs.CreateJob{
-		Name: testutil.RandomName("test-tags-"),
-		Tasks: []jobs.Task{
+	req, err := jobs.CreateJobRequestToSDK(&jobs.CreateJobRequest{
+		Name: new(testutil.RandomName("test-tags-")),
+		Tasks: []jobs.TaskSettings{
 			{
-				TaskKey: "test",
-				NewCluster: &compute.ClusterSpec{
-					SparkVersion: "13.3.x-scala2.12",
-					NumWorkers:   1,
-					NodeTypeId:   testutil.GetCloud(t).NodeTypeID(),
+				TaskKey: new("test"),
+				NewCluster: &jobs.ClusterSpec_NewCluster{
+					SparkVersion: new("13.3.x-scala2.12"),
+					NumWorkers:   new(1),
+					NodeTypeId:   new(testutil.GetCloud(t).NodeTypeID()),
 				},
 				SparkPythonTask: &jobs.SparkPythonTask{
-					PythonFile: "/doesnt_exist.py",
+					PythonFile: new("/doesnt_exist.py"),
 				},
 			},
 		},
 		Tags: tags,
 	})
+	require.NoError(t, err)
+	resp, err := wt.W.Jobs.CreateJob(ctx, *req)
 
 	if resp != nil {
 		t.Cleanup(func() {
-			_ = wt.W.Jobs.DeleteByJobId(context.WithoutCancel(ctx), resp.JobId)
+			_, _ = wt.W.Jobs.DeleteJob(context.WithoutCancel(ctx), sdkjobs.DeleteJobRequest{JobId: resp.JobId})
 			// Cannot enable errchecking there, tests fail with:
 			//   Error: Received unexpected error:
 			//   Job 0 does not exist.
