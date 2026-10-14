@@ -115,8 +115,8 @@ add_repl() {
     env -u MSYS_NO_PATHCONV add_repl.py "$@"
 }
 
-# DMS has no resource enum for these types. Assert the rejection, then exercise
-# their lifecycle with file-backed state after removing the failed deployment.
+# Assert the test server's unsupported-type rejection locally. Cloud runs
+# exercise these resource lifecycles with file-backed state.
 assert_dms_unsupported() {
     local resource_type="$1"
     shift
@@ -124,13 +124,15 @@ assert_dms_unsupported() {
         return
     fi
 
-    # Keep these logs outside the bundle so they do not enter sync or snapshots.
-    local log_dir="$(dirname "$OUT_REQUESTS")"
-    musterr $CLI bundle deploy "$@" &> "$log_dir/LOG.dms_unsupported"
-    contains.py "operations.resource_key must have a known resource type prefix" "$resource_type." '!panic:' '!internal error' < "$log_dir/LOG.dms_unsupported" > /dev/null
-    $CLI bundle destroy "$@" --auto-approve &> "$log_dir/LOG.dms_unsupported_cleanup"
-    rm -rf .databricks
-    rm -f "$OUT_REQUESTS"
+    if [[ -z "$CLOUD_ENV" ]]; then
+        # Keep these logs outside the bundle so they do not enter sync or snapshots.
+        local log_dir="$(dirname "$OUT_REQUESTS")"
+        musterr $CLI bundle deploy "$@" &> "$log_dir/LOG.dms_unsupported"
+        contains.py "operations.resource_key must have a known resource type prefix" "$resource_type." '!panic:' '!internal error' < "$log_dir/LOG.dms_unsupported" > /dev/null
+        $CLI bundle destroy "$@" --auto-approve &> "$log_dir/LOG.dms_unsupported_cleanup"
+        rm -rf .databricks
+        rm -f "$OUT_REQUESTS"
+    fi
     export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
 }
 
