@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/sync"
 )
 
@@ -57,8 +55,6 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(ctx),
-
-		RetryInterval: env.RetryInterval(ctx, retry.DefaultInterval),
 	}
 
 	if b.Config.Workspace.CurrentUser != nil {

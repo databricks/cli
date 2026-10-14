@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
@@ -15,8 +17,23 @@ import (
 // MaxRetries is the number of additional attempts made after the first one fails.
 const MaxRetries = 2
 
-// DefaultInterval is the pause between attempts.
-const DefaultInterval = 15 * time.Second
+// IntervalMsVariable names the environment variable that overrides the pause between attempts.
+const IntervalMsVariable = "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS"
+
+const defaultInterval = 15 * time.Second
+
+// interval returns the pause between attempts: the override in milliseconds if set and valid, 15s otherwise.
+func interval(ctx context.Context) time.Duration {
+	v, ok := env.Lookup(ctx, IntervalMsVariable)
+	if !ok {
+		return defaultInterval
+	}
+	ms, err := strconv.Atoi(v)
+	if err != nil {
+		return defaultInterval
+	}
+	return time.Duration(ms) * time.Millisecond
+}
 
 // IsTransient returns true for 5xx and 408 errors that the SDK did not already retry.
 // The SDK retries 504s matching its allTransientErrors patterns (e.g. "deadline exceeded");
@@ -33,12 +50,12 @@ func IsTransient(ctx context.Context, err error) bool {
 	return apiErr.StatusCode >= 500 || apiErr.StatusCode == http.StatusRequestTimeout
 }
 
-// With retries fn while check returns true for the error, up to MaxRetries times,
-// waiting interval between attempts.
-func With[T any](ctx context.Context, interval time.Duration, check func(error) bool, fn func() (T, error)) (T, error) {
+// With retries fn while check returns true for the error, up to MaxRetries times.
+func With[T any](ctx context.Context, check func(context.Context, error) bool, fn func() (T, error)) (T, error) {
+	wait := interval(ctx)
 	for attempt := 0; ; attempt++ {
 		result, err := fn()
-		if err == nil || attempt >= MaxRetries || !check(err) {
+		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
 		msg := "retrying"
@@ -55,7 +72,7 @@ func With[T any](ctx context.Context, interval time.Duration, check func(error) 
 		case <-ctx.Done():
 			var zero T
 			return zero, ctx.Err()
-		case <-time.After(interval):
+		case <-time.After(wait):
 		}
 	}
 }

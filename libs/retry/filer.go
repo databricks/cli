@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"slices"
-	"time"
 
 	"github.com/databricks/cli/libs/filer"
 )
@@ -13,15 +12,14 @@ import (
 // retryingFiler retries overwriting writes that fail with a transient server error.
 type retryingFiler struct {
 	filer.Filer
-	interval time.Duration
 }
 
-// Filer wraps f so that Write retries on transient server errors, waiting interval between attempts.
+// Filer wraps f so that Write retries on transient server errors.
 // Only writes with [filer.OverwriteIfExists] are retried: they are idempotent, whereas repeating
 // a write that does not overwrite could fail on the file its own earlier attempt created.
 // All other methods are passed through.
-func Filer(f filer.Filer, interval time.Duration) filer.Filer {
-	return &retryingFiler{Filer: f, interval: interval}
+func Filer(f filer.Filer) filer.Filer {
+	return &retryingFiler{Filer: f}
 }
 
 func (r *retryingFiler) Write(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) error {
@@ -48,7 +46,7 @@ func (r *retryingFiler) Write(ctx context.Context, path string, reader io.Reader
 		rewind = func() (io.Reader, error) { return bytes.NewReader(body), nil }
 	}
 
-	_, err := With(ctx, r.interval, func(err error) bool { return IsTransient(ctx, err) }, func() (struct{}, error) {
+	_, err := With(ctx, IsTransient, func() (struct{}, error) {
 		attempt, err := rewind()
 		if err != nil {
 			return struct{}{}, err

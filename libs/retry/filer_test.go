@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -38,7 +37,7 @@ var errTransient = &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Messa
 
 func TestFilerRetriesSeekableReader(t *testing.T) {
 	f := &flakyFiler{failures: 1, err: errTransient}
-	err := Filer(f, time.Millisecond).Write(t.Context(), "a", bytes.NewReader([]byte("hello")), filer.OverwriteIfExists)
+	err := Filer(f).Write(testContext(t), "a", bytes.NewReader([]byte("hello")), filer.OverwriteIfExists)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
 }
@@ -47,7 +46,7 @@ func TestFilerRetriesNonSeekableReader(t *testing.T) {
 	f := &flakyFiler{failures: 1, err: errTransient}
 	// io.NopCloser hides the Seek method.
 	r := io.NopCloser(strings.NewReader("hello"))
-	err := Filer(f, time.Millisecond).Write(t.Context(), "a", r, filer.OverwriteIfExists)
+	err := Filer(f).Write(testContext(t), "a", r, filer.OverwriteIfExists)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
 }
@@ -57,28 +56,28 @@ func TestFilerRewindsToInitialReaderPosition(t *testing.T) {
 	r := strings.NewReader("xxhello")
 	_, err := r.Seek(2, io.SeekStart)
 	require.NoError(t, err)
-	err = Filer(f, time.Millisecond).Write(t.Context(), "a", r, filer.OverwriteIfExists)
+	err = Filer(f).Write(testContext(t), "a", r, filer.OverwriteIfExists)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
 }
 
 func TestFilerGivesUp(t *testing.T) {
 	f := &flakyFiler{failures: 100, err: errTransient}
-	err := Filer(f, time.Millisecond).Write(t.Context(), "a", strings.NewReader("x"), filer.OverwriteIfExists)
+	err := Filer(f).Write(testContext(t), "a", strings.NewReader("x"), filer.OverwriteIfExists)
 	require.Error(t, err)
 	assert.Len(t, f.bodies, MaxRetries+1)
 }
 
 func TestFilerDoesNotRetryOtherErrors(t *testing.T) {
 	f := &flakyFiler{failures: 100, err: &apierr.APIError{StatusCode: http.StatusForbidden}}
-	err := Filer(f, time.Millisecond).Write(t.Context(), "a", strings.NewReader("x"), filer.OverwriteIfExists)
+	err := Filer(f).Write(testContext(t), "a", strings.NewReader("x"), filer.OverwriteIfExists)
 	require.Error(t, err)
 	assert.Len(t, f.bodies, 1)
 }
 
 func TestFilerDoesNotRetryWithoutOverwrite(t *testing.T) {
 	f := &flakyFiler{failures: 100, err: errTransient}
-	err := Filer(f, time.Millisecond).Write(t.Context(), "a", strings.NewReader("x"))
+	err := Filer(f).Write(testContext(t), "a", strings.NewReader("x"))
 	require.Error(t, err)
 	assert.Len(t, f.bodies, 1)
 }

@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
@@ -34,7 +33,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	f := retry.Filer(workspaceFiler, bundleenv.RetryInterval(ctx, retry.DefaultInterval))
+	f := retry.Filer(workspaceFiler)
 
 	metadata, err := json.MarshalIndent(b.Metadata, "", "  ")
 	if err != nil {

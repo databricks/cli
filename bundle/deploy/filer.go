@@ -7,7 +7,6 @@ import (
 	"io/fs"
 
 	"github.com/databricks/cli/bundle"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
@@ -74,7 +73,7 @@ func StateFiler(ctx context.Context, b *bundle.Bundle) (filer.Filer, error) {
 	}
 
 	return stateFiler{
-		filer:           retry.Filer(f, bundleenv.RetryInterval(ctx, retry.DefaultInterval)),
+		filer:           retry.Filer(f),
 		root:            filer.NewWorkspaceRootPath(b.Config.Workspace.StatePath),
 		workspaceClient: w,
 	}, nil

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,9 +25,22 @@ func TestIsTransient(t *testing.T) {
 	assert.False(t, IsTransient(ctx, errors.New("boom")))
 }
 
+// testContext shortens the pause between attempts.
+func testContext(t *testing.T) context.Context {
+	return env.Set(t.Context(), IntervalMsVariable, "1")
+}
+
+func TestInterval(t *testing.T) {
+	ctx := t.Context()
+	assert.Equal(t, 15*time.Second, interval(ctx))
+	assert.Equal(t, 100*time.Millisecond, interval(env.Set(ctx, IntervalMsVariable, "100")))
+	assert.Equal(t, 15*time.Second, interval(env.Set(ctx, IntervalMsVariable, "abc")))
+}
+
 func TestWithRetriesUntilSuccess(t *testing.T) {
+	ctx := testContext(t)
 	calls := 0
-	got, err := With(t.Context(), time.Millisecond, func(error) bool { return true }, func() (int, error) {
+	got, err := With(ctx, func(context.Context, error) bool { return true }, func() (int, error) {
 		calls++
 		if calls <= MaxRetries {
 			return 0, errors.New("fail")
@@ -39,8 +53,9 @@ func TestWithRetriesUntilSuccess(t *testing.T) {
 }
 
 func TestWithGivesUp(t *testing.T) {
+	ctx := testContext(t)
 	calls := 0
-	_, err := With(t.Context(), time.Millisecond, func(error) bool { return true }, func() (int, error) {
+	_, err := With(ctx, func(context.Context, error) bool { return true }, func() (int, error) {
 		calls++
 		return 0, errors.New("fail")
 	})
@@ -49,8 +64,9 @@ func TestWithGivesUp(t *testing.T) {
 }
 
 func TestWithDoesNotRetryWhenCheckFails(t *testing.T) {
+	ctx := testContext(t)
 	calls := 0
-	_, err := With(t.Context(), time.Millisecond, func(error) bool { return false }, func() (int, error) {
+	_, err := With(ctx, func(context.Context, error) bool { return false }, func() (int, error) {
 		calls++
 		return 0, errors.New("fail")
 	})
@@ -59,9 +75,9 @@ func TestWithDoesNotRetryWhenCheckFails(t *testing.T) {
 }
 
 func TestWithStopsOnContextCancel(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
+	ctx, cancel := context.WithCancel(env.Set(t.Context(), IntervalMsVariable, "3600000"))
 	calls := 0
-	_, err := With(ctx, time.Hour, func(error) bool { return true }, func() (int, error) {
+	_, err := With(ctx, func(context.Context, error) bool { return true }, func() (int, error) {
 		calls++
 		cancel()
 		return 0, errors.New("fail")

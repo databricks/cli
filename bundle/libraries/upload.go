@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -71,7 +70,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
-			return UploadFile(errCtx, source, retry.Filer(u.client, bundleenv.RetryInterval(errCtx, retry.DefaultInterval)))
+			return UploadFile(errCtx, source, retry.Filer(u.client))
 		})
 	}
 
