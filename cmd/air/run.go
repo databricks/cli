@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
@@ -213,7 +213,9 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			retryTracker: newRetryTracker(logRunStatus{}),
 		}
 
-		watchCtx, stop := notifyInterrupt(ctx)
+		// Catch the interrupt so the log stream unwinds and handleWatchResult
+		// prints resume guidance; the CLI root installs no signal handler of its own.
+		watchCtx, stop := process.NotifyContext(ctx, os.Interrupt)
 		defer stop()
 
 		if !jsonOut {
@@ -286,34 +288,6 @@ func printPostSubmitGuidance(out io.Writer, profile, runID string) {
 	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
 	fmt.Fprintln(out, "Stream logs after submission using:")
 	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
-}
-
-// notifyInterrupt returns a context cancelled on the first interrupt (Ctrl-C),
-// which lets the log stream unwind and print resume guidance via
-// handleWatchResult; the CLI root installs no signal handler of its own. The
-// caller must defer the returned stop.
-//
-// signal.Notify disables the default SIGINT disposition process-wide for as long
-// as the channel stays registered, so a second Ctrl-C would merely be buffered
-// and dropped, leaving no way to abort a hung teardown. Calling signal.Stop
-// before cancel restores SIG_DFL first, so the cancellation is only observable
-// once a second signal is guaranteed to terminate the process.
-func notifyInterrupt(parent context.Context) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-	go func() {
-		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
-		// signal) path rather than parking on sigCh for the life of the process.
-		select {
-		case <-sigCh:
-			signal.Stop(sigCh)
-			cancel()
-		case <-ctx.Done():
-			signal.Stop(sigCh)
-		}
-	}()
-	return ctx, cancel
 }
 
 func handleWatchResult(out io.Writer, profile, runID string, err error) error {
