@@ -1,2 +1,3 @@
-# Bind operations are not yet supported by the Deployment Metadata Service (DMS)
+# These tests cover the file-based bind, which stages its change for the next deploy. With the
+# Deployment Metadata Service (DMS) a bind is applied immediately, so it is covered by bundle/dms/bind.
 EnvMatrix.DMS = [""]

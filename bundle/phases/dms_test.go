@@ -17,6 +17,8 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 		"resources.pipelines.bar":  {Action: deployplan.Recreate},
 		"resources.schemas.baz":    {Action: deployplan.Delete},
 		"resources.clusters.small": {Action: deployplan.Resize},
+		"resources.jobs.bound":     {Action: deployplan.Bind},
+		"resources.jobs.updated":   {Action: deployplan.BindAndUpdate},
 	}}
 
 	staged, err := stagedOperations(plan)
@@ -27,6 +29,8 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 		{ResourceKey: "pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
 		{ResourceKey: "schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
 		{ResourceKey: "clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
+		{ResourceKey: "jobs.bound", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBind},
+		{ResourceKey: "jobs.updated", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate},
 	}, staged)
 }
 
@@ -59,6 +63,8 @@ func TestActionToSDK(t *testing.T) {
 		want   bundledeployments.OperationActionType
 	}{
 		{deployplan.Create, bundledeployments.OperationActionTypeOperationActionTypeCreate},
+		{deployplan.Bind, bundledeployments.OperationActionTypeOperationActionTypeBind},
+		{deployplan.BindAndUpdate, bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate},
 		{deployplan.Update, bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 		{deployplan.UpdateWithID, bundledeployments.OperationActionTypeOperationActionTypeUpdateWithId},
 		{deployplan.Recreate, bundledeployments.OperationActionTypeOperationActionTypeRecreate},
