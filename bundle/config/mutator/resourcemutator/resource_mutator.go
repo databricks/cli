@@ -143,6 +143,12 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		validate.SingleNodeCluster(),
 
+		// Reads (dynamic): resources.jobs.*.tasks for_each_task.inputs, variables.*.value
+		// Updates (dynamic): resources.jobs.*.tasks for_each_task.inputs (complex variable reference -> JSON string)
+		// Must run before variable resolution: a substituted sequence would be
+		// dropped by normalization with an "expected string" warning.
+		SerializeForEachTaskInputs(),
+
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes

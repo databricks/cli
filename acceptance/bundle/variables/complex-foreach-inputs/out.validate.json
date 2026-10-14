@@ -1,0 +1,75 @@
+{
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/complex-foreach-inputs/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "job_clusters": [
+          {
+            "job_cluster_key": "c",
+            "new_cluster": {
+              "node_type_id": "[NODE_TYPE_ID]",
+              "num_workers": 1,
+              "spark_version": "15.4.x-scala2.12"
+            }
+          }
+        ],
+        "max_concurrent_runs": 1,
+        "name": "Untitled",
+        "queue": {
+          "enabled": true
+        },
+        "tasks": [
+          {
+            "for_each_task": {
+              "concurrency": 2,
+              "inputs": "[{\"source_type\":\"parquet\",\"table\":\"customers\",\"task_id\":\"load_customers\"},{\"source_type\":\"json\",\"table\":\"orders\",\"task_id\":\"load_orders\"}]",
+              "task": {
+                "job_cluster_key": "c",
+                "spark_python_task": {
+                  "python_file": "/Workspace/Users/[USERNAME]/.bundle/complex-foreach-inputs/default/files/hello.py"
+                },
+                "task_key": "load_table"
+              }
+            },
+            "task_key": "process_tables"
+          }
+        ]
+      }
+    }
+  },
+  "variables": {
+    "table_list": {
+      "default": [
+        {
+          "source_type": "parquet",
+          "table": "customers",
+          "task_id": "load_customers"
+        },
+        {
+          "source_type": "json",
+          "table": "orders",
+          "task_id": "load_orders"
+        }
+      ],
+      "description": "Tables to load from source",
+      "type": "complex",
+      "value": [
+        {
+          "source_type": "parquet",
+          "table": "customers",
+          "task_id": "load_customers"
+        },
+        {
+          "source_type": "json",
+          "table": "orders",
+          "task_id": "load_orders"
+        }
+      ]
+    }
+  }
+}

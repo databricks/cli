@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq '{resources,variables}' > out.validate.json
+trace jq -r .resources.jobs.my_job.tasks[0].for_each_task.inputs out.validate.json | grep -F '[{"source_type":"parquet","table":"customers","task_id":"load_customers"},{"source_type":"json","table":"orders","task_id":"load_orders"}]'
