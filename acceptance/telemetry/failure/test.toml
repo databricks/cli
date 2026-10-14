@@ -1,3 +1,5 @@
+IncludeRequestHeaders = ["User-Agent"]
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''
