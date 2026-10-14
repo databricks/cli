@@ -51,6 +51,7 @@ const (
 // the historical bare-token format, leaving room for additive sibling fields.
 type fileEntry struct {
 	*oauth2.Token
+	ProfileChecksum string `json:"profile_checksum,omitempty"`
 }
 
 // tokenStoreFile is the format of the token store file.
@@ -107,7 +108,7 @@ func (c *fileStore) Put(key string, e Entry) error {
 	if f.Tokens == nil {
 		f.Tokens = map[string]*fileEntry{}
 	}
-	f.Tokens[key] = &fileEntry{Token: e.Token}
+	f.Tokens[key] = &fileEntry{Token: e.Token, ProfileChecksum: e.ProfileChecksum}
 	return c.write(f)
 }
 
@@ -123,7 +124,7 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 	if !ok {
 		return Entry{}, ErrNotFound
 	}
-	return Entry{Token: fe.Token}, nil
+	return Entry{Token: fe.Token, ProfileChecksum: fe.ProfileChecksum}, nil
 }
 
 // Delete implements the Store interface. Removing a missing key is a no-op.

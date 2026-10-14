@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,153 @@ func hermeticAuthStorage(t *testing.T) {
 	t.Helper()
 	t.Setenv(storage.EnvVar, "")
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
+}
+
+func TestProfileResourcesUsesSelectedFileAndSection(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		section     string
+		body        string
+		want        []string
+		defaultPath bool
+		// wantErr is a substring of the expected error.
+		wantErr string
+	}{
+		{
+			name:    "custom file",
+			section: "TEST",
+			body:    "[TEST]\nresources = resource-a,resource-b\n",
+			want:    []string{"resource-a", "resource-b"},
+		},
+		{
+			name:        "default file",
+			section:     "DEFAULT",
+			body:        "[DEFAULT]\nresources = resource-a\n",
+			want:        []string{"resource-a"},
+			defaultPath: true,
+		},
+		{
+			name:    "no resources",
+			section: "TEST",
+			body:    "[TEST]\nscopes = sql\n",
+		},
+		{
+			name:    "no parent inheritance",
+			section: "parent.child",
+			body:    "[parent]\nresources = parent-resource\n[parent.child]\nscopes = sql\n",
+		},
+		{
+			name:    "missing section",
+			section: "TEST",
+			body:    "[OTHER]\nscopes = sql\n",
+			wantErr: `profile "TEST" not found in`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("USERPROFILE", home)
+			t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "unrelated"))
+			path := filepath.Join(home, ".databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tt.body), 0o600))
+			cfg := &config.Config{ConfigFile: path, Profile: tt.section, Host: "https://workspace.test"}
+			if tt.defaultPath {
+				cfg.ConfigFile = ""
+			}
+
+			got, err := profileResources(cfg)
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestProfileResourcesUsesActualFileSource(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	otherPath := filepath.Join(home, "other.cfg")
+	require.NoError(t, os.WriteFile(otherPath, []byte("[TEST]\nresources = other-resource\n"), 0o600))
+	firstPath := filepath.Join(home, ".databrickscfg")
+	require.NoError(t, os.WriteFile(firstPath, []byte("[TEST]\nhost = https://workspace.test\nconfig_file = "+filepath.ToSlash(otherPath)+"\nresources = original-resource\n"), 0o600))
+	cfg := &config.Config{Profile: "TEST"}
+	require.NoError(t, config.ConfigFile.Configure(cfg))
+	require.Equal(t, filepath.ToSlash(otherPath), cfg.ConfigFile)
+
+	got, err := profileResources(cfg)
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"original-resource"}, got)
+}
+
+func TestCLICredentialsChecksLoginSettings(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		envClientID string
+		scopes      string
+		resources   string
+		noAuthType  bool
+		// wantMatch is whether the settings still match the login.
+		wantMatch bool
+	}{
+		{
+			name:      "unchanged",
+			resources: "resource-a",
+			wantMatch: true,
+		},
+		{
+			name:        "client ID from the environment",
+			envClientID: "other-client",
+			resources:   "resource-a",
+		},
+		{
+			name:      "scopes changed",
+			scopes:    "jobs",
+			resources: "resource-a",
+		},
+		{
+			name:      "resource changed",
+			resources: "resource-b",
+		},
+		{
+			// Resources count only for databricks-cli profiles, as in `auth token`.
+			name:       "profile without auth type",
+			resources:  "resource-a",
+			noAuthType: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("DATABRICKS_CLIENT_ID", tt.envClientID)
+			scopes := tt.scopes
+			if scopes == "" {
+				scopes = "sql,all-apis"
+			}
+			authType := "auth_type = databricks-cli\n"
+			if tt.noAuthType {
+				authType = ""
+			}
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte("[TEST]\nhost = workspace.test/\n"+authType+"scopes = "+scopes+"\nresources = "+tt.resources+"\n"), 0o600))
+			cfg := &config.Config{Profile: "TEST", ConfigFile: path}
+			for _, loader := range databrickscfg.ProfileAuthLoaders {
+				require.NoError(t, loader.Configure(cfg))
+			}
+
+			params, err := CLICredentials{}.tokenParamsFromConfig(cfg)
+
+			require.NoError(t, err)
+			login := u2m.NewEntry(nil, u2m.TokenRequestParams{
+				Scopes:    []string{"sql", "all-apis"},
+				Resources: []string{"resource-a"},
+			})
+			assert.Equal(t, tt.wantMatch, u2m.NewEntry(nil, params).ProfileChecksum == login.ProfileChecksum)
+		})
+	}
 }
 
 // TestCredentialChainOrder purely exists as an extra measure to catch
@@ -225,48 +373,47 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
 
-	// Two opts expected: WithOAuthArgument and WithTokenStore. The length
-	// check is the most resilient way to assert both were passed without
-	// poking at u2m's unexported state.
-	assert.Len(t, receivedOpts, 2)
+	// Three opts expected: WithOAuthArgument, WithTokenStore and
+	// WithTokenRequestParams.
+	// The length check is the most resilient way to assert they were passed
+	// without poking at u2m's unexported state.
+	assert.Len(t, receivedOpts, 3)
 }
 
-func TestCLICredentialsConfigure_ClientID(t *testing.T) {
+func TestCLICredentialsTokenParams_ClientID(t *testing.T) {
 	tests := []struct {
-		name     string
-		authType string
-		source   config.SourceType
-		wantOpts int
+		name         string
+		authType     string
+		source       config.SourceType
+		wantClientID string
 	}{
 		{
-			name:     "U2M config file client ID",
-			authType: "databricks-cli",
-			source:   config.SourceFile,
-			wantOpts: 3,
+			name:         "U2M config file client ID",
+			authType:     "databricks-cli",
+			source:       config.SourceFile,
+			wantClientID: "custom-client-id",
 		},
 		{
-			name:     "U2M environment client ID",
-			authType: "databricks-cli",
-			source:   config.SourceEnv,
-			wantOpts: 3,
+			name:         "U2M environment client ID",
+			authType:     "databricks-cli",
+			source:       config.SourceEnv,
+			wantClientID: "custom-client-id",
 		},
 		{
-			name:     "U2M dynamic client ID",
-			authType: "databricks-cli",
-			source:   config.SourceDynamicConfig,
-			wantOpts: 3,
+			name:         "U2M dynamic client ID",
+			authType:     "databricks-cli",
+			source:       config.SourceDynamicConfig,
+			wantClientID: "custom-client-id",
 		},
 		{
 			name:     "non-U2M config file client ID",
 			authType: "oauth-m2m",
 			source:   config.SourceFile,
-			wantOpts: 2,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hermeticAuthStorage(t)
 			cfg := &config.Config{
 				Host:     "https://workspace.test",
 				AuthType: tt.authType,
@@ -279,19 +426,10 @@ func TestCLICredentialsConfigure_ClientID(t *testing.T) {
 				}
 			}
 
-			var receivedOpts []u2m.PersistentAuthOption
-			c := CLICredentials{
-				persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
-					receivedOpts = opts
-					return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
-						return &oauth2.Token{AccessToken: "tok"}, nil
-					}), nil
-				},
-			}
+			params, err := CLICredentials{}.tokenParamsFromConfig(cfg)
 
-			_, err := c.Configure(t.Context(), cfg)
 			require.NoError(t, err)
-			assert.Len(t, receivedOpts, tt.wantOpts)
+			assert.Equal(t, tt.wantClientID, params.ClientID)
 		})
 	}
 }
@@ -341,7 +479,7 @@ func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
 			// The presence of the second opt is verified by the sibling
 			// test; here we just need Configure to succeed end-to-end when
 			// the config file selects secure storage.
-			assert.Len(t, opts, 2)
+			assert.Len(t, opts, 3)
 			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{AccessToken: "tok"}, nil
 			}), nil

@@ -1,0 +1,18 @@
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile checksum-test
+Profile checksum-test was successfully saved
+
+=== The error for settings that differ from the login
+>>> DATABRICKS_CONFIG_PROFILE=checksum-test DATABRICKS_CLIENT_ID=other-client musterr [CLI] clusters list
+Error: error getting token: the cached login for profile "checksum-test" does not match this command's settings. Run `databricks auth describe` with the same flags and environment variables to see where each setting comes from, or run `databricks auth login --profile checksum-test` if you changed the profile on purpose
+
+=== auth describe shows where the conflicting client ID comes from
+>>> DATABRICKS_CONFIG_PROFILE=checksum-test DATABRICKS_CLIENT_ID=other-client [CLI] auth describe
+  ~ client_id: other-client (from DATABRICKS_CLIENT_ID environment variable, not used for auth type databricks-cli)
+
+=== auth token reports the error as JSON
+>>> musterr [CLI] auth token --profile checksum-test --output json
+{
+  "error_code": "UNAUTHENTICATED",
+  "message": "the cached login for profile \"checksum-test\" does not match this command's settings. Run `databricks auth describe` with the same flags and environment variables to see where each setting comes from, or run `databricks auth login --profile checksum-test` if you changed the profile on purpose"
+}

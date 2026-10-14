@@ -1,0 +1,25 @@
+
+=== Scopes changed in the profile
+ok        [CLI] auth login --host [DATABRICKS_URL] --profile scopes --scopes sql,all-apis
+rejected  [CLI] auth token --profile scopes
+rejected  [CLI] auth token --profile scopes --force-refresh
+rejected  [CLI] clusters list --profile scopes
+ok        [CLI] auth login --profile scopes
+ok        [CLI] auth token --profile scopes
+ok        [CLI] clusters list --profile scopes
+
+=== Client ID changed in the profile
+ok        [CLI] auth login --host [DATABRICKS_URL] --profile client --client-id first-client
+rejected  [CLI] auth token --profile client
+rejected  [CLI] clusters list --profile client
+ok        [CLI] auth login --profile client
+ok        [CLI] auth token --profile client
+ok        [CLI] clusters list --profile client
+
+=== Resource changed in the profile
+ok        [CLI] auth login --host [DATABRICKS_URL] --profile changed --resource [DATABRICKS_URL]/changed-a
+rejected  [CLI] auth token --profile changed
+rejected  [CLI] clusters list --profile changed
+ok        [CLI] auth login --profile changed
+ok        [CLI] auth token --profile changed
+ok        [CLI] clusters list --profile changed

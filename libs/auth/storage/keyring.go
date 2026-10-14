@@ -43,11 +43,11 @@ type keyringBackend interface {
 }
 
 // keyringEntry is the on-disk envelope stored under each keyring account.
-// Wrapping the token in a struct lets us add fields later (scopes, profile
-// checksum, store time, ...) without breaking older CLI versions that read
-// the same entry.
+// Wrapping the token in a struct lets us add fields later (scopes, store
+// time, ...) without breaking older CLI versions that read the same entry.
 type keyringEntry struct {
-	Token *oauth2.Token `json:"token"`
+	Token           *oauth2.Token `json:"token"`
+	ProfileChecksum string        `json:"profile_checksum,omitempty"`
 }
 
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.

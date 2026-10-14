@@ -45,7 +45,7 @@ func (s *notFoundHintStore) Delete(key string) error { return s.inner.Delete(key
 
 // notFoundHint replaces ErrNotFound's terse "token not found" string
 // with an actionable message while still satisfying errors.Is(err,
-// ErrNotFound). PersistentAuth.loadToken wraps every store error with
+// ErrNotFound). PersistentAuth.loadEntry wraps every store error with
 // "cache: %w", and fmt.Errorf("...: %w", ErrNotFound) would tack the
 // original "token not found" onto the end of our hint, producing
 // "cache: <hint>: token not found". A custom type lets us own the

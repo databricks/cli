@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -273,15 +276,16 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 
 	// Expired cached token (keyed by profile name) so the command triggers a
 	// refresh, which the server rejects.
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks"), 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(home, ".databricks", "token-cache.json"),
-		[]byte(`{"version":1,"tokens":{"only-workspace":{"access_token":"x","token_type":"Bearer","refresh_token":"rt","expiry":"2020-01-01T00:00:00Z"}}}`), 0o600))
+	tokenStore, err := storage.NewFileStore(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, tokenStore.Put("only-workspace", u2m.NewEntry(
+		&oauth2.Token{AccessToken: "x", TokenType: "Bearer", RefreshToken: "rt", Expiry: time.Now().Add(-time.Hour)}, u2m.TokenRequestParams{})))
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
-	err := MustWorkspaceClient(cmd, []string{})
+	err = MustWorkspaceClient(cmd, []string{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "A new access token could not be retrieved because the refresh token is invalid")
 	assert.Contains(t, err.Error(), "databricks auth login --profile only-workspace")

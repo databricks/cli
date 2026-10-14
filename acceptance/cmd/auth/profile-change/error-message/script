@@ -1,0 +1,12 @@
+trace $CLI auth login --host "$DATABRICKS_HOST" --profile checksum-test
+
+title "The error for settings that differ from the login"
+trace DATABRICKS_CONFIG_PROFILE=checksum-test DATABRICKS_CLIENT_ID=other-client musterr $CLI clusters list
+
+title "auth describe shows where the conflicting client ID comes from"
+trace DATABRICKS_CONFIG_PROFILE=checksum-test DATABRICKS_CLIENT_ID=other-client $CLI auth describe | grep "client_id:"
+
+title "auth token reports the error as JSON"
+update_file.py "./home/.databrickscfg" "[checksum-test]" "[checksum-test]
+scopes = sql"
+trace musterr $CLI auth token --profile checksum-test --output json

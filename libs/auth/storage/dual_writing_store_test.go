@@ -75,15 +75,17 @@ func TestDualWritingStorePutPrimaryMirrorsHost(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc", RefreshToken: "r"}
 
-	require.NoError(t, c.Put("profile-a", Entry{Token: tok}))
+	require.NoError(t, c.Put("profile-a", Entry{Token: tok, ProfileChecksum: "checksum"}))
 
 	primary, err := inner.Lookup("profile-a")
 	require.NoError(t, err)
 	assert.Equal(t, tok, primary.Token)
+	assert.Equal(t, "checksum", primary.ProfileChecksum)
 
 	host, err := inner.Lookup("https://example.databricks.com")
 	require.NoError(t, err)
 	assert.Equal(t, tok, host.Token)
+	assert.Equal(t, "checksum", host.ProfileChecksum)
 }
 
 func TestDualWritingStoreDeletePrimaryMirrorsHost(t *testing.T) {

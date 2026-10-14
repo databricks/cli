@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -38,6 +39,80 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 }
 
 var _ storage.Store = upgradeHintStore{}
+
+// loginChecksum returns the checksum a login with p's settings stores.
+func loginChecksum(p profile.Profile) string {
+	return u2m.NewEntry(nil, u2m.TokenRequestParamsFromProfile(&p)).ProfileChecksum
+}
+
+func TestLoadTokenChecksLoginSettings(t *testing.T) {
+	saved := profile.Profile{
+		Name:        "TEST",
+		Host:        "https://accounts.cloud.databricks.test",
+		AccountID:   "account",
+		WorkspaceID: "workspace",
+		AuthType:    u2m.AuthTypeDatabricksCLI,
+		Scopes:      "sql,all-apis",
+	}
+	changedScopes := saved
+	changedScopes.Scopes = "sql"
+	changedClientID := saved
+	changedClientID.ClientID = "other-client"
+	for _, tt := range []struct {
+		name     string
+		checksum string
+		// wantErr is a target for assert.ErrorAs.
+		wantErr any
+	}{
+		{
+			name:     "unchanged",
+			checksum: loginChecksum(saved),
+		},
+		{
+			name:    "legacy profile",
+			wantErr: new(*u2m.ProfileChecksumMissingError),
+		},
+		{
+			name:     "changed scopes",
+			checksum: loginChecksum(changedScopes),
+			wantErr:  new(*u2m.ProfileChangedError),
+		},
+		{
+			name:     "changed client ID",
+			checksum: loginChecksum(changedClientID),
+			wantErr:  new(*u2m.ProfileChangedError),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			store := storage.NewMemoryStore()
+			require.NoError(t, store.Put(saved.Name, storage.Entry{
+				Token: &oauth2.Token{
+					AccessToken: "cached",
+					Expiry:      time.Now().Add(time.Hour),
+				},
+				ProfileChecksum: tt.checksum,
+			}))
+			args := loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   saved.Name,
+				profiler:      profile.InMemoryProfiler{Profiles: profile.Profiles{saved}},
+				tokenStore:    store,
+				tokenTimeout:  time.Second,
+			}
+
+			token, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+
+			if tt.wantErr != nil {
+				assert.ErrorAs(t, err, tt.wantErr)
+				assert.Nil(t, token)
+				assert.NotContains(t, err.Error(), "please report this issue")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, "cached", token.AccessToken)
+		})
+	}
+}
 
 type failOnCallTransport struct{}
 
@@ -177,7 +252,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	tokenStore := &inMemoryStore{
+	seed := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{
 			"https://accounts.cloud.databricks.com/oidc/accounts/expired": {
 				RefreshToken: "expired",
@@ -230,6 +305,14 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "custom-refresh-token",
 			},
 		},
+	}
+	loginChecksums := map[string]string{}
+	for _, p := range profiler.Profiles {
+		loginChecksums[p.Name] = loginChecksum(p)
+	}
+	tokenStore := storage.NewMemoryStore()
+	for key, token := range seed.Tokens {
+		require.NoError(t, tokenStore.Put(key, storage.Entry{Token: token, ProfileChecksum: loginChecksums[key]}))
 	}
 	validateToken := func(got *oauth2.Token) {
 		assert.Equal(t, "new-access-token", got.AccessToken)

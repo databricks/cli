@@ -64,8 +64,19 @@ func (e *rewrittenAuthError) Unwrap() error {
 	return e.cause
 }
 
+// IsLoginRequired reports whether err means the user has to log in again: the
+// refresh token is invalid, or the profile's login settings changed or were
+// never recorded. These errors already tell the user which command to run.
+func IsLoginRequired(err error) bool {
+	_, invalidRefreshToken := errors.AsType[*u2m.InvalidRefreshTokenError](err)
+	_, profileChanged := errors.AsType[*u2m.ProfileChangedError](err)
+	_, checksumMissing := errors.AsType[*u2m.ProfileChecksumMissingError](err)
+	return invalidRefreshToken || profileChanged || checksumMissing
+}
+
 // RewriteAuthError rewrites the error message for invalid refresh token error.
-// It returns whether the error was rewritten and the rewritten error.
+// It returns true when callers must not add more context, because the error
+// was rewritten or already says what to run, together with the error to show.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
 	if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
 		oauthArgument, argErr := AuthArguments{
@@ -79,7 +90,7 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
   $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
 		return true, &rewrittenAuthError{message: msg, cause: err}
 	}
-	return false, err
+	return IsLoginRequired(err), err
 }
 
 // EnrichAuthError appends identity context and remediation steps to 401/403 API errors.

@@ -1,0 +1,16 @@
+
+=== Legacy profile tokens require a new login
+>>> musterr [CLI] auth token --profile test-profile
+Error: cached credentials for profile "test-profile" were created by an older CLI version and cannot be checked against the profile. Run `databricks auth login --profile test-profile` to sign in again
+
+>>> musterr [CLI] auth token --profile test-profile --force-refresh
+Error: cached credentials for profile "test-profile" were created by an older CLI version and cannot be checked against the profile. Run `databricks auth login --profile test-profile` to sign in again
+
+>>> musterr [CLI] auth token --profile test-profile --output json
+{
+  "error_code": "UNAUTHENTICATED",
+  "message": "cached credentials for profile \"test-profile\" were created by an older CLI version and cannot be checked against the profile. Run `databricks auth login --profile test-profile` to sign in again"
+}
+
+>>> musterr [CLI] clusters list --profile test-profile
+Error: error getting token: cached credentials for profile "test-profile" were created by an older CLI version and cannot be checked against the profile. Run `databricks auth login --profile test-profile` to sign in again

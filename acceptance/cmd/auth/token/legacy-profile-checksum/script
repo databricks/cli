@@ -1,0 +1,9 @@
+setup_test_profile
+mkdir -p "./home/.databricks"
+cp token-cache.json "./home/.databricks/token-cache.json"
+
+title "Legacy profile tokens require a new login"
+trace musterr $CLI auth token --profile test-profile
+trace musterr $CLI auth token --profile test-profile --force-refresh
+trace musterr $CLI auth token --profile test-profile --output json
+trace musterr $CLI clusters list --profile test-profile

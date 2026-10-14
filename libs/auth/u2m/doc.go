@@ -41,6 +41,8 @@ OAuthArgument and call Challenge:
 
 Challenge returns the new token without storing it. The caller is responsible
 for persisting it after any configuration associated with the login is ready.
+Store it as the entry returned by NewEntry, so later reads of a profile can
+check that the cached token still fits the profile's login settings.
 WithTokenStore configures the store used by Token and ForceRefreshToken.
 */
 package u2m
