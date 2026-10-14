@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,7 +20,59 @@ import (
 // consumers. We render those as JSON strings to preserve the original digits.
 const safeIntegerBound = 1<<53 - 1
 
-// textValue renders a Go value (as decoded by pgx) to its canonical Postgres
+// decodeTextValue converts a text-format result column into the Go value the
+// sinks render. Integers, floats, booleans, bytea and date/time types map to
+// native Go types; everything else (numeric, uuid, interval, arrays, json,
+// ...) stays as the server's canonical text, which is already the
+// representation we want to print. Timestamps Go cannot represent
+// (infinity, BC dates) also stay as text.
+func decodeTextValue(oid uint32, raw []byte) (any, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	s := string(raw)
+	switch oid {
+	case pgtype.Int2OID:
+		v, err := strconv.ParseInt(s, 10, 16)
+		return int16(v), err
+	case pgtype.Int4OID:
+		v, err := strconv.ParseInt(s, 10, 32)
+		return int32(v), err
+	case pgtype.Int8OID:
+		return strconv.ParseInt(s, 10, 64)
+	case pgtype.Float4OID:
+		v, err := strconv.ParseFloat(s, 32)
+		return float32(v), err
+	case pgtype.Float8OID:
+		return strconv.ParseFloat(s, 64)
+	case pgtype.BoolOID:
+		return s == "t", nil
+	case pgtype.ByteaOID:
+		hexPart, ok := strings.CutPrefix(s, `\x`)
+		if !ok {
+			return nil, fmt.Errorf("unsupported bytea text format %q", s)
+		}
+		return hex.DecodeString(hexPart)
+	case pgtype.DateOID:
+		if t, err := time.Parse("2006-01-02", s); err == nil {
+			return t, nil
+		}
+	case pgtype.TimestampOID:
+		if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+			return t, nil
+		}
+	case pgtype.TimestamptzOID:
+		// The server prints the UTC offset as +HH, +HH:MM or +HH:MM:SS.
+		for _, layout := range []string{"2006-01-02 15:04:05-07", "2006-01-02 15:04:05-07:00", "2006-01-02 15:04:05-07:00:00"} {
+			if t, err := time.Parse(layout, s); err == nil {
+				return t.UTC(), nil
+			}
+		}
+	}
+	return s, nil
+}
+
+// textValue renders a Go value (as decoded by decodeTextValue) to its canonical Postgres
 // text representation. Used by --output text and --output csv.
 //
 // NULL renders as the literal "NULL" so it lines up with the column rather
@@ -74,7 +127,7 @@ func floatTextForm(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-// jsonValue renders a Go value (as decoded by pgx) to a JSON-encodable
+// jsonValue renders a Go value (as decoded by decodeTextValue) to a JSON-encodable
 // representation. Returns a value the standard json.Marshal can handle
 // directly and the JSON shape we want; never returns Go values that would
 // silently lose information (e.g. NaN, oversized integers).
@@ -101,7 +154,7 @@ func jsonValue(v any) any {
 	case int16, int32:
 		return x
 	case int64:
-		// pgx decodes Postgres int8 to Go int64. Outside the IEEE-754 safe
+		// Postgres int8 decodes to Go int64. Outside the IEEE-754 safe
 		// integer range we render as a string so JavaScript-style consumers
 		// don't silently lose precision.
 		if x > safeIntegerBound || x < -safeIntegerBound {
@@ -113,11 +166,7 @@ func jsonValue(v any) any {
 	case float64:
 		return jsonFloat(x)
 	case []byte:
-		// Postgres jsonb / json arrive as []byte holding raw JSON. Anything
-		// else we'd like to base64-encode. We can't tell them apart from the
-		// Go type alone; the sink calls jsonValueWithOID for oid-aware
-		// disambiguation. This bare path is the conservative fallback and
-		// treats unknown bytes as base64 (lossless and correct for bytea).
+		// bytea decodes to []byte; base64 keeps it lossless in JSON.
 		return base64.StdEncoding.EncodeToString(x)
 	case time.Time:
 		return x.UTC().Format(time.RFC3339Nano)
@@ -146,8 +195,9 @@ func jsonFloat(f float64) any {
 }
 
 // jsonValueWithOID applies oid-aware overrides on top of jsonValue. The two
-// places this matters today are JSON/JSONB and bytea: both arrive from pgx as
-// []byte but want different JSON shapes (raw JSON passthrough vs base64).
+// places this matters today are JSON/JSONB and bytea: JSON arrives as its
+// text and must pass through raw rather than as a JSON string; bytea arrives
+// as []byte and is base64-encoded.
 func jsonValueWithOID(v any, oid uint32) any {
 	if v == nil {
 		return nil
@@ -155,10 +205,6 @@ func jsonValueWithOID(v any, oid uint32) any {
 
 	switch oid {
 	case pgtype.JSONOID, pgtype.JSONBOID:
-		// pgx returns json/jsonb as already-decoded Go values when no codec
-		// is registered; with the default codec, they decode to map/slice/etc.
-		// In QueryExecModeExec text-mode, pgx returns the raw JSON bytes as
-		// string (since the wire is text). We accept both shapes.
 		switch x := v.(type) {
 		case []byte:
 			return json.RawMessage(x)

@@ -11,7 +11,6 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgconn/ctxwatch"
 )
@@ -45,11 +44,11 @@ type retryConfig struct {
 	MaxDelay     time.Duration
 }
 
-// connectFunc is a seam for unit tests: production wires pgx.ConnectConfig,
+// connectFunc is a seam for unit tests: production wires pgconn.ConnectConfig,
 // tests inject failures (DNS, auth, ctx-cancel mid-connect). We deliberately
-// do not wrap *pgx.Conn behind an interface for query execution; that surface
+// do not wrap *pgconn.PgConn behind an interface for query execution; that surface
 // is exercised by integration tests against real Lakebase endpoints.
-type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error)
+type connectFunc func(ctx context.Context, cfg *pgconn.Config) (*pgconn.PgConn, error)
 
 // buildPgxConfig parses a DSN that includes the real host so pgx derives the
 // right TLSConfig and Fallbacks for sslmode=require. An empty host in the DSN
@@ -73,11 +72,11 @@ type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, erro
 // terminate the query within 5s, fall back to deadlining the connection.
 // Zero DeadlineDelay would race the cancel-request and could leave the
 // connection unusable.
-func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
+func buildPgxConfig(c connectConfig) (*pgconn.Config, error) {
 	dsn := fmt.Sprintf("postgresql://%s/%s?sslmode=require",
 		net.JoinHostPort(c.Host, strconv.Itoa(c.Port)),
 		url.PathEscape(c.Database))
-	cfg, err := pgx.ParseConfig(dsn)
+	cfg, err := pgconn.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse pgx config: %w", err)
 	}
@@ -102,7 +101,7 @@ func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
 //
 // MaxAttempts must be >= 1 (caller validates). 1 means a single attempt
 // with no retries.
-func connectWithRetry(ctx context.Context, cfg *pgx.ConnConfig, rc retryConfig, dial connectFunc) (*pgx.Conn, error) {
+func connectWithRetry(ctx context.Context, cfg *pgconn.Config, rc retryConfig, dial connectFunc) (*pgconn.PgConn, error) {
 	delay := rc.InitialDelay
 	var lastErr error
 
