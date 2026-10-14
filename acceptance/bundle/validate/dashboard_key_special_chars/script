@@ -1,2 +1,9 @@
+# Dashboards missing display_name / warehouse_id must be reported even when the
+# resource key contains characters that are path syntax ("[", ","). The required-field
+# check looks the dashboard up by path, so a key that does not survive being turned
+# into a path string would silently drop these errors.
+#
+# Each key is in its own target: with both in one config the errors are reported in
+# a nondeterministic order.
 errcode trace $CLI bundle validate -t bracket
 errcode trace $CLI bundle validate -t comma
