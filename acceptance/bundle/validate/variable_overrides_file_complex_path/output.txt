@@ -1,12 +1,13 @@
 
 >>> [CLI] bundle validate -o json
-Error: path src/main.py is defined relative to the [TEST_TMP_DIR] directory ([TEST_TMP_DIR]/.databricks/bundle/default/variable-overrides.json:5:37). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
-  in .databricks/bundle/default/variable-overrides.json:5:37
+Error: path src/main.py is defined relative to the [TEST_TMP_DIR] directory ([TEST_TMP_DIR]/.databricks/bundle/default/variable-overrides.json:6:37). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
+  in .databricks/bundle/default/variable-overrides.json:6:37
 
 
 Exit code: 1
 [
   {
+    "existing_cluster_id": "0123-456789-abcdefgh",
     "libraries": [
       {
         "whl": ".databricks/bundle/default/src/lib.whl"

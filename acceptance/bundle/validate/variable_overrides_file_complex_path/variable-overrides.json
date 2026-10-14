@@ -1,6 +1,7 @@
 {
   "task": {
     "task_key": "main",
+    "existing_cluster_id": "0123-456789-abcdefgh",
     "spark_python_task": {
       "python_file": "./src/main.py"
     },
