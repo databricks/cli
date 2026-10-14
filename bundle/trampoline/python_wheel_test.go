@@ -2,6 +2,7 @@ package trampoline
 
 import (
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"strings"
 	"testing"
 
@@ -106,7 +107,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 	tasks := trampoline.GetTasks(b)
 	require.Len(t, tasks, 1)
 	require.Equal(t, "job1", tasks[0].JobKey)
-	require.Equal(t, "key1", tasks[0].Task.TaskKey)
+	require.Equal(t, "key1", utils.Deref(tasks[0].Task.TaskKey))
 	require.NotNil(t, tasks[0].Task.PythonWheelTask)
 }
 

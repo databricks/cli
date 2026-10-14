@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/bundledeployments"
+	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
 // VersionType identifies the kind of deployment a version records.

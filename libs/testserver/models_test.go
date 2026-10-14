@@ -44,5 +44,5 @@ func TestModelRegistryCreateModel_AllowsNonEmptyName(t *testing.T) {
 	body, ok := getResponse.Body.(modelregistry.GetRegisteredModelDatabricksResponse)
 	require.True(t, ok)
 	assert.Equal(t, "my_model", utils.Deref(body.RegisteredModelDatabricks.Name))
-	assert.NotEmpty(t, body.RegisteredModelDatabricks.Id)
+	assert.NotEmpty(t, utils.Deref(body.RegisteredModelDatabricks.Id))
 }

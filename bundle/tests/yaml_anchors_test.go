@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,8 +22,8 @@ func TestYAMLAnchors(t *testing.T) {
 
 	require.NotNil(t, t0.NewCluster)
 	require.NotNil(t, t1.NewCluster)
-	assert.Equal(t, "10.4.x-scala2.12", t0.NewCluster.SparkVersion)
-	assert.Equal(t, "10.4.x-scala2.12", t1.NewCluster.SparkVersion)
+	assert.Equal(t, "10.4.x-scala2.12", utils.Deref(t0.NewCluster.SparkVersion))
+	assert.Equal(t, "10.4.x-scala2.12", utils.Deref(t1.NewCluster.SparkVersion))
 }
 
 func TestYAMLAnchorsNoWarnings(t *testing.T) {

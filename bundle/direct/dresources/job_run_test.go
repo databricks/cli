@@ -381,7 +381,7 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.NotEmpty(t, tokens[0])
 	assert.NotEqual(t, tokens[0], tokens[1])
 	// Token must not leak into persisted state.
-	assert.Empty(t, config.IdempotencyToken)
+	assert.Empty(t, utils.Deref(config.IdempotencyToken))
 }
 
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {

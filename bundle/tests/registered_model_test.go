@@ -23,7 +23,7 @@ func TestRegisteredModelDevelopment(t *testing.T) {
 	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
 
 	p := b.Config.Resources.RegisteredModels["my_registered_model"]
-	assert.Equal(t, "my-dev-model", p.Name)
+	assert.Equal(t, "my-dev-model", utils.Deref(p.Name))
 	assertExpectedModel(t, p)
 }
 
@@ -32,7 +32,7 @@ func TestRegisteredModelStaging(t *testing.T) {
 	assert.Len(t, b.Config.Resources.RegisteredModels, 1)
 
 	p := b.Config.Resources.RegisteredModels["my_registered_model"]
-	assert.Equal(t, "my-staging-model", p.Name)
+	assert.Equal(t, "my-staging-model", utils.Deref(p.Name))
 	assertExpectedModel(t, p)
 }
 
@@ -41,6 +41,6 @@ func TestRegisteredModelProduction(t *testing.T) {
 	assert.Len(t, b.Config.Resources.RegisteredModels, 1)
 
 	p := b.Config.Resources.RegisteredModels["my_registered_model"]
-	assert.Equal(t, "my-prod-model", p.Name)
+	assert.Equal(t, "my-prod-model", utils.Deref(p.Name))
 	assertExpectedModel(t, p)
 }

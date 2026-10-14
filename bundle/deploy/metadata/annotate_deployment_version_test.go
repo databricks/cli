@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -38,13 +39,13 @@ func TestAnnotateDeploymentVersion(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	job := b.Config.Resources.Jobs["my-job"].Deployment
-	assert.Equal(t, "dep-123", job.DeploymentId)
-	assert.Equal(t, "7", job.VersionId)
+	assert.Equal(t, "dep-123", utils.Deref(job.DeploymentId))
+	assert.Equal(t, "7", utils.Deref(job.VersionId))
 	// The kind set by AnnotateJobs is preserved.
 	assert.Equal(t, jobs.JobDeployment_DeploymentKind_Bundle, job.Kind)
 
 	pipeline := b.Config.Resources.Pipelines["my-pipeline"].Deployment
-	assert.Equal(t, "dep-123", pipeline.DeploymentId)
-	assert.Equal(t, "7", pipeline.VersionId)
+	assert.Equal(t, "dep-123", utils.Deref(pipeline.DeploymentId))
+	assert.Equal(t, "7", utils.Deref(pipeline.VersionId))
 	assert.Equal(t, pipelines.DeploymentKind_Bundle, pipeline.Kind)
 }

@@ -2,6 +2,7 @@ package trampoline
 
 import (
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"path/filepath"
 	"testing"
 
@@ -53,9 +54,9 @@ func TestNoTransformByDefault(t *testing.T) {
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.NotNil(t, task.PythonWheelTask)
-	require.Equal(t, "test_package", task.PythonWheelTask.PackageName)
-	require.Equal(t, "main", task.PythonWheelTask.EntryPoint)
-	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.whl", task.Libraries[0].Whl)
+	require.Equal(t, "test_package", utils.Deref(task.PythonWheelTask.PackageName))
+	require.Equal(t, "main", utils.Deref(task.PythonWheelTask.EntryPoint))
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.whl", utils.Deref(task.Libraries[0].Whl))
 
 	require.Nil(t, task.NotebookTask)
 }
@@ -107,8 +108,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.Nil(t, task.PythonWheelTask)
 	require.NotNil(t, task.NotebookTask)
-	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_job1_key1", task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_job1_key1", utils.Deref(task.NotebookTask.NotebookPath))
 
 	require.Len(t, task.Libraries, 1)
-	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", task.Libraries[0].Jar)
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", utils.Deref(task.Libraries[0].Jar))
 }

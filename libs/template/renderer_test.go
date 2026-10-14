@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sdktypes/scim/v1"
@@ -75,7 +76,10 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	// Apply initialize / validation mutators
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+		b.Config.Workspace.CurrentUser = &bundleConfig.User{
+			ShortName: iamutil.GetShortUserName(cachedUser),
+			User:      cachedUser,
+		}
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)

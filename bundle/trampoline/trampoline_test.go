@@ -3,6 +3,7 @@ package trampoline
 import (
 	"errors"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -95,7 +96,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_test_to_trampoline", task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_test_to_trampoline", utils.Deref(task.NotebookTask.NotebookPath))
 	require.Nil(t, task.PythonWheelTask)
 }
 
@@ -151,8 +152,8 @@ func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
 
 	require.Equal(t,
 		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_3_a_b_c",
-		b.Config.Resources.Jobs["a_b"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["a_b"].Tasks[0].NotebookTask.NotebookPath))
 	require.Equal(t,
 		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_1_a_b_c",
-		b.Config.Resources.Jobs["a"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["a"].Tasks[0].NotebookTask.NotebookPath))
 }

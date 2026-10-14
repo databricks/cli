@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/bundledeployments"
+	"github.com/databricks/cli/libs/cmdctx"
 )
 
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next

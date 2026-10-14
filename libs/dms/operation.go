@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/bundledeployments"
+	"github.com/databricks/cli/libs/diag"
 )
 
 // StatePrefix is the "resources." that bundle keys carry but DMS keys don't

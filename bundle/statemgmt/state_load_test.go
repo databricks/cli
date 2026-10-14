@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/utils"
 	"reflect"
 	"testing"
 
@@ -120,7 +121,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
 
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
-	assert.Empty(t, config.Resources.Apps["test_app"].Name)
+	assert.Empty(t, utils.Deref(config.Resources.Apps["test_app"].Name))
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	assert.Equal(t, "secret_scope1", config.Resources.SecretScopes["test_secret_scope"].ID)
@@ -516,7 +517,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
 
-	assert.Empty(t, config.Resources.Apps["test_app"].Name)
+	assert.Empty(t, utils.Deref(config.Resources.Apps["test_app"].Name))
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope"].ID)
@@ -1223,12 +1224,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
 
-	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, "test_app", utils.Deref(config.Resources.Apps["test_app"].Name))
 	assert.Empty(t, config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
-	assert.Empty(t, config.Resources.Apps["test_app_old"].Name)
+	assert.Empty(t, utils.Deref(config.Resources.Apps["test_app_old"].Name))
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
-	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
+	assert.Equal(t, "test_app_new", utils.Deref(config.Resources.Apps["test_app_new"].Name))
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_secret_scope", config.Resources.SecretScopes["test_secret_scope"].Name)

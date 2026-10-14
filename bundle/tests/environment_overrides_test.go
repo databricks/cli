@@ -19,7 +19,7 @@ func TestEnvironmentOverridesWorkspaceStaging(t *testing.T) {
 
 func TestEnvironmentOverridesResourcesDev(t *testing.T) {
 	b := loadTarget(t, "./environment_overrides/resources", "development")
-	assert.Equal(t, "base job", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "base job", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 
 	// Base values are preserved in the development environment.
 	assert.True(t, utils.Deref(b.Config.Resources.Pipelines["boolean1"].Photon))
@@ -28,7 +28,7 @@ func TestEnvironmentOverridesResourcesDev(t *testing.T) {
 
 func TestEnvironmentOverridesResourcesStaging(t *testing.T) {
 	b := loadTarget(t, "./environment_overrides/resources", "staging")
-	assert.Equal(t, "staging job", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "staging job", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 
 	// Override values are applied in the staging environment.
 	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["boolean1"].Photon))

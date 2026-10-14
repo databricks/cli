@@ -298,7 +298,7 @@ func TestPostgresDatabaseCRUD(t *testing.T) {
 	assert.Equal(t, "projects/database-test-project/branches/main", utils.Deref(database.Parent))
 	require.NotNil(t, database.Status)
 	assert.Equal(t, "my_db", utils.Deref(database.Status.PostgresDatabase))
-	assert.NotEmpty(t, database.Status.Role)
+	assert.NotEmpty(t, utils.Deref(database.Status.Role))
 	getDbResp.Body.Close()
 
 	// List databases

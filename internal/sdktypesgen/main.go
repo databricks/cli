@@ -423,5 +423,3 @@ func pruneImports(src []byte) ([]byte, error) {
 	}
 	return format.Source(out.Bytes())
 }
-
-

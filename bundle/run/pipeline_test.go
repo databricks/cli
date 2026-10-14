@@ -65,7 +65,8 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req testserver.Request) any {
 		var body map[string]any
 		assert.NoError(t, json.Unmarshal(req.Body, &body))
-		assert.Equal(t, map[string]any{}, body)
+		// sdk-go repeats the pipeline_id path parameter in the body.
+		assert.Equal(t, map[string]any{"pipeline_id": "123"}, body)
 		return map[string]any{"update_id": "456"}
 	})
 

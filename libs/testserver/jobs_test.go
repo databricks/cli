@@ -161,7 +161,7 @@ func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
 	terminateRun(&run)
 
 	assert.Equal(t, jobs.RunResultState_RunResultState_Success, run.State.ResultState)
-	assert.Empty(t, run.State.StateMessage)
+	assert.Empty(t, utils.Deref(run.State.StateMessage))
 	assert.Equal(t, jobs.RunResultState_RunResultState_Success, run.Tasks[0].State.ResultState)
 }
 

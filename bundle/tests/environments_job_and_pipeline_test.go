@@ -18,8 +18,8 @@ func TestJobAndPipelineDevelopmentWithEnvironment(t *testing.T) {
 	assert.Equal(t, config.Development, b.Config.Bundle.Mode)
 	assert.True(t, utils.Deref(p.Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
-	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
-	assert.Equal(t, "nyc_taxi_development", p.Target)
+	assert.Equal(t, "./dlt/nyc_taxi_loader", utils.Deref(p.Libraries[0].Notebook.Path))
+	assert.Equal(t, "nyc_taxi_development", utils.Deref(p.Target))
 }
 
 func TestJobAndPipelineStagingWithEnvironment(t *testing.T) {
@@ -30,8 +30,8 @@ func TestJobAndPipelineStagingWithEnvironment(t *testing.T) {
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.False(t, utils.Deref(p.Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
-	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
-	assert.Equal(t, "nyc_taxi_staging", p.Target)
+	assert.Equal(t, "./dlt/nyc_taxi_loader", utils.Deref(p.Libraries[0].Notebook.Path))
+	assert.Equal(t, "nyc_taxi_staging", utils.Deref(p.Target))
 }
 
 func TestJobAndPipelineProductionWithEnvironment(t *testing.T) {
@@ -42,11 +42,11 @@ func TestJobAndPipelineProductionWithEnvironment(t *testing.T) {
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.False(t, utils.Deref(p.Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	require.Len(t, p.Libraries, 1)
-	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
-	assert.Equal(t, "nyc_taxi_production", p.Target)
+	assert.Equal(t, "./dlt/nyc_taxi_loader", utils.Deref(p.Libraries[0].Notebook.Path))
+	assert.Equal(t, "nyc_taxi_production", utils.Deref(p.Target))
 
 	j := b.Config.Resources.Jobs["pipeline_schedule"]
-	assert.Equal(t, "Daily refresh of production pipeline", j.Name)
+	assert.Equal(t, "Daily refresh of production pipeline", utils.Deref(j.Name))
 	require.Len(t, j.Tasks, 1)
-	assert.NotEmpty(t, j.Tasks[0].PipelineTask.PipelineId)
+	assert.NotEmpty(t, utils.Deref(j.Tasks[0].PipelineTask.PipelineId))
 }

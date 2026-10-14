@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"github.com/databricks/cli/libs/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,10 +19,10 @@ func TestTargetOverridesWorkspaceStaging(t *testing.T) {
 
 func TestTargetOverridesResourcesDev(t *testing.T) {
 	b := loadTarget(t, "./target_overrides/resources", "development")
-	assert.Equal(t, "base job", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "base job", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 }
 
 func TestTargetOverridesResourcesStaging(t *testing.T) {
 	b := loadTarget(t, "./target_overrides/resources", "staging")
-	assert.Equal(t, "staging job", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "staging job", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
 }

@@ -55,9 +55,9 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 			"    - %s: %s\n"+
 			"      level: CAN_MANAGE\n\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.",
-			b.Config.Workspace.CurrentUser.UserName,
+			utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 			identityType,
-			b.Config.Workspace.CurrentUser.UserName,
+			utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 		),
 		Locations: []diag.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
