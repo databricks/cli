@@ -16,13 +16,17 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shortid"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/google/uuid"
 )
 
 type AlwaysPull bool
@@ -41,6 +45,10 @@ type StateDesc struct {
 	IsLocal bool              `json:"-"`
 
 	AllStates []*StateDesc
+
+	// Deployment retains a confirmed repair lookup for state initialization.
+	DeploymentID string                        `json:"-"`
+	Deployment   *bundledeployments.Deployment `json:"-"`
 }
 
 func (s *StateDesc) String() string {
@@ -84,8 +92,11 @@ func localRead(fullPath string, engine engine.EngineType) *StateDesc {
 	state := &StateDesc{}
 	if err != nil {
 		state.readErr = fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err)
-	} else if err := json.Unmarshal(content, state); err != nil {
-		state.readErr = fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err)
+	} else {
+		state, err = parseResourceState(content, engine)
+		if err != nil {
+			state.readErr = fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err)
+		}
 	}
 
 	state.SourcePath = filepath.ToSlash(fullPath)
@@ -96,7 +107,28 @@ func localRead(fullPath string, engine engine.EngineType) *StateDesc {
 	return state
 }
 
-func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, error) {
+// parseResourceState reads the state metadata while validating its JSON shape.
+func parseResourceState(content []byte, engine engine.EngineType) (*StateDesc, error) {
+	state := &StateDesc{}
+	if !engine.IsDirect() {
+		return state, json.Unmarshal(content, state)
+	}
+	var data dstate.Database
+	err := json.Unmarshal(content, &data)
+	state.Serial = data.Serial
+	state.Lineage = data.Lineage
+	state.Features = data.Features
+	return state, err
+}
+
+// isJSONStateError distinguishes damaged JSON from access and transport failures.
+func isJSONStateError(err error) bool {
+	_, syntaxError := errors.AsType[*json.SyntaxError](err)
+	_, typeError := errors.AsType[*json.UnmarshalTypeError](err)
+	return syntaxError || typeError
+}
+
+func _filerRead(ctx context.Context, f filer.Filer, path string, engine engine.EngineType) (*StateDesc, error) {
 	r, err := f.Read(ctx, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -110,25 +142,29 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 		return nil, fmt.Errorf("reading data: %w", err)
 	}
 
-	state := &StateDesc{}
-	err = json.Unmarshal(content, state)
-	if err != nil {
-		return nil, fmt.Errorf("parsing state: %w", err)
-	}
+	state, parseErr := parseResourceState(content, engine)
 
 	// QQQ: would be nice to merge with filer root
 	state.SourcePath = filepath.ToSlash(path)
 	state.IsLocal = false
 	state.Content = content
+	if parseErr != nil {
+		return state, fmt.Errorf("parsing state: %w", parseErr)
+	}
 	return state, nil
 }
 
 func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.EngineType) *StateDesc {
-	state, err := _filerRead(ctx, f, path)
+	state, err := _filerRead(ctx, f, path, engine)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
+		if state == nil {
+			state = &StateDesc{SourcePath: path}
+		}
+		state.readErr = fmt.Errorf("reading %s: %w", path, err)
 	} else if state != nil {
 		log.Debugf(ctx, "read %s: %s", path, state.String())
+	}
+	if state != nil {
 		state.Engine = engine
 	}
 	return state
@@ -148,15 +184,50 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		configured = b.Config.Experimental.DeploymentHistory
 	}
 	historyEnabled := bundleenv.RecordsDeploymentHistory(ctx, configured)
-	states := readStates(ctx, b, AlwaysPull(bool(alwaysPull) || historyEnabled))
+	states, readRemote := readStates(ctx, b, AlwaysPull(bool(alwaysPull) || historyEnabled))
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 	// DMS owns recorded resource state; a remote marker's serial is only a checkpoint.
 	remoteRecorded := slices.ContainsFunc(states, func(state *StateDesc) bool {
-		return !state.IsLocal && state.Engine.IsDirect() && state.IsDMS()
+		return !state.IsLocal && state.Engine.IsDirect() && state.readErr == nil && state.IsDMS()
 	})
-	if historyEnabled || remoteRecorded {
+	for _, state := range states {
+		if state.IsLocal && (historyEnabled || remoteRecorded) {
+			continue
+		}
+		if state.readErr != nil && (!state.Engine.IsDirect() || !isJSONStateError(state.readErr)) {
+			logdiag.LogError(ctx, state.readErr)
+		}
+	}
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+	repairCandidate := historyEnabled || slices.ContainsFunc(states, func(state *StateDesc) bool {
+		return state.Engine.IsDirect() && (isJSONStateError(state.readErr) || (state.IsLocal && state.IsDMS()))
+	})
+	if readRemote && repairCandidate {
+		repaired, err := recoverDMSState(ctx, b, states)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		if repaired != nil {
+			states = []*StateDesc{repaired}
+			remoteRecorded = true
+		}
+	}
+	hasRemoteState := slices.ContainsFunc(states, func(state *StateDesc) bool { return !state.IsLocal })
+	for _, state := range states {
+		if state.readErr == nil || (state.IsLocal && (remoteRecorded || (historyEnabled && hasRemoteState))) {
+			continue
+		}
+		logdiag.LogError(ctx, state.readErr)
+	}
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+	if remoteRecorded || (historyEnabled && hasRemoteState) {
 		states = slices.DeleteFunc(states, func(state *StateDesc) bool {
 			if !state.IsLocal {
 				return false
@@ -169,12 +240,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			return true
 		})
 	}
-	for _, state := range states {
-		if state.readErr != nil {
-			logdiag.LogError(ctx, state.readErr)
-		}
-	}
-
 	if logdiag.HasError(ctx) {
 		return nil
 	}
@@ -228,24 +293,25 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) ([]*StateDesc, bool) {
 	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	if logdiag.HasError(ctx) {
-		return nil
+		return nil, false
 	}
 
 	directLocalState := localRead(localPathDirect, engine.EngineDirect)
 	terraformLocalState := localRead(localPathTerraform, engine.EngineTerraform)
 
-	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
+	readRemote := (directLocalState == nil && terraformLocalState == nil) || bool(alwaysPull)
+	if readRemote {
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return nil, true
 		}
 
 		var wg sync.WaitGroup
@@ -272,7 +338,64 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return a.Serial - b.Serial
 	})
 
-	return states
+	return states, readRemote
+}
+
+// recoverDMSState reconstructs an unusable marker only for a confirmed recorded deployment.
+func recoverDMSState(ctx context.Context, b *bundle.Bundle, states []*StateDesc) (*StateDesc, error) {
+	var surviving *StateDesc
+	for _, state := range states {
+		if state.readErr == nil {
+			if !state.Engine.IsDirect() || !state.IsDMS() || !state.IsLocal {
+				return nil, nil
+			}
+			surviving = state
+		}
+	}
+
+	deploymentID, deployment, err := dms.FetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil || deployment == nil {
+		return nil, err
+	}
+
+	data := dstate.NewDatabase("", 0)
+	if surviving != nil {
+		var db dstate.DeploymentState
+		if err := db.Open(ctx, surviving.SourcePath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{}); err != nil {
+			return nil, fmt.Errorf("recovering deployment history marker: %w", err)
+		}
+		data.Header = db.Data.Header
+		if len(db.Data.State) != 0 {
+			return nil, fmt.Errorf("state file for a recorded deployment carries %d resources, expected none", len(db.Data.State))
+		}
+		if _, err := db.Finalize(ctx); err != nil {
+			return nil, err
+		}
+	}
+	if data.Lineage == "" {
+		data.Lineage = uuid.NewString()
+		logdiag.LogDiag(ctx, diag.Warningf("Recovering deployment history state with a new lineage; existing saved plans are no longer valid")[0])
+	}
+	if data.Features == nil {
+		data.Features = make(map[string]struct{})
+	}
+	data.Features[dstate.FeatureDeploymentHistory] = struct{}{}
+	content, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("reconstructing deployment history marker: %w", err)
+	}
+	remotePath, _ := b.StateFilenameDirect(ctx)
+	b.NeedsDMSStateUpload = true
+	return &StateDesc{
+		Serial:       data.Serial,
+		Lineage:      data.Lineage,
+		Features:     data.Features,
+		SourcePath:   remotePath,
+		Content:      content,
+		Engine:       engine.EngineDirect,
+		DeploymentID: deploymentID,
+		Deployment:   deployment,
+	}, nil
 }
 
 func validateStates(states []*StateDesc) error {
