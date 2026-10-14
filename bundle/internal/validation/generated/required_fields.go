@@ -224,6 +224,8 @@ var RequiredFields = map[string][]string{
 	"resources.model_provider_services.*.config.azure_openai.direct.api_key.secret_reference":                                    {"name"},
 	"resources.model_provider_services.*.config.azure_openai.direct.entra_service_principal.client_secret.secret_reference":      {"name"},
 	"resources.model_provider_services.*.config.azure_openai.direct.service_credential":                                          {"name"},
+	"resources.model_provider_services.*.config.bedrock_mantle.direct.aws_access_key.secret_access_key.secret_reference":         {"name"},
+	"resources.model_provider_services.*.config.bedrock_mantle.direct.service_credential":                                        {"name"},
 	"resources.model_provider_services.*.config.custom.direct.api_key.secret_reference":                                          {"name"},
 	"resources.model_provider_services.*.config.custom.direct.header_auth.api_key_value.secret_reference":                        {"name"},
 	"resources.model_provider_services.*.config.gemini_enterprise.direct.api_key.secret_reference":                               {"name"},

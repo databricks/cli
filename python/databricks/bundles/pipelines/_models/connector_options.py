@@ -180,9 +180,7 @@ class ConnectorOptions:
 
     smartsheet_options: VariableOrOptional[SmartsheetOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Smartsheet specific options for ingestion
+    [Public Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
@@ -307,9 +305,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     smartsheet_options: VariableOrOptional[SmartsheetOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Smartsheet specific options for ingestion
+    [Public Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]

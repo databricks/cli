@@ -30,6 +30,7 @@ Lakeflow
 
 Machine Learning
   experiments                            Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.
+  feature-engineering                    *Public Preview* Feature Engineering provides APIs for managing features and materialized features.
   model-registry                         Note: This API reference documents APIs for the Workspace Model Registry.
 
 Real-time Serving
