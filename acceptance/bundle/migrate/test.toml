@@ -18,3 +18,8 @@ EnvMatrix.DMS = [""]
 [[Repls]]
 Old = '(?m)^\d+(\s+FILE)'
 New = '[OBJECT_ID]${1}'
+
+# The ID column width depends on ID length, not migration behavior.
+[[Repls]]
+Old = '(?m)^ID +Type  Language  Path$'
+New = 'ID                   Type  Language  Path'

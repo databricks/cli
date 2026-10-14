@@ -47,3 +47,36 @@ func TestDeploymentIDReplacement(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkspaceListHeaderReplacement(t *testing.T) {
+	var config internal.TestConfig
+	_, err := toml.DecodeFile("bundle/migrate/test.toml", &config)
+	require.NoError(t, err)
+	repls := testdiff.ReplacementsContext{Repls: config.Repls}
+
+	for _, tc := range []struct {
+		name string
+		old  string
+		new  string
+	}{
+		{
+			name: "four-digit IDs",
+			old:  "ID    Type  Language  Path\n",
+			new:  "ID                   Type  Language  Path\n",
+		},
+		{
+			name: "five-digit IDs",
+			old:  "ID     Type  Language  Path\n",
+			new:  "ID                   Type  Language  Path\n",
+		},
+		{
+			name: "other table",
+			old:  "ID    Name\n",
+			new:  "ID    Name\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.new, repls.Replace(tc.old))
+		})
+	}
+}
