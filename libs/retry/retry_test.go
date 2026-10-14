@@ -38,6 +38,9 @@ func TestIsTransientRead(t *testing.T) {
 	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
 	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
 	assert.False(t, IsTransientRead(ctx, connRefused))
+	// A cancelled request is a *url.Error too, but not REFUSED_STREAM, so it fails fast rather than logging a retry.
+	cancelled := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: context.Canceled}
+	assert.False(t, IsTransientRead(ctx, cancelled))
 	// Not transient: retried by the SDK, client errors, and plain non-url errors.
 	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusServiceUnavailable}))
 	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusNotFound}))
