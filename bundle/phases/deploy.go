@@ -310,6 +310,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			return
 		}
 		logDeploymentVersion(ctx, b, "Deployment history enabled")
+		b.NeedsDMSStateUpload = true
 		statemgmt.PushResourcesState(ctx, b)
 		if logdiag.HasError(ctx) {
 			return

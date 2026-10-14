@@ -16,6 +16,11 @@ import (
 
 // PushResourcesState uploads the local state file to the remote location.
 func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
+	recorded := b.DeploymentBundle.StateDB.IsDeploymentMetadataService()
+	if recorded && !b.NeedsDMSStateUpload {
+		return
+	}
+
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -41,6 +46,10 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
 	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		logdiag.LogError(ctx, err)
+		return
+	}
+	if recorded {
+		b.NeedsDMSStateUpload = false
 	}
 }
 

@@ -197,6 +197,9 @@ type Bundle struct {
 	// MigratingToDMS registers the existing direct state before deploying with history enabled.
 	MigratingToDMS bool
 
+	// NeedsDMSStateUpload creates or repairs the remote deployment-history marker.
+	NeedsDMSStateUpload bool
+
 	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
 	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
 	// (bundle summary) so users can still inspect a bundle that pins the removed engine.

@@ -1,0 +1,38 @@
+
+=== 1. First recorded deploy: one remote marker write, version 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-marker-writes-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> resources_json_writes 1
+resources.json writes=1
+
+>>> [CLI] bundle summary -o json
+{"job_id":"[FOO_ID]","version":1}
+
+=== 2. Real job update: zero marker writes, same ID, version 2
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-marker-writes-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> resources_json_writes 0
+resources.json writes=0
+
+>>> [CLI] bundle summary -o json
+{"job_id":"[FOO_ID]","version":2}
+
+=== 3. No-op deploy: zero marker writes, still version 2
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-marker-writes-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> resources_json_writes 0
+resources.json writes=0
+
+>>> [CLI] bundle summary -o json
+{"job_id":"[FOO_ID]","version":2}

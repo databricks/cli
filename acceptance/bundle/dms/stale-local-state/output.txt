@@ -1,19 +1,19 @@
 
-=== Setup (LOG.setup): reconstruct full version 1 without a history marker, then deploy version 2
+=== Setup (LOG.setup): reconstruct version 1, then advance DMS to version 2 without rewriting its checkpoint
 >>> jq -c {serial, features} .databricks/resources.v1.json
 {"serial":1,"features":null}
 
->>> jq -c {serial, features} .databricks/resources.v2.json
-{"serial":2,"features":{"deployment_history":{}}}
+>>> jq -c {serial, features} .databricks/resources.checkpoint.json
+{"serial":1,"features":{"deployment_history":{}}}
 
-=== 1. Config false and env false: newer remote state replaces the local copy and reads DMS
+=== 1. Config false and env false: remote DMS checkpoint replaces the direct snapshot despite equal serials
 >>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
 Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
-{"job_id":"[FOO_ID]"}
+{"job_id":"[FOO_ID]","version":2}
 
->>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+>>> cmp .databricks/resources.checkpoint.json .databricks/bundle/default/resources.json
 
 >>> print_requests.py --dms //resources --get --oneline
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
@@ -23,9 +23,9 @@ Warn: Deployment history setting (false) does not match the existing state (true
 
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
 Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
-{"job_id":"[FOO_ID]"}
+{"job_id":"[FOO_ID]","version":2}
 
->>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+>>> cmp .databricks/resources.checkpoint.json .databricks/bundle/default/resources.json
 
 >>> print_requests.py --dms //resources --get --oneline
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}

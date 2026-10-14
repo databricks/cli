@@ -20,12 +20,16 @@ func TestResolveDeploymentHistory(t *testing.T) {
 	newState := &statemgmt.StateDesc{}
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
 	assert.True(t, newState.IsDMS())
+	assert.True(t, b.NeedsDMSStateUpload)
+	b.NeedsDMSStateUpload = false
 	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
+	assert.False(t, b.NeedsDMSStateUpload)
 	b.Config.Experimental.DeploymentHistory = new(false)
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
 		SourcePath: "resources.json",
 		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
 	}))
+	assert.False(t, b.NeedsDMSStateUpload)
 }
 
 func TestIsNewerVersion(t *testing.T) {

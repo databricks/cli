@@ -675,6 +675,7 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 	if stateDesc.SourcePath == "" {
 		if configured {
 			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
+			b.NeedsDMSStateUpload = true
 		}
 		return configured
 	}
