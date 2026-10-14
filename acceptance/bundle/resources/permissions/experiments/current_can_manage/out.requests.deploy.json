@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/experiments/[NUMID]",
+  "path": "/api/2.0/permissions/experiments/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

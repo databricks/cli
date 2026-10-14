@@ -44,7 +44,7 @@
             "format": "MULTI_TASK",
             "git_source": [],
             "health": [],
-            "id": "[NUMID]",
+            "id": "[TEST_JOB_ID]",
             "job_cluster": [],
             "library": [],
             "max_concurrent_runs": 1,
@@ -60,7 +60,7 @@
             "pipeline_task": [],
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "python_wheel_task": [],
@@ -147,7 +147,7 @@
             "timeouts": null,
             "trigger": [],
             "triggers": [],
-            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "url": "[DATABRICKS_URL]/#job/[TEST_JOB_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [
               {
@@ -222,7 +222,7 @@
             "photon": false,
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "restart_window": [],
@@ -235,7 +235,7 @@
             "state": "IDLE",
             "storage": "dbfs:/pipelines/[UUID]",
             "tags": {
-              "myjob_id": "[NUMID]",
+              "myjob_id": "[TEST_JOB_ID]",
               "myjob_name": "Test Migration Job",
               "myjob_timeout": "0",
               "myvolume_id": "mycat.myschema.myvol",
@@ -273,7 +273,7 @@
             "owner": "[USERNAME]",
             "provider_config": [
               {
-                "workspace_id": "[NUMID]"
+                "workspace_id": "[WORKSPACE_ID]"
               }
             ],
             "schema_name": "myschema",

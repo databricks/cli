@@ -6,7 +6,7 @@
 
 === Inject GET failure so the migration plan check fails: migration hard-errors (no terraform fallback)
 >>> DATABRICKS_BUNDLE_ENGINE=direct musterr [CLI] bundle deploy
-Warn: migration to direct: cannot plan resources.jobs.test_job: reading id="[NUMID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
+Warn: migration to direct: cannot plan resources.jobs.test_job: reading id="[TEST_JOB_ID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[TEST_JOB_ID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
@@ -24,7 +24,7 @@ direct_migrate_plan_error true
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Retry: plan check passes this time, migration succeeds
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -44,7 +44,7 @@ direct_migrated_via_env true
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+[OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup

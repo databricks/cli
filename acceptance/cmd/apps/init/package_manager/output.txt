@@ -458,8 +458,8 @@ null
 
 === Missing version falls back to the embedded template and its package manager
 >>> DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false [CLI] apps init --name fallback-app --skip-install
-Warn: Template version not found, falling back to embedded version 0.57.0
-✔ Cloning template (version 0.57.0)
+Warn: Template version not found, falling back to embedded version 0.84.0
+✔ Cloning template (version 0.84.0)
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -470,16 +470,16 @@ Warn: Template version not found, falling back to embedded version 0.57.0
   Next steps:
 
     cd fallback-app
-    npm ci && npm run dev
+    pnpm install --frozen-lockfile && pnpm run dev
 
 display_name: "fallback-app"
 description: "A Databricks App powered by AppKit"
 command:
-  - "npm"
+  - "pnpm"
   - "run"
   - "start"
-"npm run build:server && npm run build:client"
-null
+"pnpm run build:server && pnpm run build:client"
+"pnpm@11.0.8"
 
 === Version downgrade resolves the installed npm pin
 >>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-older-app --version 0.81.0

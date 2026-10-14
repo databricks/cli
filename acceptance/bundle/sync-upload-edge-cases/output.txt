@@ -1,0 +1,194 @@
+
+>>> [CLI] bundle sync --output text
+Action: PUT: .gitignore, archive.zip, dashboard.lvdash.json, databricks.yml, empty.txt, héllo.txt, ipyNb.ipynb, job.dbjob.json, large.bin, plain-script.py, pyNb.py, query.lwquery.ipynb, scalaNb.scala, space.geniespace.json, sqlNb.sql, with spaces.txt
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded archive.zip
+Uploaded dashboard.lvdash.json
+Uploaded databricks.yml
+Uploaded empty.txt
+Uploaded héllo.txt
+Uploaded ipyNb.ipynb
+Uploaded job.dbjob.json
+Uploaded large.bin
+Uploaded plain-script.py
+Uploaded pyNb.py
+Uploaded query.lwquery.ipynb
+Uploaded scalaNb.scala
+Uploaded space.geniespace.json
+Uploaded sqlNb.sql
+Uploaded with spaces.txt
+
+=== workspace state after sync — assert object_type and language for each upload
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list -o json /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files
+{
+  "name": ".gitignore",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "archive.zip",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "dashboard.lvdash.json",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "databricks.yml",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "empty.txt",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "héllo.txt",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "ipyNb",
+  "object_type": "NOTEBOOK",
+  "language": "PYTHON"
+}
+{
+  "name": "job.dbjob.json",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "large.bin",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "plain-script.py",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "pyNb",
+  "object_type": "NOTEBOOK",
+  "language": "PYTHON"
+}
+{
+  "name": "query.lwquery",
+  "object_type": "NOTEBOOK",
+  "language": "PYTHON"
+}
+{
+  "name": "scalaNb",
+  "object_type": "NOTEBOOK",
+  "language": "SCALA"
+}
+{
+  "name": "space.geniespace.json",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "sqlNb",
+  "object_type": "NOTEBOOK",
+  "language": "SQL"
+}
+{
+  "name": "with spaces.txt",
+  "object_type": "FILE",
+  "language": null
+}
+
+=== the .zip is uploaded with the legacy import-file endpoint
+>>> print_requests.py //workspace-files/import-file --del-field raw_body --keep
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/archive.zip",
+  "q": {
+    "overwrite": "true"
+  }
+}
+
+=== uploaded paths from each multipart POST /workspace/import (sorted)
+>>> print_workspace_imports
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/.gitignore
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/dashboard.lvdash.json
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/databricks.yml
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/empty.txt
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/héllo.txt
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/ipyNb
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/job.dbjob.json
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/large.bin
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/plain-script.py
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/pyNb
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/query.lwquery
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/scalaNb
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/space.geniespace.json
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/sqlNb
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/with spaces.txt
+
+=== format per upload: SOURCE/JUPYTER for notebooks, AUTO for dashboards, RAW for everything else
+>>> jq -rs 
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(select(.body.multipart_form.path | test("/files/"))) |
+  map({name: (.body.multipart_form.path | sub(".*/"; "")), format: .body.multipart_form.format}) |
+  sort_by(.name) | .[] | "\(.format) \(.name)"
+ [OUTPUT_DIR]/out.requests.txt
+RAW .gitignore
+AUTO dashboard.lvdash.json
+RAW databricks.yml
+RAW empty.txt
+RAW héllo.txt
+JUPYTER ipyNb
+RAW job.dbjob.json
+RAW large.bin
+RAW plain-script.py
+SOURCE pyNb
+JUPYTER query.lwquery
+SOURCE scalaNb
+RAW space.geniespace.json
+SOURCE sqlNb
+RAW with spaces.txt
+
+=== recorded content for the small text inputs
+>>> jq -rs 
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(select(.body.multipart_form.path | test("/(pyNb|sqlNb|scalaNb|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
+  map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
+  sort_by(.path) | .[]
+ [OUTPUT_DIR]/out.requests.txt
+{
+  "path": "dashboard.lvdash.json",
+  "content": "{\"datasets\":[],\"pages\":[]}\n"
+}
+{
+  "path": "empty.txt",
+  "content": ""
+}
+{
+  "path": "héllo.txt",
+  "content": "hello, naïve world\n"
+}
+{
+  "path": "plain-script.py",
+  "content": "print(\"plain script, no header\")\n"
+}
+{
+  "path": "pyNb",
+  "content": "# Databricks notebook source\nprint(\"hello\")\n"
+}
+{
+  "path": "scalaNb",
+  "content": "// Databricks notebook source\nprintln(\"hello\")\n"
+}
+{
+  "path": "sqlNb",
+  "content": "-- Databricks notebook source\nSELECT 1\n"
+}
+{
+  "path": "with spaces.txt",
+  "content": "hello, world\n"
+}

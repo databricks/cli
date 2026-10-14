@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 
 	"github.com/databricks/cli/bundle"
@@ -55,7 +54,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
-			Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+			Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 		})
 	}
 
@@ -77,7 +76,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
-			Locations: []dyn.Location{b.Config.GetLocation("presets.name_prefix")},
+			Locations: []diag.Location{b.Config.GetLocation("presets.name_prefix")},
 		})
 	}
 	return diags

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+
+	"github.com/databricks/cli/libs/diag"
 )
 
 type Value struct {
@@ -14,7 +16,7 @@ type Value struct {
 	// List of locations this value is defined at. The first location in the slice
 	// is the location returned by the `.Location()` method and is typically used
 	// for reporting errors and warnings associated with the value.
-	l []Location
+	l []diag.Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -37,7 +39,7 @@ func V(v any) Value {
 }
 
 // NewValue constructs a new Value with the given value and location.
-func NewValue(v any, loc []Location) Value {
+func NewValue(v any, loc []diag.Location) Value {
 	switch vin := v.(type) {
 	case map[string]Value:
 		v = newMappingFromGoMap(vin)
@@ -54,7 +56,7 @@ func NewValue(v any, loc []Location) Value {
 }
 
 // WithLocations returns a new Value with its location set to the given value.
-func (v Value) WithLocations(loc []Location) Value {
+func (v Value) WithLocations(loc []diag.Location) Value {
 	return Value{
 		v: v.v,
 		k: v.k,
@@ -81,13 +83,13 @@ func (v Value) Value() any {
 	return v.v
 }
 
-func (v Value) Locations() []Location {
+func (v Value) Locations() []diag.Location {
 	return v.l
 }
 
-func (v Value) Location() Location {
+func (v Value) Location() diag.Location {
 	if len(v.l) == 0 {
-		return Location{}
+		return diag.Location{}
 	}
 
 	return v.l[0]

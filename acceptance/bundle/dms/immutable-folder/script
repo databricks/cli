@@ -1,0 +1,30 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+deployment_workspace_info() {
+    deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-immutable-folder-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | python3 -c 'import sys,json; print(json.load(sys.stdin)["object_id"])')
+    add_repl "$deployment_id" DEPLOYMENT_ID
+    # MSYS_NO_PATHCONV: Git Bash on Windows would rewrite the leading-'/' API path.
+    trace MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/bundle/deployments/${deployment_id}" | jq '{workspace_info}'
+}
+
+deploy() {
+    mkdir -p .databricks
+    $CLI bundle plan -o json > .databricks/plan.json
+    trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+    rm .databricks/plan.json
+}
+
+title "Deploying with an immutable folder records the resolved snapshot path as the deployment's file_path"
+deploy
+deployment_workspace_info
+
+title "A new snapshot moves file_path, which is then updated on the deployment"
+echo 'print("changed")' > src/main.py
+deploy
+deployment_workspace_info
+
+title "An unchanged snapshot keeps the recorded file_path"
+deploy
+deployment_workspace_info
+
+rm -f "$OUT_REQUESTS"

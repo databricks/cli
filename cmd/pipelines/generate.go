@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -265,12 +266,12 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 		return nil, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
 	}
 
-	// maps are unordered, and saver is sorting keys by dyn.Location
+	// maps are unordered, and saver is sorting keys by diag.Location
 	// this is helper function to monotonically assign locations as keys are created
 	var line int
-	nextLocation := func() []dyn.Location {
+	nextLocation := func() []diag.Location {
 		line += 1
-		return []dyn.Location{{Line: line}}
+		return []diag.Location{{Line: line}}
 	}
 
 	pipelineMap := map[string]dyn.Value{

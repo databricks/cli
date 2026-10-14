@@ -3,6 +3,7 @@ package yamlsaver
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
@@ -85,19 +86,19 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 				dyn.V("b"),
 				dyn.V("c"),
 			},
-			[]dyn.Location{{Line: -3}},
+			[]diag.Location{{Line: -3}},
 		),
 		"name": dyn.NewValue(
 			"test",
-			[]dyn.Location{{Line: -2}},
+			[]diag.Location{{Line: -2}},
 		),
 		"map": dyn.NewValue(
 			map[string]dyn.Value{
 				"key1": dyn.V("value1"),
 				"key2": dyn.V("value2"),
 			},
-			[]dyn.Location{{Line: -1}},
+			[]diag.Location{{Line: -1}},
 		),
-		"long_name_field": dyn.NewValue("long name goes here", []dyn.Location{{Line: 1}}),
+		"long_name_field": dyn.NewValue("long name goes here", []diag.Location{{Line: 1}}),
 	}), result)
 }

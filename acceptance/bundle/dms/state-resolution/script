@@ -9,7 +9,7 @@ title "Setup (LOG.setup)\nCurrent: DMS enabled; remote reference snapshot saved.
 
 title "1. Stale cache\nExpect: remote beats serial 999/wrong lineage; cache matches remote.\n"
 {
-    trace update_file.py .databricks/bundle/default/resources.json '"state_version": 3,' '"state_version": 3, "serial": 999,'
+    trace update_file.py .databricks/bundle/default/resources.json '"serial": 1,' '"serial": 999,'
     trace update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
 } &> LOG.stale-cache
 trace jq '{serial, lineage}' .databricks/bundle/default/resources.json

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -321,7 +321,7 @@ func TestNormalizeWorkspaceID(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"sentinel stripped to empty", auth.WorkspaceIDNone, ""},
+		{"sentinel stripped to empty", profile.WorkspaceIDNone, ""},
 		{"empty passes through", "", ""},
 		{"normal value passes through", "900800700600", "900800700600"},
 	}

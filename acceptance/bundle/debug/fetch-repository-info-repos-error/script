@@ -11,6 +11,7 @@ fault.py "GET /api/2.0/repos/*" 403 0 1
 export MSYS_NO_PATHCONV=1
 
 folder=/Workspace/Users/$CURRENT_USER_NAME/test-folder-$UNIQUE_NAME
-$CLI repos create https://github.com/databricks/bundle-examples gitHub --path "$folder" > /dev/null
+repo_id=$($CLI repos create https://github.com/databricks/bundle-examples gitHub --path "$folder" | jq -r .id)
+add_repl "$repo_id" REPO_ID
 
 trace $CLI bundle debug fetch-repository-info --path "$folder"

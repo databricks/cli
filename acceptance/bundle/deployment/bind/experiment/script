@@ -4,6 +4,7 @@ export EXPERIMENT_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
 EXPERIMENT_ID=$($CLI experiments create-experiment "${EXPERIMENT_NAME}" | jq -r '.experiment_id')
+add_repl "$EXPERIMENT_ID" EXPERIMENT_ID
 
 cleanupRemoveExperiment() {
     title "Test cleanup:"

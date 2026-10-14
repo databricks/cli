@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -159,7 +159,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{{
+					Locations: []diag.Location{{
 						File:   "foo.yaml",
 						Line:   1,
 						Column: 2,
@@ -177,7 +177,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{
+					Locations: []diag.Location{
 						{
 							File:   "foo.yaml",
 							Line:   1,
@@ -203,7 +203,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.xxx")},
+					Paths:    structpath.NewPathSlice("resources", "jobs", "xxx"),
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
@@ -218,11 +218,11 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.xxx"),
-						dyn.MustPathFromString("resources.jobs.yyy"),
-						dyn.MustPathFromString("resources.jobs.zzz"),
-					},
+					Paths: structpath.MustParsePaths(
+						"resources.jobs.xxx",
+						"resources.jobs.yyy",
+						"resources.jobs.zzz",
+					),
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
@@ -239,11 +239,11 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Recommendation,
 					Summary:  "summary",
 					Detail:   "detail",
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.xxx"),
-						dyn.MustPathFromString("resources.jobs.yyy"),
-					},
-					Locations: []dyn.Location{
+					Paths: structpath.MustParsePaths(
+						"resources.jobs.xxx",
+						"resources.jobs.yyy",
+					),
+					Locations: []diag.Location{
 						{File: "foo.yaml", Line: 1, Column: 2},
 						{File: "bar.yaml", Line: 3, Column: 4},
 					},

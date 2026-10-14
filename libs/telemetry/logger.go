@@ -42,7 +42,24 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 }
 
 type logger struct {
-	logs []protos.FrontendLog
+	logs             []protos.FrontendLog
+	stateLineageHash string
+}
+
+// SetStateLineageHash records the hashed lineage of the bundle state the command read, so that
+// the command's execution context can report it. Like Log, it is a no-op without a logger.
+func SetStateLineageHash(ctx context.Context, hash string) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.stateLineageHash = hash
+	}
+}
+
+// StateLineageHash returns the value recorded by SetStateLineageHash, or "" if none was.
+func StateLineageHash(ctx context.Context) string {
+	if l, ok := loggerFromContext(ctx); ok {
+		return l.stateLineageHash
+	}
+	return ""
 }
 
 func (l *logger) log(event protos.DatabricksCliLog) {

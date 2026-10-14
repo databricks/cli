@@ -142,6 +142,16 @@ func TestRenderDryRun(t *testing.T) {
 	assert.Contains(t, out, "No files were modified")
 }
 
+func TestActivateHintWorkspaceMember(t *testing.T) {
+	// venvPath is in slash form; cmd.exe needs backslashes in a relative path.
+	hint := activateHint("../../.venv")
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, `..\..\.venv\Scripts\activate`, hint)
+	} else {
+		assert.Equal(t, "source ../../.venv/bin/activate", hint)
+	}
+}
+
 func TestActivateHint(t *testing.T) {
 	hint := activateHint(".venv")
 	if runtime.GOOS == "windows" {
@@ -153,4 +163,54 @@ func TestActivateHint(t *testing.T) {
 	} else {
 		assert.Equal(t, "source .venv/bin/activate", hint)
 	}
+}
+
+func TestRenderSuccessWorkspaceMember(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
+	res.VenvPath = "../../.venv"
+	res.UvWorkspaceRoot = "/repo"
+	res.UvWorkspaceBackupPath = "/repo/pyproject.toml.bak"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "uv workspace root")
+	assert.Contains(t, out, "/repo")
+	assert.Contains(t, out, "Root pyproject.toml")
+	assert.Contains(t, out, "constraints updated (backup: /repo/pyproject.toml.bak)")
+}
+
+func TestRenderSuccessStandaloneOmitsWorkspaceRows(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.VenvPath = ".venv"
+
+	out := renderText(t, res, nil)
+
+	assert.NotContains(t, out, "uv workspace root")
+	assert.NotContains(t, out, "Root pyproject.toml")
+}
+
+func TestRenderDryRunWorkspaceMember(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.DryRun = true
+	res.Plan = &libslocalenv.Plan{WouldWrite: "/repo/a/pyproject.toml", WouldWriteUvWorkspace: "/repo/pyproject.toml"}
+	out := renderText(t, res, nil)
+	assert.Contains(t, out, "Plan: /repo/pyproject.toml (uv workspace root)")
+}
+
+func TestRenderSuccessWorkspaceMemberUnchangedRoot(t *testing.T) {
+	// --no-constraints or an idempotent re-run: the root file was not changed.
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.VenvPath = "../../.venv"
+	res.UvWorkspaceRoot = "/repo"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "Root pyproject.toml")
+	assert.Contains(t, out, "unchanged")
+	assert.NotContains(t, out, "constraints updated")
 }

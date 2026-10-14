@@ -559,7 +559,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		RunId:                runId,
 		JobId:                request.JobId,
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
+		RunPageUrl:           fmt.Sprintf("%s/?o=%d#job/%d/run/%d", s.url, TestWorkspaceID, request.JobId, runId),
 		RunType:              jobs.RunTypeJobRun,
 		RunName:              runName,
 		Tasks:                tasks,
@@ -673,7 +673,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/run/%d", s.url, runId),
+		RunPageUrl: fmt.Sprintf("%s/?o=%d#job/run/%d", s.url, TestWorkspaceID, runId),
 		RunType:    jobs.RunTypeSubmitRun,
 		RunName:    runName,
 		Tasks:      tasks,

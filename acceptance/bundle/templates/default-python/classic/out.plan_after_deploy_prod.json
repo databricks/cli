@@ -36,7 +36,7 @@
             }
           }
         ],
-        "job_id": [NUMID],
+        "job_id": [SAMPLE_JOB_ID_2],
         "max_concurrent_runs": 1,
         "name": "sample_job",
         "parameters": [
@@ -199,7 +199,7 @@
       ],
       "action": "skip",
       "remote_state": {
-        "object_id": "/jobs/[NUMID]",
+        "object_id": "/jobs/[SAMPLE_JOB_ID_2]",
         "__embed__": [
           {
             "level": "IS_OWNER",

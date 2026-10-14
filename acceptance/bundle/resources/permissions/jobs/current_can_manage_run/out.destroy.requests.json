@@ -2,6 +2,6 @@
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [INTERIM_GOLD_LAYER_JOB_ID]
   }
 }

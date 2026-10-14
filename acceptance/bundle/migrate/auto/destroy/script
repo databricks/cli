@@ -7,6 +7,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
 
 title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
 # The migration is prepared in memory (in process.go) before the destroy phase asks for approval,

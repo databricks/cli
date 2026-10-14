@@ -25,12 +25,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === bundle open without --force-pull: no remote state read
 
 >>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 === bundle open --force-pull: remote state read
 
 >>> [CLI] bundle open foo --force-pull
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 {
   "method": "GET",
   "path": "/api/2.0/workspace/export",

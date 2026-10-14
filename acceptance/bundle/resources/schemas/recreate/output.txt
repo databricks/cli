@@ -23,7 +23,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "comment": "COMMENT1",
     "id": "main.myschema",
     "name": "myschema",
-    "url": "[DATABRICKS_URL]/explore/data/main/myschema?w=[NUMID]"
+    "url": "[DATABRICKS_URL]/explore/data/main/myschema?w=[WORKSPACE_ID]"
   }
 }
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func ValidateDashboardEtags() bundle.ReadOnlyMutator {
@@ -27,8 +27,8 @@ func (v *validateDashboardEtags) Apply(ctx context.Context, b *bundle.Bundle) di
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("dashboard %q has an etag set. Etags must not be set in bundle configuration", dashboard.DisplayName),
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.dashboards." + k)},
-					Locations: b.Config.GetLocations("resources.dashboards." + k),
+					Paths:     structpath.NewPathSlice("resources", "dashboards", k),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "dashboards", k)),
 				},
 			}
 		}

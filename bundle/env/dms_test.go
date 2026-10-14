@@ -37,13 +37,15 @@ func TestRecordsDeploymentHistory(t *testing.T) {
 		value      string
 		want       bool
 	}{
-		{"config true overrides env false", new(true), "false", true},
-		{"config false overrides env true", new(false), "true", false},
-		{"config true without env", new(true), "", true},
-		{"config false without env", new(false), "", false},
-		{"unset config uses env true", nil, "true", true},
-		{"unset config uses env false", nil, "false", false},
-		{"unset config and env", nil, "", false},
+		{"config true env true", new(true), "true", true},
+		{"config true env false", new(true), "false", true},
+		{"config true env unset", new(true), "", true},
+		{"config false env true", new(false), "true", false},
+		{"config false env false", new(false), "false", false},
+		{"config false env unset", new(false), "", false},
+		{"config unset env true", nil, "true", true},
+		{"config unset env false", nil, "false", false},
+		{"config unset env unset", nil, "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)

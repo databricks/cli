@@ -22,7 +22,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -39,7 +39,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/schemas.foo",
   "q": {
     "update_mask": "state,error_message,resource_id,status"
   },
@@ -53,7 +53,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
@@ -74,7 +74,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -100,7 +100,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]",
   "q": {
     "update_mask": "display_name,target_name,deployment_mode,workspace_info"
   },
@@ -141,7 +141,7 @@ A common practice is to use a username or principal name in this path, i.e. use
 
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -164,7 +164,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",

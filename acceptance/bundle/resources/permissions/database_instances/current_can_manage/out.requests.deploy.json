@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/database-instances/test-db-instance",
+  "path": "/api/2.0/permissions/database-instances/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

@@ -511,7 +511,7 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	// generated has dyn.Location as if it comes from generated YAML file
+	// generated has diag.Location as if it comes from generated YAML file
 	// earlier we loaded locations.json with source locations in Python code
 	generatedWithLocations, err := mergePythonLocations(generated, locations)
 	if err != nil {

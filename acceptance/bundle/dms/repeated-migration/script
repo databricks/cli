@@ -9,6 +9,7 @@ title "Setup (LOG.setup)\nCurrent: job=updated; DMS version=3; old backup=one.\n
     trace update_file.py databricks.yml 'name: one' 'name: updated'
     trace $CLI bundle deploy
     deployment_id=$(trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_path/resources.deployment.json" -o json | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+    add_repl "$deployment_id" DEPLOYMENT_ID
     trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json
     trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py > .databricks/resources.before-repeat.json
 } &> LOG.setup

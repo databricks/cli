@@ -27,16 +27,33 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
+type fakePM struct {
+	py, dbc, pyspark, dbcImportErr string
+	// root and rootErr are what WorkspaceRoot reports; an empty root means the
+	// project is not a workspace member.
+	root    string
+	rootErr error
+}
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
-func (fakePM) Provision(context.Context, string, string) error { return nil }
-func (fakePM) PostProvision(context.Context, string) error     { return nil }
-func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
+
+func (f fakePM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	if f.rootErr != nil {
+		return "", f.rootErr
+	}
+	if f.root != "" {
+		return f.root, nil
+	}
+	return projectDir, nil
+}
+
+func (fakePM) Provision(context.Context, string, string) error     { return nil }
+func (fakePM) PostProvision(context.Context, string, string) error { return nil }
+func (f fakePM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{PythonMinor: f.py, DBConnect: f.dbc, Pyspark: f.pyspark, DBConnectImportErr: f.dbcImportErr}, nil
 }
 
@@ -54,15 +71,19 @@ func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, err
 	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
+func (noProvisionPM) WorkspaceRoot(_ context.Context, projectDir string) (string, error) {
+	return projectDir, nil
+}
+
 func (noProvisionPM) Provision(context.Context, string, string) error {
 	return errors.New("Provision must not be called under --dry-run")
 }
 
-func (noProvisionPM) PostProvision(context.Context, string) error {
+func (noProvisionPM) PostProvision(context.Context, string, string) error {
 	return errors.New("PostProvision must not be called under --dry-run")
 }
 
-func (noProvisionPM) Validate(context.Context, string) (VenvInfo, error) {
+func (noProvisionPM) Validate(context.Context, string, string) (VenvInfo, error) {
 	return VenvInfo{}, errors.New("Validate must not be called under --dry-run")
 }
 
@@ -840,7 +861,7 @@ func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
 
 	p := &Pipeline{ProjectDir: dir, res: &Result{Phases: initialPhases()}}
-	err := p.applyMerge(t.Context(), []byte("merged"), false)
+	err := p.applyMerge(t.Context(), []byte("merged"), nil, false)
 	require.Error(t, err)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
@@ -1068,13 +1089,13 @@ func TestApplyMergeSameInstantBackupsGetUniqueNames(t *testing.T) {
 	}
 
 	// First modifying apply: backs up "current-1" under a timestamped name.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), nil, false))
 	first := p.res.BackupPath
 	require.NotEmpty(t, first)
 
 	// Second modifying apply at the SAME instant: backs up "merged-1" but must not
 	// collide with or overwrite the first timestamped backup.
-	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), false))
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), nil, false))
 	second := p.res.BackupPath
 	require.NotEmpty(t, second)
 
@@ -1419,4 +1440,90 @@ func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
 	assert.NotContains(t, s, "constraint-dependencies")
 	// databricks-connect (orthogonal) is still added.
 	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
+
+// newServerlessTestPipeline returns a pipeline for dir against a test artifact
+// server (serverless v4) that is closed when the test ends.
+func newServerlessTestPipeline(t *testing.T, dir string) *Pipeline {
+	srv := newTestServer(t)
+	t.Cleanup(srv.Close)
+	return &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{},
+		PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+}
+
+// venvRecordingPM records the folders the pipeline hands to PostProvision and
+// Validate.
+type venvRecordingPM struct {
+	fakePM
+	postProvisionDir, postProvisionVenv, validateDir, validateVenv string
+}
+
+func (f *venvRecordingPM) PostProvision(_ context.Context, projectDir, venv string) error {
+	f.postProvisionDir, f.postProvisionVenv = projectDir, venv
+	return nil
+}
+
+func (f *venvRecordingPM) Validate(ctx context.Context, projectDir, venv string) (VenvInfo, error) {
+	f.validateDir, f.validateVenv = projectDir, venv
+	return f.fakePM.Validate(ctx, projectDir, venv)
+}
+
+func TestPipelinePassesProjectVenvToPackageManager(t *testing.T) {
+	dir := writeProject(t)
+	pm := &venvRecordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := newServerlessTestPipeline(t, dir)
+	p.PM = pm
+
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	want := filepath.Join(dir, ".venv")
+	assert.Equal(t, dir, pm.postProvisionDir)
+	assert.Equal(t, want, pm.postProvisionVenv)
+	assert.Equal(t, dir, pm.validateDir)
+	assert.Equal(t, want, pm.validateVenv)
+	assert.Equal(t, ".venv", res.VenvPath)
+}
+
+func TestWritePyprojectNoOpWritesNothing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, pyprojectFile)
+	content := []byte("[project]\nname = \"x\"\n")
+	require.NoError(t, os.WriteFile(path, content, 0o644))
+
+	p := &Pipeline{ProjectDir: dir}
+	backup, mutated, perr := p.writePyproject(path, content, false)
+	require.Nil(t, perr)
+	assert.Empty(t, backup)
+	assert.False(t, mutated)
+	assert.NoFileExists(t, filepath.Join(dir, backupFile))
+}
+
+func TestWritePyprojectBacksUpInItsOwnFolder(t *testing.T) {
+	project := t.TempDir()
+	other := t.TempDir()
+	path := filepath.Join(other, pyprojectFile)
+	require.NoError(t, os.WriteFile(path, []byte("[project]\nname = \"x\"\n"), 0o644))
+
+	p := &Pipeline{ProjectDir: project}
+	backup, mutated, perr := p.writePyproject(path, []byte("[project]\nname = \"y\"\n"), false)
+	require.Nil(t, perr)
+	assert.True(t, mutated)
+	assert.Equal(t, filepath.Join(other, backupFile), backup)
+	assert.NoFileExists(t, filepath.Join(project, backupFile))
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"y\"\n", string(got))
+}
+
+func TestPyprojectDiffLabels(t *testing.T) {
+	d := pyprojectDiff("pyproject.toml", []byte("a\n"), []byte("b\n"), false)
+	assert.Contains(t, d, "--- pyproject.toml")
+	assert.Contains(t, d, "+++ pyproject.toml.new")
+	g := pyprojectDiff("pyproject.toml", nil, []byte("b\n"), true)
+	assert.Contains(t, g, "+++ pyproject.toml")
+	assert.NotContains(t, g, ".new")
 }

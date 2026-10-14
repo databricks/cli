@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -194,14 +195,14 @@ func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 	assert.Contains(t, diags, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  "unknown field: settings",
-		Locations: []dyn.Location{
+		Locations: []diag.Location{
 			{
 				File:   "(inline)",
 				Line:   3,
 				Column: 6,
 			},
 		},
-		Paths: []dyn.Path{{}},
+		Paths: dyn.ToStructPaths(dyn.EmptyPath),
 	})
 }
 
@@ -252,14 +253,14 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 	assert.Contains(t, diags, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  "expected int, found sequence",
-		Locations: []dyn.Location{
+		Locations: []diag.Location{
 			{
 				File:   "(inline)",
 				Line:   2,
 				Column: 15,
 			},
 		},
-		Paths: []dyn.Path{dyn.NewPath(dyn.Key("job_id"))},
+		Paths: structpath.NewPathSlice("job_id"),
 	})
 }
 
@@ -277,14 +278,14 @@ func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 	assert.Contains(t, diags, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  "cannot parse \"wrong_type\" as an integer",
-		Locations: []dyn.Location{
+		Locations: []diag.Location{
 			{
 				File:   "(inline)",
 				Line:   14,
 				Column: 40,
 			},
 		},
-		Paths: []dyn.Path{dyn.NewPath(dyn.Key("new_settings"), dyn.Key("timeout_seconds"))},
+		Paths: structpath.NewPathSlice("new_settings", "timeout_seconds"),
 	})
 }
 

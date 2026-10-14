@@ -3,6 +3,7 @@ package dyn_test
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,9 +34,9 @@ func TestValueAsMap(t *testing.T) {
 		map[string]dyn.Value{
 			"key": dyn.NewValue(
 				"value",
-				[]dyn.Location{{File: "file", Line: 1, Column: 2}}),
+				[]diag.Location{{File: "file", Line: 1, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		[]diag.Location{{File: "file", Line: 1, Column: 2}},
 	)
 
 	m, ok := mapValue.AsMap()

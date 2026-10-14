@@ -95,7 +95,7 @@
           }
         ],
         "format": "MULTI_TASK",
-        "job_id": [NUMID],
+        "job_id": [TEST_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "[default] My Wheel Job",
         "queue": {

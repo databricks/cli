@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 # Order of the replacements added by the scripts, so that they are applied before the ones
-# from the harness: a job id must become [MY_JOB] rather than [NUMID].
+# from the harness: a job id must become [MY_JOB] even if a broader harness pattern matches it.
 USER_ORDER = -100
 
 
