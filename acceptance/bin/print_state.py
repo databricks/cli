@@ -184,7 +184,7 @@ def print_recorded_state(filename, target):
     # printed state matches a non-recording run without every caller piping through nostamp.
     data["state"] = scrub(get_recorded_state(target))
 
-    # The service owns the version; the file's serial is only a cache.
+    # The file's serial is a copy of the DMS version to ensure outdated resource state is not read.
     # Rebuild in header order with the authoritative serial from the deployment.
     last_version_id = get_last_version_id(target)
     serial = int(last_version_id) if last_version_id else 0
