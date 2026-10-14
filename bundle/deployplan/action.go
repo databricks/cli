@@ -53,6 +53,11 @@ const (
 	Delete       ActionType = "delete"
 )
 
+// Bind adopts an existing workspace resource: it records the resource in state without changing
+// it, so the next deploy applies any config differences. Only the resource being bound gets it,
+// so it is never compared by severity.
+const Bind ActionType = "bind"
+
 var actionOrder = map[ActionType]int{
 	Undefined:    0,
 	Skip:         1,

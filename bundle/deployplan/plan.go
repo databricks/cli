@@ -69,7 +69,7 @@ func (p *Plan) CountActions() ActionCounts {
 			// A recreate counts as both a delete and a create.
 			c.Delete++
 			c.Create++
-		case Skip, Undefined:
+		case Skip, Undefined, Bind:
 			c.Unchanged++
 		}
 	}
