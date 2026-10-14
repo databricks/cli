@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/cobra"
 )
 
@@ -192,7 +192,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	// to stderr and degrades to a no-op in non-interactive terminals.
 	sp := cmdio.NewSpinner(signalCtx)
 	sp.Update("Connecting to " + resolved.DisplayName)
-	conn, err := connectWithRetry(signalCtx, pgxCfg, rc, pgx.ConnectConfig)
+	conn, err := connectWithRetry(signalCtx, pgxCfg, rc, pgconn.ConnectConfig)
 	sp.Close()
 	if err != nil {
 		return err

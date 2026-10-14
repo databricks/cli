@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,11 +101,11 @@ func TestConnectWithRetry_RespectsMaxAttempts(t *testing.T) {
 	ctx := testCtx(t)
 	calls := 0
 	dialErr := &pgconn.PgError{Code: "08006"}
-	dial := func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error) {
+	dial := func(ctx context.Context, cfg *pgconn.Config) (*pgconn.PgConn, error) {
 		calls++
 		return nil, dialErr
 	}
-	cfg := &pgx.ConnConfig{}
+	cfg := &pgconn.Config{}
 	rc := retryConfig{MaxAttempts: 3, InitialDelay: 0, MaxDelay: 0}
 
 	_, err := connectWithRetry(ctx, cfg, rc, dial)
@@ -118,11 +117,11 @@ func TestConnectWithRetry_StopsOnNonRetryable(t *testing.T) {
 	ctx := testCtx(t)
 	calls := 0
 	authErr := &pgconn.PgError{Code: "28P01"}
-	dial := func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error) {
+	dial := func(ctx context.Context, cfg *pgconn.Config) (*pgconn.PgConn, error) {
 		calls++
 		return nil, authErr
 	}
-	cfg := &pgx.ConnConfig{}
+	cfg := &pgconn.Config{}
 	rc := retryConfig{MaxAttempts: 3, InitialDelay: 0}
 
 	_, err := connectWithRetry(ctx, cfg, rc, dial)
