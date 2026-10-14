@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -118,6 +120,14 @@ func agentByName(name string) (agentSpec, bool) {
 }
 
 func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+	// Without a handler, Ctrl-C, SIGTERM, or SIGHUP (the SSH connection dropping) would
+	// terminate the process outright, skipping the failure event below and cmd/root's upload.
+	// Cancelling ctx instead aborts the in-flight step, so the launch fails as USER_ABORTED.
+	// Set up before the deferred event so that defer runs first (LIFO) and sees ctx cancelled
+	// only by a signal or the caller, never by stopSignals itself.
+	ctx, stopSignals := notifyAbort(ctx)
+	defer stopSignals()
+
 	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
 	// from here too. Each failing step sets outcome.errorCategory; the returned error is
 	// picked up via the named return.
@@ -169,7 +179,37 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	launched = true
 	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
 	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
+	// Nothing below observes ctx, so restore the default signal handling: a signal from here
+	// on terminates the process instead of cancelling a context no step checks any more.
+	stopSignals()
 	return execProcess(argv0, argv, environ)
+}
+
+// notifyAbort returns a context cancelled on the first SIGINT, SIGTERM, or SIGHUP. The returned
+// stop uninstalls the handler before returning; the caller must defer it.
+//
+// signal.Notify disables the default disposition for these signals for as long as the channel
+// stays registered, so a second Ctrl-C would merely be buffered and dropped, leaving no way to
+// abort a step that ignores cancellation. Calling signal.Stop before cancel restores the
+// default first, so once the cancellation is observable a second signal terminates the process.
+func notifyAbort(parent context.Context) (context.Context, func()) {
+	ctx, cancel := context.WithCancel(parent)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no signal) path
+		// rather than parking on sigCh for the life of the process.
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, func() {
+		signal.Stop(sigCh)
+		cancel()
+	}
 }
 
 // agentShimOutcome is the observed result of an agent-shim launch, collected by
