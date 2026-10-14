@@ -361,8 +361,7 @@ func mappingValue(node *yaml.Node, key string) *yaml.Node {
 }
 
 // expandMergeKeys returns a copy of the mapping node with "<<" merge keys replaced
-// by the pairs they merge in (keys set explicitly take precedence), so the pairs
-// can be rewritten individually.
+// by the pairs they merge in, so the pairs can be rewritten individually.
 func expandMergeKeys(node *yaml.Node) *yaml.Node {
 	var merged, explicit []*yaml.Node
 	for i := 0; i+1 < len(node.Content); i += 2 {
@@ -383,14 +382,27 @@ func expandMergeKeys(node *yaml.Node) *yaml.Node {
 	if merged == nil {
 		return node
 	}
+	// Like the YAML decoder, a later merged map takes precedence over an earlier one and
+	// keys set explicitly take precedence over all merged maps.
 	out := *node
-	out.Content = explicit
-	for i := 0; i+1 < len(merged); i += 2 {
-		if mappingValue(&out, merged[i].Value) == nil {
-			out.Content = append(out.Content, merged[i], merged[i+1])
+	out.Content = nil
+	for _, kvs := range [][]*yaml.Node{merged, explicit} {
+		for i := 0; i+1 < len(kvs); i += 2 {
+			setMappingValue(&out, kvs[i], kvs[i+1])
 		}
 	}
 	return &out
+}
+
+// setMappingValue replaces the value of key in the mapping node, or appends the pair.
+func setMappingValue(node, key, value *yaml.Node) {
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		if node.Content[i].Value == key.Value {
+			node.Content[i+1] = value
+			return
+		}
+	}
+	node.Content = append(node.Content, key, value)
 }
 
 func mappingKeys(node *yaml.Node) []string {
@@ -438,7 +450,7 @@ func rewriteShorthands(root *yaml.Node) {
 
 			case variable.Kind == yaml.MappingNode || variable.Kind == yaml.SequenceNode:
 				// If it's a full variable definition, leave it as is.
-				if variable.Kind == yaml.MappingNode && isFullVariableOverrideDef(mappingKeys(variable)) {
+				if variable.Kind == yaml.MappingNode && isFullVariableOverrideDef(mappingKeys(expandMergeKeys(variable))) {
 					continue
 				}
 

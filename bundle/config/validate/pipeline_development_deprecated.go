@@ -37,8 +37,7 @@ func (v *pipelineDevelopmentDeprecated) Apply(_ context.Context, b *bundle.Bundl
 	pipelines := b.Config.Resources.Pipelines
 	for _, key := range slices.Sorted(maps.Keys(pipelines)) {
 		pipeline := pipelines[key]
-		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-		if pipeline == nil || (!pipeline.Development && !slices.Contains(pipeline.ForceSendFields, "Development")) {
+		if pipeline == nil {
 			continue
 		}
 
