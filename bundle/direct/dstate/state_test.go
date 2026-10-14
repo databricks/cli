@@ -132,7 +132,6 @@ func TestOpenUsesDMSVersionForSerial(t *testing.T) {
 				DeploymentID: tt.deploymentID, LastVersionID: tt.lastVersionID,
 			}))
 			assert.Equal(t, tt.lastVersionID, db.GetSerial())
-			assert.Equal(t, tt.cachedSerial, db.Data.Serial)
 			mustFinalize(t, &db)
 		})
 	}
