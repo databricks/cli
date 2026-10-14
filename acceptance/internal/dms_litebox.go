@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -150,7 +151,10 @@ func routeLitebox(server *testserver.Server, handler testserver.HandlerFunc) {
 		case "/api/2.0/workspace/get-status":
 			local := h
 			h = func(req testserver.Request) any {
-				if req.Workspace.FileExists(req.URL.Query().Get("path")) {
+				name := req.URL.Query().Get("path")
+				// Ordinary files (including missing files) belong to testserver. Only
+				// DMS creates deployment nodes; mirrored directories need their remote IDs.
+				if path.Base(name) != "resources.deployment.json" && !req.Workspace.DirectoryExists(name) {
 					return local(req)
 				}
 				return handler(req)
@@ -161,7 +165,7 @@ func routeLitebox(server *testserver.Server, handler testserver.HandlerFunc) {
 				var input struct {
 					Path string `json:"path"`
 				}
-				if json.Unmarshal(req.Body, &input) == nil && req.Workspace.FileExists(input.Path) {
+				if json.Unmarshal(req.Body, &input) == nil && path.Base(input.Path) != "resources.deployment.json" && !req.Workspace.DirectoryExists(input.Path) {
 					return local(req)
 				}
 				response := handler(req).(testserver.Response)
