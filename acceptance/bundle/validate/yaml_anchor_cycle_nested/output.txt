@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle validate
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databricks.yml:8:11): cyclic reference to anchor "x"
+
+
+Found 1 error
+
+Exit code: 1

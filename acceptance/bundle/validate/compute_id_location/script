@@ -1,0 +1,5 @@
+title "default target without compute_id"
+trace $CLI bundle validate
+
+title "target with compute_id"
+trace $CLI bundle validate -t dev

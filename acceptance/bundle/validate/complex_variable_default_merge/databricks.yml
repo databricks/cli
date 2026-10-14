@@ -1,0 +1,6 @@
+bundle:
+  name: test-bundle
+
+include:
+  - a.yml
+  - b.yml
