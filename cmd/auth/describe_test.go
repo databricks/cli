@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -308,7 +309,7 @@ func TestResolveTokenStorageInfo(t *testing.T) {
 		},
 		{
 			name:     "databricks-cli with default secure",
-			authType: authTypeDatabricksCLI,
+			authType: u2m.AuthTypeDatabricksCLI,
 			want: &tokenStorageInfo{
 				Mode:     "secure",
 				Location: secureLocation,
@@ -317,7 +318,7 @@ func TestResolveTokenStorageInfo(t *testing.T) {
 		},
 		{
 			name:     "databricks-cli with plaintext from env",
-			authType: authTypeDatabricksCLI,
+			authType: u2m.AuthTypeDatabricksCLI,
 			envValue: "plaintext",
 			want: &tokenStorageInfo{
 				Mode:     "plaintext",
@@ -389,7 +390,7 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.test",
-			"auth_type": authTypeDatabricksCLI,
+			"auth_type": u2m.AuthTypeDatabricksCLI,
 		}))
 		return cfg, false, nil
 	})

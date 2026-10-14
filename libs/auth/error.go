@@ -14,7 +14,7 @@ import (
 
 // Auth type names returned by credential providers.
 const (
-	AuthTypeDatabricksCli   = "databricks-cli"
+	AuthTypeDatabricksCli   = u2m.AuthTypeDatabricksCLI
 	AuthTypePat             = "pat"
 	AuthTypeBasic           = "basic"
 	AuthTypeAzureCli        = "azure-cli"
