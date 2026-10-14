@@ -3,6 +3,7 @@ package schema_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/bundle/schema"
@@ -33,9 +34,22 @@ func walk(defs map[string]any, p ...string) jsonschema.Schema {
 	return walk(v.(map[string]any), p[1:]...)
 }
 
+func schemaBytes(t *testing.T) []byte {
+	t.Helper()
+	b, err := schema.Bytes()
+	require.NoError(t, err)
+	return b
+}
+
+func TestEmbeddedSchemaMatchesJSON(t *testing.T) {
+	expected, err := os.ReadFile("jsonschema.json")
+	require.NoError(t, err)
+	assert.Equal(t, string(expected), string(schemaBytes(t)), "jsonschema.json.gz is stale; run ./task generate-schema")
+}
+
 func TestJsonSchema(t *testing.T) {
 	s := jsonschema.Schema{}
-	err := json.Unmarshal(schema.Bytes, &s)
+	err := json.Unmarshal(schemaBytes(t), &s)
 	require.NoError(t, err)
 
 	// Assert job fields have their descriptions loaded.
@@ -72,7 +86,7 @@ func TestJsonSchema(t *testing.T) {
 // annotation merge concatenates the two sequences. Guard the whole schema.
 func TestJsonSchemaEnumsAreUnique(t *testing.T) {
 	var s any
-	err := json.Unmarshal(schema.Bytes, &s)
+	err := json.Unmarshal(schemaBytes(t), &s)
 	require.NoError(t, err)
 
 	assert.Empty(t, duplicateEnumPaths(s, ""))

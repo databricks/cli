@@ -968,6 +968,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/schema/jsonschema.json
+      - bundle/schema/jsonschema.json.gz
       - bundle/internal/schema/annotations.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"

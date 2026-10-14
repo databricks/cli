@@ -22,7 +22,11 @@ Common use cases:
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		_, err := cmd.OutOrStdout().Write(schema.Bytes)
+		b, err := schema.Bytes()
+		if err != nil {
+			return err
+		}
+		_, err = cmd.OutOrStdout().Write(b)
 		return err
 	}
 

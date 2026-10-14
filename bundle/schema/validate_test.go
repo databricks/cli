@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle/schema"
 	googleschema "github.com/google/jsonschema-go/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,7 +112,7 @@ func compileSchema(t *testing.T) *googleschema.Resolved {
 	t.Helper()
 
 	var raw map[string]any
-	err := json.Unmarshal(schema.Bytes, &raw)
+	err := json.Unmarshal(schemaBytes(t), &raw)
 	require.NoError(t, err)
 
 	transformed := transformSchema(raw)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -333,5 +335,24 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	err = os.WriteFile(outputFile, b, 0o644)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// The CLI embeds the compressed copy; see bundle/schema/embed.go.
+	if !docsMode {
+		var gz bytes.Buffer
+		w, err := gzip.NewWriterLevel(&gz, gzip.BestCompression)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err := w.Write(b); err != nil {
+			log.Fatal(err)
+		}
+		if err := w.Close(); err != nil {
+			log.Fatal(err)
+		}
+		err = os.WriteFile(outputFile+".gz", gz.Bytes(), 0o644)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
