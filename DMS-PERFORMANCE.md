@@ -206,6 +206,11 @@ This does not claim transport coverage for the removed gateway-to-fake loopback 
 
 ## Final comparison
 
+Code revisions: [CLI](https://github.com/databricks/cli/commit/b43a267c0)
+and [Universe](https://github.com/databricks-eng/universe-dev/commit/bb0e31172dfdd).
+Later CLI commits only update this report. The Universe branch also includes the
+earlier [LITE log-tail busy-loop fix](https://github.com/databricks-eng/universe/pull/2802564).
+
 Run order: restart, 20 real-DMS warm-up repetitions, real-DMS A, testserver,
 real-DMS B. No profiling or concurrent builds/tests during these three measured
 batches. The DMS fixture stayed up but idle during the testserver batch; the
@@ -278,4 +283,11 @@ bazel test \
 ```
 
 The XML reports contain 14 passing DMS API cases and 33 passing workspace cases,
-with zero errors/failures. Both BUILD lint tests passed.
+with zero errors/failures. The DMS API suite was also rerun without either
+`--test_env` flag: all 14 cases pass in normal (non-fast) mode as well.
+Both BUILD lint tests passed.
+
+`runtests --quiet --test_type lint --force_gazelle` also passed all seven executed
+lint targets (five Scala-format targets and two BUILD lint targets); Gazelle found
+no BUILD changes. Its metadata lists 38 selected, seven passing, and 31 not run
+in this lint-only invocation, with zero failed tests.
