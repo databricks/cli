@@ -94,7 +94,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", utils.Deref(at.MlflowArtifactLocation))
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", utils.Deref(at.Deployments[0].CommandPath))
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
+	assert.Equal(t, &jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu8xH100, AcceleratorCount: new(16)}, at.Deployments[0].Compute)
 }
 
 func TestBuildSubmitPayloadB300(t *testing.T) {
@@ -112,7 +112,7 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	require.Len(t, p.Tasks, 1)
 	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
 	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType("GPU_8xB300"), AcceleratorCount: new(8)}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+	assert.Equal(t, &jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType("GPU_8xB300"), AcceleratorCount: new(8)}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
 func TestSubmitRun(t *testing.T) {
@@ -379,8 +379,8 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	d := at.Deployments[0]
-	assert.True(t, strings.HasSuffix(utils.Deref(d.CommandPath), "/"+commandScriptName), d.CommandPath)
-	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
+	assert.True(t, strings.HasSuffix(utils.Deref(d.CommandPath), "/"+commandScriptName), utils.Deref(d.CommandPath))
+	assert.Contains(t, utils.Deref(d.CommandPath), "/.air/cli_launch/")
 	assert.Equal(t, jobs.ComputeSpec_AcceleratorType_Gpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, utils.Deref(d.Compute.AcceleratorCount))
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
@@ -665,7 +665,7 @@ code_source:
 	at := got.Tasks[0].AiRuntimeTask
 	// The tarball is uploaded to the artifact .internal dir and code_source_path
 	// rewritten to it.
-	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
+	assert.Contains(t, utils.Deref(at.CodeSourcePath), "/.air/repo_snapshots/.internal/")
 	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 	assert.Equal(t, int32(1), meCalls.Load(), "code-source submission should resolve the workspace base once")
 }
@@ -708,7 +708,7 @@ code_source:
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
+	assert.Contains(t, utils.Deref(at.CodeSourcePath), "/.air/repo_snapshots/.internal/")
 	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 }
 
@@ -953,7 +953,7 @@ code_source:
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
-	assert.Contains(t, at.CodeSourcePath, "/Volumes/main/default/code/.internal/")
+	assert.Contains(t, utils.Deref(at.CodeSourcePath), "/Volumes/main/default/code/.internal/")
 	assert.True(t, strings.HasSuffix(utils.Deref(at.CodeSourcePath), ".tar.gz"), at.CodeSourcePath)
 }
 

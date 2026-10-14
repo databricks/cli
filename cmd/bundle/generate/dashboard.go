@@ -90,7 +90,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 		}
 
 		// Emit a more descriptive error message for legacy dashboards.
-		if apierrs.Is(err, apierrs.ErrBadRequest) && strings.HasPrefix(err.Error(), "dbsqlDashboard ") {
+		if apierrs.Is(err, apierrs.ErrBadRequest) && strings.HasPrefix(apierrs.Message(err), "dbsqlDashboard ") {
 			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),

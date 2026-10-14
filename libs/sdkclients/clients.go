@@ -44,6 +44,10 @@ func New(ctx context.Context, cfg *config.Config) (*Clients, error) {
 	if err := cfg.EnsureResolved(); err != nil {
 		return nil, err
 	}
+	// Resolve the credentials provider up front, as the previous SDK's client
+	// constructor did as a side effect: callers inspect cfg.AuthType right
+	// after constructing clients. Errors surface on the first request.
+	_ = cfg.GetTokenSource()
 	s, err := newServices(ctx, Options(cfg)...)
 	if err != nil {
 		return nil, err

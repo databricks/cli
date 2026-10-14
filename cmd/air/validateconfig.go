@@ -148,7 +148,8 @@ func validateConfigOnce(ctx context.Context, w *sdkclients.Clients, cfg *runConf
 		if resp.StatusCode >= 400 {
 			// Keep the status so classifyValidationFailure can still tell a
 			// caller error from an unavailable service.
-			return fmt.Errorf("%w: %w", apierr.FromHTTPError(resp.StatusCode, resp.Header, nil), err)
+			body, _ := json.Marshal(map[string]string{"message": err.Error()})
+			return apierr.FromHTTPError(resp.StatusCode, resp.Header, body)
 		}
 		return asValidationUnavailable(err, true)
 	}

@@ -19,6 +19,7 @@ func newTestWorkspaceClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
 	w, err := sdkclients.New(t.Context(), &config.Config{Host: host, Token: "token"})
 	require.NoError(t, err)
+	authenticate(t, w)
 	return w
 }
 
@@ -149,4 +150,13 @@ func TestFetchMLflowRunName(t *testing.T) {
 		srv := mlflowServer(`{}`)
 		assert.Empty(t, fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
 	})
+}
+
+// authenticate resolves the clients' credentials, as the CLI's root command
+// does before running a command.
+func authenticate(t *testing.T, w *sdkclients.Clients) {
+	t.Helper()
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, w.Config.Host, nil)
+	require.NoError(t, err)
+	require.NoError(t, w.Config.Authenticate(req))
 }

@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -67,6 +66,7 @@ func validationTestWorkspaceClientWithTransport(t *testing.T, transport validati
 		HTTPTransport: transport,
 	})
 	require.NoError(t, err)
+	authenticate(t, w)
 	return w
 }
 
@@ -254,12 +254,11 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 
 func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 	tests := []struct {
-		status  int
-		wantErr error
+		status int
 	}{
-		{http.StatusBadRequest, apierrs.ErrBadRequest},
-		{http.StatusUnauthorized, apierrs.ErrUnauthenticated},
-		{http.StatusForbidden, apierrs.ErrPermissionDenied},
+		{http.StatusBadRequest},
+		{http.StatusUnauthorized},
+		{http.StatusForbidden},
 	}
 
 	for _, tt := range tests {
@@ -288,7 +287,9 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 			require.NoError(t, err)
 
 			err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-			require.ErrorIs(t, err, tt.wantErr)
+			// The token endpoint's rejection blocks submission as an auth failure.
+			_, isAuthErr := errors.AsType[*validationAuthenticationError](err)
+			require.True(t, isAuthErr, "unexpected error: %v", err)
 		})
 	}
 }

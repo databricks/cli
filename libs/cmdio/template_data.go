@@ -1,16 +1,25 @@
 package cmdio
 
-import "reflect"
+import (
+	"reflect"
+	"sync"
+)
 
-// templateData returns a copy of v in which nil pointers to scalars point to
-// zero values. API types represent optional fields as pointers, and
-// text/template prints a nil one as "<nil>"; templates were written for value
-// fields that print as "" or 0, so this keeps table output unchanged.
+// templateData returns a view of v for text/template in which pointers to
+// scalars are replaced by the values they point to (zero values when nil).
+//
+// API types represent optional fields as pointers. Templates were written for
+// value fields: text/template prints a nil pointer as "<nil>", treats a
+// pointer to false or "" as true in {{if}}, and template functions taking an
+// int64 reject an *int64. Structs (and slices and maps of them) containing
+// such pointers are copied into equivalent struct types with value fields;
+// types without them are passed through unchanged and keep their methods.
 func templateData(v any) any {
 	if v == nil {
 		return nil
 	}
-	return fillNilScalars(reflect.ValueOf(v)).Interface()
+	rv := reflect.ValueOf(v)
+	return viewValue(rv, viewType(rv.Type())).Interface()
 }
 
 func isScalar(k reflect.Kind) bool {
@@ -24,53 +33,175 @@ func isScalar(k reflect.Kind) bool {
 	return false
 }
 
-func fillNilScalars(v reflect.Value) reflect.Value {
-	switch v.Kind() {
+// structView describes the view of a struct type: the view type and, for
+// each of its fields, the index path of the source field. Embedded structs
+// are flattened into their parent so promoted fields stay accessible by name.
+type structView struct {
+	typ     reflect.Type
+	indexes [][]int
+}
+
+var (
+	viewTypes   sync.Map // reflect.Type -> reflect.Type
+	structViews sync.Map // reflect.Type -> *structView
+)
+
+func viewType(t reflect.Type) reflect.Type {
+	if cached, ok := viewTypes.Load(t); ok {
+		return cached.(reflect.Type)
+	}
+	// Store the type itself first so recursive types terminate.
+	viewTypes.Store(t, t)
+	vt := computeViewType(t)
+	viewTypes.Store(t, vt)
+	return vt
+}
+
+func computeViewType(t reflect.Type) reflect.Type {
+	switch t.Kind() {
 	case reflect.Pointer:
-		if v.IsNil() {
-			if isScalar(v.Type().Elem().Kind()) {
-				return reflect.New(v.Type().Elem())
-			}
-			return v
+		elem := t.Elem()
+		if isScalar(elem.Kind()) {
+			return elem
 		}
-		if v.Elem().Kind() != reflect.Struct {
-			return v
+		if ev := viewType(elem); ev != elem {
+			return reflect.PointerTo(ev)
 		}
-		out := reflect.New(v.Type().Elem())
-		out.Elem().Set(fillNilScalars(v.Elem()))
-		return out
 	case reflect.Struct:
-		out := reflect.New(v.Type()).Elem()
-		out.Set(v)
-		for i := range v.NumField() {
-			if !v.Type().Field(i).IsExported() {
+		if sv := buildStructView(t); sv != nil {
+			return sv.typ
+		}
+	case reflect.Slice:
+		if ev := viewType(t.Elem()); ev != t.Elem() {
+			return reflect.SliceOf(ev)
+		}
+	case reflect.Map:
+		if ev := viewType(t.Elem()); ev != t.Elem() {
+			return reflect.MapOf(t.Key(), ev)
+		}
+	}
+	return t
+}
+
+// buildStructView returns the view of struct type t, or nil if no field of t
+// (including promoted ones) needs a different type.
+func buildStructView(t reflect.Type) *structView {
+	var fields []reflect.StructField
+	var indexes [][]int
+	seen := map[string]bool{}
+	changed := false
+
+	var collect func(t reflect.Type, prefix []int)
+	collect = func(t reflect.Type, prefix []int) {
+		var embedded []reflect.StructField
+		for i := range t.NumField() {
+			f := t.Field(i)
+			index := append(append([]int{}, prefix...), i)
+			if f.Anonymous {
+				ft := f.Type
+				if ft.Kind() == reflect.Pointer {
+					ft = ft.Elem()
+				}
+				if ft.Kind() == reflect.Struct {
+					f.Index = index
+					embedded = append(embedded, f)
+					continue
+				}
+			}
+			if !f.IsExported() || seen[f.Name] {
 				continue
 			}
-			out.Field(i).Set(fillNilScalars(v.Field(i)))
+			seen[f.Name] = true
+			ft := viewType(f.Type)
+			if ft != f.Type {
+				changed = true
+			}
+			fields = append(fields, reflect.StructField{Name: f.Name, Type: ft, Tag: f.Tag})
+			indexes = append(indexes, index)
+		}
+		// Fields of embedded structs are promoted after the parent's own fields,
+		// which take precedence, as in Go.
+		for _, f := range embedded {
+			ft := f.Type
+			if ft.Kind() == reflect.Pointer {
+				ft = ft.Elem()
+			}
+			collect(ft, f.Index)
+		}
+	}
+	collect(t, nil)
+
+	if !changed {
+		return nil
+	}
+	sv := &structView{typ: reflect.StructOf(fields), indexes: indexes}
+	structViews.Store(t, sv)
+	return sv
+}
+
+func viewValue(v reflect.Value, vt reflect.Type) reflect.Value {
+	if v.Type() == vt {
+		return v
+	}
+	switch v.Kind() {
+	case reflect.Pointer:
+		if vt.Kind() != reflect.Pointer {
+			// Pointer to scalar: dereference, or zero value when nil.
+			if v.IsNil() {
+				return reflect.Zero(vt)
+			}
+			return v.Elem()
+		}
+		if v.IsNil() {
+			return reflect.Zero(vt)
+		}
+		out := reflect.New(vt.Elem())
+		out.Elem().Set(viewValue(v.Elem(), vt.Elem()))
+		return out
+	case reflect.Struct:
+		cached, _ := structViews.Load(v.Type())
+		sv := cached.(*structView)
+		out := reflect.New(vt).Elem()
+		for i, index := range sv.indexes {
+			if src, ok := fieldByIndex(v, index); ok {
+				out.Field(i).Set(viewValue(src, vt.Field(i).Type))
+			}
 		}
 		return out
 	case reflect.Slice:
 		if v.IsNil() {
-			return v
+			return reflect.Zero(vt)
 		}
-		switch v.Type().Elem().Kind() {
-		case reflect.Struct, reflect.Pointer, reflect.Interface:
-		default:
-			return v
-		}
-		out := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
+		out := reflect.MakeSlice(vt, v.Len(), v.Len())
 		for i := range v.Len() {
-			out.Index(i).Set(fillNilScalars(v.Index(i)))
+			out.Index(i).Set(viewValue(v.Index(i), vt.Elem()))
 		}
 		return out
-	case reflect.Interface:
+	case reflect.Map:
 		if v.IsNil() {
-			return v
+			return reflect.Zero(vt)
 		}
-		filled := fillNilScalars(v.Elem())
-		out := reflect.New(v.Type()).Elem()
-		out.Set(filled)
+		out := reflect.MakeMapWithSize(vt, v.Len())
+		iter := v.MapRange()
+		for iter.Next() {
+			out.SetMapIndex(iter.Key(), viewValue(iter.Value(), vt.Elem()))
+		}
 		return out
 	}
 	return v
+}
+
+// fieldByIndex is reflect.Value.FieldByIndex that reports false instead of
+// panicking when it would step through a nil embedded pointer.
+func fieldByIndex(v reflect.Value, index []int) (reflect.Value, bool) {
+	for i, x := range index {
+		if i > 0 && v.Kind() == reflect.Pointer {
+			if v.IsNil() {
+				return reflect.Value{}, false
+			}
+			v = v.Elem()
+		}
+		v = v.Field(x)
+	}
+	return v, true
 }

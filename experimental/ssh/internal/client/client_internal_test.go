@@ -231,7 +231,15 @@ func TestRunFailureIfTerminated(t *testing.T) {
 	})
 
 	t.Run("still running", func(t *testing.T) {
-		m := newFakeClients(t, map[string]any{})
+		m := newFakeClients(t, map[string]any{
+			"GET /api/2.2/jobs/runs/get?run_id=1": &jobs.GetRunResponse{
+				RunId: new(int64(1)),
+				Tasks: []jobs.RunTask{{
+					TaskKey: new(sshServerTaskKey),
+					Status:  &jobs.RunStatus{State: jobs.RunLifecycleStateV2_State_Running},
+				}},
+			},
+		})
 
 		_, terminated := runFailureIfTerminated(ctx, m, 1)
 		assert.False(t, terminated)

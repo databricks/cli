@@ -34,6 +34,8 @@ func TestGrantJobPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, `{
+		"request_object_type": "jobs",
+		"request_object_id": "123",
 		"access_control_list": [
 			{"user_name": "alice@example.com", "permission_level": "CAN_MANAGE"},
 			{"group_name": "data-team", "permission_level": "CAN_VIEW"},
@@ -89,6 +91,8 @@ func TestGrantExperimentPermissions(t *testing.T) {
 
 	// Job levels are mapped onto their nearest experiment equivalents.
 	assert.JSONEq(t, `{
+		"request_object_type": "experiments",
+		"request_object_id": "42",
 		"access_control_list": [
 			{"user_name": "alice@example.com", "permission_level": "CAN_MANAGE"},
 			{"group_name": "data-team", "permission_level": "CAN_READ"},
@@ -152,6 +156,6 @@ func TestApplySubmittedPermissionsAiRuntimeTask(t *testing.T) {
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
 	})
 
-	assert.JSONEq(t, `{"access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, jobBody)
-	assert.JSONEq(t, `{"access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, experimentBody)
+	assert.JSONEq(t, `{"request_object_type":"jobs","request_object_id":"123","access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, jobBody)
+	assert.JSONEq(t, `{"request_object_type":"experiments","request_object_id":"42","access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, experimentBody)
 }
