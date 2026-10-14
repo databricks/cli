@@ -152,7 +152,11 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	if logdiag.HasError(ctx) {
 		return nil
 	}
-	if historyEnabled {
+	// DMS owns recorded resource state; a remote marker's serial is only a checkpoint.
+	remoteRecorded := slices.ContainsFunc(states, func(state *StateDesc) bool {
+		return !state.IsLocal && state.Engine.IsDirect() && state.IsDMS()
+	})
+	if historyEnabled || remoteRecorded {
 		states = slices.DeleteFunc(states, func(state *StateDesc) bool {
 			if !state.IsLocal {
 				return false
