@@ -11,7 +11,7 @@ Expect: remote beats serial 999/wrong lineage; cache matches remote.
   "lineage": "stale-[UUID]"
 }
 
->>> [CLI] bundle debug states
+>>> [CLI] bundle debug states --force-pull
 resources.json: remote direct state serial=0 lineage="[UUID]"
 
 >>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json

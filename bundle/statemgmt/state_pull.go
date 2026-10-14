@@ -129,7 +129,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
-	// Deployment history requires remote state even when local caches exist.
+	// We read all 4 possible states: terraform/direct X local/remote and pick the most recent one.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
