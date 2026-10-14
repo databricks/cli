@@ -1,10 +1,18 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state"
 
 title "Config disables recording even when the environment enables it"
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy 2>&1 | contains.py '!Current Deployment Version:' '!Enabling deployment history'
 replace_ids.py
 trace cp .databricks/bundle/default/resources.json .databricks/resources.before-dms.json
 trace jq '{state_version, serial, features}' .databricks/bundle/default/resources.json
+
+title "Direct deployment still writes resources.json once"
+trace print_requests.py --method POST //workspace/import //workspace-files/import-file |
+    MSYS_NO_PATHCONV=1 jq -s --arg path "$state_path/resources.json" '
+        map(select((.path == "/api/2.0/workspace/import" and (.body.multipart_form.path // .body.path) == $path)
+            or .path == ("/api/2.0/workspace-files/import-file" + $path))) | length |
+        if . == 1 then . else error("expected one direct state write") end'
 
 title "Config enables recording despite the disabled environment: register version 2, then deploy version 3"
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
@@ -13,6 +21,13 @@ update_file.py databricks.yml 'name: one' 'name: updated'
 trace $CLI bundle deploy 2>&1 | contains.py 'Enabling deployment history...' 'Deployment history enabled: ' 'Current Deployment Version: ' '?version=2' '?version=3'
 trace find.py 'resources[.]json[.]wal' --expect 0
 trace jq '{features, state}' .databricks/bundle/default/resources.json
+
+title "Migration writes the marker once; the standalone deployment does not rewrite it"
+trace print_requests.py --method POST //workspace/import //workspace-files/import-file |
+    MSYS_NO_PATHCONV=1 jq -s --arg path "$state_path/resources.json" '
+        map(select((.path == "/api/2.0/workspace/import" and (.body.multipart_form.path // .body.path) == $path)
+            or .path == ("/api/2.0/workspace-files/import-file" + $path))) | length |
+        if . == 1 then . else error("expected one migration marker write") end'
 
 title "Inspect the remote backup's original pre-migration resource IDs, state, and dependencies"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.json.backup" --format RAW --file .databricks/resources.backup.first.json

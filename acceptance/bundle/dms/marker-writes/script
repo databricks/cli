@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-marker-writes-${UNIQUE_NAME}/default/state"
+
+# Import's target lives in its body; match the exact state path, not metadata or backup files.
+resources_json_writes() {
+    print_requests.py --method POST //workspace/import //workspace-files/import-file |
+        MSYS_NO_PATHCONV=1 jq -sr --arg path "$state_path/resources.json" --argjson expected "$1" '
+            map(select(
+                (.path == "/api/2.0/workspace/import" and (.body.multipart_form.path // .body.path) == $path)
+                or .path == ("/api/2.0/workspace-files/import-file" + $path)
+            )) | length | if . == $expected then "resources.json writes=\(.)"
+                else error("unexpected resources.json write count: \(.)") end'
+}
+
+title "1. First recorded deploy: one remote marker write, version 1"
+trace $CLI bundle deploy
+replace_ids.py
+trace resources_json_writes 1
+trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
+
+title "2. Real job update: zero marker writes, same ID, version 2"
+update_file.py databricks.yml 'name: foo' 'name: updated'
+trace $CLI bundle deploy 2>&1 | contains.py 'Updated jobs.foo' '!Created '
+trace resources_json_writes 0
+trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
+
+title "3. No-op deploy: zero marker writes, still version 2"
+trace $CLI bundle deploy 2>&1 | contains.py 'Resources: 0 created, 0 changed, 0 deleted, 1 unchanged'
+trace resources_json_writes 0
+trace $CLI bundle summary -o json | jq -c '{job_id: .resources.jobs.foo.id, version: .bundle.deployment.latest_version_id}'
+
+$CLI bundle destroy --auto-approve &> LOG.cleanup
+rm -f "$OUT_REQUESTS"

@@ -16,6 +16,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "features": null
 }
 
+=== Direct deployment still writes resources.json once
+>>> print_requests.py --method POST //workspace/import //workspace-files/import-file
+1
+
 === Config enables recording despite the disabled environment: register version 2, then deploy version 3
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
@@ -35,6 +39,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   },
   "state": {}
 }
+
+=== Migration writes the marker once; the standalone deployment does not rewrite it
+>>> print_requests.py --method POST //workspace/import //workspace-files/import-file
+1
 
 === Inspect the remote backup's original pre-migration resource IDs, state, and dependencies
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json.backup --format RAW --file .databricks/resources.backup.first.json
