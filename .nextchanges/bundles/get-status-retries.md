@@ -1,1 +1,0 @@
-* `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry the workspace path check (`workspace/get-status`) when it fails with a transient server error (5xx or 408) or an HTTP/2 `REFUSED_STREAM`, instead of failing. ([#7044](https://github.com/databricks/cli/pull/7044))

@@ -1,1 +1,0 @@
-* `databricks bundle deploy`, `databricks bundle sync` and `databricks sync` now retry file, library, state and metadata uploads that fail with a transient server error (5xx or 408), instead of failing. ([#7014](https://github.com/databricks/cli/pull/7014))

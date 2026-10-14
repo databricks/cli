@@ -1,1 +1,0 @@
-* Fix `bundle deployment bind` silently binding over a deployment state it could not read, which could take over a resource that was already managed by the bundle. ([#6331](https://github.com/databricks/cli/pull/6331))
