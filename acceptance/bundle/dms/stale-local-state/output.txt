@@ -1,0 +1,31 @@
+
+=== Setup (LOG.setup): reconstruct full version 1 without a history marker, then deploy version 2
+>>> jq -c {serial, features} .databricks/resources.v1.json
+{"serial":1,"features":null}
+
+>>> jq -c {serial, features} .databricks/resources.v2.json
+{"serial":2,"features":{"deployment_history":{}}}
+
+=== 1. Config false and env false: newer remote state replaces the local copy and reads DMS
+>>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
+Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
+{"job_id":"[FOO_ID]"}
+
+>>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+
+>>> print_requests.py --dms //resources --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
+
+=== 2. Config removed and env false: restore the same snapshot, then read remote DMS state
+>>> cp .databricks/resources.v1.json .databricks/bundle/default/resources.json
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle summary --force-pull -o json
+Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
+{"job_id":"[FOO_ID]"}
+
+>>> cmp .databricks/resources.v2.json .databricks/bundle/default/resources.json
+
+>>> print_requests.py --dms //resources --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
