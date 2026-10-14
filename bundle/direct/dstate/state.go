@@ -111,8 +111,9 @@ type DeploymentState struct {
 	// the deployment, which Open cannot know about.
 	DeploymentID string
 
-	// VersionID is the service-owned counter for recorded deployments. It is cached in
-	// resources.json as Serial, but Open always takes the authoritative value from the service.
+	// VersionID is the service-owned counter for recorded deployments. It is also stored in
+	// resources.json as Serial so outdated local copies of state do not take precedence.
+	// Open always takes the authoritative value from the service.
 	VersionID int
 }
 
@@ -139,8 +140,8 @@ type Header struct {
 
 	Lineage string `json:"lineage"`
 
-	// Serial counts state writes. For recorded deployments it caches the current DMS version;
-	// the service remains the source of truth.
+	// Serial counts state writes. For recorded deployments it duplicates the current DMS version
+	// so outdated local copies of state do not take precedence; the service remains the source of truth.
 	Serial int `json:"serial,omitempty"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
