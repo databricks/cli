@@ -1,17 +1,31 @@
 # Local DMS performance experiments
 
-Experimental branch: `denis/dms-fast-acceptance`.
+Experimental branches: [CLI](https://github.com/databricks/cli/tree/denis/dms-fast-acceptance)
+and [Universe](https://github.com/databricks-eng/universe-dev/tree/denis-bilenko_data/dms-fast-acceptance).
 
 The subject is the production DMS implementation. Jobs and other workspace dependencies
 can be stateful test fakes. Do not replace DMS with the Go testserver implementation,
 skip CLI operations, or change the invariant's assertions to improve timing.
+
+## Result
+
+The final warm job no-drift test is **2.88× testserver** on this Arclet:
+**1.095s versus 0.38s median**. The combined real-DMS mean is 1.126s versus
+0.382s (2.95×). This measures the leaf subtest, not the package/build wall time.
+
+The first run after restarting the JVM took **6.23s**. Twenty warm-up repetitions
+preceded the final comparison. JVM initialization and compilation remain expensive;
+the result applies to iterative testing against an already-running service.
+All 23 DMS requests per repetition reach the production DMS server, with its real
+handlers, MySQL-backed EntityStore, and permission checks. No DMS responses or
+permission decisions are cached. The test script and assertions are unchanged.
 
 ## Reproduction
 
 From the Universe root on the experimental `dms-fast-acceptance` branch:
 
 ```sh
-DMS_CLI_FAST=1 USE_DBEXEC=0 bin/lite up \
+DMS_CLI_FAST=1 DMS_CLI_SIMSMITH=1 USE_DBEXEC=0 bin/lite up \
   //bundle/metadata-service/test:cli-testenv-bin --name cli-testenv-bin
 ```
 
@@ -22,7 +36,7 @@ the enclosing Universe checkout's `bundle/metadata-service/test/.lite/cli-endpoi
 PATH=/home/denis.bilenko/.local/bin:$PATH DMS_CLI_TRACE=1 \
   go test ./acceptance \
   -run 'TestAccept/bundle/invariant/no_drift/DMS=true/INPUT_CONFIG=job.yml.tmpl/READPLAN=$' \
-  -count=3 -v
+  -count=10 -v
 ```
 
 `DMS_CLI_TRACE` reports elapsed time for each forwarded HTTP request, through reading
@@ -54,8 +68,9 @@ The first package invocation included a cold Go build (about 89s of parent setup
 That is separate from the leaf timings above. LITE was not running and there was
 no discoverable settings file during these baseline runs.
 
-The branch starts from CLI main `002627a95` plus the workspace-file routing change
-from https://github.com/databricks/cli/pull/7051. It keeps ordinary file content in
+The branch starts from [CLI main](https://github.com/databricks/cli/commit/002627a95)
+plus the workspace-file routing change from [PR 7051](https://github.com/databricks/cli/pull/7051).
+It keeps ordinary file content in
 testserver; initially, workspace hierarchy, permissions, and DMS calls still use LITE.
 
 ## Experiment 1: remove repeated configuration construction in the workspace fake
@@ -172,3 +187,95 @@ write denial, grants and revocations. The normal, non-fast fixture keeps RPC cli
 Transport/service-identity conformance between dependency fakes is not covered by
 this co-location mode; real DMS HTTP/mTLS transport and user authorization remain
 covered.
+
+The first twenty-run SimSmith batch with in-process ACL/RBAC started at 6.57s cold
+and ended at 1.25s. Its final five leaves were 1.29, 1.29, 1.19, 1.22, 1.25s; this
+still misses the requested ratio against the earlier 0.385s testserver median.
+
+## Experiment 6: invoke co-located workspace handlers directly
+
+The gateway and workspace fake already live in the same JVM, but every gateway
+operation still serialized a request through Simulation before reaching that fake.
+Fast mode now invokes the fake's registered blocking handlers directly, with a new
+request context for the selected fixture user. The same workspace hooks, tree
+storage, and read-ACL validator run. DMS's own outbound workspace calls are unchanged.
+
+All 14 DMS API cases pass with this path and SimSmith, including grants, revocations,
+cross-user isolation, read-only write denial, multipart imports, and file lifecycle.
+This does not claim transport coverage for the removed gateway-to-fake loopback hop.
+
+## Final comparison
+
+Run order: restart, 20 real-DMS warm-up repetitions, real-DMS A, testserver,
+real-DMS B. No profiling or concurrent builds/tests during these three measured
+batches. The DMS fixture stayed up but idle during the testserver batch; the
+settings file was temporarily moved out of discovery. All repetitions passed.
+
+| Batch | All leaf durations (seconds) | Median |
+| --- | --- | --- |
+| Real DMS A | 1.10, 1.09, 1.06, 1.06, 1.07, 1.16, 1.49, 1.21, 1.16, 1.05 | 1.095s |
+| Testserver | 0.38, 0.39, 0.38, 0.38, 0.38, 0.39, 0.38, 0.38, 0.38, 0.38 | 0.38s |
+| Real DMS B | 1.05, 1.20, 1.20, 1.14, 1.05, 1.02, 1.02, 1.03, 1.23, 1.12 | 1.085s |
+
+There is variance: the slowest real-DMS sample was 1.49s. The 3× result is the
+median and mean, not a guarantee that every individual run is below 3×.
+Each ten-run real-DMS log contains 400 forwarded requests, 230 of them to DMS.
+
+From the CLI root, warm up with the reproduction command using `-count=20`.
+Then run the `-count=10` command twice, bracketing the baseline command below.
+The measured logs were `/tmp/dms-speed-final-real-a.log`,
+`/tmp/dms-speed-final-testserver-a.log`, and `/tmp/dms-speed-final-real-b.log`.
+Their timing samples are retained above because `/tmp` is not persistent.
+
+Exact baseline command on this Arclet (restores the settings file even on failure):
+
+```sh
+env -u DMS_CLI_ENDPOINTS_FILE PATH=/home/denis.bilenko/.local/bin:$PATH zsh -c '
+settings=/home/denis.bilenko/universe/bundle/metadata-service/test/.lite/cli-endpoints.json
+backup=$(mktemp -d /tmp/dms-baseline.XXXXXX)
+mv "$settings" "$backup/cli-endpoints.json"
+trap '\''mv "$backup/cli-endpoints.json" "$settings"'\'' EXIT
+go test ./acceptance \
+  -run '\''TestAccept/bundle/invariant/no_drift/DMS=true/INPUT_CONFIG=job.yml.tmpl/READPLAN=$'\'' \
+  -count=10 -v > /tmp/dms-speed-final-testserver-a.log 2>&1
+'
+```
+
+## Regression checks
+
+The following passed after the last code change. These runs are correctness checks,
+not timing comparisons; some ran alongside Universe builds.
+
+From the CLI root (with the local fixture discoverable):
+
+```sh
+go test ./acceptance/internal -run TestLitebox -count=1
+go test ./acceptance -run 'TestAccept/bundle/dms/no-drift$' -count=1 -v
+go test ./acceptance \
+  -run 'TestAccept/bundle/invariant/no_drift/DMS=(true)?$/INPUT_CONFIG=job.yml.tmpl' \
+  -count=1 -v
+```
+
+The last command covers DMS on/off and READPLAN on/off (four passing variants).
+The CLI routing tests cover file ownership/mirroring and direct mTLS forwarding,
+including bearer-token stripping and limiting fixture identity headers to DMS.
+`./task lint-q` passed with zero Go issues and passing Ruff checks.
+
+From the Universe root:
+
+```sh
+bazel test //bundle/metadata-service/test:DmsCliApiSuite \
+  --test_env=DMS_CLI_FAST=1 --test_env=DMS_CLI_SIMSMITH=1 \
+  --tool_tag=ai-agent --test_output=errors \
+  --noshow_progress --noshow_loading_progress
+bazel test \
+  //webapp/api/servicefakes/workspace-servicefake:FakeTreeStoreV2Suite \
+  //webapp/api/servicefakes/workspace-servicefake:WorkspaceServiceFakePluginV2Suite \
+  //bundle/metadata-service/test:bazel_lint_test \
+  //common/logging:bazel_lint_test \
+  --tool_tag=ai-agent --test_output=errors \
+  --noshow_progress --noshow_loading_progress
+```
+
+The XML reports contain 14 passing DMS API cases and 33 passing workspace cases,
+with zero errors/failures. Both BUILD lint tests passed.
