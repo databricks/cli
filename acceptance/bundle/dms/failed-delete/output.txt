@@ -176,7 +176,7 @@ API message: Fault injected by test.
   }
 ]
 
-=== The state shows the resource still exists but the operation is marked failed
+=== The local state file records failed version 2
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -188,3 +188,10 @@ API message: Fault injected by test.
  },
  "state": {}
 }
+
+=== The remote checkpoint stays at serial 1 while DMS advances to version 2
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/resources.json --format RAW
+{"serial":1}
+
+>>> print_state.py
+{"serial":2}
