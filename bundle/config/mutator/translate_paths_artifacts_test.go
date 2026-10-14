@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +38,7 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "artifacts", []dyn.Location{{
+	bundletest.SetLocation(b, "artifacts", []diag.Location{{
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 
@@ -72,7 +72,7 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "artifacts", []dyn.Location{{
+	bundletest.SetLocation(b, "artifacts", []diag.Location{{
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 

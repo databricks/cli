@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.9
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -36,7 +36,7 @@ require (
 	golang.org/x/mod v0.41.0 // BSD-3-Clause
 	golang.org/x/net v0.59.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
-	golang.org/x/sync v0.23.0 // BSD-3-Clause
+	golang.org/x/sync v0.24.0 // BSD-3-Clause
 	golang.org/x/sys v0.48.0 // BSD-3-Clause
 	golang.org/x/term v0.46.0 // BSD-3-Clause
 	golang.org/x/text v0.42.0 // BSD-3-Clause
@@ -47,8 +47,8 @@ require github.com/databricks/sdk-go/core v0.0.1-dev.8 // Apache-2.0
 
 require (
 	github.com/databricks/sdk-go/auth v0.0.1-dev.8 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.1-dev.9 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.1-dev.8 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.10 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.9 // Apache-2.0
 )
 
 require (

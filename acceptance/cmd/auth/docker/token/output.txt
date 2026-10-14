@@ -18,7 +18,7 @@
 === No profile for the workspace
 
 >>> musterr [CLI] auth docker token
-Error: no Databricks profile found for workspace ID [NUMID] from registry host [NUMID].container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
+Error: no Databricks profile found for workspace ID 111222333 from registry host 111222333.container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
 
 === Not an Artifact Registry host
 
@@ -43,15 +43,15 @@ Error: auth docker token does not support --host
 >>> musterr [CLI] auth docker token --account-id [UUID]
 Error: auth docker token does not support --account-id
 
->>> musterr [CLI] auth docker token --workspace-id [NUMID]
+>>> musterr [CLI] auth docker token --workspace-id 111222333
 Error: auth docker token does not support --workspace-id
 
 === Test-server registry never matches a remote workspace
 
 >>> musterr [CLI] auth docker token
-Error: no Databricks profile found for workspace ID [NUMID] from registry host [NUMID].container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
+Error: no Databricks profile found for workspace ID 444555666 from registry host 444555666.container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
 
 === Multiple profiles for the workspace
 
 >>> musterr [CLI] auth docker token
-Error: multiple Databricks profiles match workspace ID [NUMID]: docker-test and duplicate. Remove duplicate workspace_id entries before using Docker credential helper
+Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: docker-test and duplicate. Remove duplicate workspace_id entries before using Docker credential helper

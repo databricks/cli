@@ -25,4 +25,5 @@ type DatabricksCliLog struct {
 	BundleConfigRemoteSyncEvent *BundleConfigRemoteSyncEvent `json:"bundle_config_remote_sync_event,omitempty"`
 	AitoolsInstallEvent         *AitoolsInstallEvent         `json:"aitools_install_event,omitempty"`
 	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
+	AirRunEvent                 *AirRunEvent                 `json:"air_run_event,omitempty"`
 }

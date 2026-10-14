@@ -11,8 +11,7 @@ import (
 
 // fakeHeadCommitID is the commit the fake reports a clone is checked out to.
 // Nothing is cloned here, so the remote's real HEAD is unknowable. The counting
-// prefix marks it as synthetic, so it is not mistaken for a real sha; it avoids
-// runs of three digits, which the test replacements would rewrite to [NUMID].
+// prefix marks it as synthetic, so it is not mistaken for a real sha.
 const fakeHeadCommitID = "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f"
 
 func (s *FakeWorkspace) ReposCreate(req Request) Response {

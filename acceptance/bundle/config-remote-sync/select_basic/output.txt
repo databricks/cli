@@ -73,7 +73,7 @@ Exit code: 1
 
 === A selector without a type is still rejected
 >>> [CLI] bundle config-remote-sync --select-ids no-such-id-123
-Error: invalid --select-ids value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
+Error: invalid --select-ids value "no-such-id-123", expected <type>:<id> (e.g. jobs:123456789)
 
 Exit code: 1
 

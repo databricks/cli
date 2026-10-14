@@ -1,6 +1,7 @@
 UV_RUN="uv run --with $DATABRICKS_BUNDLES_WHEEL -q"
 
 job_id=$(trace $CLI jobs create --json '{"name": "My Job"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
 
 trace $UV_RUN $CLI bundle deployment bind job_1 $job_id --auto-approve
 

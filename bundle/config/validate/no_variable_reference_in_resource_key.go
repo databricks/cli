@@ -41,7 +41,7 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 						Severity:  diag.Error,
 						Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
 						Locations: v.Locations(),
-						Paths:     []dyn.Path{p},
+						Paths:     dyn.ToStructPaths(p),
 					})
 				}
 				return v, nil

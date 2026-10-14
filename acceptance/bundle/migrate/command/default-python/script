@@ -4,6 +4,7 @@ cd my_default_python
 
 # Replay a prior terraform deployment (a job and a DLT pipeline)
 trace replay_tfstate.py ../terraform-requests.json ../terraform.tfstate -t dev
+replace_ids.py -t dev
 trace print_state.py > ../out.state_original.json
 
 trace $CLI bundle deployment migrate

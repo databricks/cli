@@ -22,7 +22,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -39,7 +39,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/schemas.foo",
   "q": {
     "update_mask": "state,error_message,resource_id,status"
   },
@@ -53,7 +53,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
@@ -77,19 +77,19 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> print_requests.py --dms --get //api/2.0/bundle
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 
 >>> print_state.py --no-dms
@@ -121,15 +121,15 @@ Files: 2 uploaded, 0 deleted
 >>> print_requests.py --dms --get //api/2.0/bundle
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 
 === The recorded resources are unchanged by the decline: the schema is still at version 1
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
     "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
@@ -156,19 +156,19 @@ false
 >>> print_requests.py --dms --get //api/2.0/bundle
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
   "q": {
     "version_id": "2"
   },
@@ -186,7 +186,7 @@ false
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
   "q": {
     "update_mask": "state,error_message,status"
   },
@@ -198,12 +198,12 @@ false
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
 {
   "method": "DELETE",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }

@@ -6,7 +6,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS

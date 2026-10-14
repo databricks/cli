@@ -22,13 +22,13 @@ Error: --host is not supported for auth docker host. Select the workspace with -
 >>> musterr [CLI] auth docker host --profile docker-test --account-id [UUID]
 Error: --account-id is not supported for auth docker host. Select the workspace with --profile instead
 
->>> musterr [CLI] auth docker host --profile docker-test --workspace-id [NUMID]
+>>> musterr [CLI] auth docker host --profile docker-test --workspace-id 111222333
 Error: --workspace-id is not supported for auth docker host. Select the workspace with --profile instead
 
 === Credential helper not configured
 
 >>> [CLI] auth docker host --profile docker-test
-Registry host: [NUMID].container.us-west-2.localhost
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
 Credential helper configured: NO
 
 === Invalid Docker config
@@ -39,12 +39,12 @@ Error: read Docker config [TEST_TMP_DIR]/home/docker/config.json: invalid charac
 === Default credential store without an installed helper
 
 >>> PATH=[TEST_TMP_DIR]/home [CLI] auth docker host --profile docker-test
-Registry host: [NUMID].container.us-west-2.localhost
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
 Credential helper configured: NO
 
 >>> PATH=[TEST_TMP_DIR]/home [CLI] auth docker host --profile docker-test --output json
 {
-  "host": "[NUMID].container.us-west-2.localhost",
+  "host": "[WORKSPACE_ID].container.us-west-2.localhost",
   "configured": false
 }
 

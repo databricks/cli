@@ -5,7 +5,7 @@
  "serial": 6,
  "state": {
   "resources.jobs.test_job": {
-   "__id__": "[NUMID]",
+   "__id__": "[TEST_JOB_ID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",
@@ -46,7 +46,7 @@
     ],
     "name": "Test Migration Pipeline",
     "tags": {
-     "myjob_id": "[NUMID]",
+     "myjob_id": "[TEST_JOB_ID]",
      "myjob_name": "Test Migration Job",
      "myjob_timeout": "0",
      "myvolume_id": "mycat.myschema.myvol",

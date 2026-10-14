@@ -6,7 +6,3 @@ Ignore = [
     ".databricks",
     "databricks.yml",
 ]
-
-[[Repls]]
-Old = '\?[ow]=\d+'
-New = "?[WSPARAM]=[NUMID]"

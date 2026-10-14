@@ -49,7 +49,7 @@ func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *sn
 	}
 	result, err := uploadSnapshotTarball(ctx, w, repoPath, plan, snapshotArtifactPath)
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 
 	// Upload git provenance sidecars (git_state.json / git_diff.patch) next to the
@@ -158,14 +158,15 @@ const airArtifactInternalDir = ".internal"
 // for git_archive and by the working-tree metadata fingerprint for plain_tar — so if
 // the identical object already exists we skip packaging and upload entirely and reuse it.
 func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string) (snapshotResult, error) {
+	result := snapshotResult{UsesGit: &plan.isGitRepo, PackagingMode: &plan.mode}
 	f, uploadPath, err := snapshotUploadFiler(ctx, w, artifactPath)
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 
 	tarName, files, err := snapshotTarName(ctx, repoPath, plan)
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 	// code_source_path is content-addressed by tarName, so it is the same whether we
 	// upload the bytes now or reuse an object already in the store.
@@ -173,34 +174,51 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 
 	exists, err := snapshotExists(ctx, f, tarName)
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 	if exists {
 		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
-		return snapshotResult{CodeSourcePath: remote}, nil
+		result.CodeSourcePath = remote
+		result.PackagingDurationMs = new(int64(0))
+		result.UploadDurationMs = new(int64(0))
+		return result, nil
 	}
 
 	tmp, err := os.MkdirTemp("", "air-snapshot-*")
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 	defer os.RemoveAll(tmp)
 
 	tarball := filepath.Join(tmp, tarName)
-	if err := packageSnapshot(ctx, repoPath, plan, files, tarball); err != nil {
-		return snapshotResult{}, err
+	packagingStart := time.Now()
+	err = packageSnapshot(ctx, repoPath, plan, files, tarball)
+	result.PackagingDurationMs = new(time.Since(packagingStart).Milliseconds())
+	if err != nil {
+		return result, err
 	}
 
 	file, err := os.Open(tarball)
 	if err != nil {
-		return snapshotResult{}, err
+		return result, err
 	}
 	defer file.Close()
-	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", tarName))
-	if err := f.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
-		return snapshotResult{}, fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
+	// Size collection is best-effort and must not prevent a valid upload.
+	if info, err := file.Stat(); err == nil {
+		size := info.Size()
+		result.SizeBytes = &size
+	} else {
+		log.Debugf(ctx, "failed to measure code snapshot: %v", err)
 	}
-	return snapshotResult{CodeSourcePath: remote}, nil
+	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", tarName))
+	uploadStart := time.Now()
+	err = f.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
+	result.UploadDurationMs = new(time.Since(uploadStart).Milliseconds())
+	if err != nil {
+		return result, fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
+	}
+	result.CodeSourcePath = remote
+	return result, nil
 }
 
 // snapshotUploadFiler returns a filer rooted at <artifactPath>/.internal plus that

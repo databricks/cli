@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -244,6 +245,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if !b.MigratingToDirect {
 			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 		}
+		ctx = WithLineage(ctx, stateDesc)
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
@@ -720,4 +722,17 @@ func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 Pipelines CLI currently only supports Lakeflow Spark Declarative Pipelines development.
 To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
 	}
+}
+
+// WithLineage tags the user agent and the command's telemetry with the hashed state
+// lineage, so requests and events from different CLI invocations against the same
+// deployment can be correlated. Before the first deploy there is no lineage and nothing
+// is added.
+func WithLineage(ctx context.Context, stateDesc *statemgmt.StateDesc) context.Context {
+	lineage := stateDesc.LineageHash()
+	if lineage == "" {
+		return ctx
+	}
+	telemetry.SetStateLineageHash(ctx, lineage)
+	return useragent.InContext(ctx, "lineage", lineage)
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestYAMLAnchor01(t *testing.T) {
 
 	pattern := self.Get("shirt1").Get("pattern")
 	assert.Equal(t, "striped", pattern.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 8, Column: 12}, pattern.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 8, Column: 12}, pattern.Location())
 }
 
 func TestYAMLAnchor02(t *testing.T) {
@@ -32,15 +33,15 @@ func TestYAMLAnchor02(t *testing.T) {
 
 	color := self.Get("shirt").Get("color")
 	assert.Equal(t, "red", color.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 10}, color.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 4, Column: 10}, color.Location())
 
 	primary := self.Get("shirt").Get("primary")
 	assert.Equal(t, "cotton", primary.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 8, Column: 12}, primary.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 8, Column: 12}, primary.Location())
 
 	pattern := self.Get("shirt").Get("pattern")
 	assert.Equal(t, "striped", pattern.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 13, Column: 12}, pattern.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 13, Column: 12}, pattern.Location())
 }
 
 func TestYAMLAnchor03(t *testing.T) {
@@ -63,11 +64,11 @@ func TestYAMLAnchor04(t *testing.T) {
 
 	p1 := self.Get("person1").Get("address").Get("city")
 	assert.Equal(t, "San Francisco", p1.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 9}, p1.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 4, Column: 9}, p1.Location())
 
 	p2 := self.Get("person2").Get("address").Get("city")
 	assert.Equal(t, "Los Angeles", p2.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 16, Column: 11}, p2.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 16, Column: 11}, p2.Location())
 }
 
 func TestYAMLAnchor05(t *testing.T) {
@@ -77,9 +78,9 @@ func TestYAMLAnchor05(t *testing.T) {
 
 	features := self.Get("phone1").Get("features")
 	assert.Equal(t, "wifi", features.Index(0).AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 5}, features.Index(0).Location())
+	assert.Equal(t, diag.Location{File: file, Line: 4, Column: 5}, features.Index(0).Location())
 	assert.Equal(t, "bluetooth", features.Index(1).AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 5}, features.Index(1).Location())
+	assert.Equal(t, diag.Location{File: file, Line: 5, Column: 5}, features.Index(1).Location())
 }
 
 func TestYAMLAnchor06(t *testing.T) {
@@ -89,7 +90,7 @@ func TestYAMLAnchor06(t *testing.T) {
 
 	greeting := self.Get("greeting1")
 	assert.Equal(t, "Hello, World!", greeting.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 16}, greeting.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 2, Column: 16}, greeting.Location())
 }
 
 func TestYAMLAnchor07(t *testing.T) {
@@ -99,11 +100,11 @@ func TestYAMLAnchor07(t *testing.T) {
 
 	name := self.Get("person1").Get("name")
 	assert.Equal(t, "Alice", name.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 9}, name.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 5, Column: 9}, name.Location())
 
 	age := self.Get("person1").Get("age")
 	assert.Equal(t, 25, age.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 13}, age.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 2, Column: 13}, age.Location())
 }
 
 func TestYAMLAnchor08(t *testing.T) {
@@ -113,11 +114,11 @@ func TestYAMLAnchor08(t *testing.T) {
 
 	username := self.Get("user1").Get("username")
 	assert.Equal(t, "user1", username.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 13}, username.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 5, Column: 13}, username.Location())
 
 	active := self.Get("user1").Get("active")
 	assert.Equal(t, true, active.AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 11}, active.Location())
+	assert.Equal(t, diag.Location{File: file, Line: 2, Column: 11}, active.Location())
 }
 
 func TestYAMLAnchor09(t *testing.T) {

@@ -18,7 +18,14 @@ func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace).Paths
+	workspace := b.Config.Workspace
+	if b.IsImmutableFolder() {
+		// file_path and artifact_path reference the snapshot, which does not exist until
+		// deploy, so there is no folder to check. See permissions.ApplyWorkspaceRootPermissions.
+		workspace.FilePath = ""
+		workspace.ArtifactPath = ""
+	}
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(workspace).Paths
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)

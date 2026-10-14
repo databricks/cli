@@ -21,7 +21,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "Inline Dash",
         "embed_credentials": false,
-        "etag": "[NUMID]",
+        "etag": "80611980",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
         "path": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources/Inline Dash.lvdash.json",
@@ -44,8 +44,8 @@
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": "[NUMID]",
-          "remote": "[NUMID]"
+          "old": "80611980",
+          "remote": "80611980"
         },
         "lifecycle_state": {
           "action": "skip",

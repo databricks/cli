@@ -14,7 +14,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === A malformed selector is reported as failed, exit 0
 {
   "status": "failed",
-  "error": "invalid --select-ids value \"no-such-id-999\", expected \u003ctype\u003e:\u003cid\u003e (e.g. jobs:[NUMID])",
+  "error": "invalid --select-ids value \"no-such-id-999\", expected \u003ctype\u003e:\u003cid\u003e (e.g. jobs:123456789)",
   "files": null,
   "changes": {}
 }

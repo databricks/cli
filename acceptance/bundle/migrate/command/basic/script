@@ -10,6 +10,7 @@ mv terraform-prod-requests.json .databricks/terraform-prod-requests.json
 
 # Replay a prior terraform deployment (dev: a job, a volume and a pipeline).
 trace replay_tfstate.py terraform-requests.json terraform.tfstate -t dev
+read_id.py -t dev test_job > /dev/null
 print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'

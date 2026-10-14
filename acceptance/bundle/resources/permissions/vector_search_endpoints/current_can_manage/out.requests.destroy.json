@@ -1,4 +1,4 @@
 {
   "method": "DELETE",
-  "path": "/api/2.0/vector-search/endpoints/vs-permissions-endpoint"
+  "path": "/api/2.0/vector-search/endpoints/[FOO_ID]"
 }

@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py
 
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
 
@@ -28,7 +29,10 @@ cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experime
 #
 # upload_file_count and upload_file_sizes are asserted here and kept deterministic by
 # the sync.paths restriction in databricks.yml (see the comment there).
-cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("engine_terraform_") | not))' > out.telemetry.txt
+# The resource ids are listed in creation order, which varies because resources are created in
+# parallel. Sort them by resource key so the order is stable.
+ids=$($CLI bundle summary -o json | jq '[.resources[] | to_entries[] | {key: (.value.id | tostring), value: .key}] | from_entries')
+cat telemetry.json | jq --argjson ids "$ids" 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("engine_terraform_") | not)) | .entry.databricks_cli_log.bundle_deploy_event |= (.resource_job_ids |= sort_by($ids[.]) | .resource_pipeline_ids |= sort_by($ids[.]))' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)

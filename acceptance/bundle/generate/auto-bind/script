@@ -20,6 +20,7 @@ JOB_ID=$($CLI jobs create --json '
     }
   ]
 }' | jq -r '.job_id')
+add_repl "$JOB_ID" JOB_ID
 
 echo "Created job with ID: $JOB_ID"
 

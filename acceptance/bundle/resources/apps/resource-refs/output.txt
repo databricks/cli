@@ -54,7 +54,7 @@ You can access the app at data-app-123.cloud.databricksapps.com
       },
       {
         "name": "MY_EXAMPLE_JOB_ID",
-        "value": "[NUMID]"
+        "value": "[EXAMPLE_JOB_ID]"
       },
       {
         "name": "MY_EXAMPLE_VAR",

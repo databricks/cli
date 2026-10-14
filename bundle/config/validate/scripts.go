@@ -44,7 +44,7 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Script %s has no content", k),
-				Paths:    []dyn.Path{contentPath},
+				Paths:    dyn.ToStructPaths(contentPath),
 			})
 			continue
 		}
@@ -80,7 +80,7 @@ from "content" with $NAME:
         MY_VAR: ${var.foo}
       content: echo "$MY_VAR"`,
 		Locations: v.Locations(),
-		Paths:     []dyn.Path{p},
+		Paths:     dyn.ToStructPaths(p),
 	}}
 }
 
@@ -105,7 +105,7 @@ func validateScriptEnv(b *bundle.Bundle, key string, env map[string]string) diag
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("${%s} cannot be used in scripts.%s.env.%s; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute", refPath, key, name),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{envValuePath},
+				Paths:     dyn.ToStructPaths(envValuePath),
 			})
 		}
 	}

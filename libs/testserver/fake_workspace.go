@@ -1,10 +1,12 @@
 package testserver
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -638,6 +640,13 @@ func isGitCliFolder(repoPath string) bool {
 }
 
 func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo bool) Response {
+	if !strings.HasPrefix(requestPath, "/") {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": fmt.Sprintf("Path (%s) doesn't start with '/'", requestPath)},
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	// The real API collapses duplicate slashes, so look up the cleaned path.
@@ -875,7 +884,137 @@ func (s *FakeWorkspace) hasChildren(dirPath string) bool {
 	return false
 }
 
+// detectNotebookLanguage mirrors the real /workspace/import format=AUTO logic:
+// a file whose extension is .py / .sql / .scala / .r and whose content starts
+// with the language-appropriate "Databricks notebook source" line-comment is
+// stored as a NOTEBOOK with the corresponding language; otherwise it's a FILE.
+//
+// The extension is lowercased because the real endpoint matches it
+// case-insensitively, and ".R" is the conventional spelling for R sources.
+func detectNotebookLanguage(extension string, body []byte) (workspace.Language, bool) {
+	switch strings.ToLower(extension) {
+	case ".py":
+		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
+			return workspace.LanguagePython, true
+		}
+	case ".sql":
+		if bytes.HasPrefix(body, []byte("-- Databricks notebook source")) {
+			return workspace.LanguageSql, true
+		}
+	case ".scala":
+		if bytes.HasPrefix(body, []byte("// Databricks notebook source")) {
+			return workspace.LanguageScala, true
+		}
+	case ".r":
+		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
+			return workspace.LanguageR, true
+		}
+	}
+	return "", false
+}
+
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, true)
+}
+
+// WorkspaceImportZipFolder mirrors /workspace/import with format=AUTO for a .zip path
+// (ZipImporter in universe): the archive is extracted into a new folder at the path
+// without its .zip extension. An existing object at that path is never overwritten.
+func (s *FakeWorkspace) WorkspaceImportZipFolder(zipPath string, body []byte, overwrite bool) Response {
+	if !strings.HasPrefix(zipPath, "/") {
+		zipPath = "/" + zipPath
+	}
+	targetDir := strings.TrimSuffix(zipPath, ".zip")
+
+	exists := func() bool {
+		defer s.LockUnlock()()
+		_, isDir := s.directories[targetDir]
+		_, isFile := s.files[targetDir]
+		return isDir || isFile
+	}()
+	if exists {
+		if overwrite {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "Overwrite cannot be used for AUTO format when importing a folder.",
+				},
+			}
+		}
+		return importAlreadyExists(targetDir + " already exists. Please pass overwrite=true to overwrite it.")
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    "Failed to unzip with error: " + err.Error(),
+			},
+		}
+	}
+
+	var entries []*zip.File
+	roots := map[string]bool{}
+	for _, entry := range zr.File {
+		if strings.HasPrefix(entry.Name, "__MACOSX") || entry.Name == "manifest.mf" {
+			continue
+		}
+		entries = append(entries, entry)
+		if root, _, _ := strings.Cut(entry.Name, "/"); root != "" {
+			roots[root] = true
+		}
+	}
+
+	// With a single root the archive's top-level directory is renamed to the target
+	// directory; with several roots they are all placed inside it.
+	baseDir, dirName := path.Split(targetDir)
+	rebase := func(name string) string {
+		if len(roots) > 1 {
+			return dirName + "/" + name
+		}
+		if _, rest, ok := strings.Cut(name, "/"); ok {
+			return dirName + "/" + rest
+		}
+		return name
+	}
+
+	s.WorkspaceMkdirs(workspace.Mkdirs{Path: targetDir})
+	for _, entry := range entries {
+		entryPath := path.Join(baseDir, rebase(entry.Name))
+		if entry.FileInfo().IsDir() {
+			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			continue
+		}
+		data, err := readZipEntry(entry)
+		if err != nil {
+			return Response{StatusCode: http.StatusBadRequest, Body: map[string]string{"message": err.Error()}}
+		}
+		if resp := s.importFile(entryPath, data, false, true); resp.StatusCode != 0 {
+			return resp
+		}
+	}
+	return Response{}
+}
+
+func readZipEntry(entry *zip.File) ([]byte, error) {
+	rc, err := entry.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// WorkspaceImportRawFile stores body as a file without notebook detection, as
+// /workspace/import does for format=RAW.
+func (s *FakeWorkspace) WorkspaceImportRawFile(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, false)
+}
+
+func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, detectNotebooks bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -897,18 +1036,19 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
-	// Note: Files with .py, .scala, .r or .sql extension can
-	// be notebooks if they contain a magical "Databricks notebook source"
-	// header comment. We omit support non-python extensions for now for simplicity.
+	// Files with .py / .sql / .scala / .r extension can be notebooks if they
+	// carry the "Databricks notebook source" header comment in the language's
+	// line-comment syntax. Mirror the real workspace's auto-detection here so
+	// acceptance tests can assert the resulting object_type via /workspace/list.
 	extension := filepath.Ext(filePath)
-	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+	if lang, isNotebook := detectNotebookLanguage(extension, body); detectNotebooks && isNotebook {
 		// Notebooks are stripped of their extension by the workspace import API.
 		workspacePath = strings.TrimSuffix(filePath, extension)
 		s.files[workspacePath] = FileEntry{
 			Info: workspace.ObjectInfo{
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
-				Language:   "PYTHON",
+				Language:   lang,
 				ObjectId:   nextID(),
 			},
 			Data: body,

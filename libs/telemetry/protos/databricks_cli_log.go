@@ -6,6 +6,11 @@ type ExecutionContext struct {
 	// with the http_access_log table.
 	CmdExecID string `json:"cmd_exec_id,omitempty"`
 
+	// Hash of the lineage of the bundle state the command read (see libs/shortid). This is
+	// also set in the HTTP user agent under the key "lineage". Unset for commands that do not
+	// read bundle state, and when the state has no lineage yet (nothing deployed).
+	StateLineageHash string `json:"state_lineage_hash,omitempty"`
+
 	// Version of the Databricks CLI used.
 	Version string `json:"version,omitempty"`
 

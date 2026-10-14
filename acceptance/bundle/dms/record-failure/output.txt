@@ -43,7 +43,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
   "q": {
     "version_id": "1"
   },
@@ -60,7 +60,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.doomed",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.doomed",
   "q": {
     "update_mask": "error_message,status"
   },
@@ -72,17 +72,17 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_FAILURE"
   }
 }
 
 === The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed
->>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
+>>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources
 {}
 
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 []
 
 >>> print_state.py --no-dms
