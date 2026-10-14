@@ -1,5 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+assert_dms_unsupported internal_immutable_snapshots
+
 trace $CLI bundle validate
 trace $CLI bundle plan -o json > plan.json
 trace jq '.plan["resources.jobs.my_job"].new_state.value.tasks' plan.json

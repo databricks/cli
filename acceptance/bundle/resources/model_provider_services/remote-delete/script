@@ -1,3 +1,5 @@
+assert_dms_unsupported model_provider_services
+
 trace $CLI bundle deploy
 
 title "Delete the resource out of band"

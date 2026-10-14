@@ -1,5 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+assert_dms_unsupported model_services
+
 trace $CLI bundle plan -o json | jq 'del(.features)' > out.plan1.json
 trace print_requests.py --get //permissions
 trace $CLI bundle deploy

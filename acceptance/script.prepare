@@ -115,6 +115,24 @@ add_repl() {
     env -u MSYS_NO_PATHCONV add_repl.py "$@"
 }
 
+# DMS has no resource enum for these types. Assert the rejection, then exercise
+# their lifecycle with file-backed state after removing the failed deployment.
+assert_dms_unsupported() {
+    local resource_type="$1"
+    if [[ "$DMS" != "true" ]]; then
+        return
+    fi
+
+    # Keep these logs outside the bundle so they do not enter sync or snapshots.
+    local log_dir="$(dirname "$OUT_REQUESTS")"
+    musterr $CLI bundle deploy &> "$log_dir/LOG.dms_unsupported"
+    contains.py "operations.resource_key must have a known resource type prefix" "$resource_type." '!panic:' '!internal error' < "$log_dir/LOG.dms_unsupported" > /dev/null
+    $CLI bundle destroy --auto-approve &> "$log_dir/LOG.dms_unsupported_cleanup"
+    rm -rf .databricks
+    rm -f "$OUT_REQUESTS"
+    export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+}
+
 nostamp() {
     # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
     # find nostamp.py on Windows.
