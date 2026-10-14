@@ -2,17 +2,17 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresRoleConfig struct {
-	postgres.RoleRoleSpec
+	postgres.Role_RoleSpec
 
 	// RoleId is the user-specified ID for the role (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}/branches/{branch_id}/roles/{role_id}"
@@ -28,31 +28,15 @@ type PostgresRoleConfig struct {
 	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
-func (c *PostgresRoleConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresRoleConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
-}
-
 type PostgresRole struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresRoleConfig
 }
 
-func (r *PostgresRole) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r PostgresRole) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
-}
-
-func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
-	if apierr.IsMissing(err) {
+func (r *PostgresRole) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetRole(ctx, sdkpostgres.GetRoleRequest{Name: new(name)})
+	if apierrs.IsMissing(err) {
 		log.Debugf(ctx, "postgres role %s does not exist", name)
 		return false, nil
 	}

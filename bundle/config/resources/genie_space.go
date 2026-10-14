@@ -2,14 +2,13 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	sdkgenie "github.com/databricks/sdk-go/genie/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
 type GenieSpaceConfig struct {
@@ -28,8 +27,6 @@ type GenieSpaceConfig struct {
 	// Parent folder path where the space will be registered
 	ParentPath string `json:"parent_path,omitempty"`
 
-	ForceSendFields []string `json:"-" url:"-"`
-
 	// ==============================================
 	// === overrides over [dashboards.GenieSpace] ===
 	// ==============================================
@@ -39,14 +36,6 @@ type GenieSpaceConfig struct {
 	// If the value is a string, it is used as is.
 	// If it is not a string, its contents is marshalled as JSON.
 	SerializedSpace any `json:"serialized_space,omitempty"`
-}
-
-func (c *GenieSpaceConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c GenieSpaceConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 type GenieSpace struct {
@@ -63,20 +52,12 @@ type GenieSpace struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
-func (r *GenieSpace) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r GenieSpace) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
-}
-
-func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-		SpaceId: id,
+func (*GenieSpace) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Genie.GenieGetSpace(ctx, sdkgenie.GenieGetSpaceRequest{
+		SpaceId: new(id),
 	})
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			log.Debugf(ctx, "genie space %s does not exist", id)
 			return false, nil
 		}

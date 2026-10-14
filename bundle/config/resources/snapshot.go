@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/libs/snapshot"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 const (
@@ -77,7 +77,7 @@ func (s *Snapshot) FullPath() string {
 	return path.Join(s.RemoteRoot, s.RelativePath())
 }
 
-func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+func (s *Snapshot) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
 	_, err := w.Workspace.GetStatusByPath(ctx, s.FullPath())
 	if err != nil {
 		return false, err

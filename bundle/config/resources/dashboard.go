@@ -2,13 +2,13 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
 type DashboardConfig struct {
@@ -23,7 +23,7 @@ type DashboardConfig struct {
 	// field is excluded in List Dashboards responses.
 	Etag string `json:"etag,omitempty"`
 	// The state of the dashboard resource. Used for tracking trashed status.
-	LifecycleState dashboards.LifecycleState `json:"lifecycle_state,omitempty"`
+	LifecycleState lakeview.LifecycleState `json:"lifecycle_state,omitempty"`
 	// The workspace path of the folder containing the dashboard. Includes
 	// leading slash and no trailing slash. This field is excluded in List
 	// Dashboards responses.
@@ -37,8 +37,6 @@ type DashboardConfig struct {
 	UpdateTime string `json:"update_time,omitempty"`
 	// The warehouse ID used to run the dashboard.
 	WarehouseId string `json:"warehouse_id,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
 
 	// ==============================================
 	// === overrides over [dashboards.Dashboard] ===
@@ -68,14 +66,6 @@ type DashboardConfig struct {
 	DatasetSchema string `json:"dataset_schema,omitempty"`
 }
 
-func (c *DashboardConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c DashboardConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
-}
-
 type Dashboard struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
@@ -90,17 +80,9 @@ type Dashboard struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
-func (r *Dashboard) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r Dashboard) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
-}
-
-func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
-		DashboardId: id,
+func (*Dashboard) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Lakeview.GetDashboard(ctx, sdklakeview.GetDashboardRequest{
+		DashboardId: new(id),
 	})
 	if err != nil {
 		log.Debugf(ctx, "dashboard %s does not exist", id)

@@ -2,37 +2,30 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkmodelserving "github.com/databricks/sdk-go/modelserving/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
 type ModelServingEndpoint struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
-	serving.CreateServingEndpoint
+	modelserving.CreateInferenceEndpointRequest
 
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
 	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
 }
 
-func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s ModelServingEndpoint) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.ServingEndpoints.Get(ctx, serving.GetServingEndpointRequest{
-		Name: name,
+func (s *ModelServingEndpoint) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{
+		Name: new(name),
 	})
 	if err != nil {
 		log.Debugf(ctx, "serving endpoint %s does not exist", name)
@@ -58,5 +51,5 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 }
 
 func (s *ModelServingEndpoint) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }

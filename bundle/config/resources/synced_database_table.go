@@ -2,14 +2,14 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkdatabase "github.com/databricks/sdk-go/database/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type SyncedDatabaseTable struct {
@@ -18,16 +18,8 @@ type SyncedDatabaseTable struct {
 	database.SyncedDatabaseTable
 }
 
-func (s *SyncedDatabaseTable) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s SyncedDatabaseTable) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Database.GetSyncedDatabaseTable(ctx, database.GetSyncedDatabaseTableRequest{Name: name})
+func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Database.GetSyncedDatabaseTable(ctx, sdkdatabase.GetSyncedDatabaseTableRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "synced database table %s does not exist", name)
 		return false, err
@@ -45,12 +37,12 @@ func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
 }
 
 func (s *SyncedDatabaseTable) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }
 
 func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {
-	if s.Name == "" {
+	if s.Name == nil {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "synced_database_tables", s.Name)
+	s.URL = workspaceurls.ResourceURL(baseURL, "synced_database_tables", *s.Name)
 }

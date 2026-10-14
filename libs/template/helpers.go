@@ -12,11 +12,16 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/apierr"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
+	"github.com/databricks/sdk-go/uc/metastores/v1"
 
 	"github.com/google/uuid"
 )
@@ -35,7 +40,7 @@ type pair struct {
 }
 
 var (
-	cachedUser               *iam.User
+	cachedUser               *scim.User
 	cachedIsServicePrincipal *bool
 	cachedCatalog            *string
 )
@@ -129,21 +134,21 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
+				cachedUser, err = currentUser(ctx, w)
 				if err != nil {
 					return "", err
 				}
 			}
-			result := cachedUser.UserName
+			result := utils.Deref(cachedUser.UserName)
 			if result == "" {
-				result = cachedUser.Id
+				result = utils.Deref(cachedUser.Id)
 			}
 			return result, nil
 		},
 		"short_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
+				cachedUser, err = currentUser(ctx, w)
 				if err != nil {
 					return "", err
 				}
@@ -154,9 +159,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Unity Catalog is not enabled, return an empty string.
 		"default_catalog": func() (string, error) {
 			if cachedCatalog == nil {
-				metastore, err := w.Metastores.Current(ctx)
+				metastore, err := w.Metastores.GetCurrentMetastoreAssignment(ctx, metastores.GetCurrentMetastoreAssignmentRequest{})
 				if err != nil {
-					if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
+					if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (slices.Contains(metastoreDisabledErrorCodes, apierrs.ErrorCode(aerr)) || aerr.Message() == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
@@ -164,7 +169,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					}
 					return "", err
 				}
-				cachedCatalog = &metastore.DefaultCatalogName
+				cachedCatalog = new(utils.Deref(metastore.DefaultCatalogName))
 			}
 			return *cachedCatalog, nil
 		},
@@ -174,7 +179,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
+				cachedUser, err = currentUser(ctx, w)
 				if err != nil {
 					return false, err
 				}
@@ -194,4 +199,12 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return strings.ToUpper(s)
 		},
 	}
+}
+
+func currentUser(ctx context.Context, w *sdkclients.Clients) (*scim.User, error) {
+	user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return iamutil.UserFromSDK(user)
 }

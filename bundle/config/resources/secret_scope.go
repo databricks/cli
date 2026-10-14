@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdksecrets "github.com/databricks/sdk-go/secrets/v1"
 	"net/url"
-
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type SecretScopePermissionLevel string
@@ -54,20 +54,12 @@ type SecretScope struct { //nolint:recvcheck // pointer receiver needed for Unma
 	// for better developer experience compared to `workspace.CreateScope`.
 
 	// The type of secret scope backend.
-	BackendType workspace.ScopeBackendType `json:"backend_type,omitempty"`
+	BackendType secrets.ScopeBackendType `json:"backend_type,omitempty"`
 	// The metadata for the secret scope if the type is `AZURE_KEYVAULT`
-	KeyvaultMetadata *workspace.AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
+	KeyvaultMetadata *secrets.AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
 }
 
-func (s *SecretScope) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s SecretScope) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+func (s SecretScope) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
 	// NOTE: Scope lookup by name is not directly supported by the Secret scopes API
 	// As of May 2025 there is no direct API method to retrieve a scope using its name as an identifier.
 	// While scope names serve as unique identifiers, the API only provides:
@@ -75,13 +67,13 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	// - Other operational methods (e.g., reading a secret from a scope and parsing error messages)
 	//
 	// The indirect methods are not semantically ideal for simple existence checks, so we use the list API here
-	scopes, err := w.Secrets.ListScopesAll(ctx)
+	resp, err := w.Secrets.ListScopes(ctx, sdksecrets.ListScopesRequest{})
 	if err != nil {
 		return false, nil //nolint:nilerr // treat API errors as "scope not found"
 	}
 
-	for _, scope := range scopes {
-		if scope.Name == name {
+	for _, scope := range resp.Scopes {
+		if utils.Deref(scope.Name) == name {
 			return true, nil
 		}
 	}

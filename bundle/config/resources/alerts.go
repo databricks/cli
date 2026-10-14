@@ -2,19 +2,20 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkalerts "github.com/databricks/sdk-go/alerts/v2"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type Alert struct {
 	BaseResource
-	sql.AlertV2        //nolint:govet // AlertV2.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
-	ID          string `json:"id,omitempty" bundle:"readonly"`
+	alerts.Alert        //nolint:govet // AlertV2.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
+	ID           string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []Permission `json:"permissions,omitempty"`
 
@@ -24,16 +25,8 @@ type Alert struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
-func (a *Alert) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, a)
-}
-
-func (a Alert) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(a)
-}
-
-func (a *Alert) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.AlertsV2.GetAlertById(ctx, id)
+func (a *Alert) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Alerts.GetAlert(ctx, sdkalerts.GetAlertRequest{Id: new(id)})
 	if err != nil {
 		log.Debugf(ctx, "alert %s does not exist", id)
 		return false, err
@@ -58,5 +51,5 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 }
 
 func (a *Alert) GetName() string {
-	return a.DisplayName
+	return utils.Deref(a.DisplayName)
 }

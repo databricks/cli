@@ -2,15 +2,16 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"net/url"
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // JobRun is the bundle config for a triggered job run, described by the same
@@ -19,7 +20,7 @@ import (
 type JobRun struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	jobs.RunNow
+	jobs.RunNowRequest
 
 	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.
 	Lifecycle *JobRunLifecycle `json:"lifecycle,omitempty"`
@@ -86,27 +87,19 @@ func (r *JobRun) HasOnFileChange() bool {
 	return false
 }
 
-func (r *JobRun) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r JobRun) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
-}
-
 // Exists reports whether the run with the given numeric id still exists, for as
 // long as the workspace retains its run history.
-func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (r *JobRun) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	runID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return false, err
 	}
-	_, err = w.Jobs.GetRun(ctx, jobs.GetRunRequest{
-		RunId: runID,
+	_, err = w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{
+		RunId: new(runID),
 	})
 	if err != nil {
 		log.Debugf(ctx, "job run %s does not exist: %v", id, err)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err
@@ -132,7 +125,7 @@ func (r *JobRun) GetName() string {
 // when resolved (deploy) or ResolvedJobID from state (read-only commands); if
 // either id is missing we skip rather than emit a broken jobs/0 URL.
 func (r *JobRun) InitializeURL(baseURL url.URL) {
-	jobID := r.JobId
+	jobID := utils.Deref(r.JobId)
 	if jobID == 0 {
 		jobID = r.ResolvedJobID
 	}

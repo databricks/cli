@@ -2,16 +2,17 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
 	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 type VectorSearchIndex struct {
@@ -20,22 +21,14 @@ type VectorSearchIndex struct {
 	vectorsearch.CreateVectorIndexRequest
 
 	// List of grants to apply on this vector search index.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (e *VectorSearchIndex) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, e)
-}
-
-func (e VectorSearchIndex) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(e)
-}
-
-func (e *VectorSearchIndex) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.VectorSearchIndexes.GetIndexByIndexName(ctx, name)
+func (e *VectorSearchIndex) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.VectorSearch.GetVectorIndex(ctx, sdkvectorsearch.GetVectorIndexRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "vector search index %s does not exist: %v", name, err)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err
@@ -56,12 +49,12 @@ func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 	// UC explore expects /{catalog}/{schema}/{name}, so bail if the name isn't
 	// a fully resolved three-part identifier; an unresolved ${...} reference
 	// would otherwise produce a misleading URL.
-	if strings.Count(e.Name, ".") != 2 {
+	if strings.Count(utils.Deref(e.Name), ".") != 2 {
 		return
 	}
-	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_indexes", e.Name)
+	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_indexes", *e.Name)
 }
 
 func (e *VectorSearchIndex) GetName() string {
-	return e.Name
+	return utils.Deref(e.Name)
 }

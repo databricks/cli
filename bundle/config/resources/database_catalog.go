@@ -2,14 +2,14 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkdatabase "github.com/databricks/sdk-go/database/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type DatabaseCatalog struct {
@@ -18,16 +18,8 @@ type DatabaseCatalog struct {
 	database.DatabaseCatalog
 }
 
-func (d *DatabaseCatalog) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, d)
-}
-
-func (d DatabaseCatalog) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(d)
-}
-
-func (d *DatabaseCatalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Database.GetDatabaseCatalog(ctx, database.GetDatabaseCatalogRequest{Name: name})
+func (d *DatabaseCatalog) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Database.GetDatabaseCatalog(ctx, sdkdatabase.GetDatabaseCatalogRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "database Catalog %s does not exist", name)
 		return false, err
@@ -45,12 +37,12 @@ func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
 }
 
 func (d *DatabaseCatalog) GetName() string {
-	return d.Name
+	return utils.Deref(d.Name)
 }
 
 func (d *DatabaseCatalog) InitializeURL(baseURL url.URL) {
-	if d.Name == "" {
+	if d.Name == nil {
 		return
 	}
-	d.URL = workspaceurls.ResourceURL(baseURL, "database_catalogs", d.Name)
+	d.URL = workspaceurls.ResourceURL(baseURL, "database_catalogs", *d.Name)
 }

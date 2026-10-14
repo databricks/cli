@@ -2,31 +2,23 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresSyncedTableConfig struct {
-	postgres.SyncedTableSyncedTableSpec
+	postgres.SyncedTable_SyncedTableSpec
 
 	// SyncedTableId is the user-specified three-part UC name (catalog.schema.table).
 	// Becomes the trailing component of the server-assigned Name:
 	// "synced_tables/{synced_table_id}".
 	SyncedTableId string `json:"synced_table_id"`
-}
-
-func (c *PostgresSyncedTableConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 type PostgresSyncedTable struct {
@@ -35,16 +27,8 @@ type PostgresSyncedTable struct {
 	PostgresSyncedTableConfig
 }
 
-func (s *PostgresSyncedTable) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresSyncedTable) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: name})
+func (s *PostgresSyncedTable) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetSyncedTable(ctx, sdkpostgres.GetSyncedTableRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres synced table %s does not exist", name)
 		return false, err

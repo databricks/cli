@@ -2,13 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdkclients"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type QualityMonitor struct {
@@ -16,23 +15,15 @@ type QualityMonitor struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// This struct defines the creation payload for a monitor.
-	catalog.CreateMonitor
+	qualitymonitors.CreateMonitor
 
 	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
 	TableName string `json:"table_name"`
 }
 
-func (s *QualityMonitor) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s QualityMonitor) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (s *QualityMonitor) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	//nolint:staticcheck // Bundle quality_monitor still targets legacy monitor endpoints; v1 data-quality migration is separate work.
-	_, err := w.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
+	_, err := w.QualityMonitors.Get(ctx, qualitymonitors.GetQualityMonitorRequest{
 		TableName: id,
 	})
 	if err != nil {

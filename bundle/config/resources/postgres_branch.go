@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresBranchConfig struct {
@@ -30,20 +30,6 @@ type PostgresBranchConfig struct {
 	// can be undone within the branch's retention window. Input-only: not
 	// returned by the GET API.
 	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
-
-	// ForceSendFields shadows the embedded BranchSpec.ForceSendFields so the
-	// SDK's marshal package tracks zero-value top-level fields (branch_id,
-	// parent, replace_existing, purge_on_delete) here instead of polluting
-	// BranchSpec.ForceSendFields with names that don't exist in that struct.
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresBranchConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 type PostgresBranch struct {
@@ -52,16 +38,8 @@ type PostgresBranch struct {
 	PostgresBranchConfig
 }
 
-func (b *PostgresBranch) UnmarshalJSON(data []byte) error {
-	return marshal.Unmarshal(data, b)
-}
-
-func (b PostgresBranch) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(b)
-}
-
-func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+func (b *PostgresBranch) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetBranch(ctx, sdkpostgres.GetBranchRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres branch %s does not exist", name)
 		return false, err

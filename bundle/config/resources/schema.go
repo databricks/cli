@@ -2,34 +2,33 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkschemas "github.com/databricks/sdk-go/uc/schemas/v1"
 	"net/url"
-
-	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type Schema struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	catalog.CreateSchema
+	CreateSchema
 	// List of grants to apply on this schema.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (bool, error) {
+func (s *Schema) Exists(ctx context.Context, w *sdkclients.Clients, fullName string) (bool, error) {
 	log.Tracef(ctx, "Checking if schema with fullName=%s exists", fullName)
 
-	_, err := w.Schemas.GetByFullName(ctx, fullName)
+	_, err := w.Schemas.GetSchema(ctx, sdkschemas.GetSchemaRequest{FullNameArg: new(fullName)})
 	if err != nil {
 		log.Debugf(ctx, "schema with full name %s does not exist: %v", fullName, err)
 
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 
@@ -55,13 +54,5 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 }
 
 func (s *Schema) GetName() string {
-	return s.Name
-}
-
-func (s *Schema) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s Schema) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	return utils.Deref(s.Name)
 }

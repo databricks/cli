@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkexternallocations "github.com/databricks/sdk-go/uc/externallocations/v1"
 	"net/url"
-
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 
 	"github.com/databricks/cli/libs/log"
 )
@@ -19,18 +19,18 @@ type ExternalLocation struct {
 	// Note: We intentionally don't include BaseResource.URL here to avoid conflict with Url field below
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
-	catalog.CreateExternalLocation
+	CreateExternalLocation
 
 	// List of grants to apply on this external location.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (e *ExternalLocation) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.ExternalLocations.GetByName(ctx, name)
+func (e *ExternalLocation) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.ExternalLocations.GetExternalLocation(ctx, sdkexternallocations.GetExternalLocationRequest{NameArg: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "external location with name %s does not exist: %v", name, err)
 
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 
@@ -59,18 +59,10 @@ func (e *ExternalLocation) GetURL() (string, bool) {
 }
 
 func (e *ExternalLocation) GetName() string {
-	return e.Name
+	return utils.Deref(e.Name)
 }
 
 // GetLifecycle returns the lifecycle settings for the resource.
 func (e *ExternalLocation) GetLifecycle() LifecycleConfig {
 	return e.Lifecycle
-}
-
-func (e *ExternalLocation) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, e)
-}
-
-func (e ExternalLocation) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(e)
 }

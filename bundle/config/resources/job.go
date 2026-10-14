@@ -1,11 +1,11 @@
 package resources
 
 import (
-	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
-	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
-	"github.com/databricks/cli/libs/sdkclients"
-	"github.com/databricks/cli/libs/utils"
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"net/url"
 	"strconv"
 
@@ -20,8 +20,6 @@ type Job struct {
 
 	Permissions []JobPermission `json:"permissions,omitempty"`
 }
-
-
 
 func (j *Job) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	jobId, err := strconv.Atoi(id)

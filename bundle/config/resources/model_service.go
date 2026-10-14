@@ -2,14 +2,15 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // ModelServiceConfig is the bundle-authored state for an AI Gateway model
@@ -37,17 +38,7 @@ type ModelServiceConfig struct {
 	Comment string `json:"comment,omitempty"`
 	// Operational configuration: destinations, routing, rate limits, inference
 	// table.
-	Config *catalog.ModelServiceConfig `json:"config,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *ModelServiceConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c ModelServiceConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
+	Config *aigateway.ModelServiceConfig `json:"config,omitempty"`
 }
 
 type ModelService struct {
@@ -59,27 +50,20 @@ type ModelService struct {
 	// permissions API (the `.grants` sub-resource), not the model-service body, so
 	// this field lives on the wrapper and stays out of the diffed state that
 	// PrepareState returns (the embedded ModelServiceConfig).
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 // UnmarshalJSON / MarshalJSON are defined on the wrapper so it does not inherit
 // ModelServiceConfig's promoted marshaler, which would silently drop the
 // BaseResource fields (id, url, lifecycle, modified_status).
-func (m *ModelService) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, m)
-}
 
-func (m ModelService) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(m)
-}
-
-func (m *ModelService) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (m *ModelService) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	// The engine tracks the id as the bare {catalog}.{schema}.{model_service};
 	// the API addresses the resource by its full name.
-	_, err := w.AiGateway.GetModelService(ctx, catalog.GetModelServiceRequest{Name: "model-services/" + id})
+	_, err := w.AiGateway.GetModelService(ctx, sdkaigateway.GetModelServiceRequest{Name: new("model-services/" + id)})
 	if err != nil {
 		log.Debugf(ctx, "model service %s does not exist", id)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err

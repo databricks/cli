@@ -8,8 +8,6 @@ import (
 	"reflect"
 	"slices"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
 )
 
 var skipTags = []string{
@@ -22,13 +20,18 @@ var skipTags = []string{
 	"internal",
 }
 
-// sdkDurationType is the reflect.Type for the SDK's duration.Duration type.
-// This type has custom JSON marshaling that represents durations as strings.
-var sdkDurationType = reflect.TypeFor[duration.Duration]()
+// sdkTypesPkgPath is the package of the SDK native types types.Time,
+// types.Duration and types.FieldMask[T]. They have custom JSON marshaling that
+// represents them as strings.
+const sdkTypesPkgPath = "github.com/databricks/sdk-go/core/types"
+
+func isSDKNativeType(typ reflect.Type) bool {
+	return typ.Kind() == reflect.Struct && typ.PkgPath() == sdkTypesPkgPath
+}
 
 type constructor struct {
 	// Map of typ.PkgPath() + "." + typ.Name() to the schema for that type.
-	// Example key: github.com/databricks/databricks-sdk-go/service/jobs.JobSettings
+	// Example key: github.com/databricks/cli/libs/sdktypes/jobs/v2.JobSettings
 	definitions map[string]Schema
 
 	// Map of typ.PkgPath() + "." + typ.Name() to the corresponding type. Used to
@@ -140,6 +143,11 @@ func typePath(typ reflect.Type) string {
 	}
 
 	switch {
+	case isSDKNativeType(typ):
+		// Strip type arguments of generic native types (FieldMask[T]): they all
+		// share one string schema and would otherwise embed a package path.
+		name, _, _ := strings.Cut(typ.Name(), "[")
+		return typ.PkgPath() + "." + name
 	case typ.PkgPath() != "" && typ.Name() != "":
 		return typ.PkgPath() + "." + typ.Name()
 	case typ.Name() != "":
@@ -170,8 +178,8 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 	var s Schema
 	var err error
 
-	// Handle SDK's duration.Duration type as a string since it has custom JSON marshaling.
-	if typ == sdkDurationType {
+	// SDK native types are strings in JSON because of their custom marshaling.
+	if isSDKNativeType(typ) {
 		s = Schema{Type: StringType}
 		c.definitions[typPath] = s
 		return typPath, nil

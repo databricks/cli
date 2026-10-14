@@ -2,25 +2,27 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkclusters "github.com/databricks/sdk-go/clusters/v2"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type Cluster struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	compute.ClusterSpec
+	clusters.CreateClusterRequest
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
 	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
 
 	// Libraries are installed via the Libraries API, not the cluster spec.
-	Libraries []compute.Library `json:"libraries,omitempty"`
+	Libraries []clusterlibraries.Library `json:"libraries,omitempty"`
 
 	Permissions []ClusterPermission `json:"permissions,omitempty"`
 }
@@ -33,16 +35,8 @@ func (s *Cluster) GetLifecycle() LifecycleConfig {
 	return *s.Lifecycle
 }
 
-func (s *Cluster) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s Cluster) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Clusters.GetByClusterId(ctx, id)
+func (s *Cluster) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(id)})
 	if err != nil {
 		log.Debugf(ctx, "cluster %s does not exist", id)
 		return false, err
@@ -67,5 +61,5 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 }
 
 func (s *Cluster) GetName() string {
-	return s.ClusterName
+	return utils.Deref(s.ClusterName)
 }

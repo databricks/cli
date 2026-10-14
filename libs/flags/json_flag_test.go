@@ -7,8 +7,8 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -131,7 +131,7 @@ const jsonData = `
 func TestJsonUnmarshalForRequest(t *testing.T) {
 	var body JsonFlag
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err := body.Set(jsonData)
 	require.NoError(t, err)
 
@@ -139,16 +139,16 @@ func TestJsonUnmarshalForRequest(t *testing.T) {
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 
-	assert.Equal(t, int64(123), r.JobId)
-	assert.Equal(t, "new job", r.NewSettings.Name)
-	assert.Equal(t, 0, r.NewSettings.TimeoutSeconds)
-	assert.Equal(t, 1, r.NewSettings.MaxConcurrentRuns)
+	assert.Equal(t, new(int64(123)), r.JobId)
+	assert.Equal(t, new("new job"), r.NewSettings.Name)
+	assert.Equal(t, new(0), r.NewSettings.TimeoutSeconds)
+	assert.Equal(t, new(1), r.NewSettings.MaxConcurrentRuns)
 	assert.Len(t, r.NewSettings.Tasks, 1)
-	assert.Equal(t, "new task", r.NewSettings.Tasks[0].TaskKey)
-	assert.Equal(t, 0, r.NewSettings.Tasks[0].TimeoutSeconds)
-	assert.Equal(t, 0, r.NewSettings.Tasks[0].MaxRetries)
-	assert.Equal(t, 0, r.NewSettings.Tasks[0].MinRetryIntervalMillis)
-	assert.True(t, r.NewSettings.Tasks[0].RetryOnTimeout)
+	assert.Equal(t, new("new task"), r.NewSettings.Tasks[0].TaskKey)
+	assert.Equal(t, new(0), r.NewSettings.Tasks[0].TimeoutSeconds)
+	assert.Equal(t, new(0), r.NewSettings.Tasks[0].MaxRetries)
+	assert.Equal(t, new(0), r.NewSettings.Tasks[0].MinRetryIntervalMillis)
+	assert.Equal(t, new(true), r.NewSettings.Tasks[0].RetryOnTimeout)
 }
 
 const incorrectJsonData = `{
@@ -184,7 +184,7 @@ const incorrectJsonData = `{
 func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 	var body JsonFlag
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err := body.Set(incorrectJsonData)
 	require.NoError(t, err)
 
@@ -239,7 +239,7 @@ const wrontTypeJsonData = `{
 func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 	var body JsonFlag
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err := body.Set(`{
     "job_id": [1, 2, 3]
 }
@@ -267,7 +267,7 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 	var body JsonFlag
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err := body.Set(wrontTypeJsonData)
 	require.NoError(t, err)
 
@@ -289,10 +289,10 @@ func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
 	})
 }
 
-func TestJsonUnmarshalForRequestWithForceSendFields(t *testing.T) {
+func TestJsonUnmarshalForRequestExplicitZeroValues(t *testing.T) {
 	var body JsonFlag
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err := body.Set(jsonData)
 	require.NoError(t, err)
 
@@ -300,10 +300,9 @@ func TestJsonUnmarshalForRequestWithForceSendFields(t *testing.T) {
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 
-	assert.False(t, r.NewSettings.NotificationSettings.NoAlertForSkippedRuns)
-	assert.False(t, r.NewSettings.NotificationSettings.NoAlertForCanceledRuns)
-	assert.NotContains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForSkippedRuns")
-	assert.Contains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForCanceledRuns")
+	// Unset fields stay nil, explicit zero values are kept so they are sent.
+	assert.Nil(t, r.NewSettings.NotificationSettings.NoAlertForSkippedRuns)
+	assert.Equal(t, new(false), r.NewSettings.NotificationSettings.NoAlertForCanceledRuns)
 }
 
 func TestRejectWrappedJSON(t *testing.T) {

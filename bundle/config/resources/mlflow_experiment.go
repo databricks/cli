@@ -2,34 +2,27 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type MlflowExperiment struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	ml.CreateExperiment
+	experiments.CreateExperimentRequest
 
 	Permissions []MlflowExperimentPermission `json:"permissions,omitempty"`
 }
 
-func (s *MlflowExperiment) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s MlflowExperiment) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
-		ExperimentId: id,
+func (s *MlflowExperiment) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Experiments.GetExperiment(ctx, sdkexperiments.GetExperimentRequest{
+		ExperimentId: new(id),
 	})
 	if err != nil {
 		log.Debugf(ctx, "experiment %s does not exist", id)
@@ -55,5 +48,5 @@ func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 }
 
 func (s *MlflowExperiment) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }

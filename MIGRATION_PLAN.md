@@ -49,3 +49,23 @@
 - Missing in sdk-go, hand-written in the CLI: workspace object API (libs/workspaceapi), bundle deployments
   (libs/bundledeployments), legacy quality monitors. Reach them via fields on sdkclients.Clients.
 - Keep acceptance test outputs stable where reasonable; do not run `-update` on acceptance tests unless told to.
+- Tolerant typechecker: `/tmp/mig/tcbin ./your/pkg/...` (set TC_TESTS=1 to include _test.go) prints type errors for the given
+  packages even when dependencies (owned by other agents) are still broken. `go build`/`go vet` refuse in that case.
+- `utils.Deref(p)` (libs/utils) returns *p or the zero value.
+- /tmp/mig/methods.py 'jobs/v2:Get\w*' prints sdk-go methods with request fields; /tmp/mig/typemap.py old.Type finds mirror
+  types by JSON field overlap; /tmp/mig/diff.py old.Type new/path.Type diffs fields.
+
+## bundle/config/resources decisions (done)
+- Resources embed mirror types: jobs.JobSettings (jobs/v2), jobs.RunNowRequest, clusters.CreateClusterRequest (was
+  compute.ClusterSpec), clusterpolicies.CreatePolicyRequest, instancepools.CreateInstancePoolRequest,
+  pipelines.CreatePipelineRequest, apps.App, alerts.Alert (alerts/v2, was sql.AlertV2), postgres.*Spec / Role_RoleSpec /
+  Catalog_CatalogSpec / Database_DatabaseSpec / SyncedTable_SyncedTableSpec, database.DatabaseInstance/DatabaseCatalog/
+  SyncedDatabaseTable, experiments.CreateExperimentRequest, modelregistry.CreateRegisteredModelRequest (mlflow models),
+  modelserving.CreateInferenceEndpointRequest (was serving.CreateServingEndpoint), warehouses.CreateWarehouseRequest,
+  vectorsearch.CreateEndpointRequest / CreateVectorIndexRequest, registeredmodels.CreateRegisteredModelRequest (UC),
+  secrets.Secret (uc/secrets), aigateway.*Config, grants.PrivilegeAssignment (uc/grants) for all Grants,
+  qualitymonitors.CreateMonitor (hand-written libs/qualitymonitors).
+- UC catalog/schema/volume/external_location: CLI-owned subset structs in bundle/config/resources/uc_types.go
+  (CreateCatalog, CreateSchema, CreateVolumeRequestContent, CreateExternalLocation) with `AsRequest()` -> mirror request.
+- Permission levels: CLI-owned enums in bundle/config/resources/permission_levels.go (same names/values as old SDK).
+- No MarshalJSON/UnmarshalJSON wrappers anymore (encoding/json works directly on mirrors). GetName uses utils.Deref.

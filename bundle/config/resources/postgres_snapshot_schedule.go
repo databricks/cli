@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresSnapshotScheduleConfig struct {
@@ -21,18 +21,6 @@ type PostgresSnapshotScheduleConfig struct {
 	// several cadences fire together a single snapshot is taken, retained for the
 	// longest of their retentions.
 	Schedule []postgres.ScheduleCadence `json:"schedule,omitempty"`
-
-	// ForceSendFields tracks zero-value top-level fields (branch) for the SDK's
-	// marshal package.
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *PostgresSnapshotScheduleConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresSnapshotScheduleConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 type PostgresSnapshotSchedule struct {
@@ -41,16 +29,8 @@ type PostgresSnapshotSchedule struct {
 	PostgresSnapshotScheduleConfig
 }
 
-func (b *PostgresSnapshotSchedule) UnmarshalJSON(data []byte) error {
-	return marshal.Unmarshal(data, b)
-}
-
-func (b PostgresSnapshotSchedule) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(b)
-}
-
-func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetSnapshotSchedule(ctx, postgres.GetSnapshotScheduleRequest{Name: name})
+func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetSnapshotSchedule(ctx, sdkpostgres.GetSnapshotScheduleRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres snapshot schedule %s does not exist", name)
 		return false, err

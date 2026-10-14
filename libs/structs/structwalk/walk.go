@@ -73,6 +73,11 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 		walkValue(path, val.Elem(), field, visit)
 
 	case reflect.Struct:
+		// Opaque structs (e.g. sdk-go types.Time) are scalars in JSON.
+		if structaccess.IsOpaqueStruct(val.Type()) {
+			visit(path, val.Interface(), field)
+			return
+		}
 		walkStruct(path, val, visit)
 
 	case reflect.Slice, reflect.Array:
@@ -102,19 +107,12 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 }
 
 func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
-	forced := getForceSendFields(s)
-
 	st := s.Type()
 	for i := range st.NumField() {
 		sf := st.Field(i)
 		if sf.PkgPath != "" {
 			continue // unexported
 		}
-		// Skip the ForceSendFields slice itself from traversal.
-		if sf.Name == "ForceSendFields" {
-			continue
-		}
-
 		// Directly walk into embedded structs without adding the key to the path. An
 		// anonymous field carrying a json name is not one of these: encoding/json serializes it
 		// as a nested object, so it is walked as a named field below.
@@ -135,8 +133,8 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		}
 
 		fieldVal := s.Field(i)
-		// Skip zero values with omitempty unless field is explicitly forced.
-		if jsonTag.OmitEmpty() && fieldVal.IsZero() && !slices.Contains(forced, sf.Name) {
+		// Skip zero values with omitempty.
+		if jsonTag.OmitEmpty() && fieldVal.IsZero() {
 			continue
 		}
 
@@ -149,19 +147,4 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		node := structpath.NewDotString(path, fieldName)
 		walkValue(node, fieldVal, &sf, visit)
 	}
-}
-
-func getForceSendFields(v reflect.Value) []string {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return nil
-	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
-		return nil
-	}
-	result, ok := reflect.TypeAssert[[]string](fsField)
-	if ok {
-		return result
-	}
-	return nil
 }

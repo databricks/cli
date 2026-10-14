@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresEndpointConfig struct {
@@ -26,30 +26,14 @@ type PostgresEndpointConfig struct {
 	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
-func (c *PostgresEndpointConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
-}
-
 type PostgresEndpoint struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresEndpointConfig
 }
 
-func (e *PostgresEndpoint) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, e)
-}
-
-func (e PostgresEndpoint) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(e)
-}
-
-func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
+func (e *PostgresEndpoint) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetEndpoint(ctx, sdkpostgres.GetEndpointRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres endpoint %s does not exist", name)
 		return false, err
