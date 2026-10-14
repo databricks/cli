@@ -910,7 +910,7 @@ func nodeMatchesPattern(concrete *PathNode, pattern *PatternNode) bool {
 	if pattern.DotStar() || pattern.BracketStar() {
 		return true
 	}
-	patternKey, patternIsBracket := ((*PathNode)(pattern)).BracketString()
+	patternKey, patternIsBracket := (*PathNode)(pattern).BracketString()
 	concreteKey, concreteIsBracket := concrete.BracketString()
 	if patternIsBracket && concreteIsBracket && strings.Contains(patternKey, "*") {
 		return matchDotSeparatedGlob(patternKey, concreteKey)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,8 +48,6 @@ func IntrospectToken(ctx context.Context, host, accessToken string, httpClient *
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		// Drain the body so the underlying TCP connection can be reused.
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, fmt.Errorf("introspection endpoint returned status %d", resp.StatusCode)
 	}
 

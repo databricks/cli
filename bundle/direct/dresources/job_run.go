@@ -122,28 +122,26 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 		}
 	}
 	return &JobRunRemote{
-		RunNow: jobs.RunNow{
-			JobId:             run.JobId,
-			JobParameters:     jobParameters,
-			DbtCommands:       overriding.DbtCommands,
-			JarParams:         overriding.JarParams,
-			NotebookParams:    overriding.NotebookParams,
-			PipelineParams:    overriding.PipelineParams,
-			PythonNamedParams: overriding.PythonNamedParams,
-			PythonParams:      overriding.PythonParams,
-			SparkSubmitParams: overriding.SparkSubmitParams,
-			SqlParams:         overriding.SqlParams,
-			// Request-only fields GetRun never reports; listed so exhaustruct
-			// flags any new SDK field.
-			IdempotencyToken:  "",
-			Only:              nil,
-			PerformanceTarget: "",
-			Queue:             nil,
-			ForceSendFields:   nil,
-		},
-		ResultState: run.State.ResultState,
-		RunId:       run.RunId,
-		RunName:     run.RunName,
+		JobId:             run.JobId,
+		JobParameters:     jobParameters,
+		DbtCommands:       overriding.DbtCommands,
+		JarParams:         overriding.JarParams,
+		NotebookParams:    overriding.NotebookParams,
+		PipelineParams:    overriding.PipelineParams,
+		PythonNamedParams: overriding.PythonNamedParams,
+		PythonParams:      overriding.PythonParams,
+		SparkSubmitParams: overriding.SparkSubmitParams,
+		SqlParams:         overriding.SqlParams,
+		// Request-only fields GetRun never reports; listed so exhaustruct
+		// flags any new SDK field.
+		IdempotencyToken:  "",
+		Only:              nil,
+		PerformanceTarget: "",
+		Queue:             nil,
+		ForceSendFields:   nil,
+		ResultState:       run.State.ResultState,
+		RunId:             run.RunId,
+		RunName:           run.RunName,
 		// Rebuilt, not copied: the SDK records explicitly-sent fields in
 		// ForceSendFields, which makes zero values workspace-dependent.
 		State: &jobs.RunState{

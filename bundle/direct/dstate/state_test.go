@@ -183,15 +183,15 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 }
 
 func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
-	empty := &Database{Header: Header{StateVersion: 3}}
+	empty := &Database{StateVersion: 3}
 	require.NoError(t, migrateState(empty))
 	assert.Equal(t, 3, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
 	// Version 3 states with unknown features must still be refused.
-	withFeature := &Database{Header: Header{
+	withFeature := &Database{
 		StateVersion: 3,
 		Features:     map[string]struct{}{"future_feature": {}},
-	}}
+	}
 	err := migrateState(withFeature)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "requires features this CLI does not support")

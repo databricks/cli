@@ -21,7 +21,7 @@ func TestValidateProductionPipelines(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
 						CreatePipeline: pipelines.CreatePipeline{
-							Development: true,
+							Development: true, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 						},
 					},
 				},

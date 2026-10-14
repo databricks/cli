@@ -136,7 +136,7 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 		AzureClientID:    w.AzureClientID,
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,
-		AzureLoginAppID:  w.AzureLoginAppID,
+		AzureLoginAppID:  w.AzureLoginAppID, //nolint:staticcheck // SA1019: still accepted in bundle config; forwarded until the SDK drops the field
 
 		// Unified host
 		AccountID:   w.AccountID,

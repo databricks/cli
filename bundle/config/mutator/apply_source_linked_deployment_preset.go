@@ -31,7 +31,7 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 	isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 	target := b.Config.Bundle.Target
 
-	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		if !isDatabricksWorkspace {
 			path := structpath.NewPath(nil, "targets", target, "presets", "source_linked_deployment")
 			diags = diags.Append(

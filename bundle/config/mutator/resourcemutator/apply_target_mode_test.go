@@ -96,7 +96,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
