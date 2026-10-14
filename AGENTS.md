@@ -12,8 +12,6 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 **RULE: Prefer simplicity over cleverness. Avoid speculative fallbacks and default values.** If you catch yourself adding a fallback branch "just in case," identify the correct path and use only that one. Reviewers in this repo reject speculative flexibility.
 
-**RULE: Do not add one-line wrappers.** A function or method whose body only forwards to another call (optionally filling in an argument) adds indirection without adding meaning. Call the underlying function directly; if several call sites repeat the same argument, hold it in a variable or struct field.
-
 **RULE: Keep each PR focused on one change.** If you notice an unrelated cleanup, bug fix, or refactor while making your primary change, leave it alone or put it in a separate PR. Reviewers consistently ask to split mixed PRs, especially when a dependency bump or schema diff rides along with a feature change.
 
 **RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (shared utilities), `libs/databrickscfg/` (config), `libs/git/`, `libs/filer/`, `libs/cmdio/` (CLI I/O, spinners, prompts), `libs/env/` (env vars), `libs/testserver/`, `libs/structpath/` and `libs/dyn/` (path / dynamic values), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks). A function that duplicates an existing name and signature in the same package is a compile error waiting to happen; grep before you name.
