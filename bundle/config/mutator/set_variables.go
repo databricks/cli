@@ -18,8 +18,10 @@ const bundleVarPrefix = "BUNDLE_VAR_"
 
 // variableOverridesLocation is the file name in the bundle root that values from the
 // variable overrides file are located at. The file is written by tools, not users, so
-// relative paths in it resolve against the bundle root and diagnostics name it by this
-// label rather than by its path under .databricks.
+// relative paths in it must resolve against the bundle root. A location serves both
+// diagnostics and path resolution (relative to the directory of its file), so we use a
+// fake file at the bundle root. The limitation is that diagnostics name this label
+// rather than the real file under .databricks.
 const variableOverridesLocation = "<variable-overrides>"
 
 type setVariables struct{}
