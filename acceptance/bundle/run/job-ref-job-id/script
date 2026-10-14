@@ -1,5 +1,8 @@
 trace $CLI bundle deploy
 replace_ids.py
 
+title "foo's task points at bar's job id"
+trace $CLI jobs get $(read_id.py foo) | jq '.settings.tasks[0].run_job_task'
+
 title "run resolves the referenced job id into the int job_id field"
 trace $CLI bundle run foo

@@ -6,6 +6,12 @@ Created jobs.foo
 Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
+=== foo's task points at bar's job id
+>>> [CLI] jobs get [FOO_ID]
+{
+  "job_id": [BAR_ID]
+}
+
 === run resolves the referenced job id into the int job_id field
 >>> [CLI] bundle run foo
 Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
