@@ -803,3 +803,58 @@ func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"is_success":false`)
 }
+
+func TestMetadataResponseError(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		forbidden  bool
+		message    string
+	}{
+		{
+			name:       "feature disabled",
+			statusCode: 403,
+			body:       `"FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace"`,
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: FEATURE_DISABLED: An administrator has disabled port forwarding to serverless compute for this workspace",
+		},
+		{
+			name:       "forbidden with a body that is not a JSON string",
+			statusCode: 403,
+			body:       "Forbidden\n",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: Forbidden",
+		},
+		{
+			name:       "forbidden with an empty body",
+			statusCode: 403,
+			body:       "",
+			forbidden:  true,
+			message:    "the workspace refused the SSH tunnel connection: status code 403",
+		},
+		{
+			// A stale metadata.json points at a terminated cluster; the caller must start a new server.
+			name:       "terminated cluster is retried",
+			statusCode: 400,
+			body:       `"INVALID_STATE: Cluster 1014-135824-abcdefgh-v2n is in Terminated state but Spark driver is not healthy"`,
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 400",
+		},
+		{
+			name:       "server still starting is retried",
+			statusCode: 502,
+			body:       "",
+			forbidden:  false,
+			message:    "server metadata error\nserver is not ok, status code 502",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := metadataResponseError(tc.statusCode, []byte(tc.body))
+			assert.Equal(t, tc.forbidden, errors.Is(err, errDriverProxyForbidden))
+			assert.Equal(t, !tc.forbidden, errors.Is(err, errServerMetadata))
+			assert.EqualError(t, err, tc.message)
+		})
+	}
+}
